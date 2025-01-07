@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BookOpen, Users, Rocket, Shield, History } from 'lucide-react';
+import Chronologies from './Chronologies';
 
 const categories = [
   { 
-    id: 'chronologie', 
+    id: 'chronologies', 
     icon: History, 
-    label: 'Chronologie',
-    description: 'L\'histoire de l\'humanité et des différentes races jusqu\'en 2576'
+    label: 'Chronologies',
+    description: 'Les chronologies des différentes civilisations jusqu\'en 2576'
   },
   { 
     id: 'races', 
@@ -35,6 +36,23 @@ const categories = [
 ];
 
 export default function EncyclopediaLayout() {
+  const [activeCategory, setActiveCategory] = useState('chronologies');
+
+  const renderContent = () => {
+    switch (activeCategory) {
+      case 'chronologies':
+        return <Chronologies />;
+      default:
+        return (
+          <div className="prose prose-invert max-w-none">
+            <p className="text-lg text-slate-300">
+              Sélectionnez une catégorie pour afficher son contenu.
+            </p>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-4">
       {/* Sidebar */}
@@ -46,7 +64,14 @@ export default function EncyclopediaLayout() {
               const Icon = category.icon;
               return (
                 <li key={category.id}>
-                  <button className="w-full flex items-center gap-3 p-2 hover:bg-slate-700 rounded text-left">
+                  <button 
+                    className={`w-full flex items-center gap-3 p-2 rounded text-left ${
+                      activeCategory === category.id 
+                        ? 'bg-blue-600 text-white' 
+                        : 'hover:bg-slate-700'
+                    }`}
+                    onClick={() => setActiveCategory(category.id)}
+                  >
                     <Icon className="w-5 h-5" />
                     <span>{category.label}</span>
                   </button>
@@ -60,29 +85,7 @@ export default function EncyclopediaLayout() {
       {/* Main Content */}
       <main className="lg:col-span-3 bg-slate-800 rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-6">Encyclopédie Space Squad</h1>
-        <div className="prose prose-invert max-w-none">
-          <p className="text-lg text-slate-300">
-            Bienvenue dans l'encyclopédie officielle de Space Squad. Découvrez l'histoire, 
-            les races et les factions qui façonnent cet univers en 2576.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            {categories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <div key={category.id} className="bg-slate-700 p-4 rounded-lg hover:bg-slate-600 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Icon className="w-6 h-6 text-blue-400" />
-                    <h2 className="text-xl font-bold">{category.label}</h2>
-                  </div>
-                  <p className="text-slate-300">
-                    {category.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {renderContent()}
       </main>
     </div>
   );
