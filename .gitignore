@@ -14,7 +14,3 @@ node_modules
 *.njsproj
 *.sln
 *.sw?
-
-# Images directory (for future use)
-public/images/*
-!public/images/.gitkeep
