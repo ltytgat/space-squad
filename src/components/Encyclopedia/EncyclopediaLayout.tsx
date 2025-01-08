@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Users, Rocket, Shield, History } from 'lucide-react';
+import { BookOpen, Users, Rocket, Shield, History, Building2, Globe2, Scroll, GraduationCap } from 'lucide-react';
 import Chronologies from './Chronologies';
 
 const categories = [
@@ -10,28 +10,40 @@ const categories = [
     description: 'Les chronologies des différentes civilisations jusqu\'en 2576'
   },
   { 
-    id: 'races', 
-    icon: BookOpen, 
-    label: 'Races',
-    description: 'Les différentes espèces qui peuplent l\'univers connu'
+    id: 'civilisations', 
+    icon: Globe2, 
+    label: 'Civilisations',
+    description: 'Les Stranis, Tr\'Traris et autres espèces intelligentes'
   },
   { 
-    id: 'factions', 
+    id: 'politique', 
+    icon: Building2, 
+    label: 'Politique',
+    description: 'Le Conseil Galactique, la Confédération et les organisations'
+  },
+  { 
+    id: 'societe', 
     icon: Users, 
-    label: 'Factions',
-    description: 'Les organisations majeures qui façonnent la galaxie'
+    label: 'Société',
+    description: 'Langues, distinctions, grades et politique des colonies'
   },
   { 
-    id: 'vaisseaux', 
+    id: 'technologie', 
     icon: Rocket, 
-    label: 'Vaisseaux',
-    description: 'Les différents vaisseaux connus dans l\'univers'
+    label: 'Technologie',
+    description: 'GTV, boucliers, communications et vaisseaux'
   },
   { 
-    id: 'equipement', 
-    icon: Shield, 
-    label: 'Équipement',
-    description: 'Technologies et équipements notables'
+    id: 'carriere', 
+    icon: GraduationCap, 
+    label: 'Carrière',
+    description: 'Formation de pilote et divisions'
+  },
+  { 
+    id: 'juridique', 
+    icon: Scroll, 
+    label: 'Juridique',
+    description: 'Tribunal d\'Alcor et usage des armes'
   }
 ];
 
@@ -41,7 +53,7 @@ export default function EncyclopediaLayout() {
   const renderContent = () => {
     switch (activeCategory) {
       case 'chronologies':
-        return <Chronologies />;
+        return <Chronologies onBack={() => setActiveCategory('chronologies')} />;
       default:
         return (
           <div className="prose prose-invert max-w-none">
@@ -65,7 +77,7 @@ export default function EncyclopediaLayout() {
               return (
                 <li key={category.id}>
                   <button 
-                    className={`w-full flex items-center gap-3 p-2 rounded text-left ${
+                    className={`w-full flex items-center gap-3 p-2 rounded text-left hover:bg-slate-700 group ${
                       activeCategory === category.id 
                         ? 'bg-blue-600 text-white' 
                         : 'hover:bg-slate-700'
@@ -73,7 +85,16 @@ export default function EncyclopediaLayout() {
                     onClick={() => setActiveCategory(category.id)}
                   >
                     <Icon className="w-5 h-5" />
-                    <span>{category.label}</span>
+                    <div>
+                      <span className="block font-medium">{category.label}</span>
+                      <span className={`text-sm ${
+                        activeCategory === category.id 
+                          ? 'text-blue-100' 
+                          : 'text-slate-400 group-hover:text-slate-300'
+                      }`}>
+                        {category.description}
+                      </span>
+                    </div>
                   </button>
                 </li>
               );
