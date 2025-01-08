@@ -183,7 +183,7 @@ const timelineData = {
     { year: "2510", event: "Début du projet \"Arche\", un vaisseau colon qui explorera l’espace, des volontaires seront envoyés pour un voyage sans retour."},
     { year: "2535", event: "Construction du vaisseau Arche."},
     { year: "2543", event: "Premier contact alien, Arche est contactée (dans la langue des Gromula). La République Strani et l’Union décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le Conseil Galactique est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
-    { year: "2544", event: "Premier Vada Starlancer"},"},
+    { year: "2544", event: "Premier Vada Starlancer"},
     { year: "2546", event: "La Vadas profitent d’un bond technologique offert par les Stranis et les Humains et leur société en est profondément bouleversée."},
     { year: "2553", event: "Les instance internationales désignent les Gromula comme représentant de l’espèce en attendant une forme d’union des gouvernements."},
     { year: "2572", event: "Lancement du projet Ω par le conseil"},
