@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Rocket } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import EncyclopediaLayout from './components/Encyclopedia/EncyclopediaLayout';
 
 export default function App() {
@@ -11,8 +11,11 @@ export default function App() {
       <nav className="bg-slate-800 p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Rocket className="w-8 h-8 text-blue-400" />
-            <h1 className="text-2xl font-bold">Space Squad</h1>
+            <img 
+              src="/images/transparent.png" 
+              alt="Space Squad Logo" 
+              className="h-8 w-auto"
+            />
           </div>
           <button className="p-2 hover:bg-slate-700 rounded">
             <Menu className="w-6 h-6" />
