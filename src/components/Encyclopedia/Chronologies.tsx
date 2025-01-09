@@ -194,7 +194,9 @@ const timelineData = {
 };
 
 function groupEventsByCentury(events: TimelineEvent[]) {
-  return events.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
+  // Filter out the first event (description) before grouping
+  const timelineEvents = events.slice(1);
+  return timelineEvents.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
     const year = parseInt(event.year);
     let century;
     
@@ -222,6 +224,7 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
   };
 
   const groupedEvents = groupEventsByCentury(timelineData[activeTimeline]);
+  const description = timelineData[activeTimeline][0].event;
 
   return (
     <div className="space-y-6">
@@ -248,6 +251,11 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
             {title}
           </button>
         ))}
+      </div>
+
+      {/* Description */}
+      <div className="bg-slate-700/50 p-6 rounded-lg mb-8">
+        <p className="text-slate-200 text-lg">{description}</p>
       </div>
 
       <div className="relative">
