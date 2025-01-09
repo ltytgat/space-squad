@@ -1,49 +1,46 @@
 import React, { useState } from 'react';
-import { BookOpen, Users, Rocket, Shield, History, Building2, Globe2, Scroll, GraduationCap } from 'lucide-react';
+import { History, Users, Building2, Rocket, BookOpen } from 'lucide-react';
 import Chronologies from './Chronologies';
+import NonHumanSpecies from './NonHumanSpecies';
+import Politics from './Politics';
+import Technology from './Technology';
+import Culture from './Culture';
 
 const categories = [
   { 
     id: 'chronologies', 
     icon: History, 
     label: 'Chronologies',
-    description: 'Les chronologies des différentes civilisations jusqu\'en 2576'
+    description: 'Histoire des civilisations jusqu\'en 2576',
+    component: Chronologies
   },
   { 
-    id: 'civilisations', 
-    icon: Globe2, 
-    label: 'Civilisations',
-    description: 'Les Stranis, Tr\'Traris et autres espèces intelligentes'
+    id: 'species', 
+    icon: Users, 
+    label: 'Espèces non-humaines',
+    description: 'Les Stranis, Tr\'Traris, Vada et Torks',
+    component: NonHumanSpecies
   },
   { 
-    id: 'politique', 
+    id: 'politics', 
     icon: Building2, 
     label: 'Politique',
-    description: 'Le Conseil Galactique, la Confédération et les organisations'
+    description: 'Organisations et structures politiques',
+    component: Politics
   },
   { 
-    id: 'societe', 
-    icon: Users, 
-    label: 'Société',
-    description: 'Langues, distinctions, grades et politique des colonies'
-  },
-  { 
-    id: 'technologie', 
+    id: 'technology', 
     icon: Rocket, 
     label: 'Technologie',
-    description: 'GTV, boucliers, communications et vaisseaux'
+    description: 'Avancées et systèmes technologiques',
+    component: Technology
   },
   { 
-    id: 'carriere', 
-    icon: GraduationCap, 
-    label: 'Carrière',
-    description: 'Formation de pilote et divisions'
-  },
-  { 
-    id: 'juridique', 
-    icon: Scroll, 
-    label: 'Juridique',
-    description: 'Tribunal d\'Alcor et usage des armes'
+    id: 'culture', 
+    icon: BookOpen, 
+    label: 'Culture',
+    description: 'Formation, langues et société',
+    component: Culture
   }
 ];
 
@@ -51,18 +48,18 @@ export default function EncyclopediaLayout() {
   const [activeCategory, setActiveCategory] = useState('chronologies');
 
   const renderContent = () => {
-    switch (activeCategory) {
-      case 'chronologies':
-        return <Chronologies onBack={() => setActiveCategory('chronologies')} />;
-      default:
-        return (
-          <div className="prose prose-invert max-w-none">
-            <p className="text-lg text-slate-300">
-              Sélectionnez une catégorie pour afficher son contenu.
-            </p>
-          </div>
-        );
+    const category = categories.find(cat => cat.id === activeCategory);
+    if (category) {
+      const CategoryComponent = category.component;
+      return <CategoryComponent onBack={() => setActiveCategory(category.id)} />;
     }
+    return (
+      <div className="prose prose-invert max-w-none">
+        <p className="text-lg text-slate-300">
+          Sélectionnez une catégorie pour afficher son contenu.
+        </p>
+      </div>
+    );
   };
 
   return (
