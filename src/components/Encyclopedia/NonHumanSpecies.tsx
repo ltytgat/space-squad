@@ -57,13 +57,6 @@ const articles = [
         content: [
             "Les Stranis ont une espérance de vie d'environ une cinquantaine d'années terriennes, cette vie plus courte que celle des humains est due à la reproduction de l'espèce, chaque portée donnant naissance de deux à quatre individus."
           ]
-      },
-      {
-        title: 'Culture',
-        content: [
-          'La société Strani accorde une grande importance à l\'innovation et au progrès technologique. Leur culture est basée sur la méritocratie et la recherche du savoir.',
-          'Les arts Stranis sont fortement influencés par leur perception unique des champs électromagnétiques, créant des œuvres incompréhensibles pour les autres espèces.'
-        ]
       }
     ]
   },
