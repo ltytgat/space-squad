@@ -59,7 +59,7 @@ const articles = [
     subtitle: 'Classification planétaire',
     resume: 'Le système de classification de la viabilité des planètes.'
     sections: [
-    {
+      {
       title: 'Histoire',
       content: [
         "En 2135 (c-79) les premiers projets de colonies hors du système Hélios apparaissent.",
@@ -68,7 +68,7 @@ const articles = [
         "A chaque niveau est associé une procédure de colonisation. Il revient aux Pionniers de l’Union de déterminer cet indice sur le terrain."
         ]
     },
-    {
+      {
       title: "Valeurs de l'indice",
       content: [
         "Voici les différentes valeurs de l’indice de viabilité :",
@@ -89,13 +89,14 @@ const articles = [
         "Ces mondes sont prioritaires pour le déploiement de nouvelles colonies."
         ]
     },
-    {
+      {
       title: "La Terre",
       content[
         "La terre a possédé un indice de viabilité de 4 jusqu’au début du 21eme siècle à partir du quel il est passé à 3 suite au début de la Grande Pandémie de Flutterite en 2075 (c-135).",
         "En 2153 (c-61), l’indice de la Terre passe à 2 suite aux derniers relevés atmosphériques."
         ]
-    }
+      }
+    ]
   }
 ];
 
