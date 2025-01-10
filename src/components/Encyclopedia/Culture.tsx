@@ -70,7 +70,7 @@ const articles = [
     },
     {
       title: "Valeurs de l'indice",
-      sections: [
+      content: [
         "Voici les différentes valeurs de l’indice de viabilité :",
         " ",
         "1 – Non viable",
@@ -91,7 +91,7 @@ const articles = [
     },
     {
       title: "La Terre",
-      sections[
+      content[
         "La terre a possédé un indice de viabilité de 4 jusqu’au début du 21eme siècle à partir du quel il est passé à 3 suite au début de la Grande Pandémie de Flutterite en 2075 (c-135).",
         "En 2153 (c-61), l’indice de la Terre passe à 2 suite aux derniers relevés atmosphériques."
         ]
