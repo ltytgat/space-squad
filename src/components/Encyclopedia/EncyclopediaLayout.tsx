@@ -102,7 +102,11 @@ export default function EncyclopediaLayout() {
 
       {/* Main Content */}
       <main className="lg:col-span-3 bg-slate-800 rounded-lg p-6">
-        <h1 className="text-2xl font-bold mb-6">Encyclopédie Space Squad</h1>
+        <div className="border-b border-slate-700 pb-4 mb-8">
+          <h1 className="text-4xl font-extrabold text-blue-400 leading-normal">
+            Encyclopédie Space Squad
+          </h1>
+        </div>
         {renderContent()}
       </main>
     </div>
