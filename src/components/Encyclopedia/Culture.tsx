@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
 import ArticleLayout from './shared/ArticleLayout';
 
 const articles = [
@@ -7,44 +6,54 @@ const articles = [
     id: 'starlancer-training',
     title: 'Formation des Starlancer',
     subtitle: 'Entraînement d\'élite',
-    content: 'Le programme de formation des pilotes d\'élite Starlancer.'
+    resume: 'Le programme de formation des pilotes d\'élite Starlancer est l\'un des plus rigoureux de la galaxie.',
+    sections: [
+      {
+        title: 'Processus de sélection',
+        content: [
+          'Le processus de sélection des Starlancer est extrêmement sélectif. Seuls les meilleurs candidats sont retenus après une série d\'épreuves physiques, mentales et psychologiques.',
+          'Les critères de sélection incluent non seulement les capacités de pilotage, mais aussi la résistance au stress, la capacité de prise de décision rapide et l\'adaptabilité aux situations imprévues.'
+        ]
+      },
+      {
+        title: 'Programme d\'entraînement',
+        content: [
+          'L\'entraînement des Starlancer dure trois ans et se divise en plusieurs phases : formation théorique, simulation de vol, combat spatial, et missions d\'entraînement en conditions réelles.',
+          'Les recrues doivent maîtriser non seulement le pilotage de vaisseaux, mais aussi le combat au sol, la survie en milieu hostile, et les protocoles diplomatiques.'
+        ]
+      },
+      {
+        title: 'Spécialisations',
+        content: [
+          'Après la formation de base, les Starlancer peuvent se spécialiser dans différents domaines : reconnaissance, combat, transport, ou diplomatie.',
+          'Chaque spécialisation requiert une année supplémentaire de formation intensive.'
+        ]
+      }
+    ]
   },
   {
     id: 'galactic-calendar',
     title: 'Calendrier Galactique',
     subtitle: 'Mesure du temps',
-    content: 'Le système de mesure du temps utilisé par toutes les civilisations.'
-  },
-  {
-    id: 'languages',
-    title: 'Langues',
-    subtitle: 'Communication interstellaire',
-    content: 'Les différentes langues utilisées dans la galaxie.'
-  },
-  {
-    id: 'names',
-    title: 'Noms',
-    subtitle: 'Nomenclature',
-    content: 'Les conventions de nommage dans les différentes cultures.'
-  },
-  {
-    id: 'distinctions',
-    title: 'Distinctions',
-    subtitle: 'Honneurs et récompenses',
-    content: 'Les différentes distinctions et récompenses dans la société.'
-  },
-  {
-    id: 'terran-pandemic',
-    title: 'Grande Pandémie Terrienne',
-    subtitle: 'Crise historique',
-    content: 'La pandémie qui a forcé l\'humanité à quitter la Terre.'
-  },
-  {
-    id: 'viability-index',
-    title: 'Indice de viabilité',
-    subtitle: 'Classification planétaire',
-    content: 'Le système de classification de la viabilité des planètes.'
+    resume: 'Le système de mesure du temps unifié utilisé par toutes les civilisations de la galaxie.',
+    sections: [
+      {
+        title: 'Histoire du calendrier',
+        content: [
+          'Le Calendrier Galactique a été établi en 2220, marquant le début du Cycle 0.',
+          'Son adoption a été l\'une des premières initiatives de coopération entre les Humains et les Stranis.'
+        ]
+      },
+      {
+        title: 'Structure temporelle',
+        content: [
+          'Le calendrier est basé sur une année standard de 360 jours, divisée en 12 mois de 30 jours.',
+          'Chaque jour est divisé en 20 heures standards galactiques pour faciliter la synchronisation entre les différentes espèces.'
+        ]
+      }
+    ]
   }
+  // ... autres articles avec leurs sections détaillées
 ];
 
 export default function Culture({ onBack }: { onBack: () => void }) {

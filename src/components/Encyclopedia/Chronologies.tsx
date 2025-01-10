@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, ArrowLeft } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 type TimelineEvent = {
   year: string;
@@ -214,7 +214,7 @@ function groupEventsByCentury(events: TimelineEvent[]) {
   }, {});
 }
 
-export default function Chronologies({ onBack }: { onBack: () => void }) {
+export default function Chronologies() {
   const [activeTimeline, setActiveTimeline] = useState<TimelineType>('human');
 
   const timelineTitles = {
@@ -228,14 +228,6 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="space-y-6">
-      <button
-        onClick={onBack}
-        className="text-blue-400 hover:text-blue-300 flex items-center gap-2 mb-4"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Retour
-      </button>
-
       <div className="flex flex-wrap gap-4 mb-6">
         {Object.entries(timelineTitles).map(([key, title]) => (
           <button

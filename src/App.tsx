@@ -10,13 +10,16 @@ export default function App() {
       {/* Navigation */}
       <nav className="bg-slate-800 p-4">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowEncyclopedia(false)}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <img 
               src="/images/transparent.png" 
               alt="Space Squad Logo" 
               className="h-8 w-auto"
             />
-          </div>
+          </button>
           <button className="p-2 hover:bg-slate-700 rounded">
             <Menu className="w-6 h-6" />
           </button>

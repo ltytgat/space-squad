@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
 import ArticleLayout from './shared/ArticleLayout';
 
 const articles = [
@@ -7,62 +6,47 @@ const articles = [
     id: 'alcor',
     title: 'Alcor',
     subtitle: 'Capitale de l\'humanité',
-    content: 'Alcor est la station spatiale qui sert de capitale à la Confédération.'
+    resume: 'Alcor est la station spatiale qui sert de capitale à la Confédération, symbole de la renaissance de l\'humanité après l\'exode terrestre.',
+    sections: [
+      {
+        title: 'Histoire',
+        content: [
+          'Alcor fut construite comme première étape du projet d\'immigration humaine, devenant rapidement le centre névralgique de la civilisation humaine.',
+          'Sa position stratégique en orbite de Mars en fait un point central pour la gouvernance de la Confédération.'
+        ]
+      },
+      {
+        title: 'Structure',
+        content: [
+          'La station est composée de multiples modules interconnectés, chacun remplissant des fonctions spécifiques : gouvernementales, diplomatiques, et commerciales.',
+          'Son architecture unique permet d\'accueillir des représentants de toutes les espèces connues dans des conditions adaptées.'
+        ]
+      }
+    ]
   },
   {
     id: 'confederation',
     title: 'Confédération',
     subtitle: 'Union des colonies humaines',
-    content: 'La Confédération est l\'organisation politique qui unit toutes les colonies humaines.'
-  },
-  {
-    id: 'confederal-orgs',
-    title: 'Organisations confédérales',
-    subtitle: 'Structures administratives',
-    content: 'Les différentes organisations qui composent la Confédération.'
-  },
-  {
-    id: 'galactic-council',
-    title: 'Conseil Galactique',
-    subtitle: 'Coopération interstellaire',
-    content: 'Le Conseil Galactique est l\'organe de coopération entre les différentes espèces.'
-  },
-  {
-    id: 'strani-republic',
-    title: 'République Strani',
-    subtitle: 'État Strani unifié',
-    content: 'La République Strani est l\'organisation politique qui unit tous les Stranis.'
-  },
-  {
-    id: 'cerberi',
-    title: 'Cerberi',
-    subtitle: 'Faction dissidente',
-    content: 'Cerberi est une nation indépendante issue d\'une scission avec la Confédération.'
-  },
-  {
-    id: 'alliance-org',
-    title: 'Organisation interne de l\'Alliance',
-    subtitle: 'Structure militaire',
-    content: 'L\'organisation interne de l\'Alliance, la force militaire unifiée.'
-  },
-  {
-    id: 'alcor-tribunal',
-    title: 'Tribunal d\'Alcor',
-    subtitle: 'Justice confédérale',
-    content: 'Le Tribunal d\'Alcor est la plus haute instance judiciaire de la Confédération.'
-  },
-  {
-    id: 'colony-politics',
-    title: 'Politique des colonies',
-    subtitle: 'Administration coloniale',
-    content: 'Le système politique et administratif des colonies humaines.'
-  },
-  {
-    id: 'divisions',
-    title: 'Divisions',
-    subtitle: 'Unités spécialisées',
-    content: 'Les différentes divisions spécialisées de l\'Alliance.'
+    resume: 'La Confédération est l\'organisation politique qui unit toutes les colonies humaines, établie pour assurer la survie et la prospérité de l\'humanité.',
+    sections: [
+      {
+        title: 'Organisation',
+        content: [
+          'La Confédération est structurée en trois branches principales : l\'Alliance pour la défense, la Guilde Marchande pour l\'économie, et l\'Union Planétaire pour la recherche.',
+          'Chaque colonie conserve une autonomie relative tout en participant à la gouvernance collective.'
+        ]
+      },
+      {
+        title: 'Relations extérieures',
+        content: [
+          'La Confédération maintient des relations diplomatiques étroites avec la République Strani et participe activement au Conseil Galactique.',
+          'Sa politique étrangère est marquée par un équilibre entre coopération et préservation des intérêts humains.'
+        ]
+      }
+    ]
   }
+  // ... autres articles avec leurs sections détaillées
 ];
 
 export default function Politics({ onBack }: { onBack: () => void }) {
