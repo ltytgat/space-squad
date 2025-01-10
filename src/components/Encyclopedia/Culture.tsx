@@ -52,8 +52,51 @@ const articles = [
         ]
       }
     ]
+  },
+  {
+    id: 'viability-index',
+    title: 'Indice de viabilité',
+    subtitle: 'Classification planétaire',
+    resume: 'Le système de classification de la viabilité des planètes.'
+    sections: [
+    {
+      title: 'Histoire',
+      content: [
+        "En 2135 (c-79) les premiers projets de colonies hors du système Hélios apparaissent.",
+        "De nombreuses planètes ayant déjà été découverte, l’Union décide de créer une échelle afin de mesurer la viabilité de ces mondes.",
+        "En 2137 (c-77) apparaît l’indice de viabilité, il prend une valeur sur une échelle de 0 à 5 avec 4 étapes intermédiaires chacune correspondant à un niveau de danger d’un environnement.",
+        "A chaque niveau est associé une procédure de colonisation. Il revient aux Pionniers de l’Union de déterminer cet indice sur le terrain."
+        ]
+    },
+    {
+      title: "Valeurs de l'indice",
+      sections: [
+        "Voici les différentes valeurs de l’indice de viabilité :",
+        " ",
+        "1 – Non viable",
+        "Principalement utilisé pour les environnements où la vie est impossible, des astéroïdes aux planètes telluriques sans atmosphère ou les planètes gazeuses.",
+        "Ces planètes ne sont pas aptes à recevoir une colonie, mais peuvent accueillir des bases ou installations pour collecter des ressources.",
+        " ",
+        "2 – Hostile",
+        "La vie sur ces planètes n’est pas possible sans assistance, il reste cependant possible de développer des avant-postes. La vie coloniale reste limitée, au mieux évitée.",
+        " ",
+        "3 – Habitable",
+        "Toute planète abritant de la vie ou étant capable de l’accueillir.",
+        "Les conditions de vie peuvent être difficiles ou nécessitants des aménagements, mais il est possible de déployer une colonie.",
+        " ",
+        "4 – Idéal",
+        "Planète regroupant toutes les caractéristiques au développement de la vie humaine.",
+        "Ces mondes sont prioritaires pour le déploiement de nouvelles colonies."
+        ]
+    },
+    {
+      title: "La Terre",
+      sections[
+        "La terre a possédé un indice de viabilité de 4 jusqu’au début du 21eme siècle à partir du quel il est passé à 3 suite au début de la Grande Pandémie de Flutterite en 2075 (c-135).",
+        "En 2153 (c-61), l’indice de la Terre passe à 2 suite aux derniers relevés atmosphériques."
+        ]
+    }
   }
-  // ... autres articles avec leurs sections détaillées
 ];
 
 export default function Culture({ onBack }: { onBack: () => void }) {
