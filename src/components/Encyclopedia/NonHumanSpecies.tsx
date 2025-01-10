@@ -92,7 +92,7 @@ const articles = [
       },
       {
        title: 'Le royaume Tr’Traris',
-       conent: [
+       content: [
           "Bien que la guerre avec les Stranis continua, les Tr'Traris commencèrent à créer leur royaume avec leurs propres règles.",
           "Pour commencer il faut savoir que la conscience qu’ont développé les Tr'Traris est unique. Cela signifie que c’est une seule conscience qui contrôle tous les Tr'Traris via l’esprit de ruche. Cette conscience se fait appeler la Ruche.",
           "Après le départ des Stranis la Ruche commença à créer des Tr'Traris plus optimisés et pas seulement basé sur les exosquelettes Stranis.",
@@ -101,7 +101,7 @@ const articles = [
       },
       {
        title: 'La nouvelle génération',
-       conent: [
+       content: [
           "La conception de la nouvelle génération est simple : ce sont des Tr'Traris qui ne sont pas reliés à l’esprit de la ruche.",
           "L’idée est qu’ils développent leur propre libre arbitre, avis et idéaux ; qu’ils observent, découvrent et réagissent en conséquence.",
           "Pour ajouter une notion d’individualité, la Ruche décida de ne donner qu’une partie de sa connaissance à chaque naissance.",
