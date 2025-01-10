@@ -67,7 +67,7 @@ const articles = [
         "En 2137 (c-77) apparaît l’indice de viabilité, il prend une valeur sur une échelle de 0 à 5 avec 4 étapes intermédiaires chacune correspondant à un niveau de danger d’un environnement.",
         "A chaque niveau est associé une procédure de colonisation. Il revient aux Pionniers de l’Union de déterminer cet indice sur le terrain."
         ]
-    },
+      },
       {
       title: "Valeurs de l'indice",
       content: [
@@ -88,10 +88,10 @@ const articles = [
         "Planète regroupant toutes les caractéristiques au développement de la vie humaine.",
         "Ces mondes sont prioritaires pour le déploiement de nouvelles colonies."
         ]
-    },
+      },
       {
       title: "La Terre",
-      content[
+      content: [
         "La terre a possédé un indice de viabilité de 4 jusqu’au début du 21eme siècle à partir du quel il est passé à 3 suite au début de la Grande Pandémie de Flutterite en 2075 (c-135).",
         "En 2153 (c-61), l’indice de la Terre passe à 2 suite aux derniers relevés atmosphériques."
         ]
