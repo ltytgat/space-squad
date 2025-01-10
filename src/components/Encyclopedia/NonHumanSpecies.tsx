@@ -110,7 +110,7 @@ const articles = [
           "La Ruche n’a pas donné de réponse à ces questions et laisse les Tr'Traris y réfléchir par eux-mêmes. Certains par rapport à cette crainte ont créé leurs propres Tr'Traris pour éviter qu’il ne soit contrôlé par la Ruche. Cependant ces Tr'Traris sont moins puissants que ceux créé par la Ruche et cela ne répond pas aux secrets qu’elle leur cache.",
           "En 2355(c135) la guerre avec les Stranis prie fin, mais plus par abandons de la part de Stranis dû à la guerre contre les Torks que par alliance cordiale entre les deux peuples.",
           "La société Tr'Traris continuera à évoluer et en 2510(c290) une faction d'un parti Tr'Traris dit les indépendants fonda sa propre nation sur une planète voisine. Elle se nomme Kr'Alka et est non viable pour tout être organique.",
-          "Les Tr'Traris l’habitant s'appelle des Kr'Karis."
+          "Les Tr'Traris l’habitant s'appelle des Kr'Karis.",
           "Depuis lors, de nombreux groupes de Tr'Traris indépendants sont partis à travers l'espace pour l'explorer ou pour y fonder des colonies."
         ]
       }
