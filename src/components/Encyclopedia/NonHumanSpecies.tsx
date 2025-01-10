@@ -21,7 +21,7 @@ const articles = [
         title: 'Histoire',
         content: [
           'Originaires de la planète Sotolia, les Stranis ont développé une civilisation hautement technologique. Leur plus grande réalisation fut la création de la sphère de Dyson "Lis".',
-          'La création des Tr\'Traris et la guerre qui s\'ensuivit marqua un tournant dans leur histoire, les forçant à quitter leur monde natal.'
+          'La création des Tr\'Traris et la guerre qui s\'ensuivit marqua un tournant dans leur histoire, les forçant à quitter leur monde natal.',
           'Histoire détaillée: cf. "Chronologie Strani"'
         ]
       },
