@@ -57,7 +57,7 @@ const articles = [
     id: 'viability-index',
     title: 'Indice de viabilité',
     subtitle: 'Classification planétaire',
-    resume: 'Le système de classification de la viabilité des planètes.'
+    resume: 'Le système de classification de la viabilité des planètes.',
     sections: [
       {
       title: 'Histoire',
