@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
 interface ArticleSection {
@@ -18,10 +18,20 @@ interface ArticleLayoutProps {
   title: string;
   articles: Article[];
   onBack: () => void;
+  selectedArticleId?: string | null;
 }
 
-export default function ArticleLayout({ title, articles, onBack }: ArticleLayoutProps) {
+export default function ArticleLayout({ title, articles, onBack, selectedArticleId }: ArticleLayoutProps) {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+
+  useEffect(() => {
+    if (selectedArticleId) {
+      const article = articles.find(a => a.id === selectedArticleId);
+      if (article) {
+        setSelectedArticle(article);
+      }
+    }
+  }, [selectedArticleId, articles]);
 
   if (selectedArticle) {
     return (

@@ -162,12 +162,13 @@ const articles = [
   }
 ];
 
-export default function NonHumanSpecies({ onBack }: { onBack: () => void }) {
+export default function NonHumanSpecies({ onBack, selectedArticleId }: { onBack: () => void, selectedArticleId?: string | null }) {
   return (
     <ArticleLayout 
       title="Espèces non-humaines"
       articles={articles}
       onBack={onBack}
+      selectedArticleId={selectedArticleId}
     />
   );
 }

@@ -74,7 +74,6 @@ const timelineData = {
     { year: "2576", event: "Aujourd’hui"}
   ],
   strani: [
-    {event: "Cette chronologie relate tous les événements majeurs de l’Histoire Strani depuis le début du 18eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
     { year: "1715", event: "Les trois grandes nations Stranis entre en état de guerre froide. l’Union Fédérale Strani (UFS), l’Empire Klars et l’Alliance des Royaumes Indépendants (ARI)."},
     { year: "1736", event: "Les tentions dans les états neutres s’accentuent à mesure que les superpuissances tentent d’imposer leur influence."},
     { year: "1754", event: "Début de la course à l’espace."},
@@ -152,6 +151,7 @@ const timelineData = {
     { year: "2544", event: "Premier Vada Starlancer"},
     { year: "2572", event: "Lancement du projet Ω par le conseil"},
     { year: "2576", event: "Aujourd’hui"}
+    {event: "Cette chronologie relate tous les événements majeurs de l'Histoire <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> depuis le début du 18eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
   ],
   vada: [
   {event: "Cette chronologie relate tous les événements majeurs de l’Histoire Vada depuis le début du 24eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
@@ -226,6 +226,21 @@ export default function Chronologies() {
   const groupedEvents = groupEventsByCentury(timelineData[activeTimeline]);
   const description = timelineData[activeTimeline][0].event;
 
+  const handleArticleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'A' && target.dataset.article) {
+      e.preventDefault();
+      // Navigate to the article through the parent component
+      const event = new CustomEvent('navigateToArticle', {
+        detail: {
+          category: 'species',
+          articleId: target.dataset.article
+        }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4 mb-6">
@@ -246,9 +261,11 @@ export default function Chronologies() {
       </div>
 
       {/* Description */}
-      <div className="bg-slate-700/50 p-6 rounded-lg mb-8">
-        <p className="text-slate-200 text-lg">{description}</p>
-      </div>
+      <div 
+        className="bg-slate-700/50 p-6 rounded-lg mb-8"
+        onClick={handleArticleClick}
+        dangerouslySetInnerHTML={{ __html: `<p class="text-slate-200 text-lg">${description}</p>` }}
+      />
 
       <div className="relative">
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-600" />

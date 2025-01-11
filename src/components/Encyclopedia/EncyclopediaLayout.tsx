@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { History, Users, Building2, Rocket, BookOpen } from 'lucide-react';
 import Chronologies from './Chronologies';
 import NonHumanSpecies from './NonHumanSpecies';
@@ -46,12 +46,26 @@ const categories = [
 
 export default function EncyclopediaLayout() {
   const [activeCategory, setActiveCategory] = useState('chronologies');
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleNavigateToArticle = (event: CustomEvent<{ category: string; articleId: string }>) => {
+      setActiveCategory(event.detail.category);
+      setSelectedArticleId(event.detail.articleId);
+    };
+
+    window.addEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
+
+    return () => {
+      window.removeEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
+    };
+  }, []);
 
   const renderContent = () => {
     const category = categories.find(cat => cat.id === activeCategory);
     if (category) {
       const CategoryComponent = category.component;
-      return <CategoryComponent onBack={() => setActiveCategory(category.id)} />;
+      return <CategoryComponent onBack={() => setActiveCategory(category.id)} selectedArticleId={selectedArticleId} />;
     }
     return (
       <div className="prose prose-invert max-w-none">
@@ -79,7 +93,10 @@ export default function EncyclopediaLayout() {
                         ? 'bg-blue-600 text-white' 
                         : 'hover:bg-slate-700'
                     }`}
-                    onClick={() => setActiveCategory(category.id)}
+                    onClick={() => {
+                      setActiveCategory(category.id);
+                      setSelectedArticleId(null);
+                    }}
                   >
                     <Icon className="w-5 h-5" />
                     <div>
