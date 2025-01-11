@@ -49,9 +49,9 @@ const articles = [
           "C’est d’ici qu’est géré toute la station et c’est par ses ascenseurs express que l’on peut passer d’un secteur à l’autre.",
           "Le secteur de l’Alliance est le QG de cette <a href=\"#\" data-article=\"confederal-orgs\" class=\"text-blue-400 hover:text-blue-300\">Organisation</a>, il regroupe un chantier spatial, le conseil de l’amirauté et les différentes divisions.",
           "Le secteur Agricole regroupe toutes les zones de culture permettant de fournir la station en nourriture, eau et air. La production de ce secteur peut permettre de faire vivre jusqu’à 100.000 habitants.",
-          "Enfin le secteur des habitations contient tous les quartiers d’habitations des membres de la station.",          
+          "Enfin le secteur des habitations contient tous les quartiers d’habitations des membres de la station.",
+          "<img src='/images/Alcor.png' alt='Station Alcor' class='w-full rounded-lg shadow-lg my-4' />"
           ]
-          //image to add
       },
       {
           title: "Données statistiques",

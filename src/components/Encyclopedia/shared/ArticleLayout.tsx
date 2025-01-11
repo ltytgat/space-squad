@@ -11,7 +11,7 @@ interface Article {
   title: string;
   subtitle: string;
   resume: string;
-  sections: ArticleSection[];
+  sections?: ArticleSection[];
 }
 
 interface ArticleLayoutProps {
@@ -33,6 +33,20 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
     }
   }, [selectedArticleId, articles]);
 
+  const handleArticleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'A' && target.dataset.article) {
+      e.preventDefault();
+      const event = new CustomEvent('navigateToArticle', {
+        detail: {
+          category: target.dataset.category || 'species',
+          articleId: target.dataset.article
+        }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   if (selectedArticle) {
     return (
       <div className="space-y-6">
@@ -44,7 +58,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
           Retour aux articles
         </button>
 
-        <article className="prose prose-invert max-w-none">
+        <article className="prose prose-invert max-w-none" onClick={handleArticleClick}>
           <h1 className="text-3xl font-bold text-white mb-2">{selectedArticle.title}</h1>
           <h2 className="text-xl text-blue-400 mb-6">{selectedArticle.subtitle}</h2>
           
@@ -54,20 +68,20 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
           </div>
 
           {/* Sections */}
-          <div className="space-y-8">
-            {selectedArticle.sections.map((section, index) => (
-              <section key={index} className="bg-slate-700/30 p-6 rounded-lg">
-                <h3 className="text-2xl font-bold text-blue-400 mb-4">{section.title}</h3>
-                <div className="space-y-4">
-                  {section.content.map((paragraph, pIndex) => (
-                    <p key={pIndex} className="text-slate-200 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+          {selectedArticle.sections && (
+            <div className="space-y-8">
+              {selectedArticle.sections.map((section, index) => (
+                <section key={index} className="bg-slate-700/30 p-6 rounded-lg">
+                  <h3 className="text-2xl font-bold text-blue-400 mb-4">{section.title}</h3>
+                  <div className="space-y-4">
+                    {section.content.map((paragraph, pIndex) => (
+                      <div key={pIndex} className="text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: paragraph }} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
         </article>
       </div>
     );
