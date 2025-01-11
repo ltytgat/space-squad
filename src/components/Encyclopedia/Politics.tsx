@@ -11,7 +11,7 @@ const articles = [
       {
         title: 'Histoire',
         content: [
-          "En 2051 (c-158), alors que l’humanité se sait condamnée sur Terre, le Projet Alcor voit le jour."
+          "En 2051 (c-158), alors que l’humanité se sait condamnée sur Terre, le Projet Alcor voit le jour.",
           "Ce dernier consiste en la mise en orbite de Mars d’une station spatiale servant de transit entre l’espace et la surface de la planète rouge afin d’y établir la première colonie extraterrestre.",
           "Le premier module est lancé en 2060 (c-149) et marque la fondation de la Station Alcor.",
           "Suite à la fondation de l’UCH en 2114 (c-99), Alcor est nommé capitale.",
