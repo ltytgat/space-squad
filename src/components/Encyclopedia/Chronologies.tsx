@@ -74,6 +74,7 @@ const timelineData = {
     { year: "2576", event: "Aujourd’hui"}
   ],
   strani: [
+    {event: "Cette chronologie relate tous les événements majeurs de l'Histoire <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> depuis le début du 18eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
     { year: "1715", event: "Les trois grandes nations Stranis entre en état de guerre froide. l’Union Fédérale Strani (UFS), l’Empire Klars et l’Alliance des Royaumes Indépendants (ARI)."},
     { year: "1736", event: "Les tentions dans les états neutres s’accentuent à mesure que les superpuissances tentent d’imposer leur influence."},
     { year: "1754", event: "Début de la course à l’espace."},
@@ -151,7 +152,6 @@ const timelineData = {
     { year: "2544", event: "Premier Vada Starlancer"},
     { year: "2572", event: "Lancement du projet Ω par le conseil"},
     { year: "2576", event: "Aujourd’hui"}
-    {event: "Cette chronologie relate tous les événements majeurs de l'Histoire <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> depuis le début du 18eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
   ],
   vada: [
   {event: "Cette chronologie relate tous les événements majeurs de l’Histoire Vada depuis le début du 24eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
