@@ -54,6 +54,20 @@ const articles = [
     ]
   },
   {
+    id: 'terran-pandemic',
+    title: 'Grande Pandémie Terrienne',
+    subtitle: 'Crise historique',
+    resume: 'La pandémie qui a forcé l\'humanité à quitter la Terre.',
+    //sections: []
+  },
+  {
+    id: 'languages',
+    title: 'Langues',
+    subtitle: 'Communication interstellaire',
+    resume: 'Les différentes langues utilisées dans la galaxie.',
+    //sections: []
+  },
+  {
     id: 'viability-index',
     title: 'Indice de viabilité',
     subtitle: 'Classification planétaire',

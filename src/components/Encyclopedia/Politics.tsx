@@ -45,7 +45,42 @@ const articles = [
         ]
       }
     ]
-  }
+  },
+  {
+    id: 'confederal-orgs',
+    title: 'Organisations confédérales',
+    subtitle: 'Structures administratives',
+    resume: 'Les différentes organisations qui composent la Confédération.',
+    //sections: []
+  },
+  {
+    id: 'alcor-tribunal',
+    title: 'Tribunal d\'Alcor',
+    subtitle: 'Justice confédérale',
+    resume: 'Le Tribunal d\'Alcor est la plus haute instance judiciaire de la Confédération.',
+    //sections: []
+  },
+  {
+    id: 'cerberi',
+    title: 'Cerberi',
+    subtitle: 'Faction dissidente',
+    resume: 'Cerberi est une nation indépendante issue d\'une scission avec la Confédération.',
+    //sections: []
+  },
+  {
+    id: 'galactic-council',
+    title: 'Conseil Galactique',
+    subtitle: 'Coopération interstellaire',
+    resume: 'Le Conseil Galactique est l\'organe de coopération entre les différentes espèces.',
+    //sections: []
+  },
+  {
+    id: 'strani-republic',
+    title: 'République Strani',
+    subtitle: 'État Strani unifié',
+    resume: 'La République Strani est l\'organisation politique qui unit tous les Stranis.',
+    //sections: []
+  },
   // ... autres articles avec leurs sections détaillées
 ];
 
