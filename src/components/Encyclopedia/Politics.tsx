@@ -73,6 +73,7 @@ const articles = [
           ]
       }
     ]
+  },
   {
     id: 'confederation',
     title: 'Confédération',
