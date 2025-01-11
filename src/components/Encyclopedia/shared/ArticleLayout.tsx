@@ -37,14 +37,54 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
     const target = e.target as HTMLElement;
     if (target.tagName === 'A' && target.dataset.article) {
       e.preventDefault();
+      // Determine the category based on the article ID
+      let category = 'culture'; // default category
+      
+      // Map article IDs to their categories
+      const categoryMap: { [key: string]: string } = {
+        // Politics articles
+        'alcor': 'politics',
+        'confederation': 'politics',
+        'confederal-orgs': 'politics',
+        'alcor-tribunal': 'politics',
+        'cerberi': 'politics',
+        'galactic-council': 'politics',
+        'strani-republic': 'politics',
+        'alliance-org': 'politics',
+        // Species articles
+        'stranis': 'species',
+        'trtraris': 'species',
+        'vada': 'species',
+        'torks': 'species',
+        // Technology articles
+        'shields': 'technology',
+        'gtv': 'technology',
+        // Culture articles
+        'languages': 'culture',
+        'terran-pandemic': 'culture',
+        'viability-index': 'culture',
+        'galactic-calendar': 'culture'
+      };
+
       const event = new CustomEvent('navigateToArticle', {
         detail: {
-          category: target.dataset.category || 'species',
+          category: categoryMap[target.dataset.article] || category,
           articleId: target.dataset.article
         }
       });
       window.dispatchEvent(event);
     }
+  };
+
+  const renderContent = (content: string) => {
+    return content.replace(
+      /<a href="#" data-article="([^"]+)"([^>]*)>([^<]+)<\/a>/g,
+      (match, articleId, attributes, text) => {
+        // Keep any additional attributes from the original link
+        const extraAttrs = attributes.replace(/data-article="[^"]+"/, '').trim();
+        return `<a href="#" data-article="${articleId}" class="text-blue-400 hover:text-blue-300 underline" ${extraAttrs}>${text}</a>`;
+      }
+    );
   };
 
   if (selectedArticle) {
@@ -64,7 +104,8 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
           
           {/* Introduction/Resume */}
           <div className="bg-slate-700/50 p-6 rounded-lg mb-8">
-            <p className="text-slate-200 text-lg">{selectedArticle.resume}</p>
+            <p className="text-slate-200 text-lg" 
+               dangerouslySetInnerHTML={{ __html: renderContent(selectedArticle.resume) }} />
           </div>
 
           {/* Sections */}
@@ -75,7 +116,11 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
                   <h3 className="text-2xl font-bold text-blue-400 mb-4">{section.title}</h3>
                   <div className="space-y-4">
                     {section.content.map((paragraph, pIndex) => (
-                      <div key={pIndex} className="text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: paragraph }} />
+                      <div 
+                        key={pIndex} 
+                        className="text-slate-200 leading-relaxed" 
+                        dangerouslySetInnerHTML={{ __html: renderContent(paragraph) }}
+                      />
                     ))}
                   </div>
                 </section>
