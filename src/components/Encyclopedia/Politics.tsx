@@ -72,6 +72,7 @@ const articles = [
           "Masse totale : 1,15 milliard de tonnes",
           ]
       }
+    ]
   {
     id: 'confederation',
     title: 'Confédération',
