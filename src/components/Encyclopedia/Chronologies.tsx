@@ -230,7 +230,6 @@ export default function Chronologies() {
     const target = e.target as HTMLElement;
     if (target.tagName === 'A' && target.dataset.article) {
       e.preventDefault();
-      // Navigate to the article through the parent component
       const event = new CustomEvent('navigateToArticle', {
         detail: {
           category: 'species',
@@ -239,6 +238,16 @@ export default function Chronologies() {
       });
       window.dispatchEvent(event);
     }
+  };
+
+  const renderContent = (content: string) => {
+    return content.replace(
+      /<a href="#" data-article="([^"]+)"([^>]*)>([^<]+)<\/a>/g,
+      (match, articleId, attributes, text) => {
+        const extraAttrs = attributes.replace(/data-article="[^"]+"/, '').trim();
+        return `<a href="#" data-article="${articleId}" class="text-blue-400 hover:text-blue-300 underline" ${extraAttrs}>${text}</a>`;
+      }
+    );
   };
 
   return (
@@ -264,7 +273,7 @@ export default function Chronologies() {
       <div 
         className="bg-slate-700/50 p-6 rounded-lg mb-8"
         onClick={handleArticleClick}
-        dangerouslySetInnerHTML={{ __html: `<p class="text-slate-200 text-lg">${description}</p>` }}
+        dangerouslySetInnerHTML={{ __html: renderContent(description) }}
       />
 
       <div className="relative">
@@ -280,7 +289,11 @@ export default function Chronologies() {
                   <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-800" />
                   <div className="bg-slate-700 p-4 rounded-lg">
                     <div className="text-blue-400 font-bold mb-1">{event.year}</div>
-                    <div className="text-slate-200">{event.event}</div>
+                    <div 
+                      className="text-slate-200"
+                      onClick={handleArticleClick}
+                      dangerouslySetInnerHTML={{ __html: renderContent(event.event) }}
+                    />
                   </div>
                 </div>
               ))}
