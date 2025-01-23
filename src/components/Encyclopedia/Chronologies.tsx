@@ -266,6 +266,7 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
 
       const category = categoryMap[articleId] || 'culture';
       
+      // Dispatch navigation event
       const event = new CustomEvent('navigateToArticle', {
         detail: {
           category,

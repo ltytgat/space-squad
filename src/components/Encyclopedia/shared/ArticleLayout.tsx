@@ -25,11 +25,15 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
   useEffect(() => {
+    // When selectedArticleId changes, find and set the article
     if (selectedArticleId) {
       const article = articles.find(a => a.id === selectedArticleId);
       if (article) {
         setSelectedArticle(article);
       }
+    } else {
+      // If selectedArticleId is null, clear the selected article
+      setSelectedArticle(null);
     }
   }, [selectedArticleId, articles]);
 

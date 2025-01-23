@@ -45,14 +45,14 @@ const categories = [
 ];
 
 export default function EncyclopediaLayout() {
-  const [activeCategory, setActiveCategory] = useState('chronologies');
+  const [activeCategory, setActiveCategory] = useState<string>('chronologies');
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleNavigateToArticle = (event: CustomEvent<{ category: string; articleId: string }>) => {
       const { category, articleId } = event.detail;
       
-      // Set both category and article ID in one update to ensure synchronization
+      // Update both states together to ensure synchronization
       setActiveCategory(category);
       setSelectedArticleId(articleId);
     };
@@ -75,7 +75,7 @@ export default function EncyclopediaLayout() {
       return (
         <CategoryComponent 
           onBack={() => handleCategoryChange(category.id)} 
-          selectedArticleId={selectedArticleId} 
+          selectedArticleId={selectedArticleId}
         />
       );
     }
