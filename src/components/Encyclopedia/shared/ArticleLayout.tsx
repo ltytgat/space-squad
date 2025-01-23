@@ -74,6 +74,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         'galactic-calendar': 'culture',
         'starlancer-training': 'culture',
         'rewards': 'culture',
+        'divisions': 'culture',
       };
 
       const category = categoryMap[articleId] || 'culture';

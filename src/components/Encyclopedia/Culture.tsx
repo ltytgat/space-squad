@@ -9,24 +9,51 @@ const articles = [
     resume: 'Le programme de formation des pilotes d\'élite Starlancer est l\'un des plus rigoureux de la galaxie.',
     sections: [
       {
-        title: 'Processus de sélection',
+        title: 'Études supérieures',
         content: [
-          'Le processus de sélection des Starlancer est extrêmement sélectif. Seuls les meilleurs candidats sont retenus après une série d\'épreuves physiques, mentales et psychologiques.',
-          'Les critères de sélection incluent non seulement les capacités de pilotage, mais aussi la résistance au stress, la capacité de prise de décision rapide et l\'adaptabilité aux situations imprévues.'
+          "La formation de Starlancer est à considérer comme une voie universitaire, elle permet d’obtenir en 3 cycles une licence de Starlancer qui permet à son détenteur d’utiliser tout modèle de vaisseaux équipé d’un GTV et les armes de guerre.",
+          "Celle-ci se déroule dans l’un des nombreux centres de formation du Consortium composant un secteur d’une station spatiale. Le plus ancien étant celui de la station Loria Orbital de Hope I."
         ]
       },
       {
-        title: 'Programme d\'entraînement',
+        title: 'Contenu',
         content: [
-          'L\'entraînement des Starlancer dure trois ans et se divise en plusieurs phases : formation théorique, simulation de vol, combat spatial, et missions d\'entraînement en conditions réelles.',
-          'Les recrues doivent maîtriser non seulement le pilotage de vaisseaux, mais aussi le combat au sol, la survie en milieu hostile, et les protocoles diplomatiques.'
+          "Chaque cycle est séparé en 2 Sections de 7 mois chacune.",
+          "Le contenu de chaque section est le suivant :",
+          "Programme S1 : Mécanique des Chasseurs et Chasseurs Lourds, Diplomatie, Maniement des armes de poings et des Fusils d’assaut, Mécanique des véhicules légers et intermédiaires.",
+          "Programme S2 : Biologie, Cryptographie, Techniques de combat rapproché, Stratégie des escouades, Maniement des armes lourdes et montées.",
+          "Programme S3 : Pilotage des Chasseurs et Chasseurs Lourds, Utilisation des Tourelles, Pilotage des véhicules légers et intermédiaires, Maniement des Shotgun et Canons.",
+          "Programme S4 : Maniement des Fusils de précisions, Mécanique des Corvettes et Frégates, Mécanique des Véhicules Lourds et blindés",
+          "Programme S5 : Pilotage des Corvettes et frégates, Pilotages des véhicules lourds et blindés, Utilisation des armes sur le terrain",
+          "Programme S6 : Préparation à l’épreuve finale de mise en situation réelle.",
+          "Cas spécifique de l’activité physique : le « sport » ne consiste pas en une matière à part entière, mais est présente dès le S1. Lors du premier cycle, chaque étudiant est supervisé par un coach dont la mission est de le préparer aux séances sur le terrain d’entraînement du cycle 2.",
+          "À partir du cycle 3, il s’agit plus simplement d’habituer le futur Starlancer à entretenir son corps pour ses missions.",
+          "Les étudiants n’utilisent pas de simulateur avant le cycle 2 et de vrais vaisseaux ou armes avant le S6."
         ]
       },
       {
-        title: 'Spécialisations',
+        title: 'Évaluation',
         content: [
-          'Après la formation de base, les Starlancer peuvent se spécialiser dans différents domaines : reconnaissance, combat, transport, ou diplomatie.',
-          'Chaque spécialisation requiert une année supplémentaire de formation intensive.'
+          "Pour rejoindre la formation, il est nécessaire de passer un examen d’entrée.",
+          "Ce dernier consiste en une épreuve écrite qui reprend une grosse partie des enseignements du lycée (physique, mécanique, biologie, etc.) et un entretien personnel afin d’évaluer la psychologie de l’étudiant, les profils « violents » sont systématiquement rejetés.",
+          "Chaque matière fera l’objet d’une évaluation (avec note plancher). La formation se termine lors d’une épreuve finale, une simulation grandeur nature.",
+          "La difficulté de certaines épreuve fait que la majorité des étudiants ne valident la formation qu’au bout de 4 cycles.",
+          "Les évaluations écrites suivent des sujets validés au niveau confédéral, les autres suivent un protocole de simulation extrêmement précis.",
+          "Toutes les évaluations sont supervisées et validées par des inspecteurs du Consortium.",
+          "Tout au long de la formation, les étudiants sont également évalués sur leur stabilité psychologique.",
+          "En particulier durant les simulations, si un étudiant est déclaré comme trop sensible (stress, angoisse, panique, etc.) son cursus peut être mis en attente le temps de trouver une solution."
+        ]
+      },
+      {
+        title: "L'épreuve finale",
+        content: [
+          "L’étudiant est finalement noté sur son épreuve finale avec un score sur 100 points.",
+          "Avec un système de bonus/malus pour la cohésion d’escouade, il est possible de dépasser les 100 points, si l’étudiant a au moins 72/100, il est reçu. Le meilleur score jamais enregistré était de 108 points.",
+          "Dans le détails, cette épreuve contraint les étudiants à former une escouade de 4 à 10 personnes. Les escouades sont validées durant le S5 et préparées durant le S6.",
+          "Lors de l’épreuve, l’escouade embarque dans des chasseurs (chargés à blanc) et participera à une mission simulée du Rang 1. Il peut s’agir d’escorter un vaisseau de marchandises, faire une reconnaissance dans un secteur, affronter des pirates en effectifs réduits…",
+          "Une fois cette première étape finie, une autre similaire est mise en place lors d’une simulation au sol (en général sur la colonie locale). Sécuriser un site, chasser des aliens, détruire un avant-poste bandits, etc.",
+          "Toutes ces simulations se font presque exclusivement avec des tirs « à blanc » et font intervenir différentes situations et événements imprévus pour évaluer les réactions de l’escouade. \"Presque\" en effet car pour garder les étudiants sur leur garde et maintenir une réelle pressions, certains tirs seront à balle réelle. Généralement tirés à des moments clés pour infliger des blessures superficielles et observer la réaction de l'escouade.",
+          "Tout est filmé est évalué par plusieurs formateurs externes au centre de formation. Les notes individuelles peuvent prendre plusieurs jours à être révélées."          
         ]
       }
     ]
@@ -49,7 +76,7 @@ const articles = [
         content: [
           "A la vue de la précision de la définition humaine de la seconde, celle-ci est restée la même, à savoir : « La seconde est la durée de 9 192 631 770 périodes de la radiation correspondant à la transition entre les deux niveaux hyperfins de l'état fondamental de l'atome de césium 133 à la température du zéro absolu. »",
           "Sur cette définition, la minute est définie comme étant égale à 60 secondes, et une heure étant égale à 60 minutes.",
-          "Les Stranis n’avaient pas d’unité comparable à la minute, ou du moins, une seule unité précise, aussi ont-ils accepté d’utiliser ces unités humaines.",
+          "Les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> n’avaient pas d’unité comparable à la minute, ou du moins, une seule unité précise, aussi ont-ils accepté d’utiliser ces unités humaines.",
           "Un jour correspond à une rotation de l’astre de référence.",
           "Un an, ou une année, correspond à une période de révolution de l’astre de référence.",
           "Ces deux unités sont relatives à la localisation de son utilisateur et ne sont pas utilisées en dehors de l’astre de référence.",
@@ -79,7 +106,56 @@ const articles = [
     title: 'Grande Pandémie Terrienne',
     subtitle: 'Crise historique',
     resume: 'La pandémie qui a forcé l\'humanité à quitter la Terre.',
-    //sections: []
+    sections: [
+      {
+        title: 'Apparition',
+        content: [
+          "L'humanité a connu beaucoup de grandes épidémies à travers les âges : peste noire, grippe espagnole, choléra...",
+          "Néanmoins, aucune ne fut aussi meurtrière que la flutterite.",
+          "Maladie issue de la fusion entre une bactérie Bartonella Henselae et Yersinia Pestis, celle-ci se développa en premier lieu chez le chat. Cette union ne put pas encore être identifiée, étant donné la capacité du Bartonella à ne pas présenter de symptômes chez le chat.",
+          "Les premiers cas déclarés furent dans les zones fortement peuplées de la Terre, pendant l'année terrestre 2074.",
+          "Cette maladie nouvelle se déclara chez des patients ayant été griffés par un chat.",
+          "Les symptômes présentés ne furent, en premier lieu que des douleurs musculaires et des maux de tête, marques de la maladie des griffes de chat, bien connue de l'humanité. Ceux-ci furent alors traités en conséquence.",
+          "Pendant plusieurs mois, de plus en plus de cas se déclarèrent à travers le monde, tandis que les traitements semblaient étrangement inefficaces.",
+          "Les symptômes de la maladie évoluaient, commençant à affecter les organes lymphatiques, le foie ainsi que le système respiratoire, provoquant des toux plus ou moins violentes chez les patients.",
+          "Plus étrange encore, certains patients contractaient les mêmes symptômes sans avoir été en contact avec un chat."
+        ]
+      },
+      {
+        title: 'Développement',
+        content: [
+          "Pendant l'année 2075, des recherches furent menées sur ce pathogène plus violent que ce qu'il était cru, et sa nature fut révélée. L'union entre deux bactéries, ayant acquis une grande résistance face aux médicaments.",
+          "Ce nouveau pathogène semblait vicieux, se présentant comme une bête maladie des griffes de chat, avant de s'aggraver et d'affecter le système respiratoire, dévoilant de cette manière son second moyen de propagation : l'air lui-même.",
+          "Ayant eu une année pour se propager et se camouflant dans la pollution terrienne, ce fut lors de cette année que la grande pandémie fut déclarée, les cas se multipliant à travers la planète.",
+          "Malgré sa lenteur, cette nouvelle maladie semblait bien partie pour éliminer l'humanité. Celle-ci ayant tout le loisir d'infecter les humains, au système immunitaire affaibli par la pollution."
+        ]
+      },
+      {
+        title: 'Effets',
+        content: [
+          "La flutterite passe par plusieurs phases, commençant par de simples maux de tête et des douleurs musculaires, puis affecte les organes lymphatiques, affaiblissant encore plus le système immunitaire et passant ainsi dans sa seconde phase.",
+          "Les maux de tête évoluent en fièvre, et le patient commence à être pris de toux de plus en plus violentes, jusqu à finir par cracher sang et pus. Cette toux se révéla être le moteur de propagation de la maladie par la voie des airs.",
+          "La troisième phase se caractérise par une difficulté à respirer du malade, de plus en plus importante ainsi que par une ictère ( ou \"jaunisse\" ), causée par un arrêt progressif du foie. À ce stade, le malade finit par mourir, incapable de respirer et son foie n'est plus en mesure de remplir sa fonction."
+        ]
+      },
+      {
+        title: 'Conséquences',
+        content: [
+          "Malgré toutes ses tentatives, l'humanité ne fut pas en mesure de trouver un remède à la flutterite. Celle-ci ne put survivre que grâce au départ dans l'espace d'individus sains.",
+          "La population terrienne fut complètement éliminée par la pandémie en 2151, bien que la maladie ne fut pas la seule cause de sa disparition.",
+          "La pollution, la famine globale causée par la disparition des espèces animales et végétales ainsi que le chaos engendré par la fin imminente de l'humanité furent également des facteurs dans la disparition de la population terrienne."
+        ]
+      },
+      {
+        title: 'ID pathologique',
+        content: [
+          "Nom : Flutterite",
+          "Agent infectieux : Une bactérie nouvelle, provenant de l'union de Bartonella Henselae et de Yersinia Pestis.",
+          "Symptômes : Douleurs musculaires, maux de tête/fièvre, problèmes de foie, immunodéficience, toux ( pouvant mener à crachat de sang et de pus ), dyspnée.",
+          "Moyen de propagation : Griffures de chat ou par voie aérienne."
+        ]
+      }
+    ]
   },
   {
     id: 'languages',
@@ -200,6 +276,53 @@ const articles = [
           "Et comme mentionné, elle est accordée à tous les membres de l’escouade, et jamais à titre posthume.",
           "La Green Star est une médaille formée d’une émeraude taillée en étoile plate de 5x5 cm.",
           "Cette distinction reste exceptionnelle, et depuis sa création en 2356 (c127) jusqu’à aujourd’hui (2576 (c333)) seule 134 Green Star ont été remises (dont 88 lors de la guerre Tork)."
+        ]
+      }
+    ]
+  },
+  {
+    id: 'divisions',
+    title: 'Divisions',
+    subtitle: 'Groupe de Starlancers',
+    resume: 'Regroupement de Starlancers à la place des escouades classiques.',
+    sections: [
+      {
+        title: 'Origine',
+        content: [
+          "Selon les règles originelles du Consortium, il n’existe pas de limite maximale au nombre de membre d’une escouade.",
+          "Des limites « naturelles » en matière de cohésion finissent invariablement par limiter ce nombre. En moyenne, on constate que la majorité des escouades sont formées de moins de 10 membres répartis sur 4 à 6 vaisseaux.",
+          "Suite à la grande expansion humaine et à la rencontre avec les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a>, l’augmentation de l’activité des Starlancers a amené certaines escouades à s’agrandir et former des groupes de plus de 20 personnes, mais il était rare qu’elles participent toutes aux mêmes missions.",
+          "C’est donc en 2230 (c9) que le Consortium créa les « Divisions » et limita les escouades à 10 membres."
+        ]
+      },
+      {
+        title: 'Fonctionnement',
+        content: [
+          "Au lieu de former ou rejoindre une escouade, les Starlancer peuvent rejoindre une Division. Contrairement aux escouades qui sont un groupe de Starlancer indépendants, les Divisions ont un système hiérarchique.",
+          "Chaque Division est sous la supervision de 3 de ses membres désignés soit lors de la création, soit par leur prédécesseur.",
+          "La Division fait office de « contact » de référence pour les offres de mission, elles présélectionne les missions selon les besoins/envies des Starlancer et indique le paiement en prenant en compte sa commission.",
+          "En contrepartie de cette commission, la Division s’engage à fournir un point de chute (ou Quartier Général) à tous ses membres ainsi que divers services (prêts d’armes d’occasion, hangar à vaisseau, tarifs avantageux pour les simulateurs, etc.).",
+          "Les Starlancer peuvent donc changer de coéquipiers à volonté parmi les membres de la Division.",
+          "Enfin, tous les membres de la Division utilisent la même I.V. qui profite d’une puissance de calcul supérieur aux I.V. d’escouades habituelles.",
+          "Seule une escouade remplissant certains critères peut demander la création d’une Division :",
+          "- Avoir au moins 6 membres",
+          "- Tous les membres sont de Rang 10",
+          "- L’escouade possède un bâtiment aux normes pouvant accueillir au moins 10 vaisseaux et les entretenir avec leur Starlancer (réfectoire, infirmerie, dortoir, vestiaire, etc.)",
+          "- Une somme d’argent conséquente (qui sera évalué suite à la demande) afin d’avoir un capital de base pour le fonctionnement courant de la base.",
+          "Il est laissé une grande liberté sur le nom de la Division, la règle majeure étant qu’il ne peut pas y avoir des doublons (parmi les Divisions actives ou passées)"
+        ]
+      },
+      {
+        title: 'Quelques Divisions connues dans l\'histoire',
+        content: [
+          "Ici seront évoquées quelques Divisions ayant dépassé les 10 cycles d’existence, beaucoup se fondent, se réforment, changent de nom ou de QG ou disparaissent plus simplement.",
+          "Les informations statistiques sont datées des informations du cycle en cours : 2576 – c333",
+          "La première à voir le jour est la Warhammer Division en 2232 (c11) sur <a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a>. Plutôt que d’être transmise à des successeurs, et conformément à leurs dernières volontés, elle fut dissoute en 2274 (c50) suite à la mort de son dernier fondateur.",
+          "La plus peuplée est la Vanguard Division. S’étant fait une spécialité d’accompagner les jeunes Starlancer par un système de mentorat, elle compte à ce jour 126 Starlancer actifs et des dossiers archivés de plus de 5000 Starlancer remontant à sa fondation en 2268 (c45). Elle enregistre aussi la vitesse de progression dans les Rang la plus rapide de l’histoire du Consortium.",
+          "La plus durable est la Fire Tear Division fondée en 2257 (c34) et toujours en activité.",
+          "La plus performante est la Iron Guardians Division avec un taux de succès de mission de 97,9 %. Fondée en 2433 (c199) sur Loria Orbital (système Hope), elle possède encore aujourd’hui l’un des QG les mieux équipés. Fière de ses résultats, elle est très sélective parmi les postulants.",
+          "La plus décorée est la Dawn Star Division avec 38 « Green Star », la plus haute <a href=\"#\" data-article=\"rewards\" class=\"text-blue-400 hover:text-blue-300\">distinction</a> de la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a>. Fondée en 2348 (c120) sur Kloris Orbital (système Kalo), elle a été particulièrement active durant la guerre Tork.",
+          "La plus riche est la Brave Circle Division fondée en 2357 (c128) sur New Quebec (système Delapiti) qui en 2431 (c197) possédait 12 colonies. C’est en 2436 (c202) que l’Union régulat les possessions coloniales et mettra fin à ce « record », le rendant indépassable avec la législation actuelle."
         ]
       }
     ]
