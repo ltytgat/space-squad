@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
-import ArticleLayout from './shared/ArticleLayout';
 
 type TimelineEvent = {
   year: string;
@@ -11,7 +10,7 @@ type TimelineType = 'human' | 'strani' | 'vada';
 
 const timelineData = {
   human: [
-    {event: "Cette chronologie relate tous les événements majeurs de l’Histoire Humaine depuis le milieu du 21eme siècle."},
+    {event: "Cette chronologie relate tous les événements majeurs de l'Histoire Humaine depuis le milieu du 21eme siècle."},
     { year: "2050", event: "La limite des 2°C de la hausse des températures a pas été dépassé, celle-ci est montée à 4,2°C" },
     { year: "2051", event: "Selon les meilleures estimations, l'humanité sera condamnée d'ici un siècle, le projet ALCOR est lancé pour faire immigrer l'humanité" },
     { year: "2060", event: "Premier module de la station <a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a> mis en orbite de Mars" },
@@ -195,9 +194,7 @@ const timelineData = {
 };
 
 function groupEventsByCentury(events: TimelineEvent[]) {
-  // Filter out the first event (description) before grouping
-  const timelineEvents = events.slice(1);
-  return timelineEvents.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
+  return events.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
     const year = parseInt(event.year);
     let century;
     
@@ -227,61 +224,109 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
   const groupedEvents = groupEventsByCentury(timelineData[activeTimeline]);
   const description = timelineData[activeTimeline][0].event;
 
+  const handleArticleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const linkElement = target.closest('a[data-article]');
+    
+    if (linkElement && linkElement.dataset.article) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const articleId = linkElement.dataset.article;
+      
+      // Map article IDs to their categories
+      const categoryMap: { [key: string]: string } = {
+        // Politics articles
+        'alcor': 'politics',
+        'confederation': 'politics',
+        'confederal-orgs': 'politics',
+        'alcor-tribunal': 'politics',
+        'cerberi': 'politics',
+        'galactic-council': 'politics',
+        'strani-republic': 'politics',
+        'alliance-org': 'politics',
+        // Species articles
+        'stranis': 'species',
+        'trtraris': 'species',
+        'vadas': 'species',
+        'torks': 'species',
+        // Technology articles
+        'shields': 'technology',
+        'gtv': 'technology',
+        // Culture articles
+        'languages': 'culture',
+        'terran-pandemic': 'culture',
+        'viability-index': 'culture',
+        'galactic-calendar': 'culture',
+        'starlancer-training': 'culture'
+      };
+
+      const category = categoryMap[articleId] || 'culture';
+      
+      const event = new CustomEvent('navigateToArticle', {
+        detail: {
+          category,
+          articleId
+        },
+        bubbles: true,
+        cancelable: true
+      });
+      
+      window.dispatchEvent(event);
+    }
+  };
+
   return (
-    <ArticleLayout
-      title="Chronologies"
-      articles={[]}
-      onBack={onBack}
-    >
-      <div className="space-y-6">
-        <div className="flex flex-wrap gap-4 mb-6">
-          {Object.entries(timelineTitles).map(([key, title]) => (
-            <button
-              key={key}
-              onClick={() => setActiveTimeline(key as TimelineType)}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                activeTimeline === key
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-700 hover:bg-slate-600'
-              }`}
-            >
-              <Clock className="w-4 h-4" />
-              {title}
-            </button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-4 mb-6">
+        {Object.entries(timelineTitles).map(([key, title]) => (
+          <button
+            key={key}
+            onClick={() => setActiveTimeline(key as TimelineType)}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+              activeTimeline === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 hover:bg-slate-600'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            {title}
+          </button>
+        ))}
+      </div>
+
+      {/* Description */}
+      <div 
+        className="bg-slate-700/50 p-6 rounded-lg mb-8"
+        onClick={handleArticleClick}
+        dangerouslySetInnerHTML={{ __html: description }}
+      />
+
+      <div className="relative">
+        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-600" />
+        <div className="space-y-12 relative">
+          {Object.entries(groupedEvents).map(([century, events]) => (
+            <div key={century} className="space-y-8">
+              <h3 className="text-2xl font-bold text-blue-400 ml-12 mb-8">
+                {century}
+              </h3>
+              {events.map((event, index) => (
+                <div key={index} className="ml-12 relative">
+                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-800" />
+                  <div className="bg-slate-700 p-4 rounded-lg">
+                    <div className="text-blue-400 font-bold mb-1">{event.year}</div>
+                    <div 
+                      className="text-slate-200"
+                      onClick={handleArticleClick}
+                      dangerouslySetInnerHTML={{ __html: event.event }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           ))}
         </div>
-
-        {/* Description */}
-        <div 
-          className="bg-slate-700/50 p-6 rounded-lg mb-8"
-          dangerouslySetInnerHTML={{ __html: description }}
-        />
-
-        <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-600" />
-          <div className="space-y-12 relative">
-            {Object.entries(groupedEvents).map(([century, events]) => (
-              <div key={century} className="space-y-8">
-                <h3 className="text-2xl font-bold text-blue-400 ml-12 mb-8">
-                  {century}
-                </h3>
-                {events.map((event, index) => (
-                  <div key={index} className="ml-12 relative">
-                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-800" />
-                    <div className="bg-slate-700 p-4 rounded-lg">
-                      <div className="text-blue-400 font-bold mb-1">{event.year}</div>
-                      <div 
-                        className="text-slate-200"
-                        dangerouslySetInnerHTML={{ __html: event.event }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
-    </ArticleLayout>
+    </div>
   );
 }
