@@ -66,7 +66,8 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         'languages': 'culture',
         'terran-pandemic': 'culture',
         'viability-index': 'culture',
-        'galactic-calendar': 'culture'
+        'galactic-calendar': 'culture',
+        'starlancer-training': 'culture'
       };
 
       const category = categoryMap[articleId] || 'culture';

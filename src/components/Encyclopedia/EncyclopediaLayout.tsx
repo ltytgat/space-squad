@@ -51,16 +51,21 @@ export default function EncyclopediaLayout() {
   useEffect(() => {
     const handleNavigateToArticle = (event: CustomEvent<{ category: string; articleId: string }>) => {
       const { category, articleId } = event.detail;
+      
       // First set the category
       setActiveCategory(category);
+      
       // Then set the article ID after a small delay to ensure the category component is mounted
-      setTimeout(() => {
+      // and its articles are available
+      requestAnimationFrame(() => {
         setSelectedArticleId(articleId);
-      }, 0);
+      });
     };
 
+    // Add event listener
     window.addEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
 
+    // Cleanup
     return () => {
       window.removeEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
     };
@@ -75,7 +80,12 @@ export default function EncyclopediaLayout() {
     const category = categories.find(cat => cat.id === activeCategory);
     if (category) {
       const CategoryComponent = category.component;
-      return <CategoryComponent onBack={() => setActiveCategory(category.id)} selectedArticleId={selectedArticleId} />;
+      return (
+        <CategoryComponent 
+          onBack={() => handleCategoryChange(category.id)} 
+          selectedArticleId={selectedArticleId} 
+        />
+      );
     }
     return (
       <div className="prose prose-invert max-w-none">
