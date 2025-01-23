@@ -50,8 +50,13 @@ export default function EncyclopediaLayout() {
 
   useEffect(() => {
     const handleNavigateToArticle = (event: CustomEvent<{ category: string; articleId: string }>) => {
-      setActiveCategory(event.detail.category);
-      setSelectedArticleId(event.detail.articleId);
+      const { category, articleId } = event.detail;
+      // First set the category
+      setActiveCategory(category);
+      // Then set the article ID after a small delay to ensure the category component is mounted
+      setTimeout(() => {
+        setSelectedArticleId(articleId);
+      }, 0);
     };
 
     window.addEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
@@ -60,6 +65,11 @@ export default function EncyclopediaLayout() {
       window.removeEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
     };
   }, []);
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedArticleId(null); // Reset selected article
+    setActiveCategory(categoryId);
+  };
 
   const renderContent = () => {
     const category = categories.find(cat => cat.id === activeCategory);
@@ -93,10 +103,7 @@ export default function EncyclopediaLayout() {
                         ? 'bg-blue-600 text-white' 
                         : 'hover:bg-slate-700'
                     }`}
-                    onClick={() => {
-                      setActiveCategory(category.id);
-                      setSelectedArticleId(null);
-                    }}
+                    onClick={() => handleCategoryChange(category.id)}
                   >
                     <Icon className="w-5 h-5" />
                     <div>

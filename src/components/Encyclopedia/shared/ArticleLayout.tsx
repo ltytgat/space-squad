@@ -35,10 +35,13 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
 
   const handleArticleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === 'A' && target.dataset.article) {
+    const linkElement = target.closest('a[data-article]');
+    
+    if (linkElement && linkElement.dataset.article) {
       e.preventDefault();
-      // Determine the category based on the article ID
-      let category = 'culture'; // default category
+      e.stopPropagation();
+      
+      const articleId = linkElement.dataset.article;
       
       // Map article IDs to their categories
       const categoryMap: { [key: string]: string } = {
@@ -66,12 +69,18 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         'galactic-calendar': 'culture'
       };
 
+      const category = categoryMap[articleId] || 'culture';
+      
+      // Dispatch a custom event for navigation
       const event = new CustomEvent('navigateToArticle', {
         detail: {
-          category: categoryMap[target.dataset.article] || category,
-          articleId: target.dataset.article
-        }
+          category,
+          articleId
+        },
+        bubbles: true,
+        cancelable: true
       });
+      
       window.dispatchEvent(event);
     }
   };
