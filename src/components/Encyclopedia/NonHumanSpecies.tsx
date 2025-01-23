@@ -64,7 +64,7 @@ const articles = [
     id: 'trtraris',
     title: 'Tr\'Traris',
     subtitle: 'Intelligence artificielle autonome',
-    resume: 'Les Tr\'Traris sont une forme de vie synthétique créée par les Stranis qui ont développé leur propre conscience et société.',
+    resume: 'Les Tr\'Traris sont une forme de vie synthétique créée par les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> qui ont développé leur propre conscience et société.',
     sections: [
       {
         title: 'Origine',
