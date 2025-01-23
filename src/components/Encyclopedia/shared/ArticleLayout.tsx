@@ -72,17 +72,23 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
 
       const category = categoryMap[articleId] || 'culture';
       
-      // Dispatch a custom event for navigation
-      const event = new CustomEvent('navigateToArticle', {
-        detail: {
-          category,
-          articleId
-        },
-        bubbles: true,
-        cancelable: true
-      });
-      
-      window.dispatchEvent(event);
+      // Only set local state if the article is in the current category
+      const article = articles.find(a => a.id === articleId);
+      if (article) {
+        setSelectedArticle(article);
+      } else {
+        // If article not found in current category, dispatch navigation event
+        const event = new CustomEvent('navigateToArticle', {
+          detail: {
+            category,
+            articleId
+          },
+          bubbles: true,
+          cancelable: true
+        });
+        
+        window.dispatchEvent(event);
+      }
     }
   };
 
