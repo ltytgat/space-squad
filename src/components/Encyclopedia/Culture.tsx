@@ -162,7 +162,48 @@ const articles = [
     title: 'Langues',
     subtitle: 'Communication interstellaire',
     resume: 'Les différentes langues utilisées dans la galaxie.',
-    //sections: []
+    sections: [
+      {
+        title: "Langue humaine",
+        content: [
+          "A l’origine, la Terre comportait de multiples nations et encore plus de langues, suite à l’exil de l’humanité sur Mars et la fondation d’<a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a> et New Gaïa, il a été décidé en 2085 (c-126) suite à l’unification des gouvernements d’instaurer une langue commune à tous.",
+          "Parmi les candidats potentiels, l’Anglais était la langue que la majorité des habitants parlaient en seconde langue.",
+          "A partir de cette Anglais, des linguistes ont créé l’Alcorien, qui est une version simplifiée (en grande partie sur l’orthographe et la phonétique) de l’Anglais.",
+          "En 2090 (c-121), l’Alcorien est instauré comme langue unique à l’école sur Alcor et New Gaïa.",
+          "Depuis, elle est restée la langue de l’humanité, et quand bien même elle a évolué au fil des siècles, elle reste l’une des pierres fondatrices de l’union des Hommes pour la conquête spatiale."
+        ]
+      },
+      {
+        title: "Langue Strani",
+        content: [
+          "La langue officielle des <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> pour les échanges diplomatiques est le Trane, il s’agit de la langue instaurée à la fondation de la <a href=\"#\" data-article=\"strani-republic\" class=\"text-blue-400 hover:text-blue-300\">république Strani</a> en 2124 (c-88). Il existe des dialectes propres à certaines planètes ou régions de la république, mais tout citoyen Strani se doit de parler le Trane.",
+          "Cette langue est semblable à une suite d’onomatopées et de sifflements pour l’oreille humaine, il est donc quasi impossible pour un humain de parler le Trane.",
+          "Lors du premier contact, la barrière de la langue a été franchie grâce à des interprètes robotiques et au travail des linguistes Humains sur des extraits d’écritures Stranis.",
+          "De leur côté, les Stranis sont capables de comprendre l’Alcorien, même s’ils ont quelques difficultés avec les ‘s’ puisque le Trane possède tout un répertoire de sons sifflés. Ils ne peuvent en revanche pas le parler sans un énorme effort et seront limités à certaines sonorités."
+        ]
+      },
+      {
+        title: "Les Vadas",
+        content: [
+          "Les Vadas n’ayant pas de gouvernement unifié, il en est de même pour leur langue.",
+          "Chaque clan Vada parle sa propre langue, mais elles ont toutes des points communs très marqué.",
+          "Sur le plan diplomatique, les Vadas parlent la langue du clan Groluma qui les représente au Conseil Galactique.",
+          "Les Vadas sont capables de comprendre l’Alcorien et le Trane mais ne peuvent parler que l’Alcorien.",
+          "Les Humains peuvent eux parler le Vada alors que les Stranis en sont totalement incapables."
+        ]
+      },
+      {
+        title: "Micro-interprète",
+        content: [
+          "Avant 2225 (c5), tous les échanges entre Humains et Stranis nécessitaient des interprètes robotiques. Mais depuis la technologie des implants crâniens, et suite au travail de l’Union en matière de traduction instantanée, les implants sont équipés d’un micro-interprète qui va traduire toute les langues connues vers la langue de son hôte.",
+          "La traduction est de l’ordre de la microseconde, rendant possible la communication entre tous ceux équipés d’implant.",
+          "Cette avancé à permis d’intégrer avec une grande facilité les membres des autres races dans le Consortium.",
+          "Et depuis 2240 (c19), l’interprète fait également office de traducteur, rendant la lecture de textes alien possible.",
+          "Aujourd’hui, tous les membres du Consortium sont capables de communiquer entre eux que ce soit par écrit ou par oral.",
+          "Les civils non équipés d’implant doivent eux utiliser un interprète robotique (chaque spatioport en possède au moins un)."
+        ]
+      }
+    ]
   },
   {
     id: 'viability-index',
@@ -323,6 +364,63 @@ const articles = [
           "La plus performante est la Iron Guardians Division avec un taux de succès de mission de 97,9 %. Fondée en 2433 (c199) sur Loria Orbital (système Hope), elle possède encore aujourd’hui l’un des QG les mieux équipés. Fière de ses résultats, elle est très sélective parmi les postulants.",
           "La plus décorée est la Dawn Star Division avec 38 « Green Star », la plus haute <a href=\"#\" data-article=\"rewards\" class=\"text-blue-400 hover:text-blue-300\">distinction</a> de la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a>. Fondée en 2348 (c120) sur Kloris Orbital (système Kalo), elle a été particulièrement active durant la guerre Tork.",
           "La plus riche est la Brave Circle Division fondée en 2357 (c128) sur New Quebec (système Delapiti) qui en 2431 (c197) possédait 12 colonies. C’est en 2436 (c202) que l’Union régulat les possessions coloniales et mettra fin à ce « record », le rendant indépassable avec la législation actuelle."
+        ]
+      }
+    ]
+  },
+  {
+    id: 'names',
+    title: 'Noms',
+    subtitle: "Les noms et leurs conventions",
+    resume: "Conventions des noms à travers l'espace connu",
+    sections: [
+      {
+        title: "Noms humains",
+        content: [
+          "Les noms des citoyens de la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a> sont similaires à ceux utilisés dans les pays occidentaux du 21eme siècle, à savoir un prénom (suivi parfois d’un second prénom) et d’un nom de famille.",
+          "Néanmoins, l’émancipation des Starlancer étant très forte dans leur formation, la plupart préfèrent utiliser un nom d’usage qu’ils acquièrent lors de leurs études ou durant leur vie professionnelle.",
+          ",Il est peu fréquent mais possible que ce nom change au cours de la vie d’un Starlancer.",
+          "Ainsi, sur le plan juridique, seul le nom de famille et le prénom sont pris en compte, mais dans la vie quotidienne, le nom d’usage remplace le nom de famille.",
+          "Quelques exemples de noms de Starlancer de la Confédération :",
+          "Noms masculins | Noms Féminins",
+          "Raymy ‘Gunner’ Barnes | Rene ‘Friction’ Kelly",
+          "Gory ‘Slice’ Kera | Marthia ‘Shiny’ Richy",
+          "Terey ‘Nova’ Pete | Joyce ‘ Aura’ Rodray",
+          "Alten ‘Ant’ Lora | Lica ‘Coil’ Foste",
+          "Emymo ‘Grim’ Garce | Mara ‘Virus’ Jenking",
+          "Roby ‘Cross’ Coley | Jane ‘Chain’ Robell",
+          "Wardy ‘Bells’ Belley | Mara ‘Bain’ Scampbenn",
+          "Ruce ‘Lock’ Jackson | Diana ‘Dare’ Miry",
+          "Stery ‘Catch’ Binson | Mildra ‘Frost’ Milly",
+          "Lane ‘Hide’ Scotte | Eren ‘Barrage’ Mason"
+        ]
+      },
+      {
+        title: "Noms Stranis",
+        content: [
+          "Les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> ont deux noms, le premier qui fait office de prénom ne peut pas s’écrire avec notre alphabet, il s’entend comme un sifflement avec une certaine mélodie, mais quasi impossible à reproduire par un corps humain.",
+          "Par conséquent, les Stranis utilisent leur second nom, qui est un nom de portée (tous les individus d’une même portée portent ce même nom) qui lui se transcrit sous la forme de deux à trois syllabes.",
+          "Exemples de noms (de portée) Stranis :",
+          "Sr’Klos Mer Gs’Pac",
+          "N’Bik Dj’Mra",
+          "Ar Kl’ Lf’Spyk",
+          "Cr’Ser Nk’ Ni Kptang"
+        ]
+      },
+      {
+        title: "Noms Vadas",
+        content: [
+          "Les <a href=\"#\" data-article=\"vadas\" class=\"text-blue-400 hover:text-blue-300\">Vadas</a> possèdent un nom composé contenant un préfixe pour leur sexe, suivie de leur prénom, puis le nom de leur clan, il est d’usage de prononcer tout le nom lorsque l’on s’adresse à un Vada.",
+          "Oublier ou omettre l’un de ces éléments est perçu comme une injure. Du moins dans le contexte d’une discussion normale, en situation de combat par exemple, l’usage de diminutif n’est pas un souci du moment que l’individu est correctement identifié par ce diminutif.",
+          "Mais avec un certain degré d’intimité avec un Vada, il peut tolérer une appellation plus courte.",
+          "Dans le cas où un Vada n’a plus de clan, c’est le suffixe ‘Klotre’ qui est utilisé",
+          "Exemples de noms Vadas :",
+          "Noms masculins | Noms féminins",
+          "Ker-Glarud-Kroma | Var-Jirkol-Dlit",
+          "Ker-Bluros-Kroma | Var-Dreko-Vlak",
+          "Ker-Artis-Dlit | Var-Lanik-Qriik",
+          "Ker-Sidro-Groluma | Var-Artis-Groluma",
+          "Ker-Ptakilm-Vlak | Var-Pirtan-Mlani"
         ]
       }
     ]

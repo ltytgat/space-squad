@@ -62,20 +62,50 @@ const articles = [
     id: 'gtv',
     title: 'Générateur de Trou de Ver (GTV)',
     subtitle: 'Voyage spatial',
-    resume: 'Le GTV permet le voyage rapide entre des points éloignés de l\'espace, révolutionnant l\'exploration et le commerce galactique.',
+    resume: 'Le GTV permet le voyage rapide entre des points éloignés de l\'espace, révolutionnant l\'exploration galactique.',
     sections: [
       {
-        title: 'Principe',
+        title: 'Histoire',
         content: [
-          'Le GTV crée un passage artificiel à travers l\'espace-temps, permettant des voyages quasi-instantanés sur de grandes distances.',
-          'La technologie repose sur la manipulation précise de champs gravitationnels et quantiques.'
+          "Alors que le projet <a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a> est toujours en cours et que New Gaïa commence à peine à s’émanciper, il est évident que l’humanité reste prisonnière du voisinage de la Terre. « Si nous voulons aller plus loin, il est indispensable de repenser notre technologie de voyage spatial » - Theo Hawkins (Fondateur de l’UCRS)",
+          "En 2070 (c-140) est lancé le projet de l’Union des Centres de Recherches Spatiales (UCRS), consistant en deux centres de recherches sur Phobos et Déimos, les lunes de Mars regroupant tous les chercheurs spécialisés dans les technologies spatiales sur Terre.",
+          "L’UCRS entre en activité en 2078 (c-132) peu après le début de pandémie de Flutterite sur Terre. Son premier objectif : révolutionner le concept de navette spatiale.",
+          "C’est en 2094 (c-117) qu’est créé le premier Générateur de Trou de Ver (GTV) fonctionnel. Un an plus tard, le premier test sans incident permet un trajet Mars-Neptune en moins de 5 heures (10 heures aller-retour).",
+          "Le premier trajet habité se fera en 2099 (c-112) par la pilote Elizabeth Patel.",
+          "Depuis ce jour, le GTV est devenu le pilier de l’exploration extra-stellaire humaine, sans lui, l’humanité serait toujours dans le système Hélios."
         ]
       },
       {
-        title: 'Impact',
+        title: 'Fonctionnement',
         content: [
-          'L\'invention du GTV a transformé la société galactique, rendant possible l\'établissement d\'une civilisation véritablement interstellaire.',
-          'Le Consortium des pilotes régule strictement l\'utilisation des GTV pour garantir la sécurité des voyages.'
+          "Le GTV utilise plusieurs propriétés des particules en physique quantique, la plus importante étant la réaction simultanée de particules liées.",
+          "Il est possible de liées deux particules élémentaires par un processus complexe et très coûteux (en énergie) pour créer des singularités. Une fois liées, ces particules réagiront simultanément dans les mêmes proportions à un stimulus extérieur appliqué à seulement l’une d’entre elles. Et cette réaction sera simultanée qu’importe la distance physique qui les sépare.",
+          "À partir de là, il devient possible d’établir une « connexion » longue distance entre deux points de l’espace.",
+          "Or, en utilisant les bons rayonnements, il est possible d’ouvrir un trou de ver. Si ce rayonnement est ouvert sur l’une des particules jumelles, l’autre ouverture du trou de ver serra sur l’autre. Nous venons de créer un trou de ver de Lorentz (à masse négative). Il restera ouvert tant qu’il est alimenté en énergie."
+        ]
+      },
+      {
+        title: 'Usage',
+        content: [
+          "Dans la pratique, il y a deux méthodes : les trajets interstellaires ou interplanétaire.",
+          "Entre deux systèmes, les singularités sont stockées dans les <a href=\"#\" data-article=\"communications\" class=\"text-blue-400 hover:text-blue-300\">balises de communication</a> . Lorsqu’un vaisseau demande à voyager vers un autre système, la balise regarde si la destination est disponible, et si oui, active sa singularité.",
+          "Celle ce trouvant dans le système de destination réagit, et la balise l'éjecte pour créer le point de chute (en dehors de sa structure et orbite proche).",
+          "S’ensuit la création du trou de ver qui reste alimenté des deux côtés par les balises.",
+          "Ces trajets durent en général quelques minutes pour les systèmes voisins.",
+          "Pour les trajets interplanétaires, ce sont les vaisseaux qui possèdent les deux singularités, il en projette une dans la direction voulue à la vitesse de la lumière, une fois que la particule projetée est (selon estimation) à destination, on active alors celle restant pour créer le trou de ver. Un émetteur de rayonnement monté sur drone est laissé à l’entrée pour garantir l’alimentation durant la traversée, une fois sortie, le vaisseau alimente à son tour le trou de ver pour permettre à l'émetteur sur drone de traverser.",
+          "Ces trajets ont des durées variables, la traversée du trou de ver en lui-même ne dure que quelques minutes, mais le temps de préparation dépend de la distance qui sépare le vaisseau de sa destination. Ainsi, le trajet Mars-Neptune prend 4 heures et quelques minutes pour envoyer la singularité et activer le trou de ver, mais prend moins de 5 minutes à faire."
+        ]
+      },
+      {
+        title: 'Risques et incidents',
+        content: [
+          "Le principal risque réside dans la sous-alimentation du trou de ver. S’il n’est plus alimenté, il s’effondre à vitesse exponentielle. L’effet est similaire à une paille dont on pincerait le centre en remontant vers les deux extrémités. Tout ce qui se trouve alors dans le trou ressort d’un côté ou de l’autre sous une forme de bouilli de particule, sachant que plus l’objet est proche du milieu lors de la rupture, plus l’éjection sera violente et rapide.",
+          "Il est donc théoriquement possible de se servir de trou de ver comme d’un canon spatial, mais cela n’a jamais été expérimenté, principalement à cause de la vitesse de rupture du trou, il est non seulement difficile de prévoir avec exactitude quand il va se refermer totalement, et il reste impossible d’orienter les extrémités vers une cible potentielle.",
+          "Suite à un incident ayant entraîné la mort d’un équipage d’un cargo en 2245 (c23) à cause d’un défaut d’alimentation d’une balise, il a été décidé d’alimenter les trous de ver extra-stellaire des deux côtés.",
+          "La principale restriction de l’utilisation des trous de ver réside dans l’environnement de déploiement. Il est nécessaire que le portail s’ouvre et se ferme sur une zone de vide spatiale.",
+          "En cas d’ouverture sur une zone atmosphérique, l’air ambiant pourrait être aspiré par le trou, trois cas sont possibles alors : soit le trou agit comme un sas et empêche l’air d’y entrer, soit l’air y est aspiré et ressort de l’autre coté, soit l’air est prisonnier du trou le temps que ce dernier reste ouvert (formant un canon à air lors de la fermeture).",
+          "Tous ces cas de figure restent des théories et dépendent de trop de facteurs pour déterminer quel cas serait le plus probable selon le trou ouvert.",
+          "Quoi qu’il en soit, les mesures de sécurité installée sur les vaisseaux sont censées éviter ses scénarios."
         ]
       }
     ]

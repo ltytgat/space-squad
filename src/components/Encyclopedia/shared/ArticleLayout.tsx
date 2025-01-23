@@ -75,6 +75,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         'starlancer-training': 'culture',
         'rewards': 'culture',
         'divisions': 'culture',
+        'names': 'culture',
       };
 
       const category = categoryMap[articleId] || 'culture';
