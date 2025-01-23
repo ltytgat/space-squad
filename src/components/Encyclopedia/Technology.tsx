@@ -79,8 +79,57 @@ const articles = [
         ]
       }
     ]
+  },
+  {
+    id: 'communications',
+    title: 'Communications',
+    subtitle: 'Balises & Voyage',
+    resume: 'Les balises de communication permettent les échanges entre les différents systèmes stellaires.',
+    sections: [
+      {
+        title: 'Histoire',
+        content: [
+          "En 2240 (c19), le projet Hope I est lancé, il s’agit là de l’établissement de la première colonie en dehors du système Hélios.",
+          "Lors de son élaboration, un problème de taille est mis sur la table, les moyens de communication.",
+          "En effet, pour communiquer entre deux systèmes, l’usage de signaux « classiques », comme la lumière, n’est pas possible.",
+          "Il devient donc nécessaire d’utiliser des vaisseaux pour transférer les informations d’un système à l’autre.",
+          "Les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> utilisaient à cette époque les convois marchands pour le transfert de données, ils étaient suffisamment nombreux pour permettre des échanges relativement efficaces.",
+          "En 2244 (c22), le premier prototype de balise de communication est mis au point.",
+          "Les phases d’essais sont très encourageantes.",
+          "En 2310 (c84), les Stranis adoptent le système des balises et raccordent leur réseau à celui de la Confédération."
+        ]
+      },
+      {
+        title: 'Les balises',
+        content: [
+          "Chaque système comportant une construction possède une balise de communication.",
+          "Elle a pour fonction de réguler les trafics des vaisseaux et le transfert des informations vers les systèmes voisins.",
+          "Chaque balise de chaque système communique avec ses voisines, chaque secteur possède une balise « Maître » qui centralise certaines informations des systèmes sous son contrôle.",
+          "Les balises Maître font remonter ces données aux balises serveurs qui supervisent plusieurs secteurs, et si besoin, renvoi les informations vers les serveurs centraux utiles (<a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a>, Conseil Galactique, etc.).",
+          "Ce système possède une certaine latence, latence d’autant plus importante que l’information a besoin de remonter haut dans la hiérarchie.",
+          "C’est l’Union qui a la charge de la maintenance et des mises à jour des balises.",
+          "Et l’Alliance qui s’occupe de la protection et de la surveillance."
+        ]
+      },
+      {
+        title: 'Fonctionnement',
+        content: [
+          "Les balises ont une forme ellipsoïde, elles contiennent 3 parties, la partie supérieure sert à la réception, l’inférieur à l’envoi, et la centrale au stockage.",
+          "Qu’elles soient simples, Maître, ou serveurs, seule la taille les différencie.",
+          "La zone d’envoi comporte une certaine quantité de drones autonomes.",
+          "Ces drones (de la taille d’un Homme), sont équipés d’un espace de stockage de données.",
+          "La balise envoie ces drones aux systèmes voisins (un par système) afin de rependre les informations.",
+          "De même, elle reçoit les drones des autres systèmes qui arrive dans la zone supérieure. Ils sont récupérés, la balise fait le plein de carburant, et récupère les informations.",
+          "Les drones passent ensuite dans la section inférieure pour être réutilisés.",
+          "Les données sont transmises aux zones locales par ondes radios.",
+          "Afin d’éviter un usage trop important du GTV des balises, les drones sont envoyés à intervalle de temps régulier (sauf en cas d’urgence).",
+          "La partie centrale traite les données pour les communiquer aux bons systèmes.",
+          "Elle s’occupe aussi de la régulation du trafic, lorsqu’un vaisseau (ou drone) est en approche du système, la balise va lui communiquer les coordonnées de sortie de l’hyperespace de sorte à ne pas gêner le trafic des drones.",
+          "Enfin, sur les deux sommets de la balise se trouvent deux canons automatiques qui servent à détruire les débris proches, et à dissuader (en plus des forces locales de l’Alliance) ceux qui voudraient s’en prendre aux drones."
+        ]
+      }
+    ]
   }
-  // ... autres articles avec leurs sections détaillées
 ];
 
 export default function Technology({ onBack, selectedArticleId }: { onBack: () => void, selectedArticleId?: string | null }) {

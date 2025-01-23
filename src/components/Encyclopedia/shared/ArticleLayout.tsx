@@ -66,12 +66,14 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         // Technology articles
         'shields': 'technology',
         'gtv': 'technology',
+        'communications': 'technology',
         // Culture articles
         'languages': 'culture',
         'terran-pandemic': 'culture',
         'viability-index': 'culture',
         'galactic-calendar': 'culture',
-        'starlancer-training': 'culture'
+        'starlancer-training': 'culture',
+        'rewards': 'culture',
       };
 
       const category = categoryMap[articleId] || 'culture';
