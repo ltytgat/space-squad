@@ -83,12 +83,13 @@ const articles = [
   // ... autres articles avec leurs sections détaillées
 ];
 
-export default function Technology({ onBack }: { onBack: () => void }) {
+export default function Technology({ onBack, selectedArticleId }: { onBack: () => void, selectedArticleId?: string | null }) {
   return (
     <ArticleLayout 
       title="Technologie"
       articles={articles}
       onBack={onBack}
+      selectedArticleId={selectedArticleId}
     />
   );
 }

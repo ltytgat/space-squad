@@ -114,12 +114,13 @@ const articles = [
   }
 ];
 
-export default function Culture({ onBack }: { onBack: () => void }) {
+export default function Culture({ onBack, selectedArticleId }: { onBack: () => void, selectedArticleId?: string | null }) {
   return (
     <ArticleLayout 
       title="Culture"
       articles={articles}
       onBack={onBack}
+      selectedArticleId={selectedArticleId}
     />
   );
 }
