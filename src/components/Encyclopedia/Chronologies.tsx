@@ -194,7 +194,10 @@ const timelineData = {
 };
 
 function groupEventsByCentury(events: TimelineEvent[]) {
-  return events.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
+  // Skip the first event (description) and only process actual timeline events
+  const timelineEvents = events.slice(1);
+  
+  return timelineEvents.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
     const year = parseInt(event.year);
     let century;
     

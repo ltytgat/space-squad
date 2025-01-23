@@ -52,27 +52,19 @@ export default function EncyclopediaLayout() {
     const handleNavigateToArticle = (event: CustomEvent<{ category: string; articleId: string }>) => {
       const { category, articleId } = event.detail;
       
-      // First set the category
+      // Set both category and article ID in one update to ensure synchronization
       setActiveCategory(category);
-      
-      // Then set the article ID after a small delay to ensure the category component is mounted
-      // and its articles are available
-      requestAnimationFrame(() => {
-        setSelectedArticleId(articleId);
-      });
+      setSelectedArticleId(articleId);
     };
 
-    // Add event listener
     window.addEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
-
-    // Cleanup
     return () => {
       window.removeEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
     };
   }, []);
 
   const handleCategoryChange = (categoryId: string) => {
-    setSelectedArticleId(null); // Reset selected article
+    setSelectedArticleId(null); // Reset selected article when changing category manually
     setActiveCategory(categoryId);
   };
 
