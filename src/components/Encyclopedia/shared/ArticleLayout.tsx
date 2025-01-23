@@ -54,7 +54,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         // Species articles
         'stranis': 'species',
         'trtraris': 'species',
-        'vada': 'species',
+        'vadas': 'species',
         'torks': 'species',
         // Technology articles
         'shields': 'technology',
