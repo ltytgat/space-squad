@@ -117,7 +117,7 @@ const articles = [
     ]
   },
   {
-    id: 'vada',
+    id: 'vadas',
     title: 'Vada',
     subtitle: 'Nouvelle civilisation spatiale',
     resume: 'Les Vada sont une espèce récemment découverte originaire de Grion, caractérisée par leur rapide adaptation aux technologies spatiales.',
