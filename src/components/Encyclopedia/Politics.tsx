@@ -141,12 +141,13 @@ const articles = [
   // ... autres articles avec leurs sections détaillées
 ];
 
-export default function Politics({ onBack }: { onBack: () => void }) {
+export default function Politics({ onBack, selectedArticleId }: { onBack: () => void, selectedArticleId?: string | null }) {
   return (
     <ArticleLayout 
       title="Politique"
       articles={articles}
       onBack={onBack}
+      selectedArticleId={selectedArticleId}
     />
   );
 }

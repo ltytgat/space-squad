@@ -6,41 +6,46 @@ import Politics from './Politics';
 import Technology from './Technology';
 import Culture from './Culture';
 
+interface CategoryComponentProps {
+  onBack: () => void;
+  selectedArticleId?: string | null;
+}
+
 const categories = [
   { 
     id: 'chronologies', 
     icon: History, 
     label: 'Chronologies',
     description: 'Histoire des civilisations jusqu\'en 2576',
-    component: Chronologies
+    component: Chronologies as React.ComponentType<CategoryComponentProps>
   },
   { 
     id: 'species', 
     icon: Users, 
     label: 'Espèces non-humaines',
     description: 'Les Stranis, Tr\'Traris, Vada et Torks',
-    component: NonHumanSpecies
+    component: NonHumanSpecies as React.ComponentType<CategoryComponentProps>
   },
   { 
     id: 'politics', 
     icon: Building2, 
     label: 'Politique',
     description: 'Organisations et structures politiques',
-    component: Politics
+    component: Politics as React.ComponentType<CategoryComponentProps>
   },
   { 
     id: 'technology', 
     icon: Rocket, 
     label: 'Technologie',
     description: 'Avancées et systèmes technologiques',
-    component: Technology
+    component: Technology as React.ComponentType<CategoryComponentProps>
   },
   { 
     id: 'culture', 
     icon: BookOpen, 
     label: 'Culture',
     description: 'Formation, langues et société',
-    component: Culture
+    component: Culture as React.ComponentType<CategoryComponentProps>
   }
 ];
 
