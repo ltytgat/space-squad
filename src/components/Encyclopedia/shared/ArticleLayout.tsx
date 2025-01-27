@@ -58,6 +58,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         'galactic-council': 'politics',
         'strani-republic': 'politics',
         'alliance-org': 'politics',
+        'colony-politics': 'politics',
         // Species articles
         'stranis': 'species',
         'trtraris': 'species',

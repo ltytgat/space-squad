@@ -126,7 +126,97 @@ const articles = [
     title: 'Organisations confédérales',
     subtitle: 'Structures administratives',
     resume: 'Les différentes organisations qui composent la Confédération.',
-    //sections: []
+    sections: [
+      {
+        title: 'Définition',
+        content: [
+          "Une Organisation est une entité appartenant à la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a> et régissant un ou plusieurs domaines gouvernementaux au service des citoyens.",
+          "Les Organisations sont auto-financées et autonomes dans leur fonctionnement. Elles n’ont pas de supérieurs en dehors de la loi de la Confédération (CCA), et de la constitution. Elles restent néanmoins dépendantes les unes des autres et leurs actions sont sous la surveillance de l'assemblée."
+        ]
+      },
+      {
+        title: 'Histoire',
+        content: [
+          "La première Organisation fut le Consortium créé en 2097 (c-114) alors même que la Confédération n’existait pas encore.",
+          "À cette époque, le Consortium était une institution de formation des pilotes.",
+          "Suite à la création de l’UCH puis de la Confédération, le Consortium devient une Organisation chargée de l’éducation et de la formation des citoyens.",
+          "En 2215 (c-4), suite à la rencontre avec les Stranis, trois Organisations furent créées, l’Alliance, la Guilde Marchande et l’Union Planétaire, respectivement chargés de la sécurité, du commerce et de l’exploration.",
+          "Enfin, en 2250 (c28), le Tribunal d’Alcor est créé pour s’occuper de la justice."
+        ]
+      },
+      {
+        title: 'Consortium',
+        content: [
+          "Le Consortium est la plus ancienne des Organisations, elle s’occupe de l’éducation jusqu’à la majorité, puis de l’accompagnement durant le service obligatoire de 2 <a href=\"#\" data-article=\"galactic-calendar\" class=\"text-blue-400 hover:text-blue-300\">cycles</a>, et enfin de la <a href=\"#\" data-article=\"starlancer-training\" class=\"text-blue-400 hover:text-blue-300\">formation</a> (de 3 cycles) des Starlancers.",
+          "Tout individu souhaitant piloter un vaisseau (en dehors des petits véhicules non prévus pour les voyages interstellaires) doit être enregistré au Consortium et avoir suivi la formation ou être capable de passer tous les examens pour les postulants externes.",
+          "Un Starlancer du Consortium reçoit la possibilité de travailler à son compte pour les Organisations, avec l’assistance et le soutien du Consortium.",
+          "La formation fournit un entraînement au pilotage (des chasseurs aux frégates) et à leur entretien, à l’usage des armes montées, au combat terrestre (maniement des armes thermiques et cinétiques, déplacement en terrain hostile, usage des armes de combat rapproché), aux négociations et à la diplomatie, et aux techniques de premiers soins.",
+          "Tout ceci permet aux Starlancers de pourvoir à la plupart des situations auxquelles ils pourront être exposés au cours de leur carrière.",
+          "La devise du Consortium est : « <b>Révélez votre potentiel</b> »"
+        ]
+      },
+      {
+        title: 'Alliance',
+        content: [
+          "Fondée en 2215 (c-4) avec la Guilde et l’Union, l’Alliance représente la force armée de la Confédération.",
+          "À l’origine uniquement humaine, le premier Strani à y entrer le fit en 2240 (c19).",
+          "En pleine guerre contre les Torks, les forces armées extérieures Stranis fusionnent avec l’Alliance en 2356 (c127). Depuis l’Alliance est une organisation inter-espèce mais reste sous la juridiction de la Confédération.",
+          "Le fonctionnement interne de l’Alliance reste donc en théorie régie par la loi et la constitution confédérale, mais cette dernière étant très générale, l’Alliance reste très indépendante de son évolution.",
+          "En temps de guerre, c’est elle qui envoie les Starlancers au combat et choisi les stratégies à appliquer : quels systèmes défendre, quelles planètes attaquer, où seront effectués les ravitaillements, etc.",
+          "Dans ces circonstances, l’Alliance peut réquisitionner tout vaisseau de la Confédération pour l’effort de guerre, peu importe son affiliation.",
+          "Pour plus de détails: -> <a href=\"#\" data-article=\"alliance-org\" class=\"text-blue-400 hover:text-blue-300\">Organisation interne de l'Alliance</a>",
+          "Tous les Starlancers affiliés à l’Alliance ont obligation de répondre aux missions de guerre sous peine d’être classifié comme déserteur et de voir leur licence révoquée et leur vaisseau saisi.",
+          "En temps de paix, l’Alliance s’occupe du maintien de la paix extra-stellaire.",
+          "Chaque système possède sa propre force de police indépendante.",
+          "Néanmoins, ces forces doivent suivre les directives de l’Alliance le cas échéant.",
+          "Ainsi, les missions les plus fréquentes de l’Alliance sont :",
+          "- la surveillance des frontières (Cerberi et Torks)",
+          "- la poursuite et la capture ou élimination de criminels en fuite",
+          "- la protection rapprochée de convois",
+          "- faire de la reconnaissance dans des secteurs hostiles",
+          "La devise de l’Alliance est : « <b>Gardiens de la civilisation</b> »."
+        ]
+      },
+      {
+        title: 'Guilde Marchande',
+        content: [
+          "Fondée en 2215 (c-4) avec l’Alliance et l’Union, la Guilde représente la gestion économique de la Confédération.",
+          "Il fut décidé de fusionner toutes les instances économiques et financières de la Confédération en une seule entité qui deviendra la Guilde Marchande (simplement appelé Guilde).",
+          "Cette organisation est en charge de l’équilibre économique des colonies de la Confédération, et de tout ce qui a trait à la création, extraction et transport de marchandises.",
+          "Dès la création, il fut instaurer une règle d’or inscrite dans la loi de la Confédération, elle ne peut donc être changée que par référendum :",
+          "Une part de 50 % minimums des bénéfices nets de la Guilde Marchande devra être redistribuée aux autres organisations. La répartition de cette somme sera décidé par les autorités dirigeantes de la Guilde Marchande en accord avec les dirigeants des autres organisations.",
+          "La Guilde supervise toutes les infrastructures en dehors des colonies servant à l’extraction ou la fabrication/transformation de ressources.",
+          "Elle s’occupe en plus du transport de ses marchandises, et de toute ressource quittant une colonie.",
+          "Enfin, la Guilde dispose d’une branche chargé de surveiller les demandes des colonies et des autres factions en fonction des traités commerciaux.",
+          "Le but étant d’adapter l’offre à la demande et d’éviter toute forme de spéculation sur les ressources dont la production est contrôlée.",
+          "Les traités commerciaux de la Guilde sont également de puissantes armes diplomatiques pour la Confédération. Ces derniers ayant permis une relation amicale avec les Stranis dès le premier échange.",
+          "La devise de la Guilde est : « <b>Tissons les liens de l’avenir</b> »"
+        ]
+      },
+      {
+        title: "Union",
+        content: [
+          "Fondée en 2215 (c-4) avec l’Alliance et la Guilde, l’Union est en charge de la recherche, de l’exploration, et de la supervision des colonies.",
+          "À l’origine l’Union des Centres de Recherches Spatiales (UCRS) était le regroupement de tous les organismes de recherche de la Confédération.",
+          "Mais suite à la première colonisation en dehors du système Hélios sur Hope I en 2248 (c26), le tout nouvel Institut Colonial fut intégré à l’UCRS pour former l’Union Planétaire.",
+          "Chaque colonie possède son propre <a href=\"#\" data-article=\"colony-politics\" class=\"text-blue-400 hover:text-blue-300\">système politique</a>, aussi l’Union n’est là que pour accompagner les gouvernements coloniaux dans leur gestion et leur organisation locale, ainsi que pour les relations avec l’extérieur.",
+          "Concrètement, si une colonie a besoin d’un apport de ressources, le gouvernement local en fait part à la branche locale de l’Union, et c’est ce dernier qui va s’occuper de contacter les bonnes personnes (via la Guilde) pour effectuer la livraison au nom du gouvernement.",
+          "Distinction avec la Guilde, l'Union est responsable du transport des personnes (et leurs biens), là où la Guilde ne s'occupe que des marchandises",
+          "En plus de cela, l’Union possède et gère tout un réseau de stations de recherche. Et quand bien même l’Alliance mène ses propres recherches dans le domaine militaire exclusivement, ses chercheurs restent en contact avec ceux de l’Union dont les champs de recherches sont beaucoup plus vastes.",
+          "Enfin l’Union est en charge de la cartographie de la galaxie, elle gère donc les frontières de l’espace confédéré et choisi les systèmes à explorer et répertorier. Le droit de colonisation étant donnée par le <a href=\"#\" data-article=\"galactic-council\" class=\"text-blue-400 hover:text-blue-300\">Conseil galactique</a>.",
+          "La devise de l’Union est : « Explorer, chercher, apprendre »."
+        ]
+      },
+      {
+        title: 'Tribunal d\'Alcor',
+        content: [
+          "Fondé en 2250 (c28), le Tribunal d’Alcor diffère des autres Organisations.",
+          "Chaque colonie de la Confédération possède un Tribunal qui est là pour juger les affaires d’infractions au CCA.",
+          "Chaque colonie finance la tenue du Tribunal et ce dernier ne requiert le service des Starlancer que de manière exceptionnelle et très particulière.",
+          "Article détaillé: -> <a href=\"#\" data-article=\"alcor-tribunal\" class=\"text-blue-400 hover:text-blue-300\">Tribunal d'Alcor</a>",
+        ]
+      }
+    ]
   },
   {
     id: 'alcor-tribunal',
@@ -361,6 +451,63 @@ const articles = [
       }
     ]
   },
+  {
+    id: 'colony-politics',
+    title: 'Politique des colonies',
+    subtitle: "L'organisation politique des colonies",
+    resume: "Les différents systèmes politiques des colonies et leur mise en place.",
+    sections: [
+      {
+        title: "Fondation",
+        content: [
+          "Lorsqu'une planète est colonisée, la première ville est nommée capitale.",
+          "L'Union y affecte un Pionnier et son équipe afin de préparer l'arrivée des colons.",
+          "Lorsque les colons sont suffisamment nombreux pour avoir une société stable, le Pionnier doit désigner ou faire désigner un gouvernement.",
+          "Le gouvernement prend alors le contrôle de la colonie, et le Pionnier peut retourner à ses occupations.",
+          "A la fondation, la colonie doit ratifier le Code Civil d'Alcor (CCA) afin d'intégrer la Confédération.",
+          "Si elle ne le fait pas, ou si à tout moment de son développement elle choisie de s'en retirer, elle devient un territoire indépendant.",
+        ]
+      },
+      {
+        title: "Politique locale",
+        content: [
+          "Chaque gouvernement de chaque colonie est libre d'appliquer n'importe quelle forme de politique locale à deux conditions:",
+          "- Tout citoyen doit être libre de pouvoir quitter la colonie avec ses biens en toute sécurité.",
+          "- Aucune loi ne pourra outrepasser le Code Civil d'Alcor (CCA).",
+          "Chaque colonie peut donc avoir un système politique différent, et quand bien même les démocraties sont les plus rependues, il existe aussi des aristocraties, oligarchies, etc.",
+          "Chaque gouvernement est en charge de la gestion de toute la colonie, s'il y a plusieurs villes, elles sont sous l'autorité de la capitale.",
+          "Ainsi, chaque transaction interne à la colonie est géré par le gouvernement qui peut même créer sa propre monnaie et établir les valeurs marchandes de tout produit.",
+          "En revanche, dès qu'un objet entre ou sort de la colonie, il est régie par les lois commerciales de la Guilde.",
+          "De même, le gouvernement est en charge de la \"police\", ou sécurité intérieure, mais cette force doit opérer dans le respect du CCA et uniquement localement.",
+          "Les forces de police ont une autorité limitée à leur planète, voire système si accord avec d'autres colonies.",
+          "Autrement, et en toutes circonstances, ces forces sont considérées comme civiles par l'Alliance.",
+          "Chaque colonie se doit de fournir au moins six bấtiments essentiels avant de pouvoir recevoir des colons :",
+          "- Siège local du gouvernement planétaire",
+          "- Garnison de l’Alliance comportant une réserve de matériel",
+          "- Centre de transit de l’Union avec une zone de débarquement",
+          "- Poste de la Guilde pour les échanges extra-planétaire",
+          "- Bureau du Consortium dont le tableau des missions et un terminal",
+          "- <a href=\"#\" data-article=\"alcor-tribunal\" class=\"text-blue-400 hover:text-blue-300\">Tribunal d’Alcor</a> responsable de la justice"
+        ]
+      },
+      {
+        title: "Population",
+        content: [
+          "Lorsqu’un premier gouvernement se met en place dans une colonie, l’Union ajoute cette destination à tous les colons potentiels.",
+          "Il y est décrit le système politique à venir, la distance de la colonie avec les grands spatioports des environs, et l’indice de viabilité de la planète.",
+          "L’indice de viabilité détermine le nombre d’habitants possible par colonie et les infrastructures nécessaires à son fonctionnement."
+        ]
+      },
+      {
+        title: "Justice",
+        content: [
+          "Toutes les affaires judiciaires sont appliquées par le Tribunal.",
+          "Chaque procès est dirigé par un juge appliquant le CCA, et un adjoint appliquant les lois locales.",
+          "Pour plus de détails, voir le <a href=\"#\" data-article=\"alcor-tribunal\" class=\"text-blue-400 hover:text-blue-300\">Tribunal d’Alcor</a>."
+      }
+    ]
+      
+  }
 ];
 
 export default function Politics({ onBack, selectedArticleId }: { onBack: () => void, selectedArticleId?: string | null }) {
