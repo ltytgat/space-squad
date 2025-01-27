@@ -68,6 +68,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
         'shields': 'technology',
         'gtv': 'technology',
         'communications': 'technology',
+        'weapons-usage': 'technology',
         // Culture articles
         'languages': 'culture',
         'terran-pandemic': 'culture',

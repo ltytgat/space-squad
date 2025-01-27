@@ -223,7 +223,79 @@ const articles = [
     title: 'Tribunal d\'Alcor',
     subtitle: 'Justice confédérale',
     resume: 'Le Tribunal d\'Alcor est la plus haute instance judiciaire de la Confédération.',
-    //sections: []
+    sections: [
+      {
+        title: 'Histoire',
+        content: [
+          "En 2113 (c-100) entre en vigueur le Code Civil d’Alcor (CCA), il prend effet dans la station <a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a> et sur New Gaïa, il s’étendra par la suite aux autres spatioports et colonies humaines.",
+          "En 2217 (c-1) ont lieu les premiers échanges diplomatiques avec les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a>, en 2219 (c-0) les Stranis s’engagent à respecter le CCA dans l’espace humain, mais demandent de juger toute infraction commise par l’un des leur avec leur propre justice.",
+          "La loi Strani et le CCA ajoute ensemble une nouvelle infraction : « Non respect d’une loi alien. ».",
+          "Suite à la première colonie hors du système Hélios en 2248 (c26), le Tribunal d’Alcor est fondé en 2250 (c28) sur la station Alcor.",
+          "Cette institution est garante du CCA, aussi, chaque colonie et spatioport devra être équipé d’un tribunal.",
+          "Chaque citoyen possède un casier judiciaire géré par le Tribunal.",
+          "Les Vadas intègrent le conseil et le Consortium en 2543 (c302) et 2544 (c303), tout comme les Stranis en 2217 (c-1), ils acceptent de respecter le CCA dans l’espace humain, néanmoins,leur système judiciaire et leur concept même de justice étant assez éloignée du notre, le Tribunal recommande d’accompagner les Vadas dans les colonies et de faire preuve de compréhension à leur égard."
+        ]
+      },
+      {
+        title: "Procédures",
+        content: [
+          "Peu importe l’infraction, c’est aux forces de police locale d’interpeller le contrevenant.",
+          "Tous les procès sont présidés par un juge indépendant nommé sur place pour une durée fixe.",
+          "Tout citoyen jugé ou juré se verra noté dans son casier judiciaire les informations relatives au procès : accusé, infraction(s), faits, sentences, peine, juge, jurés.",
+          "Le Tribunal détermine trois types d’infractions :",
+          "<b>Infraction au CCA</b>",
+          "En cas d’infraction au CCA, la procédure est très automatisé, le prévenu est emmené au Tribunal disponible le plus proche.",
+          "Le nombre de jurés dépend de la gravité de l'infraction, ces derniers sont tirés au hasard parmi tous les citoyens de la Confédération.",
+          "Ils assistent au procès par visioconférence s'ils ne sont pas à proximité du Tribunal.",
+          "La police expose les faits et les preuves.",
+          "L’accusé à le droit de remettre en cause les preuves, si tel est le cas, une commission nommée par le juge devra vérifier si les preuves en question sont recevables.",
+          "Si une preuve est considérée comme irréfutable, le prévenu risque de voir sa peine alourdie pour avoir fait perdre du temps à la cour.",
+          "Si au contraire elle est jugé irrecevable, elle est retirée.",
+          "Une fois toutes les preuves acceptées, les jurés sont appelés au procès.",
+          "Leur sont alors présentés les faits, suite à quoi le juge expose le ou les articles du CCA relatif à la situation et la ou les peines associées si il y a jurisprudence.",
+          "Les jurés ont ensuite un temps de réflexion puis doivent voter : coupable, innocent ou indécis.",
+          "Innocent implique la relaxe de l’individu, indécis donne à la police du temps (fixé par le juge) pour assembler d’autres preuves avant un autre procès.",
+          "Si l’individu est reconnu coupable, le juge propose une peine (généralement par jurisprudence) aux jurés.",
+          "Suite à un vote, si la majorité refuse la peine proposée, c’est à eux de définir par concertation une peine plus adéquate. S’ils n’y parviennent pas, la sentence initiale est gardée.",
+          "Pour ce type d'infraction, l'accusé ou la partie civile peut faire appel. Un nouveau procès aura alors lieu avec un nouveau juge (et donc sur une autre colonie/station).",
+          "<b>Infraction à la loi locale</b>",
+          "La procédure est très similaire à la précédente, à trois différences, le prévenu est emmené dans le Tribunal local, et le juge dispose d’un adjoint volontaire ayant connaissance des lois locales.",
+          "Enfin les jurés proviendront à 50 % de la colonie locale.",
+          "Le reste de la procédure est identique à une infraction au CCA",
+          "En cas d'appel, la règle des 50% des jurés de la colonie locale est maintenue.",
+          "<b>Infraction d’une loi alien</b>",
+          "Dans ce cas particulier, l’individu devra être ammené au Tribunal le plus proche disponible en collaboration avec les forces de l’ordre alien locales.",
+          "Le juge quo-présidera la séance avec un émissaire alien.",
+          "Il y aura également un second jury composé uniquement de membres de la faction alien en question.",
+          "Le reste de la procédure est similaire, mais il revient aux juges de trancher en cas de différences de sentences entre les deux jurys.",
+          "La sentence est sans appel, cependant il reste possible de demander un avis diplomatique auprès de l'Assemblé confédérale."
+        ]
+      },
+      {
+        title: 'Cassation et avis diplomatique',
+        content: [
+          "Suite à un procès (en appel ou non), il est possible de demander la cassation de la sentence, dans ce cas, c'est la haute juridiction du Tribunal d’Alcor qui juge la procédure.",
+          "S'ils estiment qu'il y a eu une ou des erreurs suffusantes pouvant affecter la décision du tribunal lors de l'audiance, ils peuvent \"casser\" le jugement. Un nouveau jugement aura donc lieu à la place de celui cassé.",
+          "Dans le cadre de l'infraction de loi alien, si l'accusé est reconnu coupable, il peut demander un avis diplomatique. Dans ce cas, c'est l'Assemblée confédérale qui doit juger si la sentence est justifiée.",
+          "Elle peut demander à la faction alien en question de pouvoir elle meme prendre en charge le prevenu. Cela se fait au cours de tractations diplomatiques."
+        ]
+      },
+      {
+        title: 'Peines',
+        content: [
+          "Le CCA autorise quatre sortes de peines :",
+          "- Compensation financière",
+          "- Travail de compensation",
+          "- Emprisonnement/isolation pour une durée finie",
+          "- Exil/bannissement pour une durée infinie",
+          "Le travail de compensation peut être au profit des victimes (ou famille de victimes) ou bien à la colonie.",
+          "Il est délimité par un temps de travail et/ou bien un montant total de bénéfice.",
+          "L’isolation se fait selon les infrastructures de la colonie, si elle n’en a pas les moyens, elle peut demander à faire transférer le prisonnier dans une autre colonie (aux frais de ce dernier).",
+          "Si l’exil est prononcé, la colonie s’engage à transporter l’individu jusqu’au spatioport le plus proche.",
+          "Ces peines peuvent se cumuler selon la gravité des faits ou selon l’avis du jury."
+        ]
+      }
+    ]
   },
   {
     id: 'cerberi',
@@ -348,8 +420,77 @@ const articles = [
     id: 'strani-republic',
     title: 'République Strani',
     subtitle: 'État Strani unifié',
-    resume: 'La République Strani est l\'organisation politique qui unit tous les Stranis.',
-    //sections: []
+    resume: 'La République <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> est l\'organisation politique qui unit tous les Stranis.',
+    sections: [
+      {
+        title: "Histoire",
+        content: [
+          "La république Strani tel qu’elle existe aujourd’hui a été fondée en l’an terrestre 2124 (c-88)",
+          "Elle verra la rébellion des <a href=\"#\" data-article=\"trtraris\" class=\"text-blue-400 hover:text-blue-300\">Tr’Traris</a> en 2170 (c-45) et la rencontre avec l’humanité en 2214 (c-4).",
+          "Ce système a prouvé sa stabilité dans la société Strani, et quand bien même il a des détracteurs, la majorité de la population le soutien."
+        ]
+      },
+      {
+        title: "Fonctionnement",
+        content: [
+          "Il existe plusieurs partis politiques qui comme pour les humains ont des similitudes et des points de divergences.",
+          "Chaque parti est dirigé par un conseil élu par les membres, et chaque conseil désigne un représentant.",
+          "Lorsqu’une élection a lieu, chaque citoyen vote pour l’un des partis présents.",
+          "A la suite de ce tour, le parti ayant reçu le moins de voix est éliminé et on passe au tour suivant, et ainsi de suite jusqu’à ce qu’il ne reste plus qu’un parti.",
+          "Le représentant du Parti restant devient Président pour une durée indéterminée. Ce dernier a les pleins pouvoirs hormis sur deux choses : la loi, et la constitution, tout changement dans la loi ou la constitution doit être approuvé par l’assemblée.",
+          "A la suite des résultats du premier tour, une assemblée est formée à la proportionnelle.",
+          "L’assemblée est élue pour un mandat de 4 ans, celle-ci peut à tout moment demander un referendum pour valider la position du président (sur un projet spécifique, ou bien sur son règne de manière générale).",
+          "Si le peuple s’oppose au président, ce dernier doit stopper son projet ou bien abdiquer, une nouvelle élection aura alors lieu.",
+          "Les votes blancs et les votes non exprimés sont cumulés pour former une part de l’assemblée avec des citoyens tirés au hasard sur une liste de volontaires.",
+          "Ces votes ne sont plus comptabilisés après le premier tour."
+        ]
+      },
+      {
+        title: "Les grands partis",
+        content: [
+          "Il existe trois grands partis politiques ayant chacun dirigé à plusieurs reprises depuis leur création.",
+          "Chacun de ces partis est basé sur l’une des valeurs fondatrices de la République: Équité, Ordre et Liberté.",
+          "<b>Équité</b> :",
+          "Le parti de l'équité veut donner à chaque Strani le nécessaire pour pouvoir vivre une vie décente, certains ont besoin de plus, d’autres de moins, aussi, il n’est pas question ici d'égalité, mais bien d'équité. Son idéologie comporte des similitudes avec le \"Communisme\" humain.",
+          "<b>Ordre</b> :",
+          "Le parti de l'ordre cherche à encadrer les actions de chacun, il s’appuie sur les traditions et le respect de l’autre. Il a tendance à lancer de grands projets fédérateurs que ce soit au niveau national comme extra-raciale.",
+          "<b>Liberté</b> :",
+          "Le parti de la liberté cherche à émanciper les citoyens de toute forme de soutien.",
+          "L’autonomie de l’individu est mise en avant afin qu’il puisse vivre selon ses propres choix.",
+          "A eux trois, ils comptabilisent en moyenne 64% des voix, le reste allant à un vote blanc (10%) ou des partis plus petits principalement présents à l’Assemblé.",
+          "En cette année 2576 (c332), c’est le parti de l'Ordre qui gouverne depuis 6,5 <a href=\"#\" data-article=\"galactic-calendar\" class=\"text-blue-400 hover:text-blue-300\">cycles</a>."
+        ]
+      },
+      {
+        title: "Ministères",
+        content: [
+          "Lorsqu’un parti arrive au pouvoir, il doit nommer des ministres, les ministères et leurs fonctions sont figés par la Constitution.",
+          "Le Parti au pouvoir peut nommer jusqu’à 5 de ses membres comme ministres, les autres postes doivent être proposés à au moins deux autres partis (présents à l’assemblé avec au moins 5%).",
+          "Liste des ministères (ordre alphabétique):",
+          "Agriculture",
+          "Armées",
+          "Culture",
+          "Économie",
+          "Éducation",
+          "Justice",
+          "Santé",
+          "Travail",
+          "Diplomatie",
+          "Recherche",
+          "Le budget des ministères est proposé par le président et accepté ou débattu puis accepté par l’Assemblé.",
+          "Lors de la présentation des ministres, l'ordre d'annonce des ministères indique les priorités du gouverment."
+        ]
+      },
+      {
+        title: "Forces armées et l'Alliance",
+        content: [
+          "Le ministère des Armées est le seul ministère qui est directement lié à une entité extèrieure (la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération humaine</a> ).",
+          "De fait, ce ministère est en charge de la \"police\" sur le térritoire Strani, les forces armées étant quand à elles sous la supervision de l'Alliance.",
+          "La police Strani comporte donc aussi bien des officiers civils que des militaires, mais dans tous les cas, ces forces ne peuvent opérer que dans l'espace Strani.",
+          "Les forces de l'Alliance sont elles autorisées à opérer dans l'espace Strani, mais uniquement en collaboration avec des représentants du ministère des Armées.",
+        ]
+      }
+    ]
   },
   {
     id: 'alliance-org',

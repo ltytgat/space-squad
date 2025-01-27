@@ -159,6 +159,55 @@ const articles = [
         ]
       }
     ]
+  },
+  {
+    id: 'weapons-usage',
+    title: 'Usage des armes',
+    subtitle: 'Réglementation et fabrication',
+    resume: 'Un aperçu complet de la classification des armes, de leur fabrication et de leur réglementation à travers la Confédération.',
+    sections: [
+      {
+        title: 'Civils & militaires',
+        content: [
+          "Il existe plusieurs catégories pour les armes :",
+          "Armes de fortune",
+          "Armes de défense non létales",
+          "Armes de sécurité",
+          "Armes de guerre",
+          "Les armes de guerre sont celles utilisées par les Starlancers du Consortium, les soldats de l'Alliance ou l’armée <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a>.",
+          "Les armes de sécurité concernent les armes des forces de sécurité locales des <a href=\"#\" data-article=\"colony-politics\" class=\"text-blue-400 hover:text-blue-300\">colonies</a>. Leurs usage est principalement l’intimidation d’éventuels pirates.",
+          "Les armes de défense non létales servent au « maintien de la paix » par les forces de l’ordre et selon les colonies l’auto-défense des citoyens.",
+          "Enfin, les armes de fortune désignent tout objet utilisé par quiconque sur un autre individu ou lui-même, il s’agit surtout d’un terme juridique plus que fonctionnel."
+        ]
+      },
+      {
+        title: "Fabricants",
+        content: [
+          "<b>Officiels</b>",
+          "L’écrasante majorité des armes utilisées par les Starlancers sont issus des manufactures de l’Alliance, sauf quelques rares exceptions (en particulier des armes expérimentales). La conception de ces armes (ainsi que leurs améliorations) peuvent provenir de différentes sources, mais la fabrication reste l’œuvre de l’Alliance.",
+          "Idem pour les Stranis, les armes de l’armée sont fabriquées par l’armée elle-même.",
+          "Ces méthodes de production permettent un contrôle sur la diffusion des armes.",
+          "<b>Le cas <a href=\"#\" data-article=\"cerberi\" class=\"text-blue-400 hover:text-blue-300\">Cerberi</a></b>",
+          "Cerberi n’ayant pas les infrastructures de la Confédération, elle a mis au point son propre modèle de fusil et le produit pour son armée régulière.",
+          "Il arrive cependant que des membres de Cerberi récupère les armes de leurs adversaires dès qu’il en ont l’occasion. Il n’est donc pas rare de les voir équipés d’armes de l’Alliance.",
+          "<b>Privés</b>",
+          "Rare sont les entreprises privées a avoir reçu une autorisation de fabrication d’armes. A ce jour, seuls deux peuvent le faire : Omnihim et Intrasog.",
+          "Elles sont limitées aux armes de sécurité et de défense non létales et sont donc les principales fournisseurs de matériel de sécurité pour les colonies.",
+          "Tout nouveau produit doit être approuvé par l’Alliance et toute transaction par la Guilde.",
+          "Elles ont également l’interdiction de commercer avec Cerberi."
+        ]
+      },
+      {
+        title: "Usage",
+        content: [
+          "Les armes de guerre étant réservées à l’usage des Starlancers et des forces armées, toute possession d’une de ces armes par un civil est un délit selon le <a href=\"#\" data-article=\"alcor-tribunal\" class=\"text-blue-400 hover:text-blue-300\">CCA</a> : « Tout citoyen amené à se retrouver en possession d’une arme de guerre devra impérativement prévenir un représentant de l’autorité la plus proche afin de lui remettre l’arme. Ce dernier prendra soin de la sceller et de la déposer à la caserne la plus proche ».",
+          "En dehors du marché noir, il est impossible pour un citoyen non-Starlancer de se procurer une telle arme. La vente est faite en caserne et uniquement à des Starlancers ou bien lors de transaction inter-espèces entre institutions armées.",
+          "Toute transaction d’armes de sécurité est encadrée par la Guilde et est à destination des gouvernements coloniaux uniquement. Si une telle arme se retrouve dans les mains d’un citoyen, c’est le gouvernement qui en a fait l’acquisition qui est responsable.",
+          "De même lors de toute mauvaise utilisation par les forces de sécurité, selon la faute commise, cela peut relever de l’individu lui-même ou bien du manque de formation, qui est alors la responsabilité du gouvernement.",
+          "Même fonctionnement pour les armes de défense non létales, sauf qu’il est possible pour un gouvernement d’autoriser la possession de ces armes à des civils formés et porteurs d’un permis (ce permis n’est valable que dans la colonie d’acquisition)."
+        ]
+      }
+    ]
   }
 ];
 
