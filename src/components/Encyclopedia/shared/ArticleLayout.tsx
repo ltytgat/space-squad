@@ -153,6 +153,15 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
               ))}
             </div>
           )}
+
+          {/* Back button at the bottom */}
+          <button
+            onClick={() => setSelectedArticle(null)}
+            className="text-blue-400 hover:text-blue-300 flex items-center gap-2 mt-8"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour aux articles
+          </button>
         </article>
       </div>
     );
