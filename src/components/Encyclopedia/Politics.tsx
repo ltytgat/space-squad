@@ -645,6 +645,7 @@ const articles = [
           "Toutes les affaires judiciaires sont appliquées par le Tribunal.",
           "Chaque procès est dirigé par un juge appliquant le CCA, et un adjoint appliquant les lois locales.",
           "Pour plus de détails, voir le <a href=\"#\" data-article=\"alcor-tribunal\" class=\"text-blue-400 hover:text-blue-300\">Tribunal d’Alcor</a>."
+        ]
       }
     ]
       
