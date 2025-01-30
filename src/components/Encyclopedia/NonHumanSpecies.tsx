@@ -64,12 +64,12 @@ const articles = [
     id: 'trtraris',
     title: 'Tr\'Traris',
     subtitle: 'Intelligence artificielle autonome',
-    resume: 'Les Tr\'Traris sont une forme de vie synthétique créée par les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> qui ont développé leur propre conscience et société.',
+    resume: 'Les Tr\'Traris sont une forme de vie synthétique créée par les Stranis qui ont développé leur propre conscience et société.',
     sections: [
       {
         title: 'Origine',
         content: [
-          "Les Stranis ayant une faible constitution il est très difficile pour eux de faire des travaux manuels comme la construction et la manutention, ils devaient donc s’aider d’exosquelettes pour éviter le problème.",
+          "Les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a> ayant une faible constitution il est très difficile pour eux de faire des travaux manuels comme la construction et la manutention, ils devaient donc s’aider d’exosquelettes pour éviter le problème.",
           "C’est donc en 2135(c-85) que furent conçus les Tr'Traris, projet dirigé par le scientifique Tr'Vag. Ce sont des robots résistants et adroits fortement inspirés des exosquelettes permettant d’effectuer toutes les tâches désagréables pour les Stranis.",
           "L’idée de départ étant de rendre les exosquelettes autonomes.",
           "Très rapidement Tr'Vag mis en place le système d’apprentissage par renforcement, afin d’améliorer l’efficacité des Tr'Traris.",

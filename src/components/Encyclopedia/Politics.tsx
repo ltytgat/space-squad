@@ -420,12 +420,12 @@ const articles = [
     id: 'strani-republic',
     title: 'République Strani',
     subtitle: 'État Strani unifié',
-    resume: 'La République <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> est l\'organisation politique qui unit tous les Stranis.',
+    resume: 'La République Strani est l\'organisation politique qui unit tous les Stranis.',
     sections: [
       {
         title: "Histoire",
         content: [
-          "La république Strani tel qu’elle existe aujourd’hui a été fondée en l’an terrestre 2124 (c-88)",
+          "La république <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> tel qu’elle existe aujourd’hui a été fondée en l’an terrestre 2124 (c-88)",
           "Elle verra la rébellion des <a href=\"#\" data-article=\"trtraris\" class=\"text-blue-400 hover:text-blue-300\">Tr’Traris</a> en 2170 (c-45) et la rencontre avec l’humanité en 2214 (c-4).",
           "Ce système a prouvé sa stabilité dans la société Strani, et quand bien même il a des détracteurs, la majorité de la population le soutien."
         ]

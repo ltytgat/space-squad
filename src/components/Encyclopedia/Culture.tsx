@@ -20,13 +20,13 @@ const articles = [
         content: [
           "Chaque cycle est séparé en 2 Sections de 7 mois chacune.",
           "Le contenu de chaque section est le suivant :",
-          "Programme S1 : Mécanique des Chasseurs et Chasseurs Lourds, Diplomatie, Maniement des armes de poings et des Fusils d’assaut, Mécanique des véhicules légers et intermédiaires.",
-          "Programme S2 : Biologie, Cryptographie, Techniques de combat rapproché, Stratégie des escouades, Maniement des armes lourdes et montées.",
-          "Programme S3 : Pilotage des Chasseurs et Chasseurs Lourds, Utilisation des Tourelles, Pilotage des véhicules légers et intermédiaires, Maniement des Shotgun et Canons.",
-          "Programme S4 : Maniement des Fusils de précisions, Mécanique des Corvettes et Frégates, Mécanique des Véhicules Lourds et blindés",
-          "Programme S5 : Pilotage des Corvettes et frégates, Pilotages des véhicules lourds et blindés, Utilisation des armes sur le terrain",
-          "Programme S6 : Préparation à l’épreuve finale de mise en situation réelle.",
-          "Cas spécifique de l’activité physique : le « sport » ne consiste pas en une matière à part entière, mais est présente dès le S1. Lors du premier cycle, chaque étudiant est supervisé par un coach dont la mission est de le préparer aux séances sur le terrain d’entraînement du cycle 2.",
+          "<b>Programme S1</b> : Mécanique des Chasseurs et Chasseurs Lourds, Diplomatie, Maniement des armes de poings et des Fusils d’assaut, Mécanique des véhicules légers et intermédiaires.",
+          "<b>Programme S2</b> : Biologie, Cryptographie, Techniques de combat rapprochez, Stratégie des escouades, Maniement des armes lourdes et montées.",
+          "<b>Programme S3</b> : Pilotage des Chasseurs et Chasseurs Lourds, Utilisation des Tourelles, Pilotage des véhicules légers et intermédiaires, Maniement des Shotgun et Canons.",
+          "<b>Programme S4</b> : Maniement des Fusils de précisions, Mécanique des Corvettes et Frégates, Mécanique des Véhicules Lourds et blindés",
+          "<b>Programme S5</b> : Pilotage des Corvettes et frégates, Pilotages des véhicules lourds et blindés, Utilisation des armes sur le terrain",
+          "<b>Programme S6</b> : Préparation à l'épreuve finale de mise en situation réelle.",
+          "Cas spécifique de l’activité physique : le « sport » ne consiste pas en une matière à part entière, mais est présente depuis le S1. Lors du premier cycle, chaque étudiant est supervisé par un coach dont la mission est de le préparer aux séances sur le terrain d’entraînement du cycle 2.",
           "À partir du cycle 3, il s’agit plus simplement d’habituer le futur Starlancer à entretenir son corps pour ses missions.",
           "Les étudiants n’utilisent pas de simulateur avant le cycle 2 et de vrais vaisseaux ou armes avant le S6."
         ]
