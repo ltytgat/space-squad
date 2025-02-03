@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { categoryMap } from './shared/articleCategories';
 
 type TimelineEvent = {
   year: string;
@@ -318,37 +319,6 @@ const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       e.stopPropagation();
       
       const articleId = linkElement.dataset.article;
-      
-      // Map article IDs to their categories
-      const categoryMap: { [key: string]: string } = {
-        // Politics articles
-        'alcor': 'politics',
-        'confederation': 'politics',
-        'confederal-orgs': 'politics',
-        'alcor-tribunal': 'politics',
-        'cerberi': 'politics',
-        'galactic-council': 'politics',
-        'strani-republic': 'politics',
-        'alliance-org': 'politics',
-        'colony-politics': 'politics',
-        // Species articles
-        'stranis': 'species',
-        'trtraris': 'species',
-        'vadas': 'species',
-        'torks': 'species',
-        // Technology articles
-        'shields': 'technology',
-        'gtv': 'technology',
-        'communications': 'technology',
-        'weapons-usage': 'technology',
-        // Culture articles
-        'languages': 'culture',
-        'terran-pandemic': 'culture',
-        'viability-index': 'culture',
-        'galactic-calendar': 'culture',
-        'starlancer-training': 'culture'
-      };
-
       const category = categoryMap[articleId];
       if (category) {
         navigate(`/encyclopedia/${category}/${articleId}`);
