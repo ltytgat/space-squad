@@ -140,17 +140,15 @@ export const searchEncyclopedia = (query: string): SearchResult[] => {
     });
   });
 
-  // Sort results by priority and remove duplicates
-  const uniqueResults = results.reduce<SearchResult[]>((acc, current) => {
-    const isDuplicate = acc.some(item => 
-      item.articleId === current.articleId && 
-      item.priority >= current.priority
-    );
-    if (!isDuplicate) {
-      acc.push(current);
+  // Remove duplicates and keep only the highest priority result for each article
+  const uniqueResults = results.reduce<{ [key: string]: SearchResult }>((acc, current) => {
+    const key = `${current.categoryId}-${current.articleId}`;
+    if (!acc[key] || current.priority < acc[key].priority) {
+      acc[key] = current;
     }
     return acc;
-  }, []);
+  }, {});
 
-  return uniqueResults.sort((a, b) => a.priority - b.priority);
+  // Convert back to array and sort by priority
+  return Object.values(uniqueResults).sort((a, b) => a.priority - b.priority);
 };
