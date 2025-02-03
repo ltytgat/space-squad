@@ -34,11 +34,6 @@ const SearchResults = () => {
                 <h2 className="text-xl font-semibold text-blue-400">{result.title}</h2>
                 <p className="text-sm text-gray-400">{result.category}</p>
                 <p className="mt-2">{result.excerpt}</p>
-                {result.matchType && (
-                  <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-700 rounded">
-                    Found in: {result.matchType}
-                  </span>
-                )}
               </Link>
             </div>
           ))}
