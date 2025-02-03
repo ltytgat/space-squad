@@ -1,8 +1,7 @@
-import { articles as chronologyArticles } from '../Chronologies';
+import { articles as cultureArticles } from '../Culture';
 import { articles as speciesArticles } from '../NonHumanSpecies';
 import { articles as politicsArticles } from '../Politics';
 import { articles as technologyArticles } from '../Technology';
-import { articles as cultureArticles } from '../Culture';
 
 interface Article {
   id: string;
@@ -32,11 +31,10 @@ export interface SearchResult {
 }
 
 const categoryArticles: CategoryArticles[] = [
-  { id: 'chronologies', label: 'Chronologies', articles: chronologyArticles },
-  { id: 'species', label: 'Espèces non-humaines', articles: speciesArticles },
-  { id: 'politics', label: 'Politique', articles: politicsArticles },
-  { id: 'technology', label: 'Technologie', articles: technologyArticles },
-  { id: 'culture', label: 'Culture', articles: cultureArticles }
+  { id: 'species', label: 'Espèces non-humaines', articles: speciesArticles || [] },
+  { id: 'politics', label: 'Politique', articles: politicsArticles || [] },
+  { id: 'technology', label: 'Technologie', articles: technologyArticles || [] },
+  { id: 'culture', label: 'Culture', articles: cultureArticles || [] }
 ];
 
 const getExcerpt = (content: string, query: string, maxLength: number = 200): string => {
@@ -65,7 +63,11 @@ export const searchEncyclopedia = (query: string): SearchResult[] => {
   const results: SearchResult[] = [];
 
   categoryArticles.forEach(category => {
+    if (!category.articles) return;
+    
     category.articles.forEach(article => {
+      if (!article) return;
+
       // Priority 1: Match in article title
       if (article.title.toLowerCase().includes(normalizedQuery)) {
         results.push({
@@ -80,7 +82,9 @@ export const searchEncyclopedia = (query: string): SearchResult[] => {
       }
 
       // Priority 2: Match in section titles
-      article.sections.forEach(section => {
+      article.sections?.forEach(section => {
+        if (!section) return;
+        
         if (section.title.toLowerCase().includes(normalizedQuery)) {
           results.push({
             title: article.title,
@@ -113,8 +117,12 @@ export const searchEncyclopedia = (query: string): SearchResult[] => {
       }
 
       // Priority 4: Match in section content
-      article.sections.forEach(section => {
+      article.sections?.forEach(section => {
+        if (!section?.content) return;
+        
         section.content.forEach(contentItem => {
+          if (!contentItem) return;
+          
           const cleanContent = stripHtmlTags(contentItem);
           if (cleanContent.toLowerCase().includes(normalizedQuery)) {
             results.push({

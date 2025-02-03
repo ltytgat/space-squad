@@ -19,7 +19,7 @@ const SearchBar = () => {
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search the encyclopedia"
+        placeholder="Rechercher dans l'encyclopedie"
         className="w-full px-4 py-2 pl-10 text-sm bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 text-white placeholder-gray-400"
       />
       <button
