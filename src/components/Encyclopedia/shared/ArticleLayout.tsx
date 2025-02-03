@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +25,7 @@ interface ArticleLayoutProps {
 export default function ArticleLayout({ title, articles, onBack, selectedArticleId }: ArticleLayoutProps) {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const navigate = useNavigate();
+  const articleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // When selectedArticleId changes, find and set the article
@@ -32,6 +33,12 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
       const article = articles.find(a => a.id === selectedArticleId);
       if (article) {
         setSelectedArticle(article);
+        // Reset scroll position when article changes
+        if (articleRef.current) {
+          articleRef.current.scrollTo(0, 0);
+        }
+        // Also reset the window scroll
+        window.scrollTo(0, 0);
       }
     } else {
       // If selectedArticleId is null, clear the selected article
@@ -104,7 +111,7 @@ export default function ArticleLayout({ title, articles, onBack, selectedArticle
 
   if (selectedArticle) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" ref={articleRef}>
         <button
           onClick={() => setSelectedArticle(null)}
           className="text-blue-400 hover:text-blue-300 flex items-center gap-2 mb-4"
