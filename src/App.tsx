@@ -2,6 +2,7 @@ import React from 'react';
 import { Menu } from 'lucide-react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import EncyclopediaLayout from './components/Encyclopedia/EncyclopediaLayout';
+import ScrollToTop from './components/shared/ScrollToTop';
 
 export default function App() {
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ export default function App() {
           }
         />
       </Routes>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 }
