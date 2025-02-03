@@ -1,7 +1,7 @@
 import React from 'react';
 import ArticleLayout from './shared/ArticleLayout';
 
-const articles = [
+export const articles = [
   {
     id: 'starlancer-training',
     title: 'Formation des Starlancer',

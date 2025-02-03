@@ -1,7 +1,7 @@
 import React from 'react';
 import ArticleLayout from './shared/ArticleLayout';
 
-const articles = [
+export const articles = [
   {
     id: 'alcor',
     title: 'Alcor',
@@ -36,8 +36,8 @@ const articles = [
         ]
       },
       {
-          title: "Secteurs",
-          content: [
+        title: 'Secteurs',
+        content: [
           "Alcor est composée de 5 secteurs :",
           "Secteur central",
           "Secteur systèmes",
@@ -51,11 +51,11 @@ const articles = [
           "Le secteur Agricole regroupe toutes les zones de culture permettant de fournir la station en nourriture, eau et air. La production de ce secteur peut permettre de faire vivre jusqu’à 100.000 habitants.",
           "Enfin le secteur des habitations contient tous les quartiers d’habitations des membres de la station.",
           "<img src='/images/Alcor.png' alt='Station Alcor' class='w-full rounded-lg shadow-lg my-4' />"
-          ]
+        ]
       },
       {
-          title: "Données statistiques",
-          content: [
+        title: "Données statistiques",
+        content: [
           "Gravité rotationnelle dans les secteurs : 1 g",
           "Gravité rotationnelle dans le secteur central : 0,7 g",
           "Gravité rotationnelle dans le secteur système : 0,9 g",
@@ -70,7 +70,7 @@ const articles = [
           "Population : 80 453 habitants",
           "Capacité maximum : évalué à 100.000 habitants",
           "Masse totale : 1,15 milliard de tonnes",
-          ]
+        ]
       }
     ]
   },
