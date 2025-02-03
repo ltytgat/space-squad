@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type TimelineEvent = {
   year: string;
@@ -193,7 +194,7 @@ const timelineData = {
   ]
 };
 
-export const articles = [
+const articles = [
   {
     id: 'alcor',
     title: 'Alcor',
@@ -304,39 +305,9 @@ export const articles = [
   },
 ];
 
-function groupEventsByCentury(events: TimelineEvent[]) {
-  // Skip the first event (description) and only process actual timeline events
-  const timelineEvents = events.slice(1);
-  
-  return timelineEvents.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
-    const year = parseInt(event.year);
-    let century;
-    
-    if (year < 0) {
-      century = `${Math.floor(year / 1000) * -1}0000 av. JC`;
-    } else {
-      century = `${Math.floor(year / 100) + 1}ème siècle`;
-    }
-    
-    if (!acc[century]) {
-      acc[century] = [];
-    }
-    acc[century].push(event);
-    return acc;
-  }, {});
-}
-
-export default function Chronologies({ onBack }: { onBack: () => void }) {
-  const [activeTimeline, setActiveTimeline] = useState<TimelineType>('human');
-
-  const timelineTitles = {
-    human: 'Chronologie Humaine',
-    strani: 'Chronologie Strani',
-    vada: 'Chronologie Vada'
-  };
-
-  const groupedEvents = groupEventsByCentury(timelineData[activeTimeline]);
-  const description = timelineData[activeTimeline][0].event;
+const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [selectedTimeline, setSelectedTimeline] = useState<TimelineType>('human');
+  const navigate = useNavigate();
 
   const handleArticleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -359,6 +330,7 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
         'galactic-council': 'politics',
         'strani-republic': 'politics',
         'alliance-org': 'politics',
+        'colony-politics': 'politics',
         // Species articles
         'stranis': 'species',
         'trtraris': 'species',
@@ -367,6 +339,8 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
         // Technology articles
         'shields': 'technology',
         'gtv': 'technology',
+        'communications': 'technology',
+        'weapons-usage': 'technology',
         // Culture articles
         'languages': 'culture',
         'terran-pandemic': 'culture',
@@ -375,39 +349,63 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
         'starlancer-training': 'culture'
       };
 
-      const category = categoryMap[articleId] || 'culture';
-      
-      // Dispatch navigation event
-      const event = new CustomEvent('navigateToArticle', {
-        detail: {
-          category,
-          articleId
-        },
-        bubbles: true,
-        cancelable: true
-      });
-      
-      window.dispatchEvent(event);
+      const category = categoryMap[articleId];
+      if (category) {
+        navigate(`/encyclopedia/${category}/${articleId}`);
+      }
     }
   };
+
+  const events = timelineData[selectedTimeline];
+  const timelineEvents = events.slice(1);
+  const description = events[0].event;
+
+  const groupedEvents = timelineEvents.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
+    const year = parseInt(event.year);
+    const century = Math.floor(year / 100) * 100;
+    if (!acc[century]) {
+      acc[century] = [];
+    }
+    acc[century].push(event);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4 mb-6">
-        {Object.entries(timelineTitles).map(([key, title]) => (
-          <button
-            key={key}
-            onClick={() => setActiveTimeline(key as TimelineType)}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-              activeTimeline === key
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-700 hover:bg-slate-600'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            {title}
-          </button>
-        ))}
+        <button
+          onClick={() => setSelectedTimeline('human')}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            selectedTimeline === 'human'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-700 hover:bg-slate-600'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Histoire Humaine
+        </button>
+        <button
+          onClick={() => setSelectedTimeline('strani')}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            selectedTimeline === 'strani'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-700 hover:bg-slate-600'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Histoire Strani
+        </button>
+        <button
+          onClick={() => setSelectedTimeline('vada')}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            selectedTimeline === 'vada'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-700 hover:bg-slate-600'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Histoire Vada
+        </button>
       </div>
 
       {/* Description */}
@@ -420,28 +418,34 @@ export default function Chronologies({ onBack }: { onBack: () => void }) {
       <div className="relative">
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-600" />
         <div className="space-y-12 relative">
-          {Object.entries(groupedEvents).map(([century, events]) => (
-            <div key={century} className="space-y-8">
-              <h3 className="text-2xl font-bold text-blue-400 ml-12 mb-8">
-                {century}
-              </h3>
-              {events.map((event, index) => (
-                <div key={index} className="ml-12 relative">
-                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-800" />
-                  <div className="bg-slate-700 p-4 rounded-lg">
-                    <div className="text-blue-400 font-bold mb-1">{event.year}</div>
-                    <div 
-                      className="text-slate-200"
-                      onClick={handleArticleClick}
-                      dangerouslySetInnerHTML={{ __html: event.event }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
+          {Object.entries(groupedEvents)
+            .sort(([a], [b]) => parseInt(a) - parseInt(b))
+            .map(([century, events]) => (
+              <div key={century} className="space-y-8">
+                <h3 className="text-2xl font-bold text-blue-400 ml-12 mb-8">
+                  {century}s
+                </h3>
+                {events
+                  .sort((a, b) => parseInt(a.year) - parseInt(b.year))
+                  .map((event, index) => (
+                    <div key={index} className="ml-12 relative">
+                      <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-800" />
+                      <div className="bg-slate-700 p-4 rounded-lg">
+                        <div className="text-blue-400 font-bold mb-1">{event.year}</div>
+                        <div 
+                          className="text-slate-200"
+                          onClick={handleArticleClick}
+                          dangerouslySetInnerHTML={{ __html: event.event }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ))}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default Chronologies;
