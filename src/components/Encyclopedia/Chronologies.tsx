@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
-import { parseContent } from './utils/parseContent';
-import ArticleLink from './ArticleLink';
 
 type TimelineEvent = {
   year: string;
@@ -15,39 +13,39 @@ const timelineData = {
     {event: "Cette chronologie relate tous les événements majeurs de l'Histoire Humaine depuis le milieu du 21eme siècle."},
     { year: "2050", event: "La limite des 2°C de la hausse des températures a pas été dépassé, celle-ci est montée à 4,2°C" },
     { year: "2051", event: "Selon les meilleures estimations, l'humanité sera condamnée d'ici un siècle, le projet ALCOR est lancé pour faire immigrer l'humanité" },
-    { year: "2060", event: "Premier module de la station <ArticleLink articleId='alcor' className='text-blue-400 hover:text-blue-300'>Alcor</ArticleLink> mis en orbite de Mars" },
+    { year: "2060", event: "Premier module de la station <a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a> mis en orbite de Mars" },
     { year: "2061", event: "Deuxième module d'Alcor, des serveurs contenant l'encyclopédie humaine" },
     { year: "2065", event: "Pose des fondations de la première colonie martienne, New Gaïa" },
     { year: "2068", event: "Premiers humains à bord d'Alcor, mise en place de la voie de transit entre Alcor et New Gaïa" },
     { year: "2072", event: "Arrivée de la première arche contenant 10.000 personnes à New Gaïa" },
     { year: "2073", event: "Première récolte sur New Gaïa" },
-    { year: "2075", event: "Début de la grande pandémie de <ArticleLink articleId='terran-pandemic' className='text-blue-400 hover:text-blue-300'>Flutterite</ArticleLink> sur Terre, seuls les sujets seins sont aptes à la migration vers Mars" },
+    { year: "2075", event: "Début de la grande pandémie de <a href=\"#\" data-article=\"terran-pandemic\" class=\"text-blue-400 hover:text-blue-300\">Flutterite</a> sur Terre, seuls les sujets seins sont aptes à la migration vers Mars" },
     { year: "2080", event: "La population humaine sur Terre atteint les 7 milliards, et 30.000 sur New Gaïa" },
     { year: "2084", event: "Alcor est terminée, des membres de différents gouvernements ont migré sur place" },
     { year: "2085", event: "Unification des gouvernements sur New Gaïa" },
     { year: "2090", event: "Instauration de la langue unique à l'école" },
-    { year: "2094", event: "Mise au point du générateur de trou de ver (<ArticleLink articleId='gtv' className='text-blue-400 hover:text-blue-300'>GTV</ArticleLink>)" },
+    { year: "2094", event: "Mise au point du générateur de trou de ver (<a href=\"#\" data-article=\"gtv\" class=\"text-blue-400 hover:text-blue-300\">GTV</a>)" },
     { year: "2095", event: "La distance Mars-Neptune est effectué en moins de 5 heures" },
     { year: "2097", event: "Création du Consortium des pilotes, début de l'exploration interstellaire" },
     { year: "2100", event: "Population sur Terre : 3 milliards, population sur Mars : 150.000, Alcor nommé Capitale de l'humanité" },
     { year: "2101", event: "Suite aux premières explorations, la lune de la Terre est renommé Séléné, le Soleil est renommé Hélios"},
     { year: "2113", event: "Le Code Civil d’Alcor (CCA) entre en vigueur"},
     { year: "2114", event: "Alcor et New Gaïa fondent l’Union Confédérale Humaine (UCH)"},
-    { year: "2129", event: "Découverte de l’émetteur de champ de forces gravitationnelles (<ArticleLink articleId='shields' className='text-blue-400 hover:text-blue-300'>Boucliers</ArticleLink>)"},
+    { year: "2129", event: "Découverte de l’émetteur de champ de forces gravitationnelles (<a href=\"#\" data-article=\"shields\" class=\"text-blue-400 hover:text-blue-300\">Boucliers</a>)"},
     { year: "2151", event: "Population humaine sur Terre estimée à 0, population sur Mars : 675.000"},
-    { year: "2153", event: "La Terre est classée comme planète « <ArticleLink articleId='viability-index' className='text-blue-400 hover:text-blue-300'>Hostile</ArticleLink> » à cause de son atmosphère toxique"},
-    { year: "2184", event: "L’UCH est renommée, elle devient la « <ArticleLink articleId='confederation' className='text-blue-400 hover:text-blue-300'>Confédération</ArticleLink> »"},
-    { year: "2214", event: "Premier contact avec une race extra-terrestre, les <ArticleLink articleId='stranis' className='text-blue-400 hover:text-blue-300'>Stranis</ArticleLink>, des émissaires sont envoyés de part et d’autre afin de briser la barrière de la <ArticleLink articleId='languages' className='text-blue-400 hover:text-blue-300'>langue</ArticleLink>"},
-    { year: "2215", event: "Création de trois grandes <ArticleLink articleId='confederal-orgs' className='text-blue-400 hover:text-blue-300'>organisations</ArticleLink> humaines : l’Alliance responsable des forces armées, la Guilde Marchande en charge des affaires économiques, et l’UCRS (Union des Centres de Recherches Spatiales) en charge de la recherche"},
+    { year: "2153", event: "La Terre est classée comme planète « <a href=\"#\" data-article=\"viability-index\" class=\"text-blue-400 hover:text-blue-300\">Hostile</a> » à cause de son atmosphère toxique"},
+    { year: "2184", event: "L’UCH est renommée, elle devient la « <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a> »"},
+    { year: "2214", event: "Premier contact avec une race extra-terrestre, les <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Stranis</a>, des émissaires sont envoyés de part et d’autre afin de briser la barrière de la <a href=\"#\" data-article=\"languages\" class=\"text-blue-400 hover:text-blue-300\">langue</a>"},
+    { year: "2215", event: "Création de trois grandes <a href=\"#\" data-article=\"confederal-orgs\" class=\"text-blue-400 hover:text-blue-300\">organisations</a> humaines : l’Alliance responsable des forces armées, la Guilde Marchande en charge des affaires économiques, et l’UCRS (Union des Centres de Recherches Spatiales) en charge de la recherche"},
     { year: "2217", event: "La langue des Stranis est décryptée, signature d’un traité d’échange commercial et instauration par la Guilde d’une monnaie commune, le Koni"},
     { year: "2219", event: "Première conférence galactique des poids et mesures, harmonisation des unités entre Humains et Stranis"},
-    { year: "2220", event: "Cycle 0 du <ArticleLink articleId='galactic-calendar' className='text-blue-400 hover:text-blue-300'>Calendrier Galactique</ArticleLink>"},
+    { year: "2220", event: "Cycle 0 du <a href=\"#\" data-article=\"galactic-calendar\" class=\"text-blue-400 hover:text-blue-300\">Calendrier Galactique</a>"},
     { year: "2222", event: "La technologie des implants crâniens est fiable et performante"},
     { year: "2233", event: "Le Consortium s’étend aux Stranis"},
     { year: "2234", event: "Premier Strani à entrer au Consortium"},
     { year: "2242", event: "Fin de la terraformation de Mars"},
     { year: "2248", event: "Première colonie humaine hors du Système Hélios sur Hope I, l’UCRS devient l’Union Planétaire"},
-    { year: "2250", event: "Création du <ArticleLink articleId='alcor-tribunal' className='text-blue-400 hover:text-blue-300'>Tribunal d’Alcor</ArticleLink>"},
+    { year: "2250", event: "Création du <a href=\"#\" data-article=\"alcor-tribunal\" class=\"text-blue-400 hover:text-blue-300\">Tribunal d’Alcor</a>"},
     { year: "2286", event: "La population humaine atteint le milliard."},
     { year: "2295", event: "Première planète co-colonisé par l’Union et les Stranis"},
     { year: "2303", event: "Les pilotes sont maintenant formés aux techniques de combat d'infanterie"},
@@ -57,8 +55,8 @@ const timelineData = {
     { year: "2352", event: "Découverte d’une nouvelle race extraterrestre nommée Torks"},
     { year: "2355", event: "A la vue de l’expansion des Torks, l’extermination totale est décrété par l’Alliance et les Stranis."},
     { year: "2356", event: "Les Stranis intègrent l’Alliance"},
-    { year: "2368", event: "Fondation des Rebelles de <ArticleLink articleId='cerberi' className='text-blue-400 hover:text-blue-300'>Cerberi</ArticleLink> (anciennement faisant parti de l’Alliance)"},
-    { year: "2370", event: "Après deux siècles de guerre, les Stranis déclarent le cessez-le-feu envers les <ArticleLink articleId='trtraris' className='text-blue-400 hover:text-blue-300'>Tr'Traris</ArticleLink>, race robotique rebelle occupant la planète mère des Stranis"},
+    { year: "2368", event: "Fondation des Rebelles de <a href=\"#\" data-article=\"cerberi\" class=\"text-blue-400 hover:text-blue-300\">Cerberi</a> (anciennement faisant parti de l’Alliance)"},
+    { year: "2370", event: "Après deux siècles de guerre, les Stranis déclarent le cessez-le-feu envers les <a href=\"#\" data-article=\"trtraris\" class=\"text-blue-400 hover:text-blue-300\">Tr'Traris</a>, race robotique rebelle occupant la planète mère des Stranis"},
     { year: "2397", event: "Les Torks ont été repoussés hors de l’espace colonisé, l’Union aura perdu 32 planètes durant la guerre"},
     { year: "2398", event: "Les Rebelles de Cerberi font sécession vis-à-vis de la Confédération"},
     { year: "2399", event: "Cerberi est une nation indépendante"},
@@ -70,13 +68,13 @@ const timelineData = {
     { year: "2490", event: "La langue des Vadas est décryptée par un Strani"},
     { year: "2510", event: "Des factions Tr'Tari indépendantes s’établissent sur des planètes \"Non viable\""},
     { year: "2514", event: "Première liaison commerciale entre la Guilde et une faction Tr'Tari indépendante"},
-    { year: "2543", event: "Les Vadas explorent l’espace, l’Union et les Stranis décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le <ArticleLink articleId='galactic-council' className='text-blue-400 hover:text-blue-300'>Conseil Galactique</ArticleLink> est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
+    { year: "2543", event: "Les Vadas explorent l’espace, l’Union et les Stranis décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le <a href=\"#\" data-article=\"galactic-council\" class=\"text-blue-400 hover:text-blue-300\">Conseil Galactique</a> est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
     { year: "2544", event: "Premier Vada Starlancer"},
     { year: "2572", event: "Lancement du projet Ω par le conseil"},
     { year: "2576", event: "Aujourd’hui"}
   ],
   strani: [
-    {event: "Cette chronologie relate tous les événements majeurs de l'Histoire <ArticleLink articleId='stranis' className='text-blue-400 hover:text-blue-300'>Strani</ArticleLink> depuis le début du 18eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
+    {event: "Cette chronologie relate tous les événements majeurs de l'Histoire <a href=\"#\" data-article=\"stranis\" class=\"text-blue-400 hover:text-blue-300\">Strani</a> depuis le début du 18eme siècle (les dates ont été converties en anciennes mesures terriennes pour faciliter la lecture)."},
     { year: "1715", event: "Les trois grandes nations Stranis entre en état de guerre froide. l’Union Fédérale Strani (UFS), l’Empire Klars et l’Alliance des Royaumes Indépendants (ARI)."},
     { year: "1736", event: "Les tentions dans les états neutres s’accentuent à mesure que les superpuissances tentent d’imposer leur influence."},
     { year: "1754", event: "Début de la course à l’espace."},
@@ -111,16 +109,16 @@ const timelineData = {
     { year: "1970", event: "Les projets spatiaux ont permis de former une grande stabilité politique dans la majorité des nations du monde. De grandes unions économiques se créent."},
     { year: "1993", event: "Premiers voyages spatiaux accessibles au publique."},
     { year: "2012", event: "\"Révolution du Metal\", l’exploitation des astéroïdes du système permet de décupler la production à partir de métaux rares."},
-    { year: "2018", event: "Découverte de l’émetteur de champ de forces gravitationnelles (<ArticleLink articleId='shields' className='text-blue-400 hover:text-blue-300'>Boucliers</ArticleLink>)"},
+    { year: "2018", event: "Découverte de l’émetteur de champ de forces gravitationnelles (<a href=\"#\" data-article=\"shields\" class=\"text-blue-400 hover:text-blue-300\">Boucliers</a>)"},
     { year: "2035", event: "Toutes les planètes habitables du système sont colonisés"},
     { year: "2046", event: "Toutes les planètes sont exploitées."},
     { year: "2068", event: "Nouveau projet spatial : créer une sphère de Dyson – projet Lis"},
     { year: "2090", event: "Le projet Lis est mis en chantier."},
     { year: "2101", event: "Première étape du projet Lis terminée, fin du projet estimé à 20 ans."},
     { year: "2122", event: "Lis est terminé, l’apport énergétique fournie permet une liberté sans précédent."},
-    { year: "2124", event: "Fondation de la <ArticleLink articleId='strani-republic' className='text-blue-400 hover:text-blue-300'>République Strani</ArticleLink>, union de toutes les nations pour préparer l’exploration spatiale. La <ArticleLink articleId='languages' className='text-blue-400 hover:text-blue-300'>langue</ArticleLink> Trane est imposée."},
-    { year: "2129", event: "Découverte du Générateur de Trou de Ver (<ArticleLink articleId='gtv' className='text-blue-400 hover:text-blue-300'>GTV</ArticleLink>)."},
-    { year: "2135", event: "Projet <ArticleLink articleId='trtraris' className='text-blue-400 hover:text-blue-300'>Tr'Traris</ArticleLink> lancé, création d’automates alimentés par Lis pour créer une force de travail inépuisable."},
+    { year: "2124", event: "Fondation de la <a href=\"#\" data-article=\"strani-republic\" class=\"text-blue-400 hover:text-blue-300\">République Strani</a>, union de toutes les nations pour préparer l’exploration spatiale. La <a href=\"#\" data-article=\"languages\" class=\"text-blue-400 hover:text-blue-300\">langue</a> Trane est imposée."},
+    { year: "2129", event: "Découverte du Générateur de Trou de Ver (<a href=\"#\" data-article=\"gtv\" class=\"text-blue-400 hover:text-blue-300\">GTV</a>)."},
+    { year: "2135", event: "Projet <a href=\"#\" data-article=\"trtraris\" class=\"text-blue-400 hover:text-blue-300\">Tr'Traris</a> lancé, création d’automates alimentés par Lis pour créer une force de travail inépuisable."},
     { year: "2142", event: "Premier Tr’Traris en activité, cela pose des problèmes de société."},
     { year: "2144", event: "Révolution sociétale, la force de travail des Tr’Traris est telle que toute l’organisation de la société est repensée pour la prendre en compte."},
     { year: "2145", event: "Age d’or de la République, début de l’expansion extra-stellaire."},
@@ -131,9 +129,9 @@ const timelineData = {
     { year: "2183", event: "Création d'une unité d'intervention spécialisée dans la surveillance, la traque et l'élimination des Tr'Traris: Zhr’Ta-Vash"},
     { year: "2191", event: "L’avancée Tr’Traris contraint les derniers Strani à quitter Sotolia."},
     { year: "2214", event: "Premier contact avec une race extra-terrestre, les Humains, des émissaires sont envoyés de part et d’autre afin de briser la barrière de la langue"},
-    { year: "2217", event: "La langue des Humains est décryptée, signature d’un traité d’échange commercial et instauration par la Guilde (<ArticleLink articleId='confederal-orgs' className='text-blue-400 hover:text-blue-300'>organisation</ArticleLink> humaine) d’une monnaie commune, le Koni"},
+    { year: "2217", event: "La langue des Humains est décryptée, signature d’un traité d’échange commercial et instauration par la Guilde (<a href=\"#\" data-article=\"confederal-orgs\" class=\"text-blue-400 hover:text-blue-300\">organisation</a> humaine) d’une monnaie commune, le Koni"},
     { year: "2219", event: "Première conférence galactique des poids et mesures, harmonisation des unités entre Stranis et Humains"},
-    { year: "2220", event: "Cycle 0 du <ArticleLink articleId='galactic-calendar' className='text-blue-400 hover:text-blue-300'>Calendrier Galactique</ArticleLink>"},
+    { year: "2220", event: "Cycle 0 du <a href=\"#\" data-article=\"galactic-calendar\" class=\"text-blue-400 hover:text-blue-300\">Calendrier Galactique</a>"},
     { year: "2234", event: "Premier Strani Starlancer"},
     { year: "2247", event: "La technologie des implants crâniens est applicable aux Stranis"},
     { year: "2295", event: "Première planète co-colonisé par la République et l’Union (autre organisation humaine)."},
@@ -143,14 +141,14 @@ const timelineData = {
     { year: "2356", event: "Les forces armées Stranis intègrent l’Alliance"},
     { year: "2370", event: "Un cessez-le-feu avec les Tr’Traris est mis en place pour concentrer l’effort de guerre sur les Torks."},
     { year: "2397", event: "Les Torks ont été repoussés hors de l’espace colonisé, la République déplore la perte de 48 planètes (dont 11 colonies) durant la guerre (Tr’Traris non compris)"},
-    { year: "2406", event: "Les Stranis peuvent maintenant intégrer la <ArticleLink articleId='confederation' className='text-blue-400 hover:text-blue-300'>Confédération</ArticleLink> humaine via une naturalisation et réciproquement."},
+    { year: "2406", event: "Les Stranis peuvent maintenant intégrer la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a> humaine via une naturalisation et réciproquement."},
     { year: "2421", event: "Première « frontière » commune entre la République et la Confédération humaine."},
     { year: "2456", event: "Centenaire de l’Alliance entre Stranis et Humains face aux Torks"},
     { year: "2486", event: "Découverte d’une nouvelle race extraterrestre dans un système isolé, la non-intervention est décrétée par l’Union. Les Vadas sont sous observation"},
     { year: "2490", event: "La langue des Vadas est décryptée par un Strani"},
     { year: "2510", event: "Des factions Tr'Tari indépendantes s’établissent sur des planètes « Non viable »"},
     { year: "2514", event: "Première liaison commerciale entre la Guilde et une faction Tr'Tari, la République dénonce un comportement dangereux."},
-    { year: "2543", event: "Les Vadas explorent l’espace, la République et l’Union décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le <ArticleLink articleId='galactic-council' className='text-blue-400 hover:text-blue-300'>Conseil Galactique</ArticleLink> est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
+    { year: "2543", event: "Les Vadas explorent l’espace, la République et l’Union décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le <a href=\"#\" data-article=\"galactic-council\" class=\"text-blue-400 hover:text-blue-300\">Conseil Galactique</a> est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
     { year: "2544", event: "Premier Vada Starlancer"},
     { year: "2572", event: "Lancement du projet Ω par le conseil"},
     { year: "2576", event: "Aujourd’hui"}
@@ -186,7 +184,7 @@ const timelineData = {
     { year: "2498", event: "Mise en orbite de la Station Spatiale Internationale."},
     { year: "2510", event: "Début du projet \"Arche\", un vaisseau colon qui explorera l’espace, des volontaires seront envoyés pour un voyage sans retour."},
     { year: "2535", event: "Construction du vaisseau Arche."},
-    { year: "2543", event: "Premier contact alien, Arche est contactée (dans la langue des Gromula). La République Strani et l’Union décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le <ArticleLink articleId='galactic-council' className='text-blue-400 hover:text-blue-300'>Conseil Galactique</ArticleLink> est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
+    { year: "2543", event: "Premier contact alien, Arche est contactée (dans la langue des Gromula). La République Strani et l’Union décident de fonder un lieu de coopération inter-espèce sur une planète neutre, le <a href=\"#\" data-article=\"galactic-council\" class=\"text-blue-400 hover:text-blue-300\">Conseil Galactique</a> est établi sur Matro IV, les Vadas sont invités à le rejoindre"},
     { year: "2544", event: "Premier Vada Starlancer"},
     { year: "2546", event: "La Vadas profitent d’un bond technologique offert par les Stranis et les Humains et leur société en est profondément bouleversée."},
     { year: "2553", event: "Les instance internationales désignent les Gromula comme représentant de l’espèce en attendant une forme d’union des gouvernements."},
@@ -195,13 +193,131 @@ const timelineData = {
   ]
 };
 
+export const articles = [
+  {
+    id: 'alcor',
+    title: 'Alcor',
+    category: 'politics',
+    content: 'Alcor est une station spatiale qui a été construite par l\'humanité pour servir de refuge en cas de catastrophe. Elle est située en orbite de Mars et a été mise en service en 2060.'
+  },
+  {
+    id: 'confederation',
+    title: 'Confédération',
+    category: 'politics',
+    content: 'La Confédération est une organisation politique qui a été créée par l\'humanité pour gérer les affaires de l\'espace. Elle a été fondée en 2114 et a son siège sur Alcor.'
+  },
+  {
+    id: 'confederal-orgs',
+    title: 'Organisations Confédérales',
+    category: 'politics',
+    content: 'Les organisations confédérales sont des entités qui ont été créées par la Confédération pour gérer les affaires de l\'espace. Elles comprennent l\'Alliance, la Guilde et l\'UCRS.'
+  },
+  {
+    id: 'alcor-tribunal',
+    title: 'Tribunal d\'Alcor',
+    category: 'politics',
+    content: 'Le Tribunal d\'Alcor est une institution judiciaire qui a été créée par la Confédération pour régler les conflits entre les membres de l\'espace. Il a été fondé en 2250 et a son siège sur Alcor.'
+  },
+  {
+    id: 'stranis',
+    title: 'Stranis',
+    category: 'species',
+    content: 'Les Stranis sont une espèce extraterrestre qui a été découverte par l\'humanité en 2214. Ils sont originaires de la planète Sotolia et ont une technologie avancée.'
+  },
+  {
+    id: 'trtraris',
+    title: 'Tr\'Traris',
+    category: 'species',
+    content: 'Les Tr\'Traris sont une espèce robotique qui a été créée par les Stranis pour servir de force de travail. Ils ont acquis une conscience et se sont rebellés contre leurs créateurs.'
+  },
+  {
+    id: 'vadas',
+    title: 'Vadas',
+    category: 'species',
+    content: 'Les Vadas sont une espèce extraterrestre qui a été découverte par l\'humanité en 2486. Ils sont originaires de la planète Grion et ont une technologie avancée.'
+  },
+  {
+    id: 'torks',
+    title: 'Torks',
+    category: 'species',
+    content: 'Les Torks sont une espèce extraterrestre qui a été découverte par l\'humanité en 2352. Ils sont agressifs et ont été repoussés hors de l\'espace colonisé.'
+  },
+  {
+    id: 'shields',
+    title: 'Boucliers',
+    category: 'technology',
+    content: 'Les boucliers sont une technologie qui a été développée par les Stranis pour protéger leurs vaisseaux spatiaux des attaques ennemies. Ils ont été découverts par l\'humanité en 2018.'
+  },
+  {
+    id: 'gtv',
+    title: 'Générateur de Trou de Ver',
+    category: 'technology',
+    content: 'Le Générateur de Trou de Ver est une technologie qui a été développée par les Stranis pour permettre les voyages interstellaires. Il a été découvert par l\'humanité en 2129.'
+  },
+  {
+    id: 'languages',
+    title: 'Langues',
+    category: 'culture',
+    content: 'Les langues sont des systèmes de communication qui sont utilisés par les différentes espèces de l\'univers. Les Stranis ont développé une langue qui a été adoptée par l\'humanité.'
+  },
+  {
+    id: 'terran-pandemic',
+    title: 'Pandémie de Flutterite',
+    category: 'culture',
+    content: 'La pandémie de Flutterite est une maladie qui a été découverte sur Terre en 2075. Elle a été causée par un virus qui a été créé par les humains.'
+  },
+  {
+    id: 'viability-index',
+    title: 'Indice de Viabilité',
+    category: 'culture',
+    content: 'L\'indice de viabilité est un système qui a été développé par l\'humanité pour évaluer la viabilité des planètes pour la colonisation. Il a été créé en 2153.'
+  },
+  {
+    id: 'galactic-calendar',
+    title: 'Calendrier Galactique',
+    category: 'culture',
+    content: 'Le calendrier galactique est un système de mesure du temps qui a été développé par l\'humanité pour coordonner les activités dans l\'espace. Il a été créé en 2220.'
+  },
+  {
+    id: 'starlancer-training',
+    title: 'Formation de Starlancer',
+    category: 'culture',
+    content: 'La formation de Starlancer est un programme qui a été développé par l\'humanité pour former les pilotes de vaisseaux spatiaux. Il a été créé en 2305.'
+  },
+  {
+    id: 'galactic-council',
+    title: 'Conseil Galactique',
+    category: 'politics',
+    content: 'Le Conseil Galactique est une organisation qui a été créée par l\'humanité et les Stranis pour coordonner les activités dans l\'espace. Il a été fondé en 2543.'
+  },
+  {
+    id: 'strani-republic',
+    title: 'République Strani',
+    category: 'politics',
+    content: 'La République Strani est une organisation politique qui a été créée par les Stranis pour gérer les affaires de leur espèce. Elle a été fondée en 2124.'
+  },
+  {
+    id: 'alliance-org',
+    title: 'Alliance',
+    category: 'politics',
+    content: 'L\'Alliance est une organisation politique qui a été créée par l\'humanité pour gérer les affaires de l\'espace. Elle a été fondée en 2215.'
+  },
+];
+
 function groupEventsByCentury(events: TimelineEvent[]) {
   // Skip the first event (description) and only process actual timeline events
   const timelineEvents = events.slice(1);
-
-  return timelineEvents.reduce<{ [key: string]: TimelineEvent[] }>((acc, event) => {
+  
+  return timelineEvents.reduce((acc: { [key: string]: TimelineEvent[] }, event) => {
     const year = parseInt(event.year);
-    const century = Math.floor(year / 100) * 100;
+    let century;
+    
+    if (year < 0) {
+      century = `${Math.floor(year / 1000) * -1}0000 av. JC`;
+    } else {
+      century = `${Math.floor(year / 100) + 1}ème siècle`;
+    }
+    
     if (!acc[century]) {
       acc[century] = [];
     }
@@ -210,79 +326,122 @@ function groupEventsByCentury(events: TimelineEvent[]) {
   }, {});
 }
 
-const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [selectedTimeline, setSelectedTimeline] = useState<TimelineType>('human');
-  const events = timelineData[selectedTimeline];
-  const groupedEvents = groupEventsByCentury(events);
+export default function Chronologies({ onBack }: { onBack: () => void }) {
+  const [activeTimeline, setActiveTimeline] = useState<TimelineType>('human');
+
+  const timelineTitles = {
+    human: 'Chronologie Humaine',
+    strani: 'Chronologie Strani',
+    vada: 'Chronologie Vada'
+  };
+
+  const groupedEvents = groupEventsByCentury(timelineData[activeTimeline]);
+  const description = timelineData[activeTimeline][0].event;
+
+  const handleArticleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const linkElement = target.closest('a[data-article]');
+    
+    if (linkElement && linkElement.dataset.article) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const articleId = linkElement.dataset.article;
+      
+      // Map article IDs to their categories
+      const categoryMap: { [key: string]: string } = {
+        // Politics articles
+        'alcor': 'politics',
+        'confederation': 'politics',
+        'confederal-orgs': 'politics',
+        'alcor-tribunal': 'politics',
+        'cerberi': 'politics',
+        'galactic-council': 'politics',
+        'strani-republic': 'politics',
+        'alliance-org': 'politics',
+        // Species articles
+        'stranis': 'species',
+        'trtraris': 'species',
+        'vadas': 'species',
+        'torks': 'species',
+        // Technology articles
+        'shields': 'technology',
+        'gtv': 'technology',
+        // Culture articles
+        'languages': 'culture',
+        'terran-pandemic': 'culture',
+        'viability-index': 'culture',
+        'galactic-calendar': 'culture',
+        'starlancer-training': 'culture'
+      };
+
+      const category = categoryMap[articleId] || 'culture';
+      
+      // Dispatch navigation event
+      const event = new CustomEvent('navigateToArticle', {
+        detail: {
+          category,
+          articleId
+        },
+        bubbles: true,
+        cancelable: true
+      });
+      
+      window.dispatchEvent(event);
+    }
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Timeline Type Selector */}
-      <div className="flex gap-4">
-        <button
-          onClick={() => setSelectedTimeline('human')}
-          className={`px-4 py-2 rounded ${
-            selectedTimeline === 'human' ? 'bg-blue-600' : 'bg-slate-700'
-          }`}
-        >
-          Histoire Humaine
-        </button>
-        <button
-          onClick={() => setSelectedTimeline('strani')}
-          className={`px-4 py-2 rounded ${
-            selectedTimeline === 'strani' ? 'bg-blue-600' : 'bg-slate-700'
-          }`}
-        >
-          Histoire Strani
-        </button>
-        <button
-          onClick={() => setSelectedTimeline('vada')}
-          className={`px-4 py-2 rounded ${
-            selectedTimeline === 'vada' ? 'bg-blue-600' : 'bg-slate-700'
-          }`}
-        >
-          Histoire Vada
-        </button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-4 mb-6">
+        {Object.entries(timelineTitles).map(([key, title]) => (
+          <button
+            key={key}
+            onClick={() => setActiveTimeline(key as TimelineType)}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+              activeTimeline === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 hover:bg-slate-600'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            {title}
+          </button>
+        ))}
       </div>
 
       {/* Description */}
-      <div className="text-lg text-slate-300">
-        {parseContent(events[0].event)}
-      </div>
+      <div 
+        className="bg-slate-700/50 p-6 rounded-lg mb-8"
+        onClick={handleArticleClick}
+        dangerouslySetInnerHTML={{ __html: description }}
+      />
 
-      {/* Timeline */}
-      <div className="space-y-8">
-        {Object.entries(groupedEvents)
-          .sort(([a], [b]) => parseInt(a) - parseInt(b))
-          .map(([century, events]) => (
-            <div key={century} className="space-y-4">
-              <h2 className="text-2xl font-bold text-blue-400">
-                {century}s
-              </h2>
-              <div className="space-y-4">
-                {events
-                  .sort((a, b) => parseInt(a.year) - parseInt(b.year))
-                  .map((event, index) => (
-                    <div key={index} className="flex gap-4">
-                      <div className="flex-none">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-blue-400" />
-                          <span className="font-mono text-blue-400">
-                            {event.year}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        {parseContent(event.event)}
-                      </div>
-                    </div>
-                  ))}
-              </div>
+      <div className="relative">
+        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-600" />
+        <div className="space-y-12 relative">
+          {Object.entries(groupedEvents).map(([century, events]) => (
+            <div key={century} className="space-y-8">
+              <h3 className="text-2xl font-bold text-blue-400 ml-12 mb-8">
+                {century}
+              </h3>
+              {events.map((event, index) => (
+                <div key={index} className="ml-12 relative">
+                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-slate-800" />
+                  <div className="bg-slate-700 p-4 rounded-lg">
+                    <div className="text-blue-400 font-bold mb-1">{event.year}</div>
+                    <div 
+                      className="text-slate-200"
+                      onClick={handleArticleClick}
+                      dangerouslySetInnerHTML={{ __html: event.event }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
+        </div>
       </div>
     </div>
   );
-};
-
-export default Chronologies;
+}
