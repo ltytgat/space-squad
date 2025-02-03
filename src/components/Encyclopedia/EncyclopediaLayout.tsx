@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { History, Users, Building2, Rocket, BookOpen } from 'lucide-react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import SearchBar from './shared/SearchBar';
+import SearchResults from './SearchResults';
 import Chronologies from './Chronologies';
 import NonHumanSpecies from './NonHumanSpecies';
 import Politics from './Politics';
@@ -49,97 +52,82 @@ const categories = [
   }
 ];
 
-export default function EncyclopediaLayout() {
-  const [activeCategory, setActiveCategory] = useState<string>('chronologies');
+const EncyclopediaLayout: React.FC = () => {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleBack = () => {
+    if (selectedArticleId) {
+      setSelectedArticleId(null);
+    } else if (selectedCategory) {
+      setSelectedCategory(null);
+      navigate('/encyclopedia');
+    }
+  };
 
   useEffect(() => {
-    const handleNavigateToArticle = (event: CustomEvent<{ category: string; articleId: string }>) => {
-      const { category, articleId } = event.detail;
-      
-      // Update both states together to ensure synchronization
-      setActiveCategory(category);
-      setSelectedArticleId(articleId);
-    };
-
-    window.addEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
-    return () => {
-      window.removeEventListener('navigateToArticle', handleNavigateToArticle as EventListener);
-    };
-  }, []);
-
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedArticleId(null); // Reset selected article when changing category manually
-    setActiveCategory(categoryId);
-  };
-
-  const renderContent = () => {
-    const category = categories.find(cat => cat.id === activeCategory);
-    if (category) {
-      const CategoryComponent = category.component;
-      return (
-        <CategoryComponent 
-          onBack={() => handleCategoryChange(category.id)} 
-          selectedArticleId={selectedArticleId}
-        />
-      );
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts[1] && pathParts[1] !== 'search') {
+      setSelectedCategory(pathParts[1]);
+      if (pathParts[2]) {
+        setSelectedArticleId(pathParts[2]);
+      }
     }
-    return (
-      <div className="prose prose-invert max-w-none">
-        <p className="text-lg text-slate-300">
-          Sélectionnez une catégorie pour afficher son contenu.
-        </p>
-      </div>
-    );
-  };
+  }, [location]);
+
+  const CategoryComponent = selectedCategory
+    ? categories.find(cat => cat.id === selectedCategory)?.component
+    : null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-4">
-      {/* Sidebar */}
-      <aside className="lg:col-span-1">
-        <nav className="bg-slate-800 rounded-lg p-4">
-          <h2 className="text-xl font-bold mb-4">Catégories</h2>
-          <ul className="space-y-2">
-            {categories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <li key={category.id}>
-                  <button 
-                    className={`w-full flex items-center gap-3 p-2 rounded text-left hover:bg-slate-700 group ${
-                      activeCategory === category.id 
-                        ? 'bg-blue-600 text-white' 
-                        : 'hover:bg-slate-700'
-                    }`}
-                    onClick={() => handleCategoryChange(category.id)}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <div>
-                      <span className="block font-medium">{category.label}</span>
-                      <span className={`text-sm ${
-                        activeCategory === category.id 
-                          ? 'text-blue-100' 
-                          : 'text-slate-400 group-hover:text-slate-300'
-                      }`}>
-                        {category.description}
-                      </span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <main className="lg:col-span-3 bg-slate-800 rounded-lg p-6">
-        <div className="border-b border-slate-700 pb-4 mb-8">
-          <h1 className="text-4xl font-extrabold text-blue-400 leading-normal">
-            Encyclopédie Space Squad
-          </h1>
+    <div className="min-h-screen bg-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-white">Encyclopedia</h1>
+          <SearchBar />
         </div>
-        {renderContent()}
-      </main>
+        
+        <Routes>
+          <Route
+            path="search"
+            element={<SearchResults />}
+          />
+          <Route
+            path="*"
+            element={
+              CategoryComponent ? (
+                <CategoryComponent
+                  onBack={handleBack}
+                  selectedArticleId={selectedArticleId}
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {categories.map(category => (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        navigate(`/encyclopedia/${category.id}`);
+                      }}
+                      className="p-6 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex items-center mb-4">
+                        <category.icon className="w-6 h-6 text-blue-400 mr-2" />
+                        <h2 className="text-xl font-semibold text-white">{category.label}</h2>
+                      </div>
+                      <p className="text-gray-400">{category.description}</p>
+                    </button>
+                  ))}
+                </div>
+              )
+            }
+          />
+        </Routes>
+      </div>
     </div>
   );
-}
+};
+
+export default EncyclopediaLayout;
