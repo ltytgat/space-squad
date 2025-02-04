@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { categoryMap } from './shared/articleCategories';
+import GalacticCalendarConverter from './shared/GalacticCalendarConverter';
 
 type TimelineEvent = {
   year: string;
@@ -341,7 +342,32 @@ const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, {});
 
   return (
-    <div className="space-y-6">
+    <div className="p-4">
+      <div className="mb-6 flex items-center">
+        <button
+          onClick={onBack}
+          className="mr-4 p-2 hover:bg-gray-700 rounded-full transition-colors"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </button>
+        <div className="flex items-center">
+          <Clock className="h-6 w-6 mr-2" />
+          <h1 className="text-2xl font-bold">Chronologies</h1>
+        </div>
+      </div>
+
+      {/* Calendar Converter Section */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Convertisseur de Calendrier Galactique</h2>
+        <GalacticCalendarConverter className="max-w-md" />
+        <p className="mt-4 text-sm text-gray-400">
+          Le calendrier galactique utilise l'an 2220 comme année de référence (c0).
+          Les années avant 2220 sont notées c-XXX (exemple: c-10 pour 2210),
+          et les années après 2220 sont notées cXXX (exemple: c10 pour 2230).
+        </p>
+      </div>
+
+      {/* Timeline Selection */}
       <div className="flex flex-wrap gap-4 mb-6">
         <button
           onClick={() => setSelectedTimeline('human')}
