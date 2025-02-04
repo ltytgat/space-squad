@@ -361,9 +361,10 @@ const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <h2 className="text-xl font-semibold mb-4">Convertisseur de Calendrier Galactique</h2>
         <GalacticCalendarConverter className="max-w-md" />
         <p className="mt-4 text-sm text-gray-400">
-          Le calendrier galactique utilise l'an 2220 comme année de référence (c0).
-          Les années avant 2220 sont notées c-XXX (exemple: c-10 pour 2210),
-          et les années après 2220 sont notées cXXX (exemple: c10 pour 2230).
+          Le calendrier galactique utilise des cycles précis basés sur une année de référence (2220 = c0).
+          Un cycle correspond à 8766 heures, soit ~0,94 années terrestres.
+          Par exemple, l'année 2576 correspond au cycle c333, et le cycle c-10 correspond à l'année 2209,31.
+          Les cycles sont arrondis à deux décimales près.
         </p>
       </div>
 

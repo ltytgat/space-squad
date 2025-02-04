@@ -4,28 +4,36 @@ interface GalacticCalendarConverterProps {
   className?: string;
 }
 
+const CYCLE_LENGTH = 8766 / 25 / 25 / 15; // Length of one cycle in Earth years
+const REFERENCE_YEAR = 2220; // c0 reference year
+
 export default function GalacticCalendarConverter({ className = '' }: GalacticCalendarConverterProps) {
   const [earthYear, setEarthYear] = useState<string>('');
   const [galacticYear, setGalacticYear] = useState<string>('');
 
   const convertToGalactic = (year: string) => {
-    const earthYearNum = parseInt(year);
+    const earthYearNum = parseFloat(year);
     if (isNaN(earthYearNum)) return '';
     
-    const diff = earthYearNum - 2220;
-    if (diff === 0) return 'c0';
-    if (diff < 0) return `c${diff}`; // Will automatically include the minus sign
-    return `c${diff}`;
+    const cyclesDiff = (earthYearNum - REFERENCE_YEAR) / CYCLE_LENGTH;
+    if (Math.abs(cyclesDiff) < 0.001) return 'c0';
+    
+    // Round to 2 decimal places
+    const roundedCycles = Math.round(cyclesDiff * 100) / 100;
+    return `c${roundedCycles >= 0 ? roundedCycles : roundedCycles}`; // Negative numbers will include their own minus sign
   };
 
   const convertToEarth = (year: string) => {
     if (!year.startsWith('c')) return '';
-    if (year === 'c0') return '2220';
+    if (year === 'c0') return REFERENCE_YEAR.toString();
     
     // Remove 'c' prefix and parse the number
-    const galacticYearNum = parseInt(year.substring(1));
-    if (isNaN(galacticYearNum)) return '';
-    return (galacticYearNum + 2220).toString();
+    const cycleNum = parseFloat(year.substring(1));
+    if (isNaN(cycleNum)) return '';
+    
+    // Convert cycles to Earth years and round to 2 decimal places
+    const earthYear = REFERENCE_YEAR + (cycleNum * CYCLE_LENGTH);
+    return Math.round(earthYear * 100) / 100;
   };
 
   const handleEarthYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +45,7 @@ export default function GalacticCalendarConverter({ className = '' }: GalacticCa
   const handleGalacticYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setGalacticYear(value);
-    setEarthYear(convertToEarth(value));
+    setEarthYear(convertToEarth(value).toString());
   };
 
   return (
@@ -51,7 +59,7 @@ export default function GalacticCalendarConverter({ className = '' }: GalacticCa
             type="text"
             value={earthYear}
             onChange={handleEarthYearChange}
-            placeholder="e.g. 2220"
+            placeholder="e.g. 2576"
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -60,13 +68,13 @@ export default function GalacticCalendarConverter({ className = '' }: GalacticCa
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
-            Galactic Year
+            Galactic Cycle
           </label>
           <input
             type="text"
             value={galacticYear}
             onChange={handleGalacticYearChange}
-            placeholder="e.g. c0, c-10, c10"
+            placeholder="e.g. c333"
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
