@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { categoryMap } from './shared/articleCategories';
 import GalacticCalendarConverter from './shared/GalacticCalendarConverter';
