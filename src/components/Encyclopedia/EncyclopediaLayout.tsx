@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { History, Users, Building2, Rocket, BookOpen } from 'lucide-react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import SearchBar from './shared/SearchBar';
 import SearchResults from './SearchResults';
 import Chronologies from './Chronologies';
@@ -134,27 +134,30 @@ const EncyclopediaLayout: React.FC = () => {
         </div>
 
         <Routes>
-          <Route
-            path="search"
-            element={<SearchResults />}
+          <Route 
+            path="/" 
+            element={<Navigate to="/encyclopedia/chronologies" replace />} 
           />
           <Route
-            path="*"
+            path="/search"
             element={
-              CategoryComponent ? (
+              <SearchResults
+                onBack={handleBack}
+                onSelectArticle={(id) => setSelectedArticleId(id)}
+              />
+            }
+          />
+          {CategoryComponent && (
+            <Route
+              path={`/${selectedCategory}/*`}
+              element={
                 <CategoryComponent
                   onBack={handleBack}
                   selectedArticleId={selectedArticleId}
                 />
-              ) : (
-                <div className="prose prose-invert max-w-none">
-                  <p className="text-lg text-slate-300">
-                    Sélectionnez une catégorie pour afficher son contenu.
-                  </p>
-                </div>
-              )
-            }
-          />
+              }
+            />
+          )}
         </Routes>
       </main>
     </div>
