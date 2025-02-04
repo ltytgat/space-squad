@@ -14,7 +14,7 @@ type TimelineType = 'human' | 'strani' | 'vada';
 const timelineData = {
   human: [
     {event: "Cette chronologie relate tous les événements majeurs de l'Histoire Humaine depuis le milieu du 21eme siècle."},
-    { year: "2050", event: "La limite des 2°C de la hausse des températures a pas été dépassé, celle-ci est montée à 4,2°C" },
+    { year: "2050", event: "La limite des 2°C de la hausse des températures a été dépassé, celle-ci est montée à 4,2°C" },
     { year: "2051", event: "Selon les meilleures estimations, l'humanité sera condamnée d'ici un siècle, le projet ALCOR est lancé pour faire immigrer l'humanité" },
     { year: "2060", event: "Premier module de la station <a href=\"#\" data-article=\"alcor\" class=\"text-blue-400 hover:text-blue-300\">Alcor</a> mis en orbite de Mars" },
     { year: "2061", event: "Deuxième module d'Alcor, des serveurs contenant l'encyclopédie humaine" },
