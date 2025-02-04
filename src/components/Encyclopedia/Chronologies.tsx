@@ -358,7 +358,7 @@ const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* Calendar Converter Section */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Convertisseur de Calendrier Galactique</h2>
+        <h2 className="text-xl font-semibold mb-4">Convertisseur Calendrier Galactique</h2>
         <GalacticCalendarConverter className="max-w-md" />
         <p className="mt-4 text-sm text-gray-400">
           Le calendrier galactique utilise des cycles précis basés sur une année de référence (2220 = c0).

@@ -53,13 +53,13 @@ export default function GalacticCalendarConverter({ className = '' }: GalacticCa
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
-            Earth Year
+            Année Terrestre (d'après le calendrier grégorien)
           </label>
           <input
             type="text"
             value={earthYear}
             onChange={handleEarthYearChange}
-            placeholder="e.g. 2576"
+            placeholder="ex: 2576"
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -68,13 +68,13 @@ export default function GalacticCalendarConverter({ className = '' }: GalacticCa
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
-            Galactic Cycle
+            Cycle
           </label>
           <input
             type="text"
             value={galacticYear}
             onChange={handleGalacticYearChange}
-            placeholder="e.g. c333"
+            placeholder="ex: c333"
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
