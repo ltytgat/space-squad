@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { History, Users, Building2, Rocket, BookOpen } from 'lucide-react';
+import { History, Users, Building2, Rocket, BookOpen, Timer } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import SearchBar from './shared/SearchBar';
 import SearchResults from './SearchResults';
@@ -8,6 +8,7 @@ import NonHumanSpecies from './NonHumanSpecies';
 import Politics from './Politics';
 import Technology from './Technology';
 import Culture from './Culture';
+import Stardash from './Stardash';
 
 interface CategoryComponentProps {
   onBack: () => void;
@@ -49,6 +50,13 @@ const categories = [
     label: 'Culture',
     description: 'Formation, langues et société',
     component: Culture as React.ComponentType<CategoryComponentProps>
+  },
+  { 
+    id: 'stardash', 
+    icon: Timer, 
+    label: 'Stardash',
+    description: 'Courses spatiales et compétitions',
+    component: Stardash as React.ComponentType<CategoryComponentProps>
   }
 ];
 
