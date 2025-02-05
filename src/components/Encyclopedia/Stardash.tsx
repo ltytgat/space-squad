@@ -180,9 +180,10 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
           "Ces pilotes ne sont plus en activité, soit mort soit à la retraite. Ne sont mentionnés ici que ceux qui détiennent encore un record ou fait notable:",
           "<b>Alastair \"Maestro\" Kell</b>, le meilleur pilote de l'histoire encore à ce jour. 20 Silver Arrow pour 22 AstroRace, 18 Astralis (dont la majorité avec Pulsar Wave).",
           "<b>Adrian Spence</b>, la terreur du vide, champion invaincu du Void Circuit pendant 32 cycles",
-          "<b>\"Spike\"</b>, ancien Starlancer, fondateur de l'écurie Spike & Géo avec son ami et collègue Géo, record du pilote le plus agé à avoir gagné une Silver Arrow à l'âge de 59 cycles (soit enrivon 55 ans terrestres).",
+          "<b>\"Spike\"</b>, ancien Starlancer, fondateur de l'<a href=\"#\" data-article=\"stardash-ecuries\" class=\"text-blue-400 hover:text-blue-300\">écurie</a> Spike & Géo avec son ami et collègue Géo, record du pilote le plus agé à avoir gagné une Silver Arrow à l'âge de 59 cycles (soit enrivon 55 ans terrestres).",
           "<b>Audrey Kirkland</b>, a l'inverse, la plus jeune détentrice d'une Silver Arrow à l'âge de 18 cycles (environ 17 ans terrestres)",
-          "<b>Evan \"Killer\" Barrett</b>, pilote ayant provoqué le plus de crash d'adversaires (89 crash attribués) ayant entrainés 43 bléssés légers, 38 bléssés graves et 3 morts. Aucune participation sur les championnats officiels."
+          "<b>Evan \"Killer\" Barrett</b>, pilote ayant provoqué le plus de crash d'adversaires (89 crash attribués) ayant entrainés 43 bléssés légers, 38 bléssés graves et 3 morts. Aucune participation sur les championnats officiels.",
+          "<b>Caleb \"Winner\" Wilson</b>, n'a jamais perdu une course. Il remporta toutes ses courses, du R3 à l'AstroRace. Il annonca se retirer après avoir gagné sa seule Silver Arrow."
          ]
         }
       ]
