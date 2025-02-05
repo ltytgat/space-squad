@@ -1,5 +1,5 @@
 import React from 'react';
-import ArticleLayout from './shared/ArticleLayout';
+import { ArticleLayout } from './shared/ArticleLayout';
 
 export const articles = [
   {
