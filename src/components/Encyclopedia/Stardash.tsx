@@ -115,7 +115,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
        {
         title: 'Organisation',
         content: [
-          "Le championnat Stardash est organisé par le Consortium. Il est divisé en plusieurs niveaux, se déroulent sur un cycle et comporte 2 titres.",
+          "Le championnat Stardash est organisé par le Consortium. Il est divisé en plusieurs niveaux, se déroule sur un cycle et comporte 2 titres.",
           "Toutes les courses ont lieu sur des circuits officiels à travers la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a>. La course finale a toujours lieu sur le plus vieux circuit en orbit de Saturne (système Hélios).",
         ]
        },
@@ -139,7 +139,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
         content: [
           "<b>Silver Arrow</b>: Le meilleur pilote",
           "Pour chaque course de l'AstroRace, les pilotes gagnent des points selon leur classement. A l'issu de la compétition, le meilleur pilote se voit attribuer le trophée de la Silver Arrow.",
-          "Les pilotes aprécient de faire apparaitre cette disinction sur la livrée de leur vaisseau par de petitesêtes de fleche argentée près du cockpit.",
+          "Les pilotes aprécient de faire apparaitre cette disinction sur la livrée de leur vaisseau par de petites têtes de fleche argentées près du cockpit.",
           " ",
           "<b>Astralis Trophy</b>: La meilleure écurie",
           "Pour chaque course des R3, R2 et R1, les écuries gagnent des points si l'un de leur pilote fait un bon classement (variable selon le nombre de participants), et en perde dans le cas opposé.",
