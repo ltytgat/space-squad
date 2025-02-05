@@ -71,21 +71,54 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
     },
     {
       id: 'stardash-ecuries',
-      title: 'Écuries',
-      subtitle: '',
-      resume: '',
+      title: 'Écuries',
+      subtitle: 'Les plus grandes écuries de Stardash',
+      resume: "Dans l'ombre des pilotes légendaires, les écuries sont les véritables architectes du succès au Stardash. Découvrez les rivalités, les technologies secrètes et les équipes les plus influentes de cette compétition interstellaire.",
+      sections: [
+        {
+          title: 'Gestion des courses',
+          content: [
+            "Il est vite apparu qu'un pilote seul ne pouvait pas progresser bien loin dans un championnat, il falalit en plus de la gestion administrative avoir des compétences très poussé en mécanique.",
+            "Les pilotes se sont alors entourés d'un personnel de haute technologie, d'ingénieurs et d'experts en securité spatiale pour gérer les courses.",
+            "Ses regroupements ont étés officialisés par le Consortium sour l'appélation d'écuries.",
+            "Les écuries comportent donc tout le personnel pour s'occuper de la gestion des courses, des véhicules (via un département ingénieurie), et du recrutement des pilotes.",
+            "Pour des raisons administratives, seules les écuries peuvent inscrire des pilotes aux plus hauts niveaux du championnat. Pour autant, un pilote seul peut créer sa propre écurie et s'inscrire lui-même.",
+          ]
+        },
+        {
+          title: "Recrutement et Entrainement",
+          content: [
+            "Les recruteurs des plus grandes écuries scrutent les parcours d'entrainement des jeunes pilotes, ainsi que les premiers niveaux du championnat pour y repérer des talents.",
+            "De leur coté, les pilotes savant que s'ils veulent atteindre les plus hauts niveaux du championnat, ils devront passer par une écurie.",
+            "A la charge des écuries ensuite d'inscrire les pilotes à leur meilleur niveau de compétition afin de les faire progresser tout en assurant leur entrainement.",
+            "Il est possible d'inscrire un pilote sur un niveau de championnat supérieur, mais si les résultats ne sont pas au rendez-vous, c'est l'écurie qui perdra des points."
+          ]
+        },
+        {
+          title: 'Les plus grandes écuries',
+          content: [
+            "Au plus haut niveau du championnat, il existe 6 écuries qui se distinguent par leurs performances et leur longévité à ce niveau:",
+            "FF Aether Racing Team, ou plus simplement Aether, est l'actuelle tenante du titre des écuries depuis 3 cycles. Leur livrée est composée de blanc et de nuances de gris",
+            "Azur Wings, c'est la plus ancienne des écuries encore en activité. Son livrée est composée de variantes de bleu",
+            "Eclipse, avec des performances en baisse ces derniers temps, elle se démarque principalement par son utilisation peu conventionnel de ses moteurs. La livrée est verte et noire",
+            "Spike & Géo, fondée par deux Starlancers, c'est à ce jour l'écurie avec le plus de titres de \"Meilleur Pilote\". La livrée est composée de rouge et de blanc",
+            "Supernova, c'est ici que se trouve (soi-disant) les meilleurs ingénieurs, l'écurie avance pour preuve qu'elle n'a jamais subi la moindre avarie en compétition. Sa livrée est jaune",
+            "Void Riders, amateurs de sensations fortes, c'est ici que se retrouve les pilotes les plus inventifs, plusieurs technique de pilotes aujourd'hui utilisés par tous ont vu le jour sous leur livrée de noir et violet"
+          ]
+        }
+      ]    
     },
     {
       id: 'championnat',
       title: 'Championnat',
-      subtitle: '',
-      resume: '',
+      subtitle: 'Organisation du Championnat Stardash',
+      resume: "Le Championnat Stardash, l’apogée des courses spatiales, offre chaque cycle une lutte acharnée entre les meilleurs pilotes de la galaxie.",
     },
     {
       id: 'stardash-pilotes',
       title: 'Pilotes célèbres',
-      subtitle: '',
-      resume: '',
+      subtitle: 'Les plus grands pilotes de Stardash',
+      resume: 'Les pilotes du Stardash sont bien plus que de simples compétiteurs : ils incarnent des légendes vivantes défiant les lois de l’espace',
     }
   ];
 
