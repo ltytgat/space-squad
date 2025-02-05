@@ -33,4 +33,5 @@ export const categoryMap: { [key: string]: string } = {
   'stardash-ecuries': 'stardash',
   'championnat': 'stardash',
   'stardash-pilotes': 'stardash',
+  'stardash-underground': 'stardash'
 };
