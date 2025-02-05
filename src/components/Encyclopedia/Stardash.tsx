@@ -53,7 +53,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
         {
           title: 'Popularité',
           content: [
-           "Le Stardash attire chaque année des millions de spectateurs. Les parieurs affluent, les sponsors rivalisent pour équiper les meilleures équipes, et les retombées technologiques influencent même les industries civiles.",
+           "Le Stardash attire à chaque édition des millions de spectateurs. Les parieurs affluent, les sponsors rivalisent pour équiper les meilleures écuries et pilotes, et les retombées technologiques influencent même les industries civiles.",
            "Au-delà de la compétition, c’est une vitrine de l’ingéniosité humaine face à l’immensité de l’espace."
           ]
         },
