@@ -103,6 +103,24 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
             "<b>Supernova</b>, c'est ici que se trouve (soi-disant) les meilleurs ingénieurs, l'écurie avance pour preuve qu'elle n'a jamais subi la moindre avarie en compétition. Sa livrée est jaune",
             "<b>Void Riders</b>, amateurs de sensations fortes, c'est ici que se retrouve les pilotes les plus inventifs, plusieurs techniques de pilotage aujourd'hui utilisées par tous ont vu le jour sous leur livrée de noir et violet"
           ]
+        },
+        {
+          title: "Logos des écuries",
+          content: [
+            "Voici les logos et les symboles (sur les vaisseaux) de chaque écurie :",
+            "<img src='/images/Aether_gen.png' alt='Aether.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Azur_gen.png' alt='Azur.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Eclipse_gen.png' alt='Eclipse.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Spike_Geo_gen.png' alt='Spike_Geo.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Supernova_gen.png' alt='Supernova.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Void_gen.png' alt='Void.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Aether_small.png' alt='Aether_small.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Azur_small.png' alt='Azur_small.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Eclipse_small.png' alt='Eclipse_small.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Spike_Geo_small.png' alt='Spike_Geo_small.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Supernova_small.png' alt='Supernova_small.png' class='w-full rounded-lg shadow-lg my-4' />",
+            "<img src='/images/Void_small.png' alt='Void_small.png' class='w-full rounded-lg shadow-lg my-4' />",
+          ]
         }
       ]    
     },
