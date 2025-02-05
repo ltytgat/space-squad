@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { History, Users, Building2, Rocket, BookOpen, Timer } from 'lucide-react';
+import { History, Users, Building2, Rocket, BookOpen, Gauge } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import SearchBar from './shared/SearchBar';
 import SearchResults from './SearchResults';
@@ -53,7 +53,7 @@ const categories = [
   },
   { 
     id: 'stardash', 
-    icon: Timer, 
+    icon: Gauge, 
     label: 'Stardash',
     description: 'Courses spatiales et compétitions',
     component: Stardash as React.ComponentType<CategoryComponentProps>
