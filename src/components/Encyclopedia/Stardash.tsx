@@ -142,7 +142,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
           "Les pilotes aprécient de faire apparaitre cette disinction sur la livrée de leur vaisseau par de petites têtes de fleche argentées près du cockpit.",
           " ",
           "<b>Astralis Trophy</b>: La meilleure écurie",
-          "Pour chaque course des R3, R2 et R1, les écuries gagnent des points si l'un de leur pilote fait un bon classement (variable selon le nombre de participants), et en perde dans le cas opposé.",
+          "Pour chaque course des R3, R2 et R1, les écuries gagnent des points si l'un de leur pilote fait un bon classement (variable selon le nombre de participants), et en perd dans le cas opposé.",
           "A l'issu d'un temps défini, les 6 meilleurs écuries sont qualifiées pour l'AstroRace.",
           "Et durant cette dernière, le même système est appliqué.",
           "La meilleure écurie du classement gagne alors l'Astralis Trophy (souvent abrégée en Astralis)."
