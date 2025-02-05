@@ -21,7 +21,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
           title: 'Histoire',
           content: [
             "La première édition du Stardash remonte à près de deux siècles.",
-            "Peu après la fin de la guerre Tork, les progesses technologiques acquis durant cette période furent diffusés. <a href=\"#\" data-article=\"confederal-orgs\" class=\"text-blue-400 hover:text-blue-300\">Union</a> présenta alors ses derniers modèles de moteurs sur de petits engins monoplace.",
+            "Peu après la fin de la guerre Tork, les progesses technologiques acquis durant cette période furent diffusés. L'<a href=\"#\" data-article=\"confederal-orgs\" class=\"text-blue-400 hover:text-blue-300\">Union</a> présenta alors ses derniers modèles de moteurs sur de petits engins monoplace.",
             "Ce qui était au départ une simple démonstration technologique s’est rapidement transformé en une compétition, attirant les meilleurs pilotes et les plus brillants ingénieurs.",
             "C'est en 2412 <a href=\"#\" data-article=\"galactic-calendar\" class=\"text-blue-400 hover:text-blue-300\">(c205)</a> qu'eu lieu la première course officielle de ces vaisseaux baptisés Stardash en raison des chocs occasionnés par les pilotes entre eux lors des courses antérieures."
           ]
