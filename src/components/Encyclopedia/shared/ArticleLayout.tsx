@@ -23,7 +23,7 @@ interface ArticleLayoutProps {
   selectedArticleId?: string | null;
 }
 
-export default function ArticleLayout({ title, articles, onBack, selectedArticleId }: ArticleLayoutProps) {
+export const ArticleLayout = ({ title, articles, onBack, selectedArticleId }: ArticleLayoutProps) => {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const navigate = useNavigate();
   const articleRef = useRef<HTMLDivElement>(null);
