@@ -28,4 +28,9 @@ export const categoryMap: { [key: string]: string } = {
   'rewards': 'culture',
   'divisions': 'culture',
   'names': 'culture',
+  // Stardash articles
+  'stardash-setting': 'stardash',
+  'stardash-ecuries': 'stardash',
+  'championnat': 'stardash',
+  'stardash-pilotes': 'stardash',
 };
