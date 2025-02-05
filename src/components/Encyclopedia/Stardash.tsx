@@ -47,9 +47,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
             " ",
             "En dehors des circuit officiels, il existent des compétitions underground pouvant faire courir les pilotes aussi bien dans l'espace encombré (asteroïdes, satellites, etc.) que dans l'espace libre.",
             "Mais également dans des environnements beaucoup plus dangereux pour les pilotes comme la haute atmospèhre d'une planète, ou bien même à la surface de ces dernières, engendrant moultes obstables et la gravité avec lesquels gérer.",
-            "Cas à part: ",
-            "Void Circuit: Il s'agit de la plus célèbre course underground utilisant des <a href=\"#\" data-article=\"gtv\" class=\"text-blue-400 hover:text-blue-300\">GTV</a> pour que la course se déroule sur plusieurs environnements à la fois.",
-            "HyperSpeed: Une compétition officielle, mais en dehors du championnat utilisant des accélérateurs magnétiques pour propulser les vaisseaux."
+            "Cas à part, HyperSpeed: Une compétition officielle, mais en dehors du championnat utilisant des accélérateurs magnétiques pour propulser les vaisseaux."
           ],
         },
         {
@@ -98,12 +96,12 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
           title: 'Les plus grandes écuries',
           content: [
             "Au plus haut niveau du championnat, il existe 6 écuries qui se distinguent par leurs performances et leur longévité à ce niveau:",
-            "FF Aether Racing Team, ou plus simplement Aether, est l'actuelle tenante du titre des écuries depuis 3 cycles. Leur livrée est composée de blanc et de nuances de gris",
-            "Azur Wings, c'est la plus ancienne des écuries encore en activité. Son livrée est composée de variantes de bleu",
-            "Eclipse, avec des performances en baisse ces derniers temps, elle se démarque principalement par son utilisation peu conventionnel de ses moteurs. La livrée est verte et noire",
-            "Spike & Géo, fondée par deux Starlancers, c'est à ce jour l'écurie avec le plus de titres de \"Meilleur Pilote\". La livrée est composée de rouge et de blanc",
-            "Supernova, c'est ici que se trouve (soi-disant) les meilleurs ingénieurs, l'écurie avance pour preuve qu'elle n'a jamais subi la moindre avarie en compétition. Sa livrée est jaune",
-            "Void Riders, amateurs de sensations fortes, c'est ici que se retrouve les pilotes les plus inventifs, plusieurs technique de pilotes aujourd'hui utilisés par tous ont vu le jour sous leur livrée de noir et violet"
+            "<b>FF Aether Racing Team</b>, ou plus simplement Aether, est l'actuelle tenante de l'Astralis depuis 3 cycles. Leur livrée est composée de blanc et de nuances de gris",
+            "<b>Azur Wings</b>, fondée en 2436 (c231) c'est la plus ancienne des écuries encore en activité. Son livrée est composée de variantes de bleu",
+            "<b>Eclipse</b>, avec des performances en baisse ces derniers temps, elle se démarque principalement par son utilisation peu conventionnel de ses moteurs. La livrée est verte et noire",
+            "<b>Spike & Géo</b>, fondée par deux Starlancers, c'est à ce jour l'écurie avec le plus de Silver Arrow. La livrée est composée de rouge et de blanc",
+            "<b>Supernova</b>, c'est ici que se trouve (soi-disant) les meilleurs ingénieurs, l'écurie avance pour preuve qu'elle n'a jamais subi la moindre avarie en compétition. Sa livrée est jaune",
+            "<b>Void Riders</b>, amateurs de sensations fortes, c'est ici que se retrouve les pilotes les plus inventifs, plusieurs techniques de pilotage aujourd'hui utilisées par tous ont vu le jour sous leur livrée de noir et violet"
           ]
         }
       ]    
@@ -113,12 +111,96 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
       title: 'Championnat',
       subtitle: 'Organisation du Championnat Stardash',
       resume: "Le Championnat Stardash, l’apogée des courses spatiales, offre chaque cycle une lutte acharnée entre les meilleurs pilotes de la galaxie.",
+      sections: [
+       {
+        title: 'Organisation',
+        content: [
+          "Le championnat Stardash est organisé par le Consortium. Il est divisé en plusieurs niveaux, se déroulent sur un cycle et comporte 2 titres.",
+          "Toutes les courses ont lieu sur des circuits officiels à travers la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a>. La course finale a toujours lieu sur le plus vieux circuit en orbit de Saturne (système Hélios).",
+        ]
+       },
+       {
+        title: "Les niveaux",
+        content: [
+          "Les jeunes pilotes peuvent s'inscrire aux courses du niveau R3.",
+          "Ces dernières font partis des petits championnats au niveau local sur une ou deux colonie proche.",
+          "Le niveau supérieur est le R2, ce dernier se déroule sur un secteur, soit un ensemble de système comportant au moins une station spatiale d'importance.",
+          "Les frais de participation inclus les transports vers les différents circuits, il est donc recommandé d'avoir un sponsor ou bien d'etre dans une écurie pour concourir.",
+          "Au dessus se trouve le R1 qui sert de qualification pour le grand championnat.",
+          "Il se déroule à travers toute la confédération.",
+          " ",
+          "Le grand championnat, parfois appelé l'AstroRace, est l'objectif de tous les pilotes.",
+          "Le nombre de place est limité aux 6 meilleurs pilotes (hors écuries qualifiées) du R1 et 2 pilotes par écurie pour les 6 meilleurs écuries, soit un total de 18 pilotes",
+          "Le nombre de course peut varier d'une édition à l'autre, mais en moyenne il s'agit de 15 courses par cycle, soit une par mois.",
+        ]
+       },
+       {
+        title: "Classement & récompenses",
+        content: [
+          "<b>Silver Arrow</b>: Le meilleur pilote",
+          "Pour chaque course de l'AstroRace, les pilotes gagnent des points selon leur classement. A l'issu de la compétition, le meilleur pilote se voit attribuer le trophée de la Silver Arrow.",
+          "Les pilotes aprécient de faire apparaitre cette disinction sur la livrée de leur vaisseau par de petitesêtes de fleche argentée près du cockpit.",
+          " ",
+          "<b>Astralis Trophy</b>: La meilleure écurie",
+          "Pour chaque course des R3, R2 et R1, les écuries gagnent des points si l'un de leur pilote fait un bon classement (variable selon le nombre de participants), et en perde dans le cas opposé.",
+          "A l'issu d'un temps défini, les 6 meilleurs écuries sont qualifiées pour l'AstroRace.",
+          "Et durant cette dernière, le même système est appliqué.",
+          "La meilleure écurie du classement gagne alors l'Astralis Trophy (souvent abrégée en Astralis)."
+        ]
+       },
+       {
+        title: "Les sponsors",
+        content: [
+          "Afin de couvrir les frais de participation et de fonctionnement, les pilotes peuvent recourir à des sponsors.",
+          "Ces derniers peuvent simplement participer aux frais contre un avantage publicitaire sur la livrée du vaisseau ou bien un avantage matériel comme un élément du vaisseau (moteur, bouclier, etc.)",
+          "Si le pilote est dans une écurie, cette dernière peut prélever une commission selon la nature du sponsor ou bien emmetre un véto."
+        ]
+       }
+      ]
     },
     {
       id: 'stardash-pilotes',
       title: 'Pilotes célèbres',
       subtitle: 'Les plus grands pilotes de Stardash',
       resume: 'Les pilotes du Stardash sont bien plus que de simples compétiteurs : ils incarnent des légendes vivantes défiant les lois de l’espace',
+      sections: [
+        {
+         title: "Pilotes en activité",
+         content: [
+          "Voici quelques pilotes de renom encore en activité :",
+          "<b>Kael Rorik</b> surnommé « L’Ombre de Delapiti », connu pour ses trajectoires imprévisibles. 5 Silver Arrow et 8 Astralis avec les Void Riders.",
+          "<b>Nyra Valen</b>, ancienne Starlancer de l'Alliance reconvertie, célèbre pour ses victoires sur les parcours atmosphériques. Aucune participation sur les championnats officiels.",
+          "<b>Jax Tenel</b>, innovateur et génie de la propulsion qui conçoit lui-même ses vaisseaux. Le seul pilote de l'histoire à avoir atteint l'AstroRace en solo.",
+          "<b>Thomas Edwards</b>, prétendant au titre de meilleur pilote, 15 Silver Arrow (pour 19 participations) et 12 Astralis avec Aether."
+         ]
+        },
+        {
+         title: "Anciens pilotes",
+         content: [
+          "Ces pilotes ne sont plus en activité, soit mort soit à la retraite. Ne sont mentionnés ici que ceux qui détiennent encore un record ou fait notable:",
+          "<b>Alastair \"Maestro\" Kell</b>, le meilleur pilote de l'histoire encore à ce jour. 20 Silver Arrow pour 22 AstroRace, 18 Astralis (dont la majorité avec Pulsar Wave).",
+          "<b>Adrian Spence</b>, la terreur du vide, champion invaincu du Void Circuit pendant 32 cycles",
+          "<b>\"Spike\"</b>, ancien Starlancer, fondateur de l'écurie Spike & Géo avec son ami et collègue Géo, record du pilote le plus agé à avoir gagné une Silver Arrow à l'âge de 59 cycles (soit enrivon 55 ans terrestres).",
+          "<b>Audrey Kirkland</b>, a l'inverse, la plus jeune détentrice d'une Silver Arrow à l'âge de 18 cycles (environ 17 ans terrestres)",
+          "<b>Evan \"Killer\" Barrett</b>, pilote ayant provoqué le plus de crash d'adversaires (89 crash attribués) ayant entrainés 43 bléssés légers, 38 bléssés graves et 3 morts. Aucune participation sur les championnats officiels."
+         ]
+        }
+      ]
+    },
+    {
+      id: 'stardash-underground',
+      title: 'Courses underground',
+      subtitle: 'Les courses et championnats non-officiels',
+      resume: 'En dehors des courses du Consortium se trouvent des courses et championnats clandestins. Beaucoup plus dangereux mais aussi plus lucratifs pour les pilotes les plus téméraires.',
+      sections: [
+        {
+          title: "WiP",
+          content: [
+            "WiP : Work In Progress",
+            "Void Circuit: Il s'agit de la plus célèbre course underground utilisant des <a href=\"#\" data-article=\"gtv\" class=\"text-blue-400 hover:text-blue-300\">GTV</a> pour que la course se déroule sur plusieurs environnements à la fois.",
+          ]
+        }
+      ]
     }
   ];
 
