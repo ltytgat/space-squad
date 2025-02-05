@@ -145,6 +145,7 @@ const timelineData = {
     { year: "2370", event: "Un cessez-le-feu avec les Tr’Traris est mis en place pour concentrer l’effort de guerre sur les Torks."},
     { year: "2397", event: "Les Torks ont été repoussés hors de l’espace colonisé, la République déplore la perte de 48 planètes (dont 11 colonies) durant la guerre (Tr’Traris non compris)"},
     { year: "2406", event: "Les Stranis peuvent maintenant intégrer la <a href=\"#\" data-article=\"confederation\" class=\"text-blue-400 hover:text-blue-300\">Confédération</a> humaine via une naturalisation et réciproquement."},
+    { year: "2412", event: "Première course officielle de <a href=\"#\" data-article=\"stardash-setting\" class=\"text-blue-400 hover:text-blue-300\">Stardash</a>"},
     { year: "2421", event: "Première « frontière » commune entre la République et la Confédération humaine."},
     { year: "2456", event: "Centenaire de l’Alliance entre Stranis et Humains face aux Torks"},
     { year: "2486", event: "Découverte d’une nouvelle race extraterrestre dans un système isolé, la non-intervention est décrétée par l’Union. Les Vadas sont sous observation"},
@@ -195,117 +196,6 @@ const timelineData = {
     { year: "2576", event: "Aujourd’hui"},
   ]
 };
-
-const articles = [
-  {
-    id: 'alcor',
-    title: 'Alcor',
-    category: 'politics',
-    content: 'Alcor est une station spatiale qui a été construite par l\'humanité pour servir de refuge en cas de catastrophe. Elle est située en orbite de Mars et a été mise en service en 2060.'
-  },
-  {
-    id: 'confederation',
-    title: 'Confédération',
-    category: 'politics',
-    content: 'La Confédération est une organisation politique qui a été créée par l\'humanité pour gérer les affaires de l\'espace. Elle a été fondée en 2114 et a son siège sur Alcor.'
-  },
-  {
-    id: 'confederal-orgs',
-    title: 'Organisations Confédérales',
-    category: 'politics',
-    content: 'Les organisations confédérales sont des entités qui ont été créées par la Confédération pour gérer les affaires de l\'espace. Elles comprennent l\'Alliance, la Guilde et l\'UCRS.'
-  },
-  {
-    id: 'alcor-tribunal',
-    title: 'Tribunal d\'Alcor',
-    category: 'politics',
-    content: 'Le Tribunal d\'Alcor est une institution judiciaire qui a été créée par la Confédération pour régler les conflits entre les membres de l\'espace. Il a été fondé en 2250 et a son siège sur Alcor.'
-  },
-  {
-    id: 'stranis',
-    title: 'Stranis',
-    category: 'species',
-    content: 'Les Stranis sont une espèce extraterrestre qui a été découverte par l\'humanité en 2214. Ils sont originaires de la planète Sotolia et ont une technologie avancée.'
-  },
-  {
-    id: 'trtraris',
-    title: 'Tr\'Traris',
-    category: 'species',
-    content: 'Les Tr\'Traris sont une espèce robotique qui a été créée par les Stranis pour servir de force de travail. Ils ont acquis une conscience et se sont rebellés contre leurs créateurs.'
-  },
-  {
-    id: 'vadas',
-    title: 'Vadas',
-    category: 'species',
-    content: 'Les Vadas sont une espèce extraterrestre qui a été découverte par l\'humanité en 2486. Ils sont originaires de la planète Grion et ont une technologie avancée.'
-  },
-  {
-    id: 'torks',
-    title: 'Torks',
-    category: 'species',
-    content: 'Les Torks sont une espèce extraterrestre qui a été découverte par l\'humanité en 2352. Ils sont agressifs et ont été repoussés hors de l\'espace colonisé.'
-  },
-  {
-    id: 'shields',
-    title: 'Boucliers',
-    category: 'technology',
-    content: 'Les boucliers sont une technologie qui a été développée par les Stranis pour protéger leurs vaisseaux spatiaux des attaques ennemies. Ils ont été découverts par l\'humanité en 2018.'
-  },
-  {
-    id: 'gtv',
-    title: 'Générateur de Trou de Ver',
-    category: 'technology',
-    content: 'Le Générateur de Trou de Ver est une technologie qui a été développée par les Stranis pour permettre les voyages interstellaires. Il a été découvert par l\'humanité en 2129.'
-  },
-  {
-    id: 'languages',
-    title: 'Langues',
-    category: 'culture',
-    content: 'Les langues sont des systèmes de communication qui sont utilisés par les différentes espèces de l\'univers. Les Stranis ont développé une langue qui a été adoptée par l\'humanité.'
-  },
-  {
-    id: 'terran-pandemic',
-    title: 'Pandémie de Flutterite',
-    category: 'culture',
-    content: 'La pandémie de Flutterite est une maladie qui a été découverte sur Terre en 2075. Elle a été causée par un virus qui a été créé par les humains.'
-  },
-  {
-    id: 'viability-index',
-    title: 'Indice de Viabilité',
-    category: 'culture',
-    content: 'L\'indice de viabilité est un système qui a été développé par l\'humanité pour évaluer la viabilité des planètes pour la colonisation. Il a été créé en 2153.'
-  },
-  {
-    id: 'galactic-calendar',
-    title: 'Calendrier Galactique',
-    category: 'culture',
-    content: 'Le calendrier galactique est un système de mesure du temps qui a été développé par l\'humanité pour coordonner les activités dans l\'espace. Il a été créé en 2220.'
-  },
-  {
-    id: 'starlancer-training',
-    title: 'Formation de Starlancer',
-    category: 'culture',
-    content: 'La formation de Starlancer est un programme qui a été développé par l\'humanité pour former les pilotes de vaisseaux spatiaux. Il a été créé en 2305.'
-  },
-  {
-    id: 'galactic-council',
-    title: 'Conseil Galactique',
-    category: 'politics',
-    content: 'Le Conseil Galactique est une organisation qui a été créée par l\'humanité et les Stranis pour coordonner les activités dans l\'espace. Il a été fondé en 2543.'
-  },
-  {
-    id: 'strani-republic',
-    title: 'République Strani',
-    category: 'politics',
-    content: 'La République Strani est une organisation politique qui a été créée par les Stranis pour gérer les affaires de leur espèce. Elle a été fondée en 2124.'
-  },
-  {
-    id: 'alliance-org',
-    title: 'Alliance',
-    category: 'politics',
-    content: 'L\'Alliance est une organisation politique qui a été créée par l\'humanité pour gérer les affaires de l\'espace. Elle a été fondée en 2215.'
-  },
-];
 
 const Chronologies: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineType>('human');
