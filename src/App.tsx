@@ -1,6 +1,6 @@
 import React from 'react';
-import { Menu } from 'lucide-react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
+import UserMenu from './components/layout/UserMenu';
 import EncyclopediaLayout from './components/Encyclopedia/EncyclopediaLayout';
 import ScrollToTop from './components/shared/ScrollToTop';
 
@@ -22,9 +22,7 @@ export default function App() {
               className="h-8 w-auto"
             />
           </button>
-          <button className="p-2 hover:bg-slate-700 rounded">
-            <Menu className="w-6 h-6" />
-          </button>
+          <UserMenu />
         </div>
       </nav>
 
@@ -61,10 +59,10 @@ export default function App() {
                       Créez et gérez vos personnages de jeu.
                     </p>
                     <button 
-                      className="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded opacity-50 cursor-not-allowed"
-                      disabled
+                      onClick={() => navigate('/characters')}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
                     >
-                      Bientôt disponible
+                      Accéder aux personnages
                     </button>
                   </section>
                 </div>
