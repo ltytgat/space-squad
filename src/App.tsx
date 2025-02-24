@@ -3,9 +3,21 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import UserMenu from './components/layout/UserMenu';
 import EncyclopediaLayout from './components/Encyclopedia/EncyclopediaLayout';
 import ScrollToTop from './components/shared/ScrollToTop';
+import AuthModal from './components/auth/AuthModal';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const navigate = useNavigate();
+  const [showAuthModal, setShowAuthModal] = React.useState(false);
+
+  const handleCharacterAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setShowAuthModal(true);
+    } else {
+      navigate('/characters');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -59,10 +71,11 @@ export default function App() {
                       Créez et gérez vos personnages de jeu.
                     </p>
                     <button 
-                      onClick={() => navigate('/characters')}
-                      className="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+                      onClick={handleCharacterAccess}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded flex items-center gap-2"
                     >
                       Accéder aux personnages
+                      <span className="text-sm text-blue-200">(Connexion requise)</span>
                     </button>
                   </section>
                 </div>
@@ -71,6 +84,12 @@ export default function App() {
           }
         />
       </Routes>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
 
       {/* Scroll to Top Button */}
       <ScrollToTop />
