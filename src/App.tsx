@@ -4,13 +4,19 @@ import UserMenu from './components/layout/UserMenu';
 import EncyclopediaLayout from './components/Encyclopedia/EncyclopediaLayout';
 import ScrollToTop from './components/shared/ScrollToTop';
 import AuthModal from './components/auth/AuthModal';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = React.useState(false);
 
-  const handleCharacterAccess = () => {
-    setShowAuthModal(true);
+  const handleCharacterAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setShowAuthModal(true);
+    } else {
+      navigate('/characters');
+    }
   };
 
   return (
@@ -28,7 +34,7 @@ export default function App() {
               className="h-8 w-auto"
             />
           </button>
-          <UserMenu onShowAuth={() => setShowAuthModal(true)} />
+          <UserMenu />
         </div>
       </nav>
 
