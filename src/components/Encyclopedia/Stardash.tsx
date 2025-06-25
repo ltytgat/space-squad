@@ -76,7 +76,7 @@ const Stardash: React.FC<CategoryComponentProps> = ({ onBack, selectedArticleId 
         {
           title: 'Gestion des courses',
           content: [
-            "Il est vite apparu qu'un pilote seul ne pouvait pas progresser bien loin dans un championnat, il falalit en plus de la gestion administrative avoir des compétences très poussé en mécanique.",
+            "Il est vite apparu qu'un pilote seul ne pouvait pas progresser bien loin dans un championnat, il fallait en plus de la gestion administrative avoir des compétences très poussé en mécanique.",
             "Les pilotes se sont alors entourés d'un personnel de haute technologie, d'ingénieurs et d'experts en securité spatiale pour gérer les courses.",
             "Ses regroupements ont étés officialisés par le Consortium sour l'appélation d'écuries.",
             "Les écuries comportent donc tout le personnel pour s'occuper de la gestion des courses, des véhicules (via un département ingénieurie), et du recrutement des pilotes.",
