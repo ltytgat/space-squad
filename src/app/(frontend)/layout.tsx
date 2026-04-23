@@ -1,16 +1,24 @@
+import { Orbitron } from 'next/font/google'
 import React from 'react'
 import './styles.css'
 
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '900'],
+  variable: '--font-orbitron',
+  display: 'swap',
+})
+
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  description: 'Space Squad — Un univers original de science-fiction dure. Lore, jeu de rôle et jeux de plateau.',
+  title: 'Space Squad',
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
   return (
-    <html lang="en">
+    <html lang="fr" className={orbitron.variable}>
       <body>
         <main>{children}</main>
       </body>
