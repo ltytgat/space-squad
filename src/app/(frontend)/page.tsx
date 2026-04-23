@@ -17,10 +17,8 @@ export default async function HomePage() {
       <header className="ss-header">
         <div className="ss-header-inner">
           <a href="/" className="ss-logo" aria-label="Space Squad — Accueil">
-            <span className="ss-logo-mark" aria-hidden="true">◈</span>
-            <span className="ss-logo-name">
-              SPACE<em>SQUAD</em>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Space Squad" className="ss-logo-img" />
           </a>
 
           <nav className="ss-nav" aria-label="Navigation principale">
@@ -50,10 +48,7 @@ export default async function HomePage() {
 
         <div className="ss-hero-content">
           <div className="ss-eyebrow">Univers de Hard-SF</div>
-          <h1 className="ss-hero-title">
-            <span>SPACE</span>
-            <span className="ss-hero-accent">SQUAD</span>
-          </h1>
+          <img src="/logo.svg" alt="Space Squad"/>
           <p className="ss-hero-sub">
             Un univers original de science-fiction dure.
             <br />
@@ -225,8 +220,8 @@ export default async function HomePage() {
       <footer className="ss-footer">
         <div className="ss-container">
           <div className="ss-footer-logo">
-            <span className="ss-logo-mark" aria-hidden="true">◈</span>
-            <span>SPACE SQUAD</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Space Squad" className="ss-footer-logo-img" />
           </div>
           <p className="ss-footer-legal">
             © {new Date().getFullYear()} Space Squad — Marque déposée. Tous droits réservés.

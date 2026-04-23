@@ -12,6 +12,9 @@ const orbitron = Orbitron({
 export const metadata = {
   description: 'Space Squad — Un univers original de science-fiction dure. Lore, jeu de rôle et jeux de plateau.',
   title: 'Space Squad',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {

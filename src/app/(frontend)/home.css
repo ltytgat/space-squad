@@ -99,6 +99,18 @@
   color: var(--ss-cyan);
 }
 
+.ss-logo-img {
+  height: 36px;
+  width: auto;
+  display: block;
+  /* Teinte cyan au survol en mode dark — fonctionne sur logos monochromes */
+  transition: filter var(--ss-ease);
+}
+
+.ss-logo:hover .ss-logo-img {
+  filter: drop-shadow(0 0 6px var(--ss-cyan-glow));
+}
+
 /* Nav */
 .ss-nav {
   display: flex;
@@ -713,6 +725,18 @@
   .ss-logo-mark {
     color: var(--ss-cyan);
     filter: drop-shadow(0 0 4px var(--ss-cyan-glow));
+  }
+}
+
+.ss-footer-logo-img {
+  height: 28px;
+  width: auto;
+  display: block;
+  opacity: 0.7;
+  transition: opacity var(--ss-ease);
+
+  &:hover {
+    opacity: 1;
   }
 }
 
