@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     pages: Page;
+    'lore-articles': LoreArticle;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -80,6 +81,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'lore-articles': LoreArticlesSelect<false> | LoreArticlesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -190,6 +192,47 @@ export interface Page {
   createdAt: string;
 }
 /**
+ * Articles encyclopédiques de l'univers Space Squad.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lore-articles".
+ */
+export interface LoreArticle {
+  id: number;
+  title: string;
+  /**
+   * Généré automatiquement depuis le titre. Modifiable manuellement si besoin.
+   */
+  slug?: string | null;
+  category: 'chronologies' | 'especes-non-humaines' | 'politique' | 'technologie' | 'culture' | 'stardash';
+  /**
+   * Courte description affichée dans les listes et aperçus (facultatif).
+   */
+  excerpt?: string | null;
+  /**
+   * Image d'en-tête de l'article (facultatif).
+   */
+  cover?: (number | null) | Media;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -224,6 +267,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'lore-articles';
+        value: number | LoreArticle;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -317,6 +364,21 @@ export interface PagesSelect<T extends boolean = true> {
   slug?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lore-articles_select".
+ */
+export interface LoreArticlesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  category?: T;
+  excerpt?: T;
+  cover?: T;
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
