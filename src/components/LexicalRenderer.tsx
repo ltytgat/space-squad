@@ -105,12 +105,25 @@ function createRenderer(nextId: (base: string) => string) {
       }
 
       case 'link': {
-        const url = node.fields?.url ?? '#'
-        const newTab = node.fields?.newTab
+        const fields = node.fields as Record<string, unknown> | undefined
+        const newTab = fields?.newTab
+
+        let href = '#'
+        if (fields?.linkType === 'internal') {
+          const doc = fields.doc as { relationTo?: string; value?: Record<string, unknown> } | undefined
+          const slug = doc?.value?.slug as string | undefined
+          const collection = doc?.relationTo
+          if (slug) {
+            href = collection === 'lore-articles' ? `/lore/${slug}` : `/${slug}`
+          }
+        } else {
+          href = (fields?.url as string) ?? '#'
+        }
+
         return (
           <a
             key={key}
-            href={url as string}
+            href={href}
             {...(newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
           >
             {node.children?.map((child, i) => renderNode(child, i))}
