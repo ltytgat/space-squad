@@ -127,6 +127,10 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
+  /**
+   * Détermine les droits de l'utilisateur dans l'application.
+   */
+  role: 'admin' | 'player';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -319,6 +323,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
