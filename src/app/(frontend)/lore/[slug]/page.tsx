@@ -8,20 +8,9 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { LexicalRenderer } from '@/components/LexicalRenderer'
 import { LoreToc } from '@/components/LoreToc'
 import { extractHeadings } from '@/components/lexical-utils'
-import type { LoreArticle, Media } from '@/payload-types'
+import { CATEGORY_META } from '@/components/LoreClient'
+import type { Media } from '@/payload-types'
 import '../lore.css'
-
-const CATEGORY_META: Record<
-  LoreArticle['category'],
-  { label: string; icon: string }
-> = {
-  chronologies:           { label: 'Chronologies',         icon: '📅' },
-  'especes-non-humaines': { label: 'Espèces non-humaines', icon: '👽' },
-  politique:              { label: 'Politique',            icon: '⚡' },
-  technologie:            { label: 'Technologie',          icon: '🔬' },
-  culture:                { label: 'Culture',              icon: '🎭' },
-  stardash:               { label: 'Stardash',             icon: '🚀' },
-}
 
 export default async function LoreArticlePage({
   params,
