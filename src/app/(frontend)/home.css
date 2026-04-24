@@ -2,34 +2,6 @@
    Space Squad — Home Page Styles
    ═══════════════════════════════════════════════ */
 
-/* ── Design tokens ── */
-:root {
-  --ss-bg:           #04070f;
-  --ss-bg-alt:       #070d1c;
-  --ss-bg-card:      rgba(255, 255, 255, 0.04);
-  --ss-bg-card-h:    rgba(255, 255, 255, 0.07);
-
-  --ss-cyan:         #00d4ff;
-  --ss-cyan-dim:     rgba(0, 212, 255, 0.15);
-  --ss-cyan-glow:    rgba(0, 212, 255, 0.35);
-  --ss-purple:       #6b21ff;
-  --ss-purple-dim:   rgba(107, 33, 255, 0.15);
-
-  --ss-text:         #e2e8f0;
-  --ss-text-muted:   #64748b;
-  --ss-text-dim:     #94a3b8;
-
-  --ss-border:       rgba(0, 212, 255, 0.18);
-  --ss-border-h:     rgba(0, 212, 255, 0.45);
-
-  --ss-font-display: var(--font-orbitron), 'Orbitron', system-ui, sans-serif;
-  --ss-font-body:    system-ui, -apple-system, sans-serif;
-
-  --ss-radius:       8px;
-  --ss-radius-lg:    16px;
-  --ss-ease:         0.22s ease;
-}
-
 
 /* ═══ ROOT ═══════════════════════════════════════ */
 
@@ -109,6 +81,19 @@
 
 .ss-logo:hover .ss-logo-img {
   filter: drop-shadow(0 0 6px var(--ss-cyan-glow));
+}
+
+.ss-nav-link-active {
+  color: var(--ss-cyan) !important;
+  background: var(--ss-cyan-dim) !important;
+}
+
+/* Logo dans le hero */
+.ss-hero-logo {
+  max-height: 140px;
+  width: auto;
+  margin-inline: auto;
+  filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.2));
 }
 
 /* Nav */
@@ -527,6 +512,13 @@
   }
 }
 
+
+/* CTA sous les grilles */
+.ss-section-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+}
 
 /* ═══ GRIDS ══════════════════════════════════════ */
 

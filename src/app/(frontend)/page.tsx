@@ -1,45 +1,18 @@
-import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import React from 'react'
 
 import config from '@/payload.config'
+import { SiteHeader } from '@/components/SiteHeader'
+import { SiteFooter } from '@/components/SiteFooter'
 import './home.css'
 
 export default async function HomePage() {
-  const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
-  const { user } = await payload.auth({ headers })
 
   return (
     <div className="ss-root">
-      {/* ── Header ── */}
-      <header className="ss-header">
-        <div className="ss-header-inner">
-          <a href="/" className="ss-logo" aria-label="Space Squad — Accueil">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Space Squad" className="ss-logo-img" />
-          </a>
-
-          <nav className="ss-nav" aria-label="Navigation principale">
-            <a href="#lore" className="ss-nav-link">Lore</a>
-            <a href="#jdr" className="ss-nav-link">Jeu de Rôle</a>
-            <a href="#jeux" className="ss-nav-link">Jeux de Plateau</a>
-          </nav>
-
-          <div className="ss-header-cta">
-            {user ? (
-              <a href="/account" className="ss-btn ss-btn-primary">
-                Mon compte
-              </a>
-            ) : (
-              <a href="/login" className="ss-btn ss-btn-primary">
-                Connexion
-              </a>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* ── Hero ── */}
       <section className="ss-hero" aria-label="Présentation">
@@ -48,23 +21,24 @@ export default async function HomePage() {
 
         <div className="ss-hero-content">
           <div className="ss-eyebrow">Univers de Hard-SF</div>
-          <img src="/logo.svg" alt="Space Squad"/>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Space Squad" className="ss-hero-logo" />
           <p className="ss-hero-sub">
             Un univers original de science-fiction dure.
             <br />
             Lore, jeu de rôle, jeux de plateau.
           </p>
           <div className="ss-hero-actions">
-            <a href="#lore" className="ss-btn ss-btn-primary ss-btn-lg">
+            <a href="/lore" className="ss-btn ss-btn-primary ss-btn-lg">
               Découvrir l&apos;univers
             </a>
-            <a href="#jdr" className="ss-btn ss-btn-ghost ss-btn-lg">
+            <a href="/#jdr" className="ss-btn ss-btn-ghost ss-btn-lg">
               Jeu de Rôle
             </a>
           </div>
         </div>
 
-        <a href="#lore" className="ss-scroll-hint" aria-label="Défiler vers le contenu">
+        <a href="#lore-teaser" className="ss-scroll-hint" aria-label="Défiler vers le contenu">
           <span className="ss-scroll-line" aria-hidden="true" />
           <span aria-hidden="true">↓</span>
         </a>
@@ -73,7 +47,7 @@ export default async function HomePage() {
       {/* ── Main content ── */}
       <main>
         {/* LORE */}
-        <section id="lore" className="ss-section">
+        <section id="lore-teaser" className="ss-section">
           <div className="ss-container">
             <div className="ss-section-head">
               <span className="ss-tag">Explorer</span>
@@ -87,13 +61,13 @@ export default async function HomePage() {
 
             <div className="ss-grid-3">
               <article className="ss-card">
-                <div className="ss-card-icon" aria-hidden="true">🌌</div>
-                <h3>L&apos;Univers</h3>
+                <div className="ss-card-icon" aria-hidden="true">📅</div>
+                <h3>Chronologies</h3>
                 <p>
-                  Cosmographie, systèmes stellaires et corps célestes
-                  explorés par l&apos;humanité.
+                  Le point d&apos;entrée pour les nouveaux lecteurs.
+                  L&apos;histoire de l&apos;univers Space Squad de ses origines à aujourd&apos;hui.
                 </p>
-                <a href="#" className="ss-card-cta">Explorer →</a>
+                <a href="/lore?categorie=chronologies" className="ss-card-cta">Explorer →</a>
               </article>
 
               <article className="ss-card">
@@ -103,7 +77,7 @@ export default async function HomePage() {
                   Les grandes puissances, alliances et conflits qui façonnent
                   le futur de l&apos;humanité.
                 </p>
-                <a href="#" className="ss-card-cta">Découvrir →</a>
+                <a href="/lore?categorie=politique" className="ss-card-cta">Découvrir →</a>
               </article>
 
               <article className="ss-card">
@@ -113,8 +87,14 @@ export default async function HomePage() {
                   Des technologies ancrées dans la physique et la
                   science contemporaine.
                 </p>
-                <a href="#" className="ss-card-cta">Lire →</a>
+                <a href="/lore?categorie=technologie" className="ss-card-cta">Lire →</a>
               </article>
+            </div>
+
+            <div className="ss-section-cta">
+              <a href="/lore" className="ss-btn ss-btn-outline">
+                Toutes les catégories →
+              </a>
             </div>
           </div>
         </section>
@@ -153,7 +133,7 @@ export default async function HomePage() {
                   Connexion requise.
                 </p>
                 <a href="/login" className="ss-btn ss-btn-outline">
-                  {user ? 'Mes personnages →' : 'Se connecter'}
+                  Se connecter
                 </a>
               </article>
 
@@ -188,7 +168,7 @@ export default async function HomePage() {
               <article className="ss-proto-card">
                 <div className="ss-proto-head">
                   <span className="ss-status ss-status-wip">En développement</span>
-                  <h3>Prototype #1</h3>
+                  <h3>Stardash</h3>
                 </div>
                 <p>
                   Le premier jeu de plateau dans l&apos;univers Space Squad.
@@ -203,7 +183,7 @@ export default async function HomePage() {
                     <div className="ss-progress-fill" style={{ width: '40%' }} />
                   </div>
                 </div>
-                <a href="#" className="ss-card-cta">En savoir plus →</a>
+                <a href="/lore?categorie=stardash" className="ss-card-cta">Contexte univers →</a>
               </article>
 
               <div className="ss-proto-card ss-proto-coming">
@@ -216,21 +196,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="ss-footer">
-        <div className="ss-container">
-          <div className="ss-footer-logo">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Space Squad" className="ss-footer-logo-img" />
-          </div>
-          <p className="ss-footer-legal">
-            © {new Date().getFullYear()} Space Squad — Marque déposée. Tous droits réservés.
-          </p>
-          <nav className="ss-footer-nav" aria-label="Liens légaux">
-            <a href="#">Mentions légales</a>
-          </nav>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
