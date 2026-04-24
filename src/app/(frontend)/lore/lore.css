@@ -369,7 +369,7 @@
 /* ═══ CONTENU RICH TEXT ══════════════════════════ */
 
 .lore-content {
-  color: var(--ss-text-dim);
+  color: var(--ss-text);
   line-height: 1.85;
   font-size: 1rem;
   max-width: 720px;
@@ -401,6 +401,7 @@
 
   p {
     margin-block: 1em;
+    color: var(--ss-text);
   }
 
   ul, ol {
