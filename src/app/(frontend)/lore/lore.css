@@ -366,6 +366,79 @@
 }
 
 
+/* ═══ TABLE DES MATIÈRES ════════════════════════ */
+
+.lore-toc {
+  background: var(--ss-bg-card);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-lg);
+  padding: 1.25rem;
+  /* Laisse de la place pour la carte catégorie + bouton retour en dessous */
+  max-height: calc(100vh - 64px - 3rem - 180px);
+  min-height: 80px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ss-border) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ss-border);
+    border-radius: 100px;
+  }
+}
+
+.lore-toc-title {
+  font-family: var(--ss-font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ss-text-muted);
+  margin-bottom: 0.875rem;
+}
+
+.lore-toc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.lore-toc-item {
+  /* Le padding-left est géré inline (indentation relative au niveau min) */
+}
+
+.lore-toc-link {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ss-text-muted);
+  text-decoration: none;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--ss-radius);
+  border-left: 2px solid transparent;
+  transition: color var(--ss-ease), background var(--ss-ease), border-color var(--ss-ease);
+
+  &:hover {
+    color: var(--ss-text);
+    background: rgba(255, 255, 255, 0.04);
+    border-left-color: var(--ss-border-h);
+  }
+}
+
+.lore-toc-link-active {
+  color: var(--ss-cyan) !important;
+  background: var(--ss-cyan-dim) !important;
+  border-left-color: var(--ss-cyan) !important;
+}
+
+
 /* ═══ CONTENU RICH TEXT ══════════════════════════ */
 
 .lore-content {

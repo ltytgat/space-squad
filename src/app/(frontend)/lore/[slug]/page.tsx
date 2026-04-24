@@ -6,6 +6,8 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { LexicalRenderer } from '@/components/LexicalRenderer'
+import { LoreToc } from '@/components/LoreToc'
+import { extractHeadings } from '@/components/lexical-utils'
 import type { LoreArticle, Media } from '@/payload-types'
 import '../lore.css'
 
@@ -13,12 +15,12 @@ const CATEGORY_META: Record<
   LoreArticle['category'],
   { label: string; icon: string }
 > = {
-  chronologies:          { label: 'Chronologies',         icon: '📅' },
+  chronologies:           { label: 'Chronologies',         icon: '📅' },
   'especes-non-humaines': { label: 'Espèces non-humaines', icon: '👽' },
-  politique:             { label: 'Politique',            icon: '⚡' },
-  technologie:           { label: 'Technologie',          icon: '🔬' },
-  culture:               { label: 'Culture',              icon: '🎭' },
-  stardash:              { label: 'Stardash',             icon: '🚀' },
+  politique:              { label: 'Politique',            icon: '⚡' },
+  technologie:            { label: 'Technologie',          icon: '🔬' },
+  culture:                { label: 'Culture',              icon: '🎭' },
+  stardash:               { label: 'Stardash',             icon: '🚀' },
 }
 
 export default async function LoreArticlePage({
@@ -47,9 +49,13 @@ export default async function LoreArticlePage({
   if (!article) return notFound()
 
   const cat = CATEGORY_META[article.category]
-  const cover = typeof article.cover === 'object' && article.cover !== null
-    ? (article.cover as Media)
-    : null
+  const cover =
+    typeof article.cover === 'object' && article.cover !== null
+      ? (article.cover as Media)
+      : null
+
+  // Extraire les headings côté serveur pour les passer au composant TOC client
+  const tocEntries = extractHeadings(article.content.root)
 
   return (
     <div className="ss-root lore-root">
@@ -112,6 +118,12 @@ export default async function LoreArticlePage({
               </article>
 
               <aside className="lore-aside">
+                {/* Table des matières */}
+                {tocEntries.length > 0 && (
+                  <LoreToc entries={tocEntries} />
+                )}
+
+                {/* Métadonnées */}
                 <div className="lore-aside-card">
                   <h3>Catégorie</h3>
                   <a

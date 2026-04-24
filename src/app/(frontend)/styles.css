@@ -81,7 +81,8 @@ button {
   background: var(--ss-bg);
   color: var(--ss-text);
   font-family: var(--ss-font-body);
-  overflow-x: hidden;
+  /* overflow-x: clip ne crée pas de BFC, donc n'interfère pas avec position: sticky */
+  overflow-x: clip;
 }
 
 
