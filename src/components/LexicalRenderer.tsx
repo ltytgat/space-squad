@@ -1,5 +1,6 @@
 import React from 'react'
 import { slugifyHeading, extractNodeText, type LexicalNode } from './lexical-utils'
+import type { Media } from '@/payload-types'
 
 type LexicalContent = {
   root: LexicalNode
@@ -86,6 +87,22 @@ function createRenderer(nextId: (base: string) => string) {
 
       case 'horizontalrule':
         return <hr key={key} />
+
+      case 'upload': {
+        const media = node.value as Media | null | undefined
+        if (!media?.url) return null
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={key}
+            src={media.url}
+            alt={media.alt ?? ''}
+            width={media.width ?? undefined}
+            height={media.height ?? undefined}
+            className="lore-content-img"
+          />
+        )
+      }
 
       case 'link': {
         const url = node.fields?.url ?? '#'

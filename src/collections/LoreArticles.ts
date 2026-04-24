@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { User } from '@/payload-types'
 
 export const LoreArticles: CollectionConfig = {
   slug: 'lore-articles',
@@ -12,17 +13,17 @@ export const LoreArticles: CollectionConfig = {
     drafts: true,
   },
   access: {
-    // Lecture publique pour les articles publiés uniquement
+    // Lecture publique pour les articles publiés ; admins voient aussi les brouillons
     read: ({ req }) => {
-      if (req.user) return true
+      if ((req.user as User | null)?.role === 'admin') return true
       return {
         _status: { equals: 'published' },
       }
     },
-    // Écriture réservée aux utilisateurs connectés (admins)
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // Écriture réservée aux administrateurs
+    create: ({ req }) => (req.user as User | null)?.role === 'admin',
+    update: ({ req }) => (req.user as User | null)?.role === 'admin',
+    delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   hooks: {
     beforeChange: [

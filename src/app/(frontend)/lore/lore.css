@@ -528,6 +528,14 @@
     color: var(--ss-text);
     font-weight: 600;
   }
+
+  .lore-content-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--ss-radius);
+    border: 1px solid var(--ss-border);
+    margin-block: 1.5em;
+  }
 }
 
 
