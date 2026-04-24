@@ -228,9 +228,6 @@ export default async function HomePage() {
           </p>
           <nav className="ss-footer-nav" aria-label="Liens légaux">
             <a href="#">Mentions légales</a>
-            <a href={payloadConfig.routes.admin} target="_blank" rel="noopener noreferrer">
-              Administration
-            </a>
           </nav>
         </div>
       </footer>
