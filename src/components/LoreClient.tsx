@@ -15,6 +15,8 @@ export const CATEGORY_META: Record<
   stardash:               { label: 'Stardash',             icon: '🚀' },
 }
 
+export const DEFAULT_CATEGORY = { label: 'Général', icon: '📁' }
+
 const CATEGORY_ORDER: LoreArticle['category'][] = [
   'chronologies',
   'especes-non-humaines',
@@ -96,7 +98,8 @@ export function LoreClient({
             </button>
 
             {CATEGORY_ORDER.map((value) => {
-              const { label, icon } = CATEGORY_META[value]
+              const cat = CATEGORY_META[value] || DEFAULT_CATEGORY
+              const { label, icon } = cat
               return (
                 <button
                   key={value}
@@ -140,7 +143,7 @@ export function LoreClient({
           ) : (
             <div className="lore-grid">
               {filtered.map((article) => {
-                const cat = CATEGORY_META[article.category]
+                const cat = CATEGORY_META[article.category] || DEFAULT_CATEGORY
                 return (
                   <a
                     key={article.id}

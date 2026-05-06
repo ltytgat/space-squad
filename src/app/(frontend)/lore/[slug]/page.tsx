@@ -8,7 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { LexicalRenderer } from '@/components/LexicalRenderer'
 import { LoreToc } from '@/components/LoreToc'
 import { extractHeadings } from '@/components/lexical-utils'
-import { CATEGORY_META } from '@/components/LoreClient'
+import { CATEGORY_META, DEFAULT_CATEGORY } from '@/components/LoreClient'
 import type { Media } from '@/payload-types'
 import '../lore.css'
 
@@ -37,7 +37,7 @@ export default async function LoreArticlePage({
   const article = docs[0]
   if (!article) return notFound()
 
-  const cat = CATEGORY_META[article.category]
+  const cat = CATEGORY_META[article.category] || DEFAULT_CATEGORY
   const cover =
     typeof article.cover === 'object' && article.cover !== null
       ? (article.cover as Media)
