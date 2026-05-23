@@ -1,0 +1,138 @@
+import { headers as getHeaders } from 'next/headers.js'
+import { getPayload } from 'payload'
+import { redirect } from 'next/navigation'
+
+import config from '@/payload.config'
+import { SiteHeader } from '@/components/SiteHeader'
+import { SiteFooter } from '@/components/SiteFooter'
+import './ships.css'
+
+export const metadata = {
+  title: 'Vaisseaux — Space Squad',
+}
+
+type Ship = { id: string; nom: string; classe?: string; modele?: string }
+type CrewMember = { id: string; nom?: string; roleVaisseau?: string }
+
+const CLASSE_LABEL: Record<string, string> = {
+  alpha: 'Alpha',
+  beta: 'Beta',
+  gamma: 'Gamma',
+  delta: 'Delta',
+}
+
+export default async function ShipsPage() {
+  const headers = await getHeaders()
+  const payloadConfig = await config
+  const payload = await getPayload({ config: payloadConfig })
+  const { user } = await payload.auth({ headers })
+
+  if (!user) redirect('/login')
+  if ((user as { role?: string }).role !== 'admin') redirect('/')
+
+  const [{ docs: ships }, { docs: characters }] = await Promise.all([
+    payload.find({ collection: 'ships', depth: 0, limit: 200, sort: 'nom' }),
+    payload.find({
+      collection: 'characters',
+      depth: 0,
+      limit: 500,
+      sort: 'nom',
+    }),
+  ])
+
+  // Regroupe les personnages par vaisseau
+  const crewByShip = new Map<string, CrewMember[]>()
+  for (const c of characters as CrewMember[]) {
+    const shipId = (c as { vaisseau?: string | { id: string } }).vaisseau
+    const id = typeof shipId === 'string' ? shipId : shipId?.id
+    if (!id) continue
+    const list = crewByShip.get(id) ?? []
+    list.push(c)
+    crewByShip.set(id, list)
+  }
+
+  return (
+    <div className="ss-root ships-root">
+      <SiteHeader activePage="ships" />
+
+      <div className="ships-layout">
+        {/* ── En-tête ── */}
+        <div className="ships-page-header">
+          <div className="ss-container">
+            <nav className="ships-breadcrumb" aria-label="Fil d'Ariane">
+              <a href="/">Accueil</a>
+              <span aria-hidden="true">›</span>
+              <span>Vaisseaux</span>
+            </nav>
+            <h1 className="ships-page-title">
+              Vaisseaux
+              <span className="ships-page-count">{ships.length}</span>
+            </h1>
+          </div>
+        </div>
+
+        {/* ── Liste ── */}
+        <div className="ships-content ss-container">
+          {ships.length === 0 ? (
+            <p className="ships-empty">Aucun vaisseau enregistré pour l&apos;instant.</p>
+          ) : (
+            <div className="ships-grid">
+              {(ships as Ship[]).map((ship) => {
+                const crew = crewByShip.get(ship.id) ?? []
+                const owners = crew.filter((c) => c.roleVaisseau === 'proprietaire')
+                const passengers = crew.filter((c) => c.roleVaisseau === 'passager')
+
+                return (
+                  <div key={ship.id} className="ships-card">
+                    <div className="ships-card-header">
+                      <h3 className="ships-card-name">{ship.nom}</h3>
+                      <div className="ships-card-tags">
+                        {ship.classe && (
+                          <span className="ships-tag ships-tag-classe">
+                            Classe {CLASSE_LABEL[ship.classe] ?? ship.classe}
+                          </span>
+                        )}
+                        {ship.modele && <span className="ships-tag">{ship.modele}</span>}
+                      </div>
+                    </div>
+
+                    <div className="ships-crew">
+                      {crew.length === 0 ? (
+                        <p className="ships-crew-empty">Aucun équipage assigné</p>
+                      ) : (
+                        <>
+                          {owners.length > 0 && (
+                            <div className="ships-crew-group">
+                              <span className="ships-crew-group-label">Propriétaires</span>
+                              <ul className="ships-crew-list">
+                                {owners.map((m) => (
+                                  <li key={m.id}>{m.nom || 'Sans nom'}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {passengers.length > 0 && (
+                            <div className="ships-crew-group">
+                              <span className="ships-crew-group-label">Passagers</span>
+                              <ul className="ships-crew-list">
+                                {passengers.map((m) => (
+                                  <li key={m.id}>{m.nom || 'Sans nom'}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <SiteFooter />
+    </div>
+  )
+}

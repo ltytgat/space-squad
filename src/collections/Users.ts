@@ -1,5 +1,21 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionAfterOperationHook, CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+
+// Crée automatiquement une fiche personnage vierge pour chaque nouvel utilisateur
+const afterCreateUser: CollectionAfterOperationHook = async ({ operation, result, req }) => {
+  if (operation === 'create') {
+    try {
+      await req.payload.create({
+        collection: 'characters',
+        data: { user: result.id },
+        req,
+      })
+    } catch (err) {
+      console.error('[Users] Échec de la création automatique du personnage :', err)
+    }
+  }
+  return result
+}
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -28,6 +44,9 @@ export const Users: CollectionConfig = {
       if (user.role === 'admin') return true
       return String(user.id) === String(id)
     },
+  },
+  hooks: {
+    afterOperation: [afterCreateUser],
   },
   fields: [
     {

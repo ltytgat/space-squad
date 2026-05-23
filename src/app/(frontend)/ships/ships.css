@@ -1,0 +1,192 @@
+/* ════════════════════════════════════════════
+   Page Vaisseaux (admin)
+   ════════════════════════════════════════════ */
+
+.ships-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ships-layout {
+  flex: 1;
+  padding-block-start: 64px;
+}
+
+/* ── En-tête ── */
+
+.ships-page-header {
+  background: var(--ss-bg-alt);
+  border-bottom: 1px solid var(--ss-border);
+  padding-block: 2.5rem 2rem;
+}
+
+.ships-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ss-text-muted);
+  margin-bottom: 1rem;
+
+  a {
+    color: var(--ss-text-muted);
+    text-decoration: none;
+    transition: color var(--ss-ease);
+
+    &:hover { color: var(--ss-cyan); }
+  }
+}
+
+.ships-page-title {
+  font-family: var(--ss-font-display);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ss-text);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.ships-page-count {
+  font-family: var(--ss-font-mono);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ss-text-muted);
+}
+
+/* ── Contenu ── */
+
+.ships-content {
+  padding-block: 2rem 4rem;
+}
+
+.ships-empty {
+  font-size: 0.9rem;
+  color: var(--ss-text-muted);
+  padding: 2rem 0;
+}
+
+/* ── Grille ── */
+
+.ships-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.ships-card {
+  background: var(--ss-bg-card);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color var(--ss-ease), background var(--ss-ease);
+
+  &:hover {
+    border-color: var(--ss-border-h);
+    background: var(--ss-bg-card-h);
+  }
+}
+
+.ships-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ships-card-name {
+  font-family: var(--ss-font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ss-text);
+}
+
+.ships-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ships-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 100px;
+  padding: 0.15rem 0.55rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--ss-text-dim);
+}
+
+.ships-tag-classe {
+  color: var(--ss-cyan);
+  background: var(--ss-cyan-dim);
+  border-color: rgba(0, 212, 255, 0.25);
+}
+
+/* ── Équipage ── */
+
+.ships-crew {
+  border-top: 1px solid var(--ss-border);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ships-crew-empty {
+  font-size: 0.8rem;
+  color: var(--ss-text-muted);
+  font-style: italic;
+}
+
+.ships-crew-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ships-crew-group-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ss-text-muted);
+}
+
+.ships-crew-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  li {
+    font-size: 0.825rem;
+    color: var(--ss-text-dim);
+    padding-left: 0.75rem;
+    position: relative;
+
+    &::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--ss-cyan);
+      font-size: 0.7rem;
+    }
+  }
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 640px) {
+  .ships-grid {
+    grid-template-columns: 1fr;
+  }
+}

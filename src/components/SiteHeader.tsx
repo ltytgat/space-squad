@@ -4,13 +4,23 @@ import React from 'react'
 
 import config from '@/payload.config'
 
-type ActivePage = 'lore' | 'jdr' | 'jeux' | undefined
+type ActivePage =
+  | 'lore'
+  | 'jdr'
+  | 'jeux'
+  | 'character'
+  | 'ship'
+  | 'characters'
+  | 'ships'
+  | undefined
 
 export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
   const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
   const { user } = await payload.auth({ headers })
+
+  const isAdmin = user && (user as { role?: string }).role === 'admin'
 
   return (
     <header className="ss-header">
@@ -39,6 +49,40 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
           >
             Jeux de Plateau
           </a>
+
+          {/* ── Liens conditionnels selon rôle ── */}
+          {user && isAdmin && (
+            <>
+              <a
+                href="/characters"
+                className={`ss-nav-link${activePage === 'characters' ? ' ss-nav-link-active' : ''}`}
+              >
+                Personnages
+              </a>
+              <a
+                href="/ships"
+                className={`ss-nav-link${activePage === 'ships' ? ' ss-nav-link-active' : ''}`}
+              >
+                Vaisseaux
+              </a>
+            </>
+          )}
+          {user && !isAdmin && (
+            <>
+              <a
+                href="/character"
+                className={`ss-nav-link${activePage === 'character' ? ' ss-nav-link-active' : ''}`}
+              >
+                Mon personnage
+              </a>
+              <a
+                href="/ship"
+                className={`ss-nav-link${activePage === 'ship' ? ' ss-nav-link-active' : ''}`}
+              >
+                Mon vaisseau
+              </a>
+            </>
+          )}
         </nav>
 
         <div className="ss-header-cta">

@@ -71,6 +71,11 @@ export interface Config {
     media: Media;
     pages: Page;
     'lore-articles': LoreArticle;
+    groups: Group;
+    ships: Ship;
+    weapons: Weapon;
+    armors: Armor;
+    characters: Character;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +87,11 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     'lore-articles': LoreArticlesSelect<false> | LoreArticlesSelect<true>;
+    groups: GroupsSelect<false> | GroupsSelect<true>;
+    ships: ShipsSelect<false> | ShipsSelect<true>;
+    weapons: WeaponsSelect<false> | WeaponsSelect<true>;
+    armors: ArmorsSelect<false> | ArmorsSelect<true>;
+    characters: CharactersSelect<false> | CharactersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -238,6 +248,148 @@ export interface LoreArticle {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "groups".
+ */
+export interface Group {
+  id: number;
+  nom: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ships".
+ */
+export interface Ship {
+  id: number;
+  nom: string;
+  classe?: ('alpha' | 'beta' | 'gamma' | 'delta') | null;
+  modele?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "weapons".
+ */
+export interface Weapon {
+  id: number;
+  nom: string;
+  /**
+   * Poids de l'arme (en kg)
+   */
+  poids?: number | null;
+  tailleChargeur?: number | null;
+  valeurDegats?: number | null;
+  projectilesParTir?: number | null;
+  valeurRechargement?: number | null;
+  /**
+   * Modification(s) installée(s) sur cette arme.
+   */
+  mods?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "armors".
+ */
+export interface Armor {
+  id: number;
+  nom: string;
+  valeurArmurePhysique?: number | null;
+  valeurBouclier?: number | null;
+  /**
+   * Modificateur appliqué aux jets (positif ou négatif).
+   */
+  modificateur?: number | null;
+  valeurRupture?: number | null;
+  /**
+   * Modification(s) installée(s) sur cette pièce d'armure.
+   */
+  mods?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "characters".
+ */
+export interface Character {
+  id: number;
+  /**
+   * Utilisateur propriétaire de ce personnage (1 personnage par compte).
+   */
+  user: number | User;
+  nom?: string | null;
+  sexe?: ('M' | 'F' | 'X') | null;
+  origine?: ('Humain' | 'Strani' | 'Vada') | null;
+  affiliation?: ('Alliance' | 'Union' | 'Guilde') | null;
+  groupe?: (number | null) | Group;
+  pointsDeRang?: number | null;
+  konis?: number | null;
+  legende?: number | null;
+  force?: number | null;
+  habilite?: number | null;
+  connaissances?: number | null;
+  culture?: number | null;
+  anticipation?: number | null;
+  perception?: number | null;
+  armureTete?: (number | null) | Armor;
+  armureTorse?: (number | null) | Armor;
+  armureBras?: (number | null) | Armor;
+  armureJambes?: (number | null) | Armor;
+  armePrincipale?: (number | null) | Weapon;
+  armeSecondaire?: (number | null) | Weapon;
+  armeLourde?: (number | null) | Weapon;
+  armeDePoing?: (number | null) | Weapon;
+  armeDeMelee?: (number | null) | Weapon;
+  backpack?: string | null;
+  vaisseau?: (number | null) | Ship;
+  roleVaisseau?: ('proprietaire' | 'passager') | null;
+  /**
+   * Compétences de la liste standard et leur niveau.
+   */
+  competences?:
+    | {
+        competence:
+          | 'Chasseur'
+          | 'Bombardier'
+          | 'Poids Lourds'
+          | 'Transport de Troupes'
+          | 'Canonnier'
+          | 'Médecine de terrain'
+          | 'Concentration'
+          | 'Mécanicien'
+          | 'Stabilisation'
+          | 'Assaut'
+          | 'Sniper'
+          | 'Shotgun'
+          | 'Combat rapproché'
+          | 'Analyse'
+          | 'Réactivité'
+          | 'Furtivité'
+          | 'Diplomate'
+          | 'Culture';
+        valeur: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Compétences uniques, hors liste standard, propres à ce personnage.
+   */
+  competencesSpeciales?:
+    | {
+        nom: string;
+        valeur: number;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -275,6 +427,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'lore-articles';
         value: number | LoreArticle;
+      } | null)
+    | ({
+        relationTo: 'groups';
+        value: number | Group;
+      } | null)
+    | ({
+        relationTo: 'ships';
+        value: number | Ship;
+      } | null)
+    | ({
+        relationTo: 'weapons';
+        value: number | Weapon;
+      } | null)
+    | ({
+        relationTo: 'armors';
+        value: number | Armor;
+      } | null)
+    | ({
+        relationTo: 'characters';
+        value: number | Character;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -384,6 +556,104 @@ export interface LoreArticlesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "groups_select".
+ */
+export interface GroupsSelect<T extends boolean = true> {
+  nom?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ships_select".
+ */
+export interface ShipsSelect<T extends boolean = true> {
+  nom?: T;
+  classe?: T;
+  modele?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "weapons_select".
+ */
+export interface WeaponsSelect<T extends boolean = true> {
+  nom?: T;
+  poids?: T;
+  tailleChargeur?: T;
+  valeurDegats?: T;
+  projectilesParTir?: T;
+  valeurRechargement?: T;
+  mods?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "armors_select".
+ */
+export interface ArmorsSelect<T extends boolean = true> {
+  nom?: T;
+  valeurArmurePhysique?: T;
+  valeurBouclier?: T;
+  modificateur?: T;
+  valeurRupture?: T;
+  mods?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "characters_select".
+ */
+export interface CharactersSelect<T extends boolean = true> {
+  user?: T;
+  nom?: T;
+  sexe?: T;
+  origine?: T;
+  affiliation?: T;
+  groupe?: T;
+  pointsDeRang?: T;
+  konis?: T;
+  legende?: T;
+  force?: T;
+  habilite?: T;
+  connaissances?: T;
+  culture?: T;
+  anticipation?: T;
+  perception?: T;
+  armureTete?: T;
+  armureTorse?: T;
+  armureBras?: T;
+  armureJambes?: T;
+  armePrincipale?: T;
+  armeSecondaire?: T;
+  armeLourde?: T;
+  armeDePoing?: T;
+  armeDeMelee?: T;
+  backpack?: T;
+  vaisseau?: T;
+  roleVaisseau?: T;
+  competences?:
+    | T
+    | {
+        competence?: T;
+        valeur?: T;
+        id?: T;
+      };
+  competencesSpeciales?:
+    | T
+    | {
+        nom?: T;
+        valeur?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
