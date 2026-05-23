@@ -398,7 +398,7 @@
 }
 
 .lore-aside-category {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.4rem;
   color: var(--ss-cyan);
@@ -409,6 +409,31 @@
 
   &:hover {
     opacity: 0.75;
+  }
+}
+
+.lore-aside-related {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  padding-top: 0.75rem;
+
+  li a {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ss-text-muted);
+    text-decoration: none;
+    padding: 0.2rem 0;
+    line-height: 1.4;
+    transition: color var(--ss-ease);
+
+    &:hover {
+      color: var(--ss-cyan);
+    }
   }
 }
 

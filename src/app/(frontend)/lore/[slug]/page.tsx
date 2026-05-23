@@ -46,6 +46,22 @@ export default async function LoreArticlePage({
   // Extraire les headings côté serveur pour les passer au composant TOC client
   const tocEntries = extractHeadings(article.content.root)
 
+  // Autres articles de la même catégorie (hors article courant)
+  const { docs: relatedDocs } = await payload.find({
+    collection: 'lore-articles',
+    where: {
+      and: [
+        { category: { equals: article.category } },
+        { slug: { not_equals: slug } },
+        { _status: { equals: 'published' } },
+      ],
+    },
+    depth: 0,
+    limit: 8,
+    select: { title: true, slug: true },
+  })
+  const relatedArticles = relatedDocs
+
   return (
     <div className="ss-root lore-root">
       <SiteHeader activePage="lore" />
@@ -112,9 +128,9 @@ export default async function LoreArticlePage({
                   <LoreToc entries={tocEntries} />
                 )}
 
-                {/* Métadonnées */}
+                {/* Catégorie et articles liés */}
                 <div className="lore-aside-card">
-                  <h3>Catégorie</h3>
+                  <h3>Dans la même catégorie</h3>
                   <a
                     href={`/lore?categorie=${article.category}`}
                     className="lore-aside-category"
@@ -122,6 +138,16 @@ export default async function LoreArticlePage({
                     <span aria-hidden="true">{cat.icon}</span>
                     {cat.label}
                   </a>
+
+                  {relatedArticles.length > 0 && (
+                    <ul className="lore-aside-related">
+                      {relatedArticles.map((rel) => (
+                        <li key={rel.id}>
+                          <a href={`/lore/${rel.slug ?? rel.id}`}>{rel.title}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <a href="/lore" className="lore-aside-back ss-btn ss-btn-outline">
