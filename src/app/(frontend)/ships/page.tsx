@@ -11,8 +11,8 @@ export const metadata = {
   title: 'Vaisseaux — Space Squad',
 }
 
-type Ship = { id: string; nom: string; classe?: string; modele?: string }
-type CrewMember = { id: string; nom?: string; roleVaisseau?: string }
+type Ship = { id: number; nom: string; classe?: string; modele?: string }
+type CrewMember = { id: number; nom?: string; roleVaisseau?: string }
 
 const CLASSE_LABEL: Record<string, string> = {
   alpha: 'Alpha',
@@ -41,10 +41,10 @@ export default async function ShipsPage() {
   ])
 
   // Regroupe les personnages par vaisseau
-  const crewByShip = new Map<string, CrewMember[]>()
-  for (const c of characters as CrewMember[]) {
-    const shipId = (c as { vaisseau?: string | { id: string } }).vaisseau
-    const id = typeof shipId === 'string' ? shipId : shipId?.id
+  const crewByShip = new Map<number, CrewMember[]>()
+  for (const c of characters as unknown as CrewMember[]) {
+    const shipId = (c as unknown as { vaisseau?: number | { id: number } }).vaisseau
+    const id = typeof shipId === 'number' ? shipId : shipId?.id
     if (!id) continue
     const list = crewByShip.get(id) ?? []
     list.push(c)

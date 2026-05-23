@@ -54,10 +54,11 @@ interface Props {
 }
 
 export function CharactersClient({ characters, groups }: Props) {
-  const [activeGroup, setActiveGroup] = useState<string | null>(null)
+  const [activeGroup, setActiveGroup] = useState<number | 'none' | null>(null)
 
   const filtered = useMemo(() => {
     if (!activeGroup) return characters
+    if (activeGroup === 'none') return characters.filter((c) => !c.groupe)
     return characters.filter((c) => groupId(c.groupe) === activeGroup)
   }, [characters, activeGroup])
 

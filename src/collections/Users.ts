@@ -4,10 +4,11 @@ import type { User } from '@/payload-types'
 // Crée automatiquement une fiche personnage vierge pour chaque nouvel utilisateur
 const afterCreateUser: CollectionAfterOperationHook = async ({ operation, result, req }) => {
   if (operation === 'create') {
+    const user = result as User
     try {
       await req.payload.create({
         collection: 'characters',
-        data: { user: result.id },
+        data: { user: user.id },
         req,
       })
     } catch (err) {

@@ -11,15 +11,15 @@ export const metadata = {
   title: 'Mon vaisseau — Space Squad',
 }
 
-type Ship = { id: string; nom: string; classe?: string; modele?: string }
+type Ship = { id: number; nom: string; classe?: string; modele?: string }
 
 type CrewMember = {
-  id: string
+  id: number
   nom?: string
   origine?: string
   affiliation?: string
   roleVaisseau?: string
-  user?: { id: string; email: string } | string | null
+  user?: { id: number; email: string } | string | null
 }
 
 const CLASSE_LABEL: Record<string, string> = {
