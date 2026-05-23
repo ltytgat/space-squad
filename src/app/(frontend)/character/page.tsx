@@ -15,7 +15,7 @@ export const metadata = {
 // ── Types locaux pour les relations populées (depth: 1) ──────────────────────
 
 type Weapon = {
-  id: string
+  id: number
   nom: string
   poids?: number
   tailleChargeur?: number
@@ -26,7 +26,7 @@ type Weapon = {
 }
 
 type Armor = {
-  id: string
+  id: number
   nom: string
   valeurArmurePhysique?: number
   valeurBouclier?: number
@@ -35,11 +35,11 @@ type Armor = {
   mods?: string
 }
 
-type Ship = { id: string; nom: string; classe?: string; modele?: string }
-type Group = { id: string; nom: string }
+type Ship = { id: number; nom: string; classe?: string; modele?: string }
+type Group = { id: number; nom: string }
 
 type Character = {
-  id: string
+  id: number
   nom?: string
   sexe?: string
   origine?: string

@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react'
 
-type Group = { id: string; nom: string }
+type Group = { id: number; nom: string }
 
 type Character = {
-  id: string
+  id: number
   nom?: string
   sexe?: string
   origine?: string
@@ -14,7 +14,7 @@ type Character = {
   konis?: number
   legende?: number
   groupe?: Group | string | null
-  vaisseau?: { id: string; nom: string; classe?: string } | string | null
+  vaisseau?: { id: number; nom: string; classe?: string } | string | null
   roleVaisseau?: string | null
 }
 
@@ -37,7 +37,7 @@ function groupName(g: Group | string | null | undefined): string {
   return g.nom
 }
 
-function groupId(g: Group | string | null | undefined): string {
+function groupId(g: Group | string | null | undefined): string | number {
   if (!g) return ''
   if (typeof g === 'string') return g
   return g.id
