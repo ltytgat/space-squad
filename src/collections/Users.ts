@@ -21,7 +21,13 @@ export const Users: CollectionConfig = {
       if (user.role === 'admin') return true
       return String(user.id) === String(id)
     },
-    delete: ({ req }) => (req.user as User | null)?.role === 'admin',
+    // Admins suppriment tout ; chaque utilisateur peut supprimer son propre compte
+    delete: ({ req, id }) => {
+      const user = req.user as User | null
+      if (!user) return false
+      if (user.role === 'admin') return true
+      return String(user.id) === String(id)
+    },
   },
   fields: [
     {
