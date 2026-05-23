@@ -133,6 +133,112 @@
 }
 
 
+/* ── Rang calculé ── */
+
+.char-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--ss-radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.char-rank-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.char-rank-badge {
+  font-family: var(--ss-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  border: 1px solid currentColor;
+}
+
+.char-rank-name {
+  font-family: var(--ss-font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Couleurs par palier ── */
+
+.char-rank--novice {
+  .char-rank-badge { color: var(--ss-text-muted); border-color: rgba(122, 147, 168, 0.35); }
+  .char-rank-name  { color: var(--ss-text-dim); }
+  .char-rank-bar-fill { background: linear-gradient(90deg, #4a6080, #7a93a8); }
+}
+
+.char-rank--advanced {
+  .char-rank-badge { color: var(--ss-cyan); border-color: rgba(0, 212, 255, 0.4); }
+  .char-rank-name  { color: var(--ss-cyan); }
+  .char-rank-bar-fill {
+    background: linear-gradient(90deg, var(--ss-cyan), #33dcff);
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+  }
+}
+
+.char-rank--elite {
+  .char-rank-badge { color: #a78bfa; border-color: rgba(167, 139, 250, 0.4); }
+  .char-rank-name  { color: #a78bfa; }
+  .char-rank-bar-fill {
+    background: linear-gradient(90deg, var(--ss-purple), #a78bfa);
+    box-shadow: 0 0 8px rgba(107, 33, 255, 0.35);
+  }
+}
+
+.char-rank--master {
+  border-color: rgba(251, 191, 36, 0.25);
+  background: rgba(251, 191, 36, 0.04);
+  .char-rank-badge { color: #fbbf24; border-color: rgba(251, 191, 36, 0.5); }
+  .char-rank-name  { color: #fbbf24; }
+  .char-rank-bar-fill {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+  }
+}
+
+/* ── Barre de progression ── */
+
+.char-rank-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.char-rank-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.6s ease;
+  min-width: 4px;
+}
+
+/* ── Texte de points ── */
+
+.char-rank-pts {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--ss-font-mono);
+  font-size: 0.7rem;
+  color: var(--ss-text-muted);
+}
+
+.char-rank-max {
+  color: #fbbf24;
+}
+
+
 /* ── DL identité ── */
 
 .char-dl {

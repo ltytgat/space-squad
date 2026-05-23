@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { computeRank } from '@/lib/rankSystem'
 import './character.css'
 
 export const metadata = {
@@ -102,6 +103,14 @@ const CLASSE_LABEL: Record<string, string> = {
   delta: 'Delta',
 }
 
+// Couleur du rang selon le niveau (pour les classes CSS)
+function rankTier(level: number): string {
+  if (level <= 3) return 'novice'
+  if (level <= 6) return 'advanced'
+  if (level <= 9) return 'elite'
+  return 'master'
+}
+
 // ── Sous-composants ──────────────────────────────────────────────────────────
 
 function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
@@ -188,6 +197,7 @@ export default async function CharacterPage() {
   })
 
   const character = (docs[0] ?? null) as Character | null
+  const rankInfo = computeRank(character?.pointsDeRang ?? 0)
 
   return (
     <div className="ss-root char-root">
@@ -239,11 +249,33 @@ export default async function CharacterPage() {
 
             <div className="char-card char-card-identity">
               <h2 className="char-card-title">Identité</h2>
-              <dl className="char-dl">
-                <div className="char-dl-row">
-                  <dt>Rang</dt>
-                  <dd>{stat(character?.pointsDeRang)} pts</dd>
+
+              {/* ── Rang calculé ── */}
+              <div className={`char-rank char-rank--${rankTier(rankInfo.level)}`}>
+                <div className="char-rank-header">
+                  <span className="char-rank-badge">Rang {rankInfo.level}</span>
+                  <span className="char-rank-name">{rankInfo.name}</span>
                 </div>
+                <div className="char-rank-bar-track">
+                  <div
+                    className="char-rank-bar-fill"
+                    style={{ width: `${rankInfo.progressPercent}%` }}
+                    aria-label={`Progression ${rankInfo.progressPercent}%`}
+                  />
+                </div>
+                <div className="char-rank-pts">
+                  <span>{rankInfo.pointsInRank} pts</span>
+                  {rankInfo.pointsToNext !== null ? (
+                    <span>
+                      {rankInfo.pointsToNext} pts → Rang {rankInfo.level + 1}
+                    </span>
+                  ) : (
+                    <span className="char-rank-max">Rang maximum</span>
+                  )}
+                </div>
+              </div>
+
+              <dl className="char-dl">
                 <div className="char-dl-row">
                   <dt>Konis</dt>
                   <dd>{stat(character?.konis)}</dd>
