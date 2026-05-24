@@ -11,9 +11,6 @@ export function SiteFooter() {
         <p className="ss-footer-legal">
           © {new Date().getFullYear()} Space Squad — Marque déposée. Tous droits réservés.
         </p>
-        <nav className="ss-footer-nav" aria-label="Liens légaux">
-          <a href="#">Mentions légales</a>
-        </nav>
       </div>
     </footer>
   )
