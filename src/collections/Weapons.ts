@@ -96,12 +96,13 @@ export const Weapons: CollectionConfig = {
       type: 'row',
       fields: [
         {
-          name: 'portee',
+          name: 'porteeFixe',
           type: 'number',
-          label: 'Portée de tir (m)',
+          label: 'Portée (m)',
           admin: {
             width: '50%',
-            condition: (data) => data.categorie !== 'melee',
+            condition: (data) => ['melee', 'lourde'].includes(data.categorie),
+            description: "Pour la mélée, correspond à la taille de la lame. Pour les armes lourdes, il s'agit de la portée maximale fixe.",
           },
         },
         {
@@ -112,6 +113,71 @@ export const Weapons: CollectionConfig = {
           admin: {
             width: '50%',
             condition: (data) => data.categorie !== 'melee',
+          },
+        },
+      ],
+    },
+    {
+      name: 'intervallesPortee',
+      type: 'array',
+      label: 'Intervalles de Portée',
+      labels: {
+        singular: 'Intervalle',
+        plural: 'Intervalles',
+      },
+      minRows: 3,
+      maxRows: 5,
+      admin: {
+        condition: (data) =>
+          !['melee', 'lourde'].includes(data.categorie) && !!data.categorie,
+        description:
+          "Pour les snipers: 5 intervalles. Pour les autres: 3 intervalles. Le dernier intervalle est considéré comme la portée maximale avec malus cumulatif.",
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'distanceMax',
+              type: 'number',
+              label: 'Distance Max (m)',
+              required: true,
+              admin: { width: '50%' },
+            },
+            {
+              name: 'modificateur',
+              type: 'number',
+              label: 'Modificateur Précision',
+              required: true,
+              admin: { width: '50%' },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'row',
+      admin: {
+        condition: (data) =>
+          !['melee', 'lourde'].includes(data.categorie) && !!data.categorie,
+      },
+      fields: [
+        {
+          name: 'trancheMalusLonguePortee',
+          type: 'number',
+          label: 'Tranche de distance pour malus (m)',
+          admin: {
+            width: '50%',
+            description: 'Distance additionnelle après le dernier intervalle provoquant un malus.',
+          },
+        },
+        {
+          name: 'malusParTranche',
+          type: 'number',
+          label: 'Malus par tranche',
+          defaultValue: -1,
+          admin: {
+            width: '50%',
           },
         },
       ],
