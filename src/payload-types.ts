@@ -275,14 +275,35 @@ export interface Ship {
 export interface Weapon {
   id: number;
   nom: string;
-  /**
-   * Poids de l'arme (en kg)
-   */
-  poids?: number | null;
-  tailleChargeur?: number | null;
+  fabricant?: string | null;
+  categorie: 'fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'melee' | 'lourde';
+  type: ('thermique' | 'cinetique' | 'plasma' | 'explosif' | 'melee')[];
   valeurDegats?: number | null;
+  poids?: number | null;
+  prix?: number | null;
+  /**
+   * Pour la mélée, correspond à la taille de la lame. Pour les armes lourdes, il s'agit de la portée maximale fixe.
+   */
+  porteeFixe?: number | null;
   projectilesParTir?: number | null;
-  valeurRechargement?: number | null;
+  /**
+   * Pour les snipers: 5 intervalles. Pour les autres: 3 intervalles. Le dernier intervalle est considéré comme la portée maximale avec malus cumulatif.
+   */
+  intervallesPortee?:
+    | {
+        distanceMax: number;
+        modificateur: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Distance additionnelle après le dernier intervalle provoquant un malus.
+   */
+  trancheMalusLonguePortee?: number | null;
+  malusParTranche?: number | null;
+  tailleChargeur?: number | null;
+  tempsRechargement?: number | null;
+  tempsRefroidissement?: number | null;
   /**
    * Modification(s) installée(s) sur cette arme.
    */
@@ -583,11 +604,26 @@ export interface ShipsSelect<T extends boolean = true> {
  */
 export interface WeaponsSelect<T extends boolean = true> {
   nom?: T;
-  poids?: T;
-  tailleChargeur?: T;
+  fabricant?: T;
+  categorie?: T;
+  type?: T;
   valeurDegats?: T;
+  poids?: T;
+  prix?: T;
+  porteeFixe?: T;
   projectilesParTir?: T;
-  valeurRechargement?: T;
+  intervallesPortee?:
+    | T
+    | {
+        distanceMax?: T;
+        modificateur?: T;
+        id?: T;
+      };
+  trancheMalusLonguePortee?: T;
+  malusParTranche?: T;
+  tailleChargeur?: T;
+  tempsRechargement?: T;
+  tempsRefroidissement?: T;
   mods?: T;
   updatedAt?: T;
   createdAt?: T;
