@@ -100,7 +100,7 @@ export const Weapons: CollectionConfig = {
           type: 'number',
           label: 'Portée (m)',
           admin: {
-            width: '50%',
+            width: '33%',
             condition: (data) => ['melee', 'lourde'].includes(data.categorie),
             description: "Pour la mélée, correspond à la taille de la lame. Pour les armes lourdes, il s'agit de la portée maximale fixe.",
           },
@@ -111,8 +111,18 @@ export const Weapons: CollectionConfig = {
           label: 'Projectiles par tir',
           defaultValue: 1,
           admin: {
-            width: '50%',
-            condition: (data) => data.categorie !== 'melee',
+            width: '33%',
+            condition: (data) =>
+              data.categorie !== 'melee' && !data.type?.includes('thermique'),
+          },
+        },
+        {
+          name: 'valeurChauffe',
+          type: 'number',
+          label: 'Valeur de chauffe (%)',
+          admin: {
+            width: '33%',
+            condition: (data) => data.type?.includes('thermique'),
           },
         },
       ],
@@ -188,28 +198,47 @@ export const Weapons: CollectionConfig = {
         {
           name: 'tailleChargeur',
           type: 'number',
-          label: 'Taille du chargeur',
+          label: 'Taille du chargeur / conteneur',
           admin: {
             width: '33%',
-            condition: (data) => data.type?.includes('cinetique'),
+            condition: (data) =>
+              data.type?.some((t: string) => ['cinetique', 'plasma', 'explosif'].includes(t)),
+            description: "Pour les armes plasma, correspond à la taille du conteneur.",
           },
         },
         {
           name: 'tempsRechargement',
           type: 'number',
-          label: 'Temps de rechargement',
+          label: 'Temps de rechargement (tours)',
           admin: {
             width: '33%',
-            condition: (data) => data.categorie === 'lourde',
+            condition: (data) =>
+              data.categorie === 'lourde' || data.type?.includes('explosif'),
           },
         },
         {
+          name: 'zoneEffet',
+          type: 'text',
+          label: "Zone d'effet",
+          admin: {
+            width: '33%',
+            condition: (data) => data.type?.includes('explosif'),
+            placeholder: 'ex: 3m de rayon',
+          },
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
           name: 'tempsRefroidissement',
           type: 'number',
-          label: 'Temps de refroidissement',
+          label: 'Refroidissement (%)',
           admin: {
             width: '33%',
             condition: (data) => data.type?.includes('thermique'),
+            description: 'Pourcentage de refroidissement par unité de temps.',
           },
         },
       ],
