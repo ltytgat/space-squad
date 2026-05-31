@@ -75,13 +75,18 @@ export interface Config {
     ships: Ship;
     weapons: Weapon;
     armors: Armor;
+    'armor-sets': ArmorSet;
     characters: Character;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    'armor-sets': {
+      pieces: 'armors';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -91,6 +96,7 @@ export interface Config {
     ships: ShipsSelect<false> | ShipsSelect<true>;
     weapons: WeaponsSelect<false> | WeaponsSelect<true>;
     armors: ArmorsSelect<false> | ArmorsSelect<true>;
+    'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
     characters: CharactersSelect<false> | CharactersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -278,7 +284,10 @@ export interface Weapon {
   fabricant?: string | null;
   categorie: 'fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'melee' | 'lourde';
   type: ('thermique' | 'cinetique' | 'plasma' | 'explosif' | 'melee')[];
-  valeurDegats?: number | null;
+  /**
+   * Format: [nombre de dés]d[taille du dé]
+   */
+  valeurDegats?: string | null;
   poids?: number | null;
   prix?: number | null;
   /**
@@ -336,17 +345,49 @@ export interface Weapon {
 export interface Armor {
   id: number;
   nom: string;
+  categorie: 'tete' | 'torse' | 'bras' | 'jambes' | 'backpack';
   valeurArmurePhysique?: number | null;
   valeurBouclier?: number | null;
-  /**
-   * Modificateur appliqué aux jets (positif ou négatif).
-   */
-  modificateur?: number | null;
   valeurRupture?: number | null;
+  /**
+   * Champ texte pour les modificateurs divers.
+   */
+  modificateur?: string | null;
+  prix?: number | null;
+  /**
+   * Capacité de stockage (uniquement pour les back-packs).
+   */
+  stockage?: number | null;
+  /**
+   * Set auquel appartient cette pièce d'armure.
+   */
+  set?: (number | null) | ArmorSet;
   /**
    * Modification(s) installée(s) sur cette pièce d'armure.
    */
   mods?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "armor-sets".
+ */
+export interface ArmorSet {
+  id: number;
+  nom: string;
+  /**
+   * Bonus appliqué lorsque le set est complet.
+   */
+  bonus: string;
+  /**
+   * Liste des pièces d'armure appartenant à ce set.
+   */
+  pieces?: {
+    docs?: (number | Armor)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -482,6 +523,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'armors';
         value: number | Armor;
+      } | null)
+    | ({
+        relationTo: 'armor-sets';
+        value: number | ArmorSet;
       } | null)
     | ({
         relationTo: 'characters';
@@ -658,11 +703,26 @@ export interface WeaponsSelect<T extends boolean = true> {
  */
 export interface ArmorsSelect<T extends boolean = true> {
   nom?: T;
+  categorie?: T;
   valeurArmurePhysique?: T;
   valeurBouclier?: T;
-  modificateur?: T;
   valeurRupture?: T;
+  modificateur?: T;
+  prix?: T;
+  stockage?: T;
+  set?: T;
   mods?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "armor-sets_select".
+ */
+export interface ArmorSetsSelect<T extends boolean = true> {
+  nom?: T;
+  bonus?: T;
+  pieces?: T;
   updatedAt?: T;
   createdAt?: T;
 }
