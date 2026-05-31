@@ -31,6 +31,15 @@ export const ArmorSets: CollectionConfig = {
       },
     },
     {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Image',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'pieces',
       type: 'join',
       collection: 'armors',

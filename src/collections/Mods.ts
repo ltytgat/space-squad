@@ -86,5 +86,14 @@ export const Mods: CollectionConfig = {
       label: 'Effet',
       required: true,
     },
+    {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Image',
+      admin: {
+        position: 'sidebar',
+      },
+    },
   ],
 }

@@ -95,6 +95,15 @@ export const Armors: CollectionConfig = {
       },
     },
     {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Image',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'set',
       type: 'relationship',
       relationTo: 'armor-sets',

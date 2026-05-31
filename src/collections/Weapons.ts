@@ -293,6 +293,15 @@ export const Weapons: CollectionConfig = {
       ],
     },
     {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Image',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'mods',
       type: 'relationship',
       relationTo: 'mods',
