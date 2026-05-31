@@ -128,20 +128,65 @@ export const Weapons: CollectionConfig = {
       ],
     },
     {
-      name: 'intervallesPortee',
+      type: 'row',
+      fields: [
+        {
+          name: 'courtePortee',
+          type: 'number',
+          label: 'Courte Portée (m)',
+          admin: {
+            width: '25%',
+            condition: (data) =>
+              !['melee', 'lourde'].includes(data.categorie) && !!data.categorie,
+            description: 'Distance maximale pour le premier palier.',
+          },
+        },
+        {
+          name: 'modCourtePortee',
+          type: 'number',
+          label: 'Mod. Courte Portée',
+          admin: {
+            width: '25%',
+            condition: (data) =>
+              !['melee', 'lourde'].includes(data.categorie) && !!data.categorie,
+          },
+        },
+        {
+          name: 'moyennePortee',
+          type: 'number',
+          label: 'Portée Moyenne (m)',
+          admin: {
+            width: '25%',
+            condition: (data) =>
+              !['melee', 'lourde', 'sniper'].includes(data.categorie) && !!data.categorie,
+            description: 'Distance maximale pour le second palier.',
+          },
+        },
+        {
+          name: 'modMoyennePortee',
+          type: 'number',
+          label: 'Mod. Portée Moyenne',
+          admin: {
+            width: '25%',
+            condition: (data) =>
+              !['melee', 'lourde', 'sniper'].includes(data.categorie) && !!data.categorie,
+          },
+        },
+      ],
+    },
+    {
+      name: 'paliersSniper',
       type: 'array',
-      label: 'Intervalles de Portée',
+      label: 'Paliers de Portée Sniper',
       labels: {
-        singular: 'Intervalle',
-        plural: 'Intervalles',
+        singular: 'Palier',
+        plural: 'Paliers',
       },
-      minRows: 3,
-      maxRows: 5,
+      minRows: 4,
+      maxRows: 4,
       admin: {
-        condition: (data) =>
-          !['melee', 'lourde'].includes(data.categorie) && !!data.categorie,
-        description:
-          "Pour les snipers: 5 intervalles. Pour les autres: 3 intervalles. Le dernier intervalle est considéré comme la portée maximale avec malus cumulatif.",
+        condition: (data) => data.categorie === 'sniper',
+        description: 'Définissez les 4 paliers de distance (le 1er étant déjà la courte portée au-dessus).',
       },
       fields: [
         {
@@ -157,7 +202,7 @@ export const Weapons: CollectionConfig = {
             {
               name: 'modificateur',
               type: 'number',
-              label: 'Modificateur Précision',
+              label: 'Modificateur',
               required: true,
               admin: { width: '50%' },
             },
@@ -175,10 +220,10 @@ export const Weapons: CollectionConfig = {
         {
           name: 'trancheMalusLonguePortee',
           type: 'number',
-          label: 'Tranche de distance pour malus (m)',
+          label: 'Tranche Longue Portée (m)',
           admin: {
             width: '50%',
-            description: 'Distance additionnelle après le dernier intervalle provoquant un malus.',
+            description: 'Distance additionnelle après le dernier palier provoquant un malus cumulatif.',
           },
         },
         {

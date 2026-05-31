@@ -286,10 +286,21 @@ export interface Weapon {
    */
   porteeFixe?: number | null;
   projectilesParTir?: number | null;
+  valeurChauffe?: number | null;
   /**
-   * Pour les snipers: 5 intervalles. Pour les autres: 3 intervalles. Le dernier intervalle est considéré comme la portée maximale avec malus cumulatif.
+   * Distance maximale pour le premier palier.
    */
-  intervallesPortee?:
+  courtePortee?: number | null;
+  modCourtePortee?: number | null;
+  /**
+   * Distance maximale pour le second palier.
+   */
+  moyennePortee?: number | null;
+  modMoyennePortee?: number | null;
+  /**
+   * Définissez les 4 paliers de distance (le 1er étant déjà la courte portée au-dessus).
+   */
+  paliersSniper?:
     | {
         distanceMax: number;
         modificateur: number;
@@ -297,12 +308,19 @@ export interface Weapon {
       }[]
     | null;
   /**
-   * Distance additionnelle après le dernier intervalle provoquant un malus.
+   * Distance additionnelle après le dernier palier provoquant un malus cumulatif.
    */
   trancheMalusLonguePortee?: number | null;
   malusParTranche?: number | null;
+  /**
+   * Pour les armes plasma, correspond à la taille du conteneur.
+   */
   tailleChargeur?: number | null;
   tempsRechargement?: number | null;
+  zoneEffet?: string | null;
+  /**
+   * Pourcentage de refroidissement par unité de temps.
+   */
   tempsRefroidissement?: number | null;
   /**
    * Modification(s) installée(s) sur cette arme.
@@ -612,7 +630,12 @@ export interface WeaponsSelect<T extends boolean = true> {
   prix?: T;
   porteeFixe?: T;
   projectilesParTir?: T;
-  intervallesPortee?:
+  valeurChauffe?: T;
+  courtePortee?: T;
+  modCourtePortee?: T;
+  moyennePortee?: T;
+  modMoyennePortee?: T;
+  paliersSniper?:
     | T
     | {
         distanceMax?: T;
@@ -623,6 +646,7 @@ export interface WeaponsSelect<T extends boolean = true> {
   malusParTranche?: T;
   tailleChargeur?: T;
   tempsRechargement?: T;
+  zoneEffet?: T;
   tempsRefroidissement?: T;
   mods?: T;
   updatedAt?: T;
