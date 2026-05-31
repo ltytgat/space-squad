@@ -13,6 +13,7 @@ import { Characters } from './collections/Characters'
 import { Ships } from './collections/Ships'
 import { Weapons } from './collections/Weapons'
 import { Armors } from './collections/Armors'
+import { ArmorSets } from './collections/ArmorSets'
 import { Groups } from './collections/Groups'
 
 const filename = fileURLToPath(import.meta.url)
@@ -25,7 +26,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, Characters],
+  collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

@@ -6,7 +6,7 @@ export const Armors: CollectionConfig = {
   labels: { singular: 'Armure', plural: 'Armures' },
   admin: {
     useAsTitle: 'nom',
-    defaultColumns: ['nom', 'valeurArmurePhysique', 'valeurBouclier', 'valeurRupture'],
+    defaultColumns: ['nom', 'categorie', 'valeurArmurePhysique', 'valeurBouclier', 'valeurRupture', 'prix'],
     group: 'Équipement',
   },
   access: {
@@ -17,31 +17,92 @@ export const Armors: CollectionConfig = {
   },
   fields: [
     {
-      name: 'nom',
-      type: 'text',
-      required: true,
-      label: 'Nom',
+      type: 'row',
+      fields: [
+        {
+          name: 'nom',
+          type: 'text',
+          required: true,
+          label: 'Nom',
+          admin: { width: '50%' },
+        },
+        {
+          name: 'categorie',
+          type: 'select',
+          label: 'Catégorie',
+          required: true,
+          options: [
+            { label: 'Tête', value: 'tete' },
+            { label: 'Torse', value: 'torse' },
+            { label: 'Bras', value: 'bras' },
+            { label: 'Jambes', value: 'jambes' },
+            { label: 'Back-pack', value: 'backpack' },
+          ],
+          admin: { width: '50%' },
+        },
+      ],
     },
     {
-      name: 'valeurArmurePhysique',
-      type: 'number',
-      label: "Valeur d'armure physique",
+      type: 'row',
+      fields: [
+        {
+          name: 'valeurArmurePhysique',
+          type: 'number',
+          label: "Armure physique",
+          admin: { width: '33%' },
+        },
+        {
+          name: 'valeurBouclier',
+          type: 'number',
+          label: 'Armure cinétique (bouclier)',
+          admin: { width: '33%' },
+        },
+        {
+          name: 'valeurRupture',
+          type: 'number',
+          label: 'Valeur de rupture',
+          admin: { width: '33%' },
+        },
+      ],
     },
     {
-      name: 'valeurBouclier',
-      type: 'number',
-      label: 'Valeur de bouclier',
+      type: 'row',
+      fields: [
+        {
+          name: 'modificateur',
+          type: 'text',
+          label: 'Modificateur',
+          admin: {
+            width: '50%',
+            description: 'Champ texte pour les modificateurs divers.',
+          },
+        },
+        {
+          name: 'prix',
+          type: 'number',
+          label: 'Prix',
+          admin: { width: '50%' },
+        },
+      ],
     },
     {
-      name: 'modificateur',
+      name: 'stockage',
       type: 'number',
-      label: 'Modificateur',
-      admin: { description: 'Modificateur appliqué aux jets (positif ou négatif).' },
+      label: 'Valeur de stockage',
+      admin: {
+        condition: (data) => data.categorie === 'backpack',
+        description: 'Capacité de stockage (uniquement pour les back-packs).',
+      },
     },
     {
-      name: 'valeurRupture',
-      type: 'number',
-      label: 'Valeur de rupture',
+      name: 'set',
+      type: 'relationship',
+      relationTo: 'armor-sets',
+      label: 'Set d\'armure',
+      admin: {
+        position: 'sidebar',
+        description: 'Set auquel appartient cette pièce d\'armure.',
+      },
     },
     {
       name: 'mods',
