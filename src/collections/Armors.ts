@@ -106,8 +106,19 @@ export const Armors: CollectionConfig = {
     },
     {
       name: 'mods',
-      type: 'textarea',
+      type: 'relationship',
+      relationTo: 'mods',
+      hasMany: true,
       label: 'Emplacement de mods',
+      filterOptions: ({ data }) => {
+        return {
+          categoriePrincipale: { equals: 'armures' },
+          or: [
+            { sousCategorieArmure: { equals: 'toutes' } },
+            { sousCategorieArmure: { equals: data.categorie } },
+          ],
+        }
+      },
       admin: { description: "Modification(s) installée(s) sur cette pièce d'armure." },
     },
   ],

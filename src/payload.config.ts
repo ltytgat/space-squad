@@ -15,6 +15,7 @@ import { Weapons } from './collections/Weapons'
 import { Armors } from './collections/Armors'
 import { ArmorSets } from './collections/ArmorSets'
 import { Groups } from './collections/Groups'
+import { Mods } from './collections/Mods'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -26,7 +27,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters],
+  collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters, Mods],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

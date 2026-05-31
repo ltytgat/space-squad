@@ -294,8 +294,26 @@ export const Weapons: CollectionConfig = {
     },
     {
       name: 'mods',
-      type: 'textarea',
+      type: 'relationship',
+      relationTo: 'mods',
+      hasMany: true,
       label: 'Emplacement de mods',
+      filterOptions: ({ data }) => {
+        return {
+          categoriePrincipale: { equals: 'armes' },
+          or: [
+            { sousCategorieArme: { equals: 'toutes' } },
+            {
+              sousCategorieArme: {
+                equals:
+                  data.categorie === 'fusil-assaut' || data.categorie === 'pistolet'
+                    ? 'fusils-pistolets'
+                    : data.categorie,
+              },
+            },
+          ],
+        }
+      },
       admin: { description: 'Modification(s) installée(s) sur cette arme.' },
     },
   ],
