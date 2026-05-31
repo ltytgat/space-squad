@@ -334,7 +334,7 @@ export interface Weapon {
    */
   tempsRefroidissement?: number | null;
   /**
-   * Modification(s) installée(s) sur cette arme.
+   * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
    */
   mods?: (number | Mod)[] | null;
   updatedAt: string;
@@ -348,6 +348,9 @@ export interface Mod {
   id: number;
   nom: string;
   categoriePrincipale: 'armes' | 'armures';
+  /**
+   * Pour une arme, le prix est un pourcentage du prix de l'arme (ex: 0.10 pour 10%). Pour une armure, c'est un prix fixe.
+   */
   prix?: number | null;
   sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
   sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
@@ -380,7 +383,7 @@ export interface Armor {
    */
   set?: (number | null) | ArmorSet;
   /**
-   * Modification(s) installée(s) sur cette pièce d'armure.
+   * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
    */
   mods?: (number | Mod)[] | null;
   updatedAt: string;
@@ -432,15 +435,42 @@ export interface Character {
   culture?: number | null;
   anticipation?: number | null;
   perception?: number | null;
-  armureTete?: (number | null) | Armor;
-  armureTorse?: (number | null) | Armor;
-  armureBras?: (number | null) | Armor;
-  armureJambes?: (number | null) | Armor;
-  armePrincipale?: (number | null) | Weapon;
-  armeSecondaire?: (number | null) | Weapon;
-  armeLourde?: (number | null) | Weapon;
-  armeDePoing?: (number | null) | Weapon;
-  armeDeMelee?: (number | null) | Weapon;
+  armureTete?: {
+    item?: (number | null) | Armor;
+    mods?: (number | Mod)[] | null;
+  };
+  armureTorse?: {
+    item?: (number | null) | Armor;
+    mods?: (number | Mod)[] | null;
+  };
+  armureBras?: {
+    item?: (number | null) | Armor;
+    mods?: (number | Mod)[] | null;
+  };
+  armureJambes?: {
+    item?: (number | null) | Armor;
+    mods?: (number | Mod)[] | null;
+  };
+  armePrincipale?: {
+    item?: (number | null) | Weapon;
+    mods?: (number | Mod)[] | null;
+  };
+  armeSecondaire?: {
+    item?: (number | null) | Weapon;
+    mods?: (number | Mod)[] | null;
+  };
+  armeLourde?: {
+    item?: (number | null) | Weapon;
+    mods?: (number | Mod)[] | null;
+  };
+  armeDePoing?: {
+    item?: (number | null) | Weapon;
+    mods?: (number | Mod)[] | null;
+  };
+  armeDeMelee?: {
+    item?: (number | null) | Weapon;
+    mods?: (number | Mod)[] | null;
+  };
   backpack?: string | null;
   vaisseau?: (number | null) | Ship;
   roleVaisseau?: ('proprietaire' | 'passager') | null;
@@ -767,15 +797,60 @@ export interface CharactersSelect<T extends boolean = true> {
   culture?: T;
   anticipation?: T;
   perception?: T;
-  armureTete?: T;
-  armureTorse?: T;
-  armureBras?: T;
-  armureJambes?: T;
-  armePrincipale?: T;
-  armeSecondaire?: T;
-  armeLourde?: T;
-  armeDePoing?: T;
-  armeDeMelee?: T;
+  armureTete?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armureTorse?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armureBras?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armureJambes?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armePrincipale?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armeSecondaire?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armeLourde?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armeDePoing?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
+  armeDeMelee?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+      };
   backpack?: T;
   vaisseau?: T;
   roleVaisseau?: T;

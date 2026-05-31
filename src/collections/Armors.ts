@@ -110,16 +110,11 @@ export const Armors: CollectionConfig = {
       relationTo: 'mods',
       hasMany: true,
       label: 'Emplacement de mods',
-      filterOptions: ({ data }) => {
-        return {
-          categoriePrincipale: { equals: 'armures' },
-          or: [
-            { sousCategorieArmure: { equals: 'toutes' } },
-            { sousCategorieArmure: { equals: data.categorie } },
-          ],
-        }
+      hidden: true,
+      admin: {
+        description:
+          'ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.',
       },
-      admin: { description: "Modification(s) installée(s) sur cette pièce d'armure." },
     },
   ],
 }

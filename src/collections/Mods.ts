@@ -40,7 +40,11 @@ export const Mods: CollectionConfig = {
           name: 'prix',
           type: 'number',
           label: 'Prix',
-          admin: { width: '50%' },
+          admin: {
+            width: '50%',
+            description:
+              'Pour une arme, le prix est un pourcentage du prix de l\'arme (ex: 0.10 pour 10%). Pour une armure, c\'est un prix fixe.',
+          },
         },
       ],
     },

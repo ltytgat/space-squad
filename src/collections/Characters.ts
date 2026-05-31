@@ -142,15 +142,126 @@ export const Characters: CollectionConfig = {
         {
           type: 'row',
           fields: [
-            { name: 'armureTete', type: 'relationship', relationTo: 'armors', label: 'Tête' },
-            { name: 'armureTorse', type: 'relationship', relationTo: 'armors', label: 'Torse' },
+            {
+              name: 'armureTete',
+              type: 'group',
+              label: 'Tête',
+              admin: { width: '50%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'armors',
+                  label: 'Pièce d\'armure',
+                  filterOptions: { categorie: { equals: 'tete' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armures' },
+                      or: [{ sousCategorieArmure: { equals: 'toutes' } }, { sousCategorieArmure: { equals: 'tete' } }],
+                    }
+                  },
+                },
+              ],
+            },
+            {
+              name: 'armureTorse',
+              type: 'group',
+              label: 'Torse',
+              admin: { width: '50%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'armors',
+                  label: 'Pièce d\'armure',
+                  filterOptions: { categorie: { equals: 'torse' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armures' },
+                      or: [{ sousCategorieArmure: { equals: 'toutes' } }, { sousCategorieArmure: { equals: 'torse' } }],
+                    }
+                  },
+                },
+              ],
+            },
           ],
         },
         {
           type: 'row',
           fields: [
-            { name: 'armureBras', type: 'relationship', relationTo: 'armors', label: 'Bras' },
-            { name: 'armureJambes', type: 'relationship', relationTo: 'armors', label: 'Jambes' },
+            {
+              name: 'armureBras',
+              type: 'group',
+              label: 'Bras',
+              admin: { width: '50%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'armors',
+                  label: 'Pièce d\'armure',
+                  filterOptions: { categorie: { equals: 'bras' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armures' },
+                      or: [{ sousCategorieArmure: { equals: 'toutes' } }, { sousCategorieArmure: { equals: 'bras' } }],
+                    }
+                  },
+                },
+              ],
+            },
+            {
+              name: 'armureJambes',
+              type: 'group',
+              label: 'Jambes',
+              admin: { width: '50%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'armors',
+                  label: 'Pièce d\'armure',
+                  filterOptions: { categorie: { equals: 'jambes' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armures' },
+                      or: [
+                        { sousCategorieArmure: { equals: 'toutes' } },
+                        { sousCategorieArmure: { equals: 'jambes' } },
+                      ],
+                    }
+                  },
+                },
+              ],
+            },
           ],
         },
       ],
@@ -166,15 +277,37 @@ export const Characters: CollectionConfig = {
           fields: [
             {
               name: 'armePrincipale',
-              type: 'relationship',
-              relationTo: 'weapons',
+              type: 'group',
               label: 'Arme principale',
+              admin: { width: '50%' },
+              fields: [
+                { name: 'item', type: 'relationship', relationTo: 'weapons', label: 'Arme' },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                },
+              ],
             },
             {
               name: 'armeSecondaire',
-              type: 'relationship',
-              relationTo: 'weapons',
+              type: 'group',
               label: 'Arme secondaire',
+              admin: { width: '50%' },
+              fields: [
+                { name: 'item', type: 'relationship', relationTo: 'weapons', label: 'Arme' },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                },
+              ],
             },
           ],
         },
@@ -183,21 +316,77 @@ export const Characters: CollectionConfig = {
           fields: [
             {
               name: 'armeLourde',
-              type: 'relationship',
-              relationTo: 'weapons',
+              type: 'group',
               label: 'Arme lourde',
+              admin: { width: '33%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'weapons',
+                  label: 'Arme',
+                  filterOptions: { categorie: { equals: 'lourde' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                },
+              ],
             },
             {
               name: 'armeDePoing',
-              type: 'relationship',
-              relationTo: 'weapons',
+              type: 'group',
               label: 'Arme de poing',
+              admin: { width: '33%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'weapons',
+                  label: 'Arme',
+                  filterOptions: { categorie: { equals: 'pistolet' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                },
+              ],
             },
             {
               name: 'armeDeMelee',
-              type: 'relationship',
-              relationTo: 'weapons',
+              type: 'group',
               label: 'Arme de mêlée',
+              admin: { width: '33%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'weapons',
+                  label: 'Arme',
+                  filterOptions: { categorie: { equals: 'melee' } },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armes' },
+                      or: [{ sousCategorieArme: { equals: 'toutes' } }, { sousCategorieArme: { equals: 'melee' } }],
+                    }
+                  },
+                },
+              ],
             },
           ],
         },
