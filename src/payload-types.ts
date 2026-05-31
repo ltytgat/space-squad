@@ -77,6 +77,7 @@ export interface Config {
     armors: Armor;
     'armor-sets': ArmorSet;
     characters: Character;
+    mods: Mod;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +99,7 @@ export interface Config {
     armors: ArmorsSelect<false> | ArmorsSelect<true>;
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
     characters: CharactersSelect<false> | CharactersSelect<true>;
+    mods: ModsSelect<false> | ModsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -334,7 +336,22 @@ export interface Weapon {
   /**
    * Modification(s) installée(s) sur cette arme.
    */
-  mods?: string | null;
+  mods?: (number | Mod)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mods".
+ */
+export interface Mod {
+  id: number;
+  nom: string;
+  categoriePrincipale: 'armes' | 'armures';
+  prix?: number | null;
+  sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
+  sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
+  effet: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -365,7 +382,7 @@ export interface Armor {
   /**
    * Modification(s) installée(s) sur cette pièce d'armure.
    */
-  mods?: string | null;
+  mods?: (number | Mod)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -531,6 +548,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'characters';
         value: number | Character;
+      } | null)
+    | ({
+        relationTo: 'mods';
+        value: number | Mod;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -772,6 +793,20 @@ export interface CharactersSelect<T extends boolean = true> {
         valeur?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mods_select".
+ */
+export interface ModsSelect<T extends boolean = true> {
+  nom?: T;
+  categoriePrincipale?: T;
+  prix?: T;
+  sousCategorieArme?: T;
+  sousCategorieArmure?: T;
+  effet?: T;
   updatedAt?: T;
   createdAt?: T;
 }
