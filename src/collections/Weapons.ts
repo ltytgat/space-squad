@@ -74,9 +74,13 @@ export const Weapons: CollectionConfig = {
       fields: [
         {
           name: 'valeurDegats',
-          type: 'number',
+          type: 'text',
           label: 'Valeur de dégâts',
-          admin: { width: '33%' },
+          admin: {
+            width: '33%',
+            placeholder: 'ex: 3d6, 2d10+5',
+            description: 'Format: [nombre de dés]d[taille du dé]',
+          },
         },
         {
           name: 'poids',
