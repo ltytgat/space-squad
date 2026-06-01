@@ -17,7 +17,5 @@ export const Media: CollectionConfig = {
       required: true,
     },
   ],
-  upload: {
-    staticDir: path.resolve(dirname, '../../media'),
-  },
+  upload: true,
 }
