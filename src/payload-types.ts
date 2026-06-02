@@ -333,6 +333,8 @@ export interface Weapon {
    * Pourcentage de refroidissement par unité de temps.
    */
   tempsRefroidissement?: number | null;
+  details?: string | null;
+  image?: (number | null) | Media;
   /**
    * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
    */
@@ -355,6 +357,7 @@ export interface Mod {
   sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
   sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
   effet: string;
+  image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -378,6 +381,7 @@ export interface Armor {
    * Capacité de stockage (uniquement pour les back-packs).
    */
   stockage?: number | null;
+  image?: (number | null) | Media;
   /**
    * Set auquel appartient cette pièce d'armure.
    */
@@ -400,6 +404,7 @@ export interface ArmorSet {
    * Bonus appliqué lorsque le set est complet.
    */
   bonus: string;
+  image?: (number | null) | Media;
   /**
    * Liste des pièces d'armure appartenant à ce set.
    */
@@ -744,6 +749,8 @@ export interface WeaponsSelect<T extends boolean = true> {
   tempsRechargement?: T;
   zoneEffet?: T;
   tempsRefroidissement?: T;
+  details?: T;
+  image?: T;
   mods?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -761,6 +768,7 @@ export interface ArmorsSelect<T extends boolean = true> {
   modificateur?: T;
   prix?: T;
   stockage?: T;
+  image?: T;
   set?: T;
   mods?: T;
   updatedAt?: T;
@@ -773,6 +781,7 @@ export interface ArmorsSelect<T extends boolean = true> {
 export interface ArmorSetsSelect<T extends boolean = true> {
   nom?: T;
   bonus?: T;
+  image?: T;
   pieces?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -882,6 +891,7 @@ export interface ModsSelect<T extends boolean = true> {
   sousCategorieArme?: T;
   sousCategorieArmure?: T;
   effet?: T;
+  image?: T;
   updatedAt?: T;
   createdAt?: T;
 }

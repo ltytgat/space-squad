@@ -293,6 +293,11 @@ export const Weapons: CollectionConfig = {
       ],
     },
     {
+      name: 'details',
+      type: 'textarea',
+      label: 'Détails / Spécificités',
+    },
+    {
       name: 'image',
       type: 'upload',
       relationTo: 'media',
