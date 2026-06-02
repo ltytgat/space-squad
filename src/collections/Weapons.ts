@@ -186,11 +186,11 @@ export const Weapons: CollectionConfig = {
         singular: 'Palier',
         plural: 'Paliers',
       },
-      minRows: 4,
-      maxRows: 4,
+      minRows: 3,
+      maxRows: 3,
       admin: {
         condition: (data) => data.categorie === 'sniper',
-        description: 'Définissez les 4 paliers de distance (le 1er étant déjà la courte portée au-dessus).',
+        description: 'Définissez les 3 paliers de distance (le 1er étant déjà la courte portée au-dessus).',
       },
       fields: [
         {
