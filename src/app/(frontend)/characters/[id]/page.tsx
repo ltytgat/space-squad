@@ -243,7 +243,17 @@ function ArmorSlot({
   )
 }
 
-function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null }) {
+function WeaponSlot({
+  label,
+  weapon,
+  forceDieMod,
+  perceptionDieMod,
+}: {
+  label: string
+  weapon: Weapon | null
+  forceDieMod: number
+  perceptionDieMod: number
+}) {
   const isMelee = weapon?.categorie === 'melee'
   const isHeavy = weapon?.categorie === 'lourde'
   const isSniper = weapon?.categorie === 'sniper'
@@ -255,6 +265,28 @@ function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null })
 
   // Déterminer la classe de couleur pour les dégâts
   const damageColorClass = weapon?.type?.[0] ? `weapon-type-${weapon.type[0]}` : ''
+
+  // Calcul du bonus de dégâts
+  const getFinalDamage = () => {
+    if (!weapon || !weapon.valeurDegats) return null
+
+    let baseDamage = weapon.valeurDegats
+    let bonus = 0
+    let multiplier = baseDamage.endsWith('*') ? 2 : 1
+    const cleanDamage = baseDamage.replace('*', '')
+
+    if (isMelee) {
+      bonus = forceDieMod * multiplier
+    } else if (!isHeavy && !isPlasma) {
+      // Pour les armes (hors lourde, mêlée ou plasma), on utilise Perception
+      bonus = perceptionDieMod * multiplier
+    }
+
+    if (bonus === 0) return baseDamage
+    return `${cleanDamage}${bonus > 0 ? '+' : ''}${bonus}`
+  }
+
+  const finalDamage = getFinalDamage()
 
   // Construction du tableau de portée
   const renderRangeTable = () => {
@@ -333,8 +365,8 @@ function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null })
         <div className="char-equip-item">
           <span className="char-equip-item-name">{weapon.nom}</span>
           <div className="char-equip-item-stats">
-            {weapon.valeurDegats != null && (
-              <span title="Dégâts" className={damageColorClass}>⚔ {weapon.valeurDegats}</span>
+            {finalDamage != null && (
+              <span title="Dégâts" className={damageColorClass}>⚔ {finalDamage}</span>
             )}
             {weapon.tailleChargeur != null && (
               <span title="Chargeur">📦 {weapon.tailleChargeur}</span>
@@ -475,6 +507,16 @@ export default async function CharacterDetailPage({
     }
     return null
   }
+
+  // Calcul des modificateurs de dé pour les armes
+  const getDieMod = (key: string, baseValue: number | undefined) => {
+    const bonus = totalArmorMods[key] || 0
+    const total = (baseValue || 0) + bonus
+    return Math.floor((total - 10) / 2)
+  }
+
+  const forceDieMod = getDieMod('force', character.force)
+  const perceptionDieMod = getDieMod('perception', character.perception)
 
   return (
     <div className="ss-root char-root">
@@ -699,11 +741,36 @@ export default async function CharacterDetailPage({
           <div className="char-card">
             <h2 className="char-card-title">Arsenal</h2>
             <div className="char-equip-grid char-equip-grid-3">
-              <WeaponSlot label="Principale" weapon={asWeapon(character.armePrincipale)} />
-              <WeaponSlot label="Secondaire" weapon={asWeapon(character.armeSecondaire)} />
-              <WeaponSlot label="Lourde" weapon={asWeapon(character.armeLourde)} />
-              <WeaponSlot label="Poing" weapon={asWeapon(character.armeDePoing)} />
-              <WeaponSlot label="Mêlée" weapon={asWeapon(character.armeDeMelee)} />
+              <WeaponSlot
+                label="Principale"
+                weapon={asWeapon(character.armePrincipale)}
+                forceDieMod={forceDieMod}
+                perceptionDieMod={perceptionDieMod}
+              />
+              <WeaponSlot
+                label="Secondaire"
+                weapon={asWeapon(character.armeSecondaire)}
+                forceDieMod={forceDieMod}
+                perceptionDieMod={perceptionDieMod}
+              />
+              <WeaponSlot
+                label="Lourde"
+                weapon={asWeapon(character.armeLourde)}
+                forceDieMod={forceDieMod}
+                perceptionDieMod={perceptionDieMod}
+              />
+              <WeaponSlot
+                label="Poing"
+                weapon={asWeapon(character.armeDePoing)}
+                forceDieMod={forceDieMod}
+                perceptionDieMod={perceptionDieMod}
+              />
+              <WeaponSlot
+                label="Mêlée"
+                weapon={asWeapon(character.armeDeMelee)}
+                forceDieMod={forceDieMod}
+                perceptionDieMod={perceptionDieMod}
+              />
             </div>
 
             {character.backpack && (
