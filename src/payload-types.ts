@@ -78,6 +78,7 @@ export interface Config {
     'armor-sets': ArmorSet;
     characters: Character;
     mods: Mod;
+    consumables: Consumable;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -100,6 +101,7 @@ export interface Config {
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
     characters: CharactersSelect<false> | CharactersSelect<true>;
     mods: ModsSelect<false> | ModsSelect<true>;
+    consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -309,7 +311,7 @@ export interface Weapon {
   moyennePortee?: number | null;
   modMoyennePortee?: number | null;
   /**
-   * Définissez les 4 paliers de distance (le 1er étant déjà la courte portée au-dessus).
+   * Définissez les 3 paliers de distance (le 1er étant déjà la courte portée au-dessus).
    */
   paliersSniper?:
     | {
@@ -522,6 +524,27 @@ export interface Character {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consumables".
+ */
+export interface Consumable {
+  id: number;
+  nom: string;
+  categorie: 'soins' | 'munitions' | 'grenades' | 'tactique' | 'outils';
+  /**
+   * Texte libre décrivant l'effet du consommable.
+   */
+  effet?: string | null;
+  /**
+   * Texte libre décrivant l'épreuve éventuelle.
+   */
+  epreuve?: string | null;
+  prix?: number | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -587,6 +610,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'mods';
         value: number | Mod;
+      } | null)
+    | ({
+        relationTo: 'consumables';
+        value: number | Consumable;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -891,6 +918,20 @@ export interface ModsSelect<T extends boolean = true> {
   sousCategorieArme?: T;
   sousCategorieArmure?: T;
   effet?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consumables_select".
+ */
+export interface ConsumablesSelect<T extends boolean = true> {
+  nom?: T;
+  categorie?: T;
+  effet?: T;
+  epreuve?: T;
+  prix?: T;
   image?: T;
   updatedAt?: T;
   createdAt?: T;
