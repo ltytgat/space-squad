@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx payload:*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }

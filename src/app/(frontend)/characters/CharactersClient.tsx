@@ -116,7 +116,7 @@ export function CharactersClient({ characters, groups }: Props) {
       ) : (
         <div className="chars-grid">
           {filtered.map((c) => (
-            <div key={c.id} className="chars-card">
+            <a key={c.id} href={`/characters/${c.id}`} className="chars-card">
               <div className="chars-card-header">
                 <h3 className="chars-card-name">{c.nom || <em>Sans nom</em>}</h3>
                 <div className="chars-card-tags">
@@ -163,7 +163,7 @@ export function CharactersClient({ characters, groups }: Props) {
                   <span className="chars-stat-value">{c.legende ?? 0}</span>
                 </div>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       )}

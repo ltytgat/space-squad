@@ -143,6 +143,9 @@
   flex-direction: column;
   gap: 1rem;
   transition: border-color var(--ss-ease), background var(--ss-ease);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 
   &:hover {
     border-color: var(--ss-border-h);
