@@ -15,9 +15,19 @@ type Weapon = {
   nom: string
   poids?: number
   tailleChargeur?: number
-  valeurDegats?: number
+  valeurDegats?: string
   projectilesParTir?: number
   valeurRechargement?: number
+  type?: string[]
+  categorie?: string
+  porteeFixe?: number
+  courtePortee?: number
+  modCourtePortee?: number
+  moyennePortee?: number
+  modMoyennePortee?: number
+  paliersSniper?: { distanceMax: number; modificateur: number }[]
+  trancheMalusLonguePortee?: number
+  malusParTranche?: number
 }
 
 type Armor = {
@@ -144,6 +154,88 @@ function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
 }
 
 function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null }) {
+  const isMelee = weapon?.categorie === 'melee'
+  const isHeavy = weapon?.categorie === 'lourde'
+  const isSniper = weapon?.categorie === 'sniper'
+  const isThermique = weapon?.type?.includes('thermique')
+  const isPlasma = weapon?.type?.includes('plasma')
+
+  // Masquer les projectiles pour Thermique/Plasma
+  const showProjectiles = weapon?.projectilesParTir != null && !isThermique && !isPlasma
+
+  // Déterminer la classe de couleur pour les dégâts
+  const damageColorClass = weapon?.type?.[0] ? `weapon-type-${weapon.type[0]}` : ''
+
+  // Construction du tableau de portée
+  const renderRangeTable = () => {
+    if (!weapon) return null
+
+    const rows: { label: string; mod: string }[] = []
+
+    if (isMelee) {
+      rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: '0' })
+    } else if (isHeavy) {
+      rows.push({ label: `< ${weapon.porteeFixe ?? 50}m`, mod: '0' })
+    } else if (isSniper) {
+      // Courte portée définie plus haut
+      rows.push({
+        label: `< ${weapon.courtePortee ?? 0}m`,
+        mod: (weapon.modCourtePortee ?? 0) >= 0 ? `+${weapon.modCourtePortee}` : `${weapon.modCourtePortee}`,
+      })
+      // Paliers sniper
+      weapon.paliersSniper?.forEach((p) => {
+        rows.push({
+          label: `< ${p.distanceMax}m`,
+          mod: (p.modificateur ?? 0) >= 0 ? `+${p.modificateur}` : `${p.modificateur}`,
+        })
+      })
+    } else {
+      // Armes standard (Fusil, Pistolet, Shotgun)
+      if (weapon.courtePortee != null) {
+        rows.push({
+          label: `< ${weapon.courtePortee}m`,
+          mod: (weapon.modCourtePortee ?? 0) >= 0 ? `+${weapon.modCourtePortee}` : `${weapon.modCourtePortee}`,
+        })
+      }
+      if (weapon.moyennePortee != null) {
+        rows.push({
+          label: `< ${weapon.moyennePortee}m`,
+          mod: (weapon.modMoyennePortee ?? 0) >= 0 ? `+${weapon.modMoyennePortee}` : `${weapon.modMoyennePortee}`,
+        })
+      }
+    }
+
+    // Malus longue portée (si applicable)
+    if (!isMelee && !isHeavy && weapon.trancheMalusLonguePortee) {
+      const lastDist = rows[rows.length - 1]?.label.match(/\d+/)?.[0] ?? '0'
+      rows.push({
+        label: `+${weapon.trancheMalusLonguePortee}m`,
+        mod: (weapon.malusParTranche ?? -1) >= 0 ? `+${weapon.malusParTranche}` : `${weapon.malusParTranche}`,
+      })
+    }
+
+    if (rows.length === 0) return null
+
+    return (
+      <table className="weapon-range-table">
+        <thead>
+          <tr>
+            {rows.map((r, i) => (
+              <th key={i}>{r.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {rows.map((r, i) => (
+              <td key={i}>{r.mod}</td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    )
+  }
+
   return (
     <div className={`char-equip-slot${weapon ? '' : ' char-equip-slot-empty'}`}>
       <span className="char-equip-slot-label">{label}</span>
@@ -152,12 +244,12 @@ function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null })
           <span className="char-equip-item-name">{weapon.nom}</span>
           <div className="char-equip-item-stats">
             {weapon.valeurDegats != null && (
-              <span title="Dégâts">⚔ {weapon.valeurDegats}</span>
+              <span title="Dégâts" className={damageColorClass}>⚔ {weapon.valeurDegats}</span>
             )}
             {weapon.tailleChargeur != null && (
               <span title="Chargeur">📦 {weapon.tailleChargeur}</span>
             )}
-            {weapon.projectilesParTir != null && (
+            {showProjectiles && (
               <span title="Projectiles/tir">× {weapon.projectilesParTir}</span>
             )}
             {weapon.valeurRechargement != null && (
@@ -167,6 +259,7 @@ function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null })
               <span title="Poids">{weapon.poids} kg</span>
             )}
           </div>
+          {renderRangeTable()}
         </div>
       ) : (
         <span className="char-equip-empty-label">—</span>

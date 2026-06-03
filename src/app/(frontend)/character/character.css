@@ -423,6 +423,39 @@
       color: #60a5fa;
       border: 1px solid rgba(96, 165, 250, 0.2);
     }
+
+    /* Weapon types */
+    &.weapon-type-thermique { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
+    &.weapon-type-cinetique { color: #60a5fa; border-color: rgba(96, 165, 250, 0.3); }
+    &.weapon-type-plasma { color: #4ade80; border-color: rgba(74, 222, 128, 0.3); }
+    &.weapon-type-explosif { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+    &.weapon-type-melee { color: #ffffff; border-color: rgba(255, 255, 255, 0.3); }
+  }
+}
+
+.weapon-range-table {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+  font-family: var(--ss-font-mono);
+  border: 1px solid var(--ss-border);
+
+  th, td {
+    border: 1px solid var(--ss-border);
+    padding: 0.25rem 0.4rem;
+    text-align: center;
+  }
+
+  th {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ss-text-muted);
+    font-weight: 500;
+  }
+
+  td {
+    color: var(--ss-cyan);
+    font-weight: 600;
   }
 }
 
@@ -535,6 +568,13 @@
 
   .char-equip-grid-3 {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .weapon-range-table {
+    font-size: 0.6rem;
+    th, td {
+      padding: 0.2rem 0.25rem;
+    }
   }
 }
 
