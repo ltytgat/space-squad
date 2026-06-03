@@ -361,6 +361,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--ss-radius);
   gap: 0.25rem;
+  flex-grow: 1;
 }
 
 .char-stat-main {
@@ -500,6 +501,26 @@
     &.weapon-type-explosif { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
     &.weapon-type-melee { color: #ffffff; border-color: rgba(255, 255, 255, 0.3); }
   }
+}
+
+.weapon-damage-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.weapon-damage-estimates {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--ss-text-dim);
+  font-family: var(--ss-font-mono);
+  opacity: 0.8;
+  margin-top: -0.1rem;
+}
+
+.weapon-damage-estimates span {
+  white-space: nowrap;
 }
 
 .weapon-range-table {

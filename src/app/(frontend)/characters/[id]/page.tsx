@@ -267,13 +267,13 @@ function WeaponSlot({
   const damageColorClass = weapon?.type?.[0] ? `weapon-type-${weapon.type[0]}` : ''
 
   // Calcul du bonus de dégâts
-  const getFinalDamage = () => {
+  const getFinalDamageData = () => {
     if (!weapon || !weapon.valeurDegats) return null
 
     let baseDamage = weapon.valeurDegats
     let bonus = 0
     let multiplier = baseDamage.endsWith('*') ? 2 : 1
-    const cleanDamage = baseDamage.replace('*', '')
+    const cleanDamage = baseDamage.replace('*', '').replace('!', '')
 
     if (isMelee) {
       bonus = forceDieMod * multiplier
@@ -282,11 +282,41 @@ function WeaponSlot({
       bonus = perceptionDieMod * multiplier
     }
 
-    if (bonus === 0) return baseDamage
-    return `${cleanDamage}${bonus > 0 ? '+' : ''}${bonus}`
+    const finalDamageStr = bonus === 0 ? baseDamage : `${cleanDamage}${bonus > 0 ? '+' : ''}${bonus}${baseDamage.endsWith('!') ? '!' : ''}`
+    
+    // Calcul des stats min/moy/max
+    // Format attendu: XdY+Z ou XdY
+    const diceMatch = cleanDamage.match(/(\d+)d(\d+)(?:([+-]\d+))?/)
+    let min = 0, avg = 0, max: number | null = 0
+    const isExplosive = baseDamage.endsWith('!')
+
+    if (diceMatch) {
+      const count = parseInt(diceMatch[1])
+      const faces = parseInt(diceMatch[2])
+      const fixed = parseInt(diceMatch[3] || '0')
+      
+      min = count + fixed + bonus
+      
+      if (isExplosive) {
+        // Espérance dé explosif: (faces + 1) / 2 * (faces / (faces - 1))
+        const expDie = ((faces + 1) / 2) * (faces / (faces - 1))
+        avg = count * expDie + fixed + bonus
+        max = null // Infini
+      } else {
+        avg = count * ((faces + 1) / 2) + fixed + bonus
+        max = count * faces + fixed + bonus
+      }
+    }
+
+    return {
+      display: finalDamageStr,
+      min: Math.floor(min),
+      avg: Math.round(avg),
+      max: max !== null ? Math.floor(max) : null
+    }
   }
 
-  const finalDamage = getFinalDamage()
+  const damageData = getFinalDamageData()
 
   // Construction du tableau de portée
   const renderRangeTable = () => {
@@ -365,8 +395,17 @@ function WeaponSlot({
         <div className="char-equip-item">
           <span className="char-equip-item-name">{weapon.nom}</span>
           <div className="char-equip-item-stats">
-            {finalDamage != null && (
-              <span title="Dégâts" className={damageColorClass}>⚔ {finalDamage}</span>
+            {damageData != null && (
+              <div className="weapon-damage-container">
+                <span title="Dégâts" className={damageColorClass}>⚔ {damageData.display}</span>
+                {!isPlasma && (
+                  <div className="weapon-damage-estimates">
+                    <span title="Minimum">Min: {damageData.min}</span>
+                    <span title="Moyenne">Moy: {damageData.avg}</span>
+                    {damageData.max !== null && <span title="Maximum">Max: {damageData.max}</span>}
+                  </div>
+                )}
+              </div>
             )}
             {weapon.tailleChargeur != null && (
               <span title="Chargeur">📦 {weapon.tailleChargeur}</span>
