@@ -101,6 +101,44 @@ function asArmor(v: { item?: Armor | string | null } | Armor | string | null | u
   return v as Armor
 }
 
+function parseModifier(modStr: string | null | undefined): Record<string, number> {
+  if (!modStr) return {}
+  const mods: Record<string, number> = {}
+  // On cherche des patterns comme "Cha+2" ou "Fo+1" ou "+1 Fo"
+  // On supporte les deux ordres pour plus de flexibilité
+  const regex = /([+-]\d+)\s*(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception)|(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception)\s*([+-]\d+)/gi
+  let match
+  const mapping: Record<string, string> = {
+    fo: 'force',
+    force: 'force',
+    hab: 'habilite',
+    habilité: 'habilite',
+    int: 'connaissances',
+    connaissances: 'connaissances',
+    cha: 'culture',
+    culture: 'culture',
+    ant: 'anticipation',
+    anticipation: 'anticipation',
+    pe: 'perception',
+    perception: 'perception',
+  }
+
+  while ((match = regex.exec(modStr)) !== null) {
+    // Si match[1] existe, c'est le format "+1 Fo" (valeur, puis nom)
+    // Si match[3] existe, c'est le format "Cha+2" (nom, puis valeur)
+    const valStr = match[1] || match[4]
+    const keyStr = (match[2] || match[3]).toLowerCase()
+    
+    const val = parseInt(valStr)
+    const key = mapping[keyStr]
+    
+    if (key) {
+      mods[key] = (mods[key] || 0) + val
+    }
+  }
+  return mods
+}
+
 function asMods(v: { mods?: (Mod | number)[] | null } | (Mod | number)[] | null | undefined): Mod[] {
   if (!v) return []
   let mods: (Mod | number)[] = []
@@ -395,6 +433,40 @@ export default async function CharacterDetailPage({
 
   const completedSets = Array.from(setsMap.values()).filter((s) => s.count >= 4)
 
+  // Calcul des modificateurs de caractéristiques via les armures et les mods
+  const totalArmorMods: Record<string, number> = {}
+  
+  // 1. On analyse les modificateurs de base des armures équipées
+  armors.forEach(a => {
+    const armorMods = parseModifier(a.modificateur)
+    Object.entries(armorMods).forEach(([key, val]) => {
+      totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+    })
+  })
+
+  // 2. On analyse les effets des mods sur chaque pièce
+  const allMods = [
+    ...asMods(character.armureTete),
+    ...asMods(character.armureTorse),
+    ...asMods(character.armureBras),
+    ...asMods(character.armureJambes),
+    ...asMods(character.armureBackpack),
+  ]
+  allMods.forEach(m => {
+    const modEffects = parseModifier(m.effet)
+    Object.entries(modEffects).forEach(([key, val]) => {
+      totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+    })
+  })
+
+  // 3. Bonus de set (si applicable, on pourrait aussi parser le bonus de set)
+  completedSets.forEach(s => {
+    const setMods = parseModifier(s.set.bonus)
+    Object.entries(setMods).forEach(([key, val]) => {
+      totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+    })
+  })
+
   const getSetInfo = (armor: Armor | null) => {
     if (!armor || !(armor.set && typeof armor.set === 'object')) return null
     const info = setsMap.get(armor.set.id)
@@ -523,23 +595,42 @@ export default async function CharacterDetailPage({
             </div>
 
             <div className="char-card char-card-stats">
-              <h2 className="char-card-title">Attributs</h2>
+              <h2 className="char-card-title">Caractéristiques</h2>
               <div className="char-stats-grid">
                 {(
                   [
-                    ['Force', character.force],
-                    ['Habilité', character.habilite],
-                    ['Connaissances', character.connaissances],
-                    ['Culture', character.culture],
-                    ['Anticipation', character.anticipation],
-                    ['Perception', character.perception],
-                  ] as [string, number | undefined][]
-                ).map(([label, value]) => (
-                  <div key={label} className="char-stat-item">
-                    <span className="char-stat-label">{label}</span>
-                    <span className="char-stat-value">{stat(value)}</span>
-                  </div>
-                ))}
+                    ['Force', character.force, 'force'],
+                    ['Habilité', character.habilite, 'habilite'],
+                    ['Connaissances', character.connaissances, 'connaissances'],
+                    ['Culture', character.culture, 'culture'],
+                    ['Anticipation', character.anticipation, 'anticipation'],
+                    ['Perception', character.perception, 'perception'],
+                  ] as [string, number | undefined, string][]
+                ).map(([label, baseValue, key]) => {
+                  const bonus = totalArmorMods[key] || 0
+                  const total = (baseValue || 0) + bonus
+                  const dieMod = Math.floor((total - 10) / 2)
+                  const dieModStr = dieMod >= 0 ? `+${dieMod}` : `${dieMod}`
+                  
+                  return (
+                    <div key={label} className="char-stat-item">
+                      <div className="char-stat-main">
+                        <span className="char-stat-label">{label}</span>
+                        <span className="char-stat-value">
+                          {total} <span className="char-stat-die-mod">({dieModStr})</span>
+                        </span>
+                      </div>
+                      {bonus !== 0 && (
+                        <div className="char-stat-detail">
+                          <span className="char-stat-base">{baseValue || 0}</span>
+                          <span className={`char-stat-bonus ${bonus > 0 ? 'is-positive' : 'is-negative'}`}>
+                            {bonus > 0 ? '+' : ''}{bonus}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
