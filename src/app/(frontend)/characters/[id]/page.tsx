@@ -17,7 +17,7 @@ type Weapon = {
   tailleChargeur?: number
   valeurDegats?: string
   projectilesParTir?: number
-  valeurRechargement?: number
+  tempsRechargement?: number
   type?: string[]
   categorie?: string
   porteeFixe?: number
@@ -297,7 +297,7 @@ function WeaponSlot({
     if (isMelee) {
       rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: '0' })
     } else if (isHeavy) {
-      rows.push({ label: `< ${weapon.porteeFixe ?? 50}m`, mod: '0' })
+      rows.push({ label: `Max ${weapon.porteeFixe ?? 50}m`, mod: '0' })
     } else if (isSniper) {
       // Courte portée définie plus haut
       rows.push({
@@ -374,8 +374,8 @@ function WeaponSlot({
             {showProjectiles && (
               <span title="Projectiles/tir">× {weapon.projectilesParTir}</span>
             )}
-            {weapon.valeurRechargement != null && (
-              <span title="Rechargement">🔄 {weapon.valeurRechargement}</span>
+            {weapon.tempsRechargement != null && (
+              <span title="Rechargement">🔄 {weapon.tempsRechargement}t</span>
             )}
             {weapon.poids != null && (
               <span title="Poids">{weapon.poids} kg</span>
