@@ -48,15 +48,15 @@ type Character = {
   culture?: number
   anticipation?: number
   perception?: number
-  armureTete?: Armor | string | null
-  armureTorse?: Armor | string | null
-  armureBras?: Armor | string | null
-  armureJambes?: Armor | string | null
-  armePrincipale?: Weapon | string | null
-  armeSecondaire?: Weapon | string | null
-  armeLourde?: Weapon | string | null
-  armeDePoing?: Weapon | string | null
-  armeDeMelee?: Weapon | string | null
+  armureTete?: { item?: Armor | string | null } | null
+  armureTorse?: { item?: Armor | string | null } | null
+  armureBras?: { item?: Armor | string | null } | null
+  armureJambes?: { item?: Armor | string | null } | null
+  armePrincipale?: { item?: Weapon | string | null } | null
+  armeSecondaire?: { item?: Weapon | string | null } | null
+  armeLourde?: { item?: Weapon | string | null } | null
+  armeDePoing?: { item?: Weapon | string | null } | null
+  armeDeMelee?: { item?: Weapon | string | null } | null
   backpack?: string | null
   vaisseau?: Ship | string | null
   roleVaisseau?: string | null
@@ -67,14 +67,24 @@ type Character = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function asArmor(v: Armor | string | null | undefined): Armor | null {
-  if (!v || typeof v === 'string') return null
-  return v
+function asArmor(v: { item?: Armor | string | null } | Armor | string | null | undefined): Armor | null {
+  if (!v) return null
+  if (typeof v === 'object' && 'item' in v) {
+    if (!v.item || typeof v.item === 'string') return null
+    return v.item
+  }
+  if (typeof v === 'string') return null
+  return v as Armor
 }
 
-function asWeapon(v: Weapon | string | null | undefined): Weapon | null {
-  if (!v || typeof v === 'string') return null
-  return v
+function asWeapon(v: { item?: Weapon | string | null } | Weapon | string | null | undefined): Weapon | null {
+  if (!v) return null
+  if (typeof v === 'object' && 'item' in v) {
+    if (!v.item || typeof v.item === 'string') return null
+    return v.item
+  }
+  if (typeof v === 'string') return null
+  return v as Weapon
 }
 
 function asShip(v: Ship | string | null | undefined): Ship | null {
@@ -116,19 +126,13 @@ function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
           <span className="char-equip-item-name">{armor.nom}</span>
           <div className="char-equip-item-stats">
             {armor.valeurArmurePhysique != null && (
-              <span title="Armure physique">🛡 {armor.valeurArmurePhysique}</span>
+              <span title="Armure physique" className="stats-physique">🛡 {armor.valeurArmurePhysique}</span>
             )}
             {armor.valeurBouclier != null && (
-              <span title="Bouclier">⚡ {armor.valeurBouclier}</span>
-            )}
-            {armor.modificateur != null && armor.modificateur !== 0 && (
-              <span title="Modificateur">
-                {armor.modificateur > 0 ? '+' : ''}
-                {armor.modificateur}
-              </span>
+              <span title="Bouclier" className="stats-bouclier">⚡ {armor.valeurBouclier}</span>
             )}
             {armor.valeurRupture != null && (
-              <span title="Rupture">💥 {armor.valeurRupture}</span>
+              <span title="Rupture">💥 1 à {armor.valeurRupture}</span>
             )}
           </div>
         </div>
@@ -214,6 +218,17 @@ export default async function CharacterDetailPage({
   if (!isAdmin && !isOwner) redirect('/character')
 
   const rankInfo = computeRank(character.pointsDeRang ?? 0)
+
+  // Totaux armures
+  const armors = [
+    asArmor(character.armureTete),
+    asArmor(character.armureTorse),
+    asArmor(character.armureBras),
+    asArmor(character.armureJambes),
+  ].filter(Boolean) as Armor[]
+
+  const totalPhysique = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
+  const totalBouclier = armors.reduce((acc, a) => acc + (a.valeurBouclier ?? 0), 0)
 
   return (
     <div className="ss-root char-root">
@@ -357,7 +372,19 @@ export default async function CharacterDetailPage({
 
           {/* ── Rangée 2 : Armures ── */}
           <div className="char-card">
-            <h2 className="char-card-title">Armures</h2>
+            <div className="char-card-header-with-stats">
+              <h2 className="char-card-title">Armures</h2>
+              <div className="char-card-totals">
+                <div className="char-total-item stats-physique">
+                  <span className="char-total-label">Physique</span>
+                  <span className="char-total-value">{totalPhysique}</span>
+                </div>
+                <div className="char-total-item stats-bouclier">
+                  <span className="char-total-label">Bouclier</span>
+                  <span className="char-total-value">{totalBouclier}</span>
+                </div>
+              </div>
+            </div>
             <div className="char-equip-grid char-equip-grid-4">
               <ArmorSlot label="Tête" armor={asArmor(character.armureTete)} />
               <ArmorSlot label="Torse" armor={asArmor(character.armureTorse)} />
