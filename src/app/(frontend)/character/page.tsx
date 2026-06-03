@@ -22,7 +22,6 @@ type Weapon = {
   valeurDegats?: number
   projectilesParTir?: number
   valeurRechargement?: number
-  mods?: string
 }
 
 type Armor = {
@@ -32,7 +31,6 @@ type Armor = {
   valeurBouclier?: number
   modificateur?: number
   valeurRupture?: number
-  mods?: string
 }
 
 type Ship = { id: number; nom: string; classe?: string; modele?: string }
@@ -137,7 +135,6 @@ function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
               <span title="Rupture">💥 {armor.valeurRupture}</span>
             )}
           </div>
-          {armor.mods && <span className="char-equip-item-mods">{armor.mods}</span>}
         </div>
       ) : (
         <span className="char-equip-empty-label">—</span>
@@ -170,7 +167,6 @@ function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null })
               <span title="Poids">{weapon.poids} kg</span>
             )}
           </div>
-          {weapon.mods && <span className="char-equip-item-mods">{weapon.mods}</span>}
         </div>
       ) : (
         <span className="char-equip-empty-label">—</span>
