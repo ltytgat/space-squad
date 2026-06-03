@@ -370,6 +370,10 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
+.char-equip-grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 .char-equip-slot {
   border: 1px solid var(--ss-border);
   border-radius: var(--ss-radius);
@@ -473,6 +477,82 @@
   margin-top: 0.2rem;
 }
 
+.char-equip-item-mod-base {
+  font-size: 0.7rem;
+  color: var(--ss-text-muted);
+  font-style: italic;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.4rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.char-equip-item-mods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+}
+
+.char-equip-mod-item {
+  font-size: 0.7rem;
+  color: var(--ss-cyan);
+  background: rgba(0, 212, 255, 0.05);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.char-armor-sets {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.char-armor-set-active {
+  padding: 1rem;
+  background: rgba(167, 139, 250, 0.05);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: var(--ss-radius);
+}
+
+.char-armor-set-name {
+  display: block;
+  font-family: var(--ss-font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 0.4rem;
+}
+
+.char-equip-item-set-progression {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(167, 139, 250, 0.1);
+}
+
+.char-equip-item-set-progression.set-complete {
+  color: #10b981; /* Vert pour set complet */
+}
+
+.char-armor-set-bonus {
+  font-size: 0.825rem;
+  color: var(--ss-text-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.char-equip-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
 .char-equip-empty-label {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.2);
@@ -562,6 +642,10 @@
     }
   }
 
+  .char-equip-grid-5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .char-equip-grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -587,6 +671,7 @@
     grid-template-columns: 1fr;
   }
 
+  .char-equip-grid-5,
   .char-equip-grid-4,
   .char-equip-grid-3 {
     grid-template-columns: 1fr 1fr;

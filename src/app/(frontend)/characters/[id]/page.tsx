@@ -30,13 +30,26 @@ type Weapon = {
   malusParTranche?: number
 }
 
+type Mod = {
+  id: number
+  nom: string
+  effet: string
+}
+
+type ArmorSet = {
+  id: number
+  nom: string
+  bonus: string
+}
+
 type Armor = {
   id: number
   nom: string
   valeurArmurePhysique?: number
   valeurBouclier?: number
-  modificateur?: number
+  modificateur?: string
   valeurRupture?: number
+  set?: ArmorSet | number | null
 }
 
 type Ship = { id: number; nom: string; classe?: string; modele?: string }
@@ -58,10 +71,11 @@ type Character = {
   culture?: number
   anticipation?: number
   perception?: number
-  armureTete?: { item?: Armor | string | null } | null
-  armureTorse?: { item?: Armor | string | null } | null
-  armureBras?: { item?: Armor | string | null } | null
-  armureJambes?: { item?: Armor | string | null } | null
+  armureTete?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
+  armureTorse?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
+  armureBras?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
+  armureJambes?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
+  armureBackpack?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
   armePrincipale?: { item?: Weapon | string | null } | null
   armeSecondaire?: { item?: Weapon | string | null } | null
   armeLourde?: { item?: Weapon | string | null } | null
@@ -85,6 +99,17 @@ function asArmor(v: { item?: Armor | string | null } | Armor | string | null | u
   }
   if (typeof v === 'string') return null
   return v as Armor
+}
+
+function asMods(v: { mods?: (Mod | number)[] | null } | (Mod | number)[] | null | undefined): Mod[] {
+  if (!v) return []
+  let mods: (Mod | number)[] = []
+  if (typeof v === 'object' && 'mods' in v) {
+    mods = v.mods ?? []
+  } else if (Array.isArray(v)) {
+    mods = v
+  }
+  return mods.filter((m): m is Mod => typeof m === 'object' && m !== null)
 }
 
 function asWeapon(v: { item?: Weapon | string | null } | Weapon | string | null | undefined): Weapon | null {
@@ -127,7 +152,17 @@ function rankTier(level: number): string {
 
 // ── Sous-composants ──────────────────────────────────────────────────────────
 
-function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
+function ArmorSlot({
+  label,
+  armor,
+  mods = [],
+  setInfo,
+}: {
+  label: string
+  armor: Armor | null
+  mods?: Mod[]
+  setInfo?: { name: string; count: number } | null
+}) {
   return (
     <div className={`char-equip-slot${armor ? '' : ' char-equip-slot-empty'}`}>
       <span className="char-equip-slot-label">{label}</span>
@@ -136,15 +171,32 @@ function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
           <span className="char-equip-item-name">{armor.nom}</span>
           <div className="char-equip-item-stats">
             {armor.valeurArmurePhysique != null && (
-              <span title="Armure physique" className="stats-physique">🛡 {armor.valeurArmurePhysique}</span>
+              <span title="Armure physique" className="stats-physique">
+                🛡 {armor.valeurArmurePhysique}
+              </span>
             )}
             {armor.valeurBouclier != null && (
-              <span title="Bouclier" className="stats-bouclier">⚡ {armor.valeurBouclier}</span>
+              <span title="Bouclier" className="stats-bouclier">
+                ⚡ {armor.valeurBouclier}
+              </span>
             )}
-            {armor.valeurRupture != null && (
-              <span title="Rupture">💥 1 à {armor.valeurRupture}</span>
-            )}
+            {armor.valeurRupture != null && <span title="Rupture">💥 1 à {armor.valeurRupture}</span>}
           </div>
+          {armor.modificateur && <div className="char-equip-item-mod-base">Mod: {armor.modificateur}</div>}
+          {mods.length > 0 && (
+            <div className="char-equip-item-mods-list">
+              {mods.map((m) => (
+                <div key={m.id} className="char-equip-mod-item" title={m.effet}>
+                  🔧 {m.nom}
+                </div>
+              ))}
+            </div>
+          )}
+          {setInfo && (
+            <div className={`char-equip-item-set-progression ${setInfo.count >= 4 ? 'set-complete' : ''}`}>
+              {setInfo.name} ({setInfo.count}/4)
+            </div>
+          )}
         </div>
       ) : (
         <span className="char-equip-empty-label">—</span>
@@ -295,7 +347,7 @@ export default async function CharacterDetailPage({
     character = (await payload.findByID({
       collection: 'characters',
       id: characterId,
-      depth: 1,
+      depth: 3,
       overrideAccess: true,
     })) as Character
   } catch {
@@ -318,10 +370,39 @@ export default async function CharacterDetailPage({
     asArmor(character.armureTorse),
     asArmor(character.armureBras),
     asArmor(character.armureJambes),
+    asArmor(character.armureBackpack),
   ].filter(Boolean) as Armor[]
 
   const totalPhysique = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
   const totalBouclier = armors.reduce((acc, a) => acc + (a.valeurBouclier ?? 0), 0)
+
+  // Détection des sets pour toutes les pièces
+  const armorPieces = [
+    asArmor(character.armureTete),
+    asArmor(character.armureTorse),
+    asArmor(character.armureBras),
+    asArmor(character.armureJambes),
+  ]
+
+  const setsMap = new Map<number, { set: ArmorSet; count: number }>()
+  armorPieces.forEach((a) => {
+    if (a?.set && typeof a.set === 'object') {
+      const current = setsMap.get(a.set.id) || { set: a.set, count: 0 }
+      current.count++
+      setsMap.set(a.set.id, current)
+    }
+  })
+
+  const completedSets = Array.from(setsMap.values()).filter((s) => s.count >= 4)
+
+  const getSetInfo = (armor: Armor | null) => {
+    if (!armor || !(armor.set && typeof armor.set === 'object')) return null
+    const info = setsMap.get(armor.set.id)
+    if (info) {
+      return { name: info.set.nom, count: info.count }
+    }
+    return null
+  }
 
   return (
     <div className="ss-root char-root">
@@ -478,11 +559,48 @@ export default async function CharacterDetailPage({
                 </div>
               </div>
             </div>
-            <div className="char-equip-grid char-equip-grid-4">
-              <ArmorSlot label="Tête" armor={asArmor(character.armureTete)} />
-              <ArmorSlot label="Torse" armor={asArmor(character.armureTorse)} />
-              <ArmorSlot label="Bras" armor={asArmor(character.armureBras)} />
-              <ArmorSlot label="Jambes" armor={asArmor(character.armureJambes)} />
+
+            {completedSets.length > 0 && (
+              <div className="char-armor-sets">
+                {completedSets.map((s) => (
+                  <div key={s.set.id} className="char-armor-set-active">
+                    <span className="char-armor-set-name">Set Complet : {s.set.nom}</span>
+                    <p className="char-armor-set-bonus">{s.set.bonus}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="char-equip-grid char-equip-grid-5">
+              <ArmorSlot
+                label="Tête"
+                armor={asArmor(character.armureTete)}
+                mods={asMods(character.armureTete)}
+                setInfo={getSetInfo(asArmor(character.armureTete))}
+              />
+              <ArmorSlot
+                label="Torse"
+                armor={asArmor(character.armureTorse)}
+                mods={asMods(character.armureTorse)}
+                setInfo={getSetInfo(asArmor(character.armureTorse))}
+              />
+              <ArmorSlot
+                label="Bras"
+                armor={asArmor(character.armureBras)}
+                mods={asMods(character.armureBras)}
+                setInfo={getSetInfo(asArmor(character.armureBras))}
+              />
+              <ArmorSlot
+                label="Jambes"
+                armor={asArmor(character.armureJambes)}
+                mods={asMods(character.armureJambes)}
+                setInfo={getSetInfo(asArmor(character.armureJambes))}
+              />
+              <ArmorSlot
+                label="Back-pack"
+                armor={asArmor(character.armureBackpack)}
+                mods={asMods(character.armureBackpack)}
+              />
             </div>
           </div>
 
