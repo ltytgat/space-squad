@@ -18,6 +18,7 @@ import {ArmorSets} from './collections/ArmorSets'
 import {Groups} from './collections/Groups'
 import {Mods} from './collections/Mods'
 import {Consumables} from './collections/Consumables'
+import {Chips} from './collections/Chips'
 
 
 const filename = fileURLToPath(import.meta.url)
@@ -30,7 +31,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters, Mods, Consumables],
+    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters, Mods, Consumables, Chips],
     editor: lexicalEditor(),
     secret: process.env.PAYLOAD_SECRET || '',
     typescript: {

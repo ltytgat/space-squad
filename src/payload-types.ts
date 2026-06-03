@@ -79,6 +79,7 @@ export interface Config {
     characters: Character;
     mods: Mod;
     consumables: Consumable;
+    chips: Chip;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -102,6 +103,7 @@ export interface Config {
     characters: CharactersSelect<false> | CharactersSelect<true>;
     mods: ModsSelect<false> | ModsSelect<true>;
     consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
+    chips: ChipsSelect<false> | ChipsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -434,8 +436,18 @@ export interface Character {
   affiliation?: ('Alliance' | 'Union' | 'Guilde') | null;
   groupe?: (number | null) | Group;
   pointsDeRang?: number | null;
+  pointsDeCompetence?: number | null;
   konis?: number | null;
   legende?: number | null;
+  reputation?:
+    | {
+        categorie: string;
+        valeur: number;
+        id?: string | null;
+      }[]
+    | null;
+  pointsDeFaction?: number | null;
+  rangDeFaction?: string | null;
   force?: number | null;
   habilite?: number | null;
   connaissances?: number | null;
@@ -458,6 +470,9 @@ export interface Character {
     item?: (number | null) | Armor;
     mods?: (number | Mod)[] | null;
   };
+  armureBackpack?: {
+    item?: (number | null) | Armor;
+  };
   armePrincipale?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
@@ -478,7 +493,9 @@ export interface Character {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
   };
-  backpack?: string | null;
+  puceMk1?: (number | null) | Chip;
+  puceMk2?: (number | null) | Chip;
+  puceMk3?: (number | null) | Chip;
   vaisseau?: (number | null) | Ship;
   roleVaisseau?: ('proprietaire' | 'passager') | null;
   /**
@@ -519,6 +536,20 @@ export interface Character {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chips".
+ */
+export interface Chip {
+  id: number;
+  nom: string;
+  categorie: 'active' | 'passive';
+  effet: string;
+  restriction?: string | null;
+  cooldown?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -614,6 +645,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'consumables';
         value: number | Consumable;
+      } | null)
+    | ({
+        relationTo: 'chips';
+        value: number | Chip;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -825,8 +860,18 @@ export interface CharactersSelect<T extends boolean = true> {
   affiliation?: T;
   groupe?: T;
   pointsDeRang?: T;
+  pointsDeCompetence?: T;
   konis?: T;
   legende?: T;
+  reputation?:
+    | T
+    | {
+        categorie?: T;
+        valeur?: T;
+        id?: T;
+      };
+  pointsDeFaction?: T;
+  rangDeFaction?: T;
   force?: T;
   habilite?: T;
   connaissances?: T;
@@ -856,6 +901,11 @@ export interface CharactersSelect<T extends boolean = true> {
     | {
         item?: T;
         mods?: T;
+      };
+  armureBackpack?:
+    | T
+    | {
+        item?: T;
       };
   armePrincipale?:
     | T
@@ -887,7 +937,9 @@ export interface CharactersSelect<T extends boolean = true> {
         item?: T;
         mods?: T;
       };
-  backpack?: T;
+  puceMk1?: T;
+  puceMk2?: T;
+  puceMk3?: T;
   vaisseau?: T;
   roleVaisseau?: T;
   competences?:
@@ -933,6 +985,19 @@ export interface ConsumablesSelect<T extends boolean = true> {
   epreuve?: T;
   prix?: T;
   image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chips_select".
+ */
+export interface ChipsSelect<T extends boolean = true> {
+  nom?: T;
+  categorie?: T;
+  effet?: T;
+  restriction?: T;
+  cooldown?: T;
   updatedAt?: T;
   createdAt?: T;
 }

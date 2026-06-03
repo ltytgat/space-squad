@@ -105,8 +105,48 @@ export const Characters: CollectionConfig = {
       type: 'row',
       fields: [
         { name: 'pointsDeRang', type: 'number', label: 'Points de rang', defaultValue: 0 },
+        { name: 'pointsDeCompetence', type: 'number', label: 'Points de compétence', defaultValue: 0 },
         { name: 'konis', type: 'number', label: 'Konis', defaultValue: 0 },
         { name: 'legende', type: 'number', label: 'Légende', defaultValue: 0 },
+      ],
+    },
+    {
+      name: 'reputation',
+      type: 'array',
+      label: 'Réputation',
+      fields: [
+        {
+          name: 'categorie',
+          type: 'text',
+          label: 'Catégorie',
+          required: true,
+        },
+        {
+          name: 'valeur',
+          type: 'number',
+          label: 'Valeur',
+          required: true,
+          defaultValue: 0,
+        },
+      ],
+    },
+    {
+      type: 'row',
+      admin: {
+        condition: (data) => !!data?.affiliation,
+      },
+      fields: [
+        {
+          name: 'pointsDeFaction',
+          type: 'number',
+          label: 'Points de faction',
+          defaultValue: 0,
+        },
+        {
+          name: 'rangDeFaction',
+          type: 'text',
+          label: 'Rang de faction',
+        },
       ],
     },
 
@@ -262,6 +302,21 @@ export const Characters: CollectionConfig = {
                 },
               ],
             },
+            {
+              name: 'armureBackpack',
+              type: 'group',
+              label: 'Back-pack',
+              admin: { width: '50%' },
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'armors',
+                  label: 'Back-pack',
+                  filterOptions: { categorie: { equals: 'backpack' } },
+                },
+              ],
+            },
           ],
         },
       ],
@@ -390,10 +445,35 @@ export const Characters: CollectionConfig = {
             },
           ],
         },
+      ],
+    },
+    // ── Puces ───────────────────────────────────────
+    {
+      type: 'collapsible',
+      label: 'Puces',
+      fields: [
         {
-          name: 'backpack',
-          type: 'textarea',
-          label: 'Backpack / Équipement divers',
+          type: 'row',
+          fields: [
+            {
+              name: 'puceMk1',
+              type: 'relationship',
+              relationTo: 'chips',
+              label: 'Puce Mk1',
+            },
+            {
+              name: 'puceMk2',
+              type: 'relationship',
+              relationTo: 'chips',
+              label: 'Puce Mk2',
+            },
+            {
+              name: 'puceMk3',
+              type: 'relationship',
+              relationTo: 'chips',
+              label: 'Puce Mk3',
+            },
+          ],
         },
       ],
     },
