@@ -237,7 +237,10 @@ function ArmorSlot({
           )}
         </div>
       ) : (
-        <span className="char-equip-empty-label">—</span>
+        <div className="char-equip-empty">
+          <span className="char-equip-empty-icon">🛡️</span>
+          <span className="char-equip-empty-text">Non équipé</span>
+        </div>
       )}
     </div>
   )
@@ -359,7 +362,6 @@ function WeaponSlot({
 
     // Malus longue portée (si applicable)
     if (!isMelee && !isHeavy && weapon.trancheMalusLonguePortee) {
-      const lastDist = rows[rows.length - 1]?.label.match(/\d+/)?.[0] ?? '0'
       rows.push({
         label: `+${weapon.trancheMalusLonguePortee}m`,
         mod: (weapon.malusParTranche ?? -1) >= 0 ? `+${weapon.malusParTranche}` : `${weapon.malusParTranche}`,
@@ -396,34 +398,66 @@ function WeaponSlot({
           <span className="char-equip-item-name">{weapon.nom}</span>
           <div className="char-equip-item-stats">
             {damageData != null && (
-              <div className="weapon-damage-container">
-                <span title="Dégâts" className={damageColorClass}>⚔ {damageData.display}</span>
+              <div className="weapon-damage-block">
+                <div className={`weapon-damage-badge ${damageColorClass}`}>
+                  <span className="weapon-damage-icon">⚔️</span>
+                  <span className="weapon-damage-value">{damageData.display}</span>
+                </div>
                 {!isPlasma && (
-                  <div className="weapon-damage-estimates">
-                    <span title="Minimum">Min: {damageData.min}</span>
-                    <span title="Moyenne">Moy: {damageData.avg}</span>
-                    {damageData.max !== null && <span title="Maximum">Max: {damageData.max}</span>}
+                  <div className="weapon-damage-details">
+                    <div className="damage-stat">
+                      <span className="damage-stat-label">MIN</span>
+                      <span className="damage-stat-val">{damageData.min}</span>
+                    </div>
+                    <div className="damage-stat highlight">
+                      <span className="damage-stat-label">MOY</span>
+                      <span className="damage-stat-val">{damageData.avg}</span>
+                    </div>
+                    {damageData.max !== null && (
+                      <div className="damage-stat">
+                        <span className="damage-stat-label">MAX</span>
+                        <span className="damage-stat-val">{damageData.max}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
-            {weapon.tailleChargeur != null && (
-              <span title="Chargeur">📦 {weapon.tailleChargeur}</span>
-            )}
-            {showProjectiles && (
-              <span title="Projectiles/tir">× {weapon.projectilesParTir}</span>
-            )}
-            {weapon.tempsRechargement != null && (
-              <span title="Rechargement">🔄 {weapon.tempsRechargement}t</span>
-            )}
-            {weapon.poids != null && (
-              <span title="Poids">{weapon.poids} kg</span>
-            )}
+            
+            <div className="weapon-utility-stats">
+              {weapon.tailleChargeur != null && (
+                <div className="weapon-util-item" title="Chargeur">
+                  <span className="util-icon">📦</span>
+                  <span className="util-value">{weapon.tailleChargeur}</span>
+                </div>
+              )}
+              {showProjectiles && (
+                <div className="weapon-util-item" title="Projectiles/tir">
+                  <span className="util-icon">×</span>
+                  <span className="util-value">{weapon.projectilesParTir}</span>
+                </div>
+              )}
+              {weapon.tempsRechargement != null && (
+                <div className="weapon-util-item" title="Rechargement">
+                  <span className="util-icon">🔄</span>
+                  <span className="util-value">{weapon.tempsRechargement}t</span>
+                </div>
+              )}
+              {weapon.poids != null && (
+                <div className="weapon-util-item" title="Poids">
+                  <span className="util-icon">⚖️</span>
+                  <span className="util-value">{weapon.poids}kg</span>
+                </div>
+              )}
+            </div>
           </div>
           {renderRangeTable()}
         </div>
       ) : (
-        <span className="char-equip-empty-label">—</span>
+        <div className="char-equip-empty">
+          <span className="char-equip-empty-icon">🔫</span>
+          <span className="char-equip-empty-text">Non équipé</span>
+        </div>
       )}
     </div>
   )
