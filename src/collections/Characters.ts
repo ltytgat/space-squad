@@ -108,6 +108,16 @@ export const Characters: CollectionConfig = {
         { name: 'pointsDeCompetence', type: 'number', label: 'Points de compétence', defaultValue: 0 },
         { name: 'konis', type: 'number', label: 'Konis', defaultValue: 0 },
         { name: 'legende', type: 'number', label: 'Légende', defaultValue: 0 },
+        {
+          name: 'bonusPointsDeBlessures',
+          type: 'number',
+          label: 'Bonus Blessures (N)',
+          defaultValue: 0,
+          admin: {
+            description: 'Bonus fixe N ajouté aux points de blessures max. Modifiable uniquement par un admin.',
+          },
+          access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+        },
       ],
     },
     {

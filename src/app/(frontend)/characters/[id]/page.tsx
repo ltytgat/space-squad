@@ -78,6 +78,7 @@ type Character = {
   malusCulture?: number
   malusAnticipation?: number
   malusPerception?: number
+  bonusPointsDeBlessures?: number
   [key: string]: any // Pour accéder aux malus dynamiquement
   armureTete?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
   armureTorse?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
@@ -611,6 +612,31 @@ export default async function CharacterDetailPage({
   const forceDieMod = getDieMod('force', character.force)
   const perceptionDieMod = getDieMod('perception', character.perception)
 
+  // Calcul des points de blessures
+  const getMaxHP = () => {
+    const origin = character.origine || 'Humain'
+    const bf = forceDieMod
+    const rank = rankInfo.level
+    const n = character.bonusPointsDeBlessures || 0
+
+    let base = 30
+    let factor = 5
+
+    if (origin === 'Strani') {
+      base = 20
+      factor = 4
+    } else if (origin === 'Vada') {
+      base = 40
+      factor = 6
+    }
+
+    // Formule: (Base + Factor*BF + BF*(Rang-1)) / 3 + N
+    const hp = (base + factor * bf + bf * (rank - 1)) / 3 + n
+    return Math.floor(hp)
+  }
+
+  const maxHP = getMaxHP()
+
   return (
     <div className="ss-root char-root">
       <SiteHeader activePage={isOwner ? 'character' : (isAdmin ? 'characters' : undefined)} />
@@ -704,6 +730,21 @@ export default async function CharacterDetailPage({
                 <div className="char-dl-row">
                   <dt>Légende</dt>
                   <dd>{stat(character.legende)}</dd>
+                </div>
+                <div className="char-dl-row char-hp-row">
+                  <dt>Blessures Max</dt>
+                  <dd>
+                    <div className="char-stat-right">
+                      {isAdmin && (
+                        <MalusInput
+                          characterId={character.id}
+                          field="bonusPointsDeBlessures"
+                          initialValue={character.bonusPointsDeBlessures || 0}
+                        />
+                      )}
+                      <span className="char-hp-value">{maxHP}</span>
+                    </div>
+                  </dd>
                 </div>
                 <div className="char-dl-row char-dl-divider">
                   <dt>Escouade</dt>

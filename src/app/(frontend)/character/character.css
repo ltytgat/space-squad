@@ -475,6 +475,26 @@
   opacity: 0.7;
 }
 
+.char-hp-row {
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.75rem;
+}
+
+.char-hp-row dt {
+  color: var(--ss-color-primary) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.char-hp-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--ss-color-primary);
+  text-shadow: 0 0 10px rgba(var(--ss-color-primary-rgb), 0.3);
+}
+
 .char-name-container {
   display: flex;
   align-items: center;
