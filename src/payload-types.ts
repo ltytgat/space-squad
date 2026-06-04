@@ -454,6 +454,12 @@ export interface Character {
   culture?: number | null;
   anticipation?: number | null;
   perception?: number | null;
+  malusForce?: number | null;
+  malusHabilite?: number | null;
+  malusConnaissances?: number | null;
+  malusCulture?: number | null;
+  malusAnticipation?: number | null;
+  malusPerception?: number | null;
   armureTete?: {
     item?: (number | null) | Armor;
     mods?: (number | Mod)[] | null;
@@ -878,6 +884,12 @@ export interface CharactersSelect<T extends boolean = true> {
   culture?: T;
   anticipation?: T;
   perception?: T;
+  malusForce?: T;
+  malusHabilite?: T;
+  malusConnaissances?: T;
+  malusCulture?: T;
+  malusAnticipation?: T;
+  malusPerception?: T;
   armureTete?:
     | T
     | {

@@ -6,6 +6,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { computeRank } from '@/lib/rankSystem'
+import { MalusInput } from './MalusInput'
 import '../../character/character.css'
 
 // ── Types locaux pour les relations populées (depth: 1) ──────────────────────
@@ -71,6 +72,13 @@ type Character = {
   culture?: number
   anticipation?: number
   perception?: number
+  malusForce?: number
+  malusHabilite?: number
+  malusConnaissances?: number
+  malusCulture?: number
+  malusAnticipation?: number
+  malusPerception?: number
+  [key: string]: any // Pour accéder aux malus dynamiquement
   armureTete?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
   armureTorse?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
   armureBras?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
@@ -505,6 +513,16 @@ export default async function CharacterDetailPage({
 
   if (!isAdmin && !isOwner) redirect('/character')
 
+  const malusFields = [
+    character.malusForce,
+    character.malusHabilite,
+    character.malusConnaissances,
+    character.malusCulture,
+    character.malusAnticipation,
+    character.malusPerception,
+  ]
+  const isWounded = malusFields.some((m) => (m ?? 0) > 0)
+
   const rankInfo = computeRank(character.pointsDeRang ?? 0)
 
   // Totaux armures
@@ -584,7 +602,9 @@ export default async function CharacterDetailPage({
   // Calcul des modificateurs de dé pour les armes
   const getDieMod = (key: string, baseValue: number | undefined) => {
     const bonus = totalArmorMods[key] || 0
-    const total = (baseValue || 0) + bonus
+    const malusKey = `malus${key.charAt(0).toUpperCase()}${key.slice(1)}`
+    const malus = character[malusKey] || 0
+    const total = (baseValue || 0) + bonus - malus
     return Math.floor((total - 10) / 2)
   }
 
@@ -615,7 +635,10 @@ export default async function CharacterDetailPage({
 
             {character.nom ? (
               <>
-                <h1 className="char-name">{character.nom}</h1>
+                <div className="char-name-container">
+                  <h1 className="char-name">{character.nom}</h1>
+                  {isWounded && <span className="char-wounded-badge">Blessé</span>}
+                </div>
                 <div className="char-tags">
                   {character.origine && (
                     <span className="ss-tag">{character.origine}</span>
@@ -714,33 +737,53 @@ export default async function CharacterDetailPage({
               <div className="char-stats-grid">
                 {(
                   [
-                    ['Force', character.force, 'force'],
-                    ['Habilité', character.habilite, 'habilite'],
-                    ['Connaissances', character.connaissances, 'connaissances'],
-                    ['Culture', character.culture, 'culture'],
-                    ['Anticipation', character.anticipation, 'anticipation'],
-                    ['Perception', character.perception, 'perception'],
-                  ] as [string, number | undefined, string][]
-                ).map(([label, baseValue, key]) => {
+                    ['Force', character.force, 'force', character.malusForce],
+                    ['Habilité', character.habilite, 'habilite', character.malusHabilite],
+                    ['Connaissances', character.connaissances, 'connaissances', character.malusConnaissances],
+                    ['Culture', character.culture, 'culture', character.malusCulture],
+                    ['Anticipation', character.anticipation, 'anticipation', character.malusAnticipation],
+                    ['Perception', character.perception, 'perception', character.malusPerception],
+                  ] as [string, number | undefined, string, number | undefined][]
+                ).map(([label, baseValue, key, malus]) => {
                   const bonus = totalArmorMods[key] || 0
-                  const total = (baseValue || 0) + bonus
+                  const currentMalus = malus || 0
+                  const total = (baseValue || 0) + bonus - currentMalus
                   const dieMod = Math.floor((total - 10) / 2)
                   const dieModStr = dieMod >= 0 ? `+${dieMod}` : `${dieMod}`
                   
+                  // Mapping pour les noms de champs Payload
+                  const malusFieldName = `malus${key.charAt(0).toUpperCase()}${key.slice(1)}`
+
                   return (
                     <div key={label} className="char-stat-item">
                       <div className="char-stat-main">
                         <span className="char-stat-label">{label}</span>
-                        <span className="char-stat-value">
-                          {total} <span className="char-stat-die-mod">({dieModStr})</span>
-                        </span>
+                        <div className="char-stat-right">
+                          {isAdmin && (
+                            <MalusInput
+                              characterId={character.id}
+                              field={malusFieldName}
+                              initialValue={currentMalus}
+                            />
+                          )}
+                          <span className="char-stat-value">
+                            {total} <span className="char-stat-die-mod">({dieModStr})</span>
+                          </span>
+                        </div>
                       </div>
-                      {bonus !== 0 && (
+                      {(bonus !== 0 || currentMalus !== 0) && (
                         <div className="char-stat-detail">
                           <span className="char-stat-base">{baseValue || 0}</span>
-                          <span className={`char-stat-bonus ${bonus > 0 ? 'is-positive' : 'is-negative'}`}>
-                            {bonus > 0 ? '+' : ''}{bonus}
-                          </span>
+                          {bonus !== 0 && (
+                            <span className={`char-stat-bonus ${bonus > 0 ? 'is-positive' : 'is-negative'}`}>
+                              {bonus > 0 ? '+' : ''}{bonus}
+                            </span>
+                          )}
+                          {currentMalus !== 0 && (
+                            <span className="char-stat-malus">
+                              -{currentMalus}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>

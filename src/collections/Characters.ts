@@ -171,6 +171,62 @@ export const Characters: CollectionConfig = {
             { name: 'perception', type: 'number', label: 'Perception', defaultValue: 0 },
           ],
         },
+        // ── Malus (Blessures) ──
+        {
+          type: 'row',
+          admin: {
+            description: 'Malus de blessures (soustraits du total). Seuls les admins peuvent les modifier.',
+          },
+          fields: [
+            {
+              name: 'malusForce',
+              type: 'number',
+              label: 'Malus Force',
+              defaultValue: 0,
+              access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+            },
+            {
+              name: 'malusHabilite',
+              type: 'number',
+              label: 'Malus Habilité',
+              defaultValue: 0,
+              access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+            },
+            {
+              name: 'malusConnaissances',
+              type: 'number',
+              label: 'Malus Connaissances',
+              defaultValue: 0,
+              access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'malusCulture',
+              type: 'number',
+              label: 'Malus Culture',
+              defaultValue: 0,
+              access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+            },
+            {
+              name: 'malusAnticipation',
+              type: 'number',
+              label: 'Malus Anticipation',
+              defaultValue: 0,
+              access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+            },
+            {
+              name: 'malusPerception',
+              type: 'number',
+              label: 'Malus Perception',
+              defaultValue: 0,
+              access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+            },
+          ],
+        },
       ],
     },
 
