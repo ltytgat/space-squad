@@ -622,6 +622,28 @@ export default async function CharacterDetailPage({
 
   const forceDieMod = getDieMod('force', character.force)
   const perceptionDieMod = getDieMod('perception', character.perception)
+  const anticipationDieMod = getDieMod('anticipation', character.anticipation)
+
+  // Calcul de l'esquive
+  const getDodgeStats = () => {
+    const ba = anticipationDieMod
+    const rank = rankInfo.level
+    const totalArmor = totalPhysique
+    const bf = forceDieMod
+
+    // Esquive de base (découvert) : 15+(Bonus d'anticipation * Rang/2) – ((Armure Physique totale – Bonus de force)/2)
+    const base = 15 + (ba * rank / 2) - ((totalArmor - bf) / 2)
+    const decouvert = Math.floor(base)
+
+    return {
+      decouvert,
+      depourvue: Math.floor(decouvert / 2),
+      protege: Math.floor(decouvert * 1.5),
+      couvert: Math.floor(decouvert * 2),
+    }
+  }
+
+  const dodge = getDodgeStats()
 
   // Calcul des points de blessures
   const getMaxHP = () => {
@@ -783,6 +805,28 @@ export default async function CharacterDetailPage({
                   <dd>
                     <span className="char-move-value">{movement} m</span>
                   </dd>
+                </div>
+
+                <div className="char-dodge-section">
+                  <h3 className="char-dodge-title">Esquive</h3>
+                  <table className="char-dodge-table">
+                    <thead>
+                      <tr>
+                        <th>Dépourvue</th>
+                        <th className="char-dodge-base-header">Découvert</th>
+                        <th>Protégé</th>
+                        <th>Couvert</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{dodge.depourvue}</td>
+                        <td className="char-dodge-base">{dodge.decouvert}</td>
+                        <td>{dodge.protege}</td>
+                        <td>{dodge.couvert}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
                 <div className="char-dl-row char-dl-divider">
                   <dt>Escouade</dt>

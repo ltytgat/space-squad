@@ -511,6 +511,68 @@
   color: #fff;
 }
 
+.char-dodge-section {
+  margin-top: 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.char-dodge-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #a0aec0;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.char-dodge-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.char-dodge-table th {
+  text-align: center;
+  font-size: 0.65rem;
+  color: #718096;
+  padding-bottom: 0.25rem;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.char-dodge-table td {
+  text-align: center;
+  padding: 0.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Mise en avant de la valeur Découvert */
+.char-dodge-table th.char-dodge-base-header,
+.char-dodge-table td.char-dodge-base {
+  background: rgba(var(--ss-color-primary-rgb), 0.1);
+  position: relative;
+}
+
+.char-dodge-table th.char-dodge-base-header {
+  color: var(--ss-color-primary) !important;
+  font-weight: 700;
+  border-radius: 4px 4px 0 0;
+}
+
+.char-dodge-table td.char-dodge-base {
+  color: var(--ss-color-primary) !important;
+  font-size: 1.25rem;
+  text-shadow: 0 0 10px rgba(var(--ss-color-primary-rgb), 0.4);
+  border-radius: 0 0 4px 4px;
+  border: 1px solid rgba(var(--ss-color-primary-rgb), 0.2);
+  transform: scale(1.1);
+  z-index: 1;
+}
+
 .char-name-container {
   display: flex;
   align-items: center;
