@@ -490,7 +490,7 @@ export default async function CharacterDetailPage({
   const isAdmin = role === 'admin'
   const characterId = parseInt(id, 10)
 
-  if (isNaN(characterId)) redirect(isAdmin ? '/characters' : '/character')
+  if (isNaN(characterId)) redirect(isAdmin ? '/characters' : '/')
 
   // Récupération sans restriction pour vérifier la propriété manuellement
   let character: Character | null = null
@@ -502,16 +502,16 @@ export default async function CharacterDetailPage({
       overrideAccess: true,
     })) as Character
   } catch {
-    redirect(isAdmin ? '/characters' : '/character')
+    redirect(isAdmin ? '/characters' : '/')
   }
 
-  if (!character) redirect(isAdmin ? '/characters' : '/character')
+  if (!character) redirect(isAdmin ? '/characters' : '/')
 
   // Contrôle d'accès : admin voit tout, joueur uniquement son propre personnage
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   const isOwner = String(ownerId) === String(user.id)
 
-  if (!isAdmin && !isOwner) redirect('/character')
+  if (!isAdmin && !isOwner) redirect('/')
 
   const malusFields = [
     character.malusForce,
@@ -613,7 +613,7 @@ export default async function CharacterDetailPage({
 
   return (
     <div className="ss-root char-root">
-      <SiteHeader activePage={isAdmin ? 'characters' : 'character'} />
+      <SiteHeader activePage={isOwner ? 'character' : (isAdmin ? 'characters' : undefined)} />
 
       <div className="char-layout">
         {/* ── En-tête ── */}
@@ -622,15 +622,13 @@ export default async function CharacterDetailPage({
             <nav className="char-breadcrumb" aria-label="Fil d'Ariane">
               <a href="/">Accueil</a>
               <span aria-hidden="true">›</span>
-              {isAdmin ? (
+              {isAdmin && (
                 <>
                   <a href="/characters">Personnages</a>
                   <span aria-hidden="true">›</span>
-                  <span>{character.nom ?? 'Personnage'}</span>
                 </>
-              ) : (
-                <span>Mon personnage</span>
               )}
+              <span>{isOwner ? 'Mon personnage' : (character.nom ?? 'Personnage')}</span>
             </nav>
 
             {character.nom ? (

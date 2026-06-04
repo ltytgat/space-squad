@@ -192,15 +192,14 @@ export default async function CharacterPage() {
     limit: 1,
   })
 
-  const character = (docs[0] ?? null) as Character | null
-  const rankInfo = computeRank(character?.pointsDeRang ?? 0)
+  const character = docs[0] ?? null
+  if (character) redirect(`/characters/${character.id}`)
 
   return (
     <div className="ss-root char-root">
       <SiteHeader activePage="character" />
 
       <div className="char-layout">
-        {/* ── En-tête ── */}
         <div className="char-page-header">
           <div className="ss-container">
             <nav className="char-breadcrumb" aria-label="Fil d'Ariane">
@@ -209,175 +208,14 @@ export default async function CharacterPage() {
               <span>Mon personnage</span>
             </nav>
 
-            {character?.nom ? (
-              <>
-                <h1 className="char-name">{character.nom}</h1>
-                <div className="char-tags">
-                  {character.origine && (
-                    <span className="ss-tag">{character.origine}</span>
-                  )}
-                  {character.sexe && (
-                    <span className="ss-tag">{character.sexe}</span>
-                  )}
-                  {character.affiliation && (
-                    <span className={`ss-tag char-tag-affil-${character.affiliation.toLowerCase()}`}>
-                      {character.affiliation}
-                    </span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <h1 className="char-name char-name-empty">Personnage en cours de création</h1>
-                <p className="char-empty-hint">
-                  Un administrateur remplira votre fiche prochainement.
-                </p>
-              </>
-            )}
+            <h1 className="char-name char-name-empty">Personnage en cours de création</h1>
+            <p className="char-empty-hint">
+              Un administrateur remplira votre fiche prochainement.
+            </p>
           </div>
         </div>
 
-        {/* ── Contenu ── */}
         <div className="char-content ss-container">
-
-          {/* ── Rangée 1 : Identité + Attributs ── */}
-          <div className="char-row char-row-top">
-
-            <div className="char-card char-card-identity">
-              <h2 className="char-card-title">Identité</h2>
-
-              {/* ── Rang calculé ── */}
-              <div className={`char-rank char-rank--${rankTier(rankInfo.level)}`}>
-                <div className="char-rank-header">
-                  <span className="char-rank-badge">Rang {rankInfo.level}</span>
-                  <span className="char-rank-name">{rankInfo.name}</span>
-                </div>
-                <div className="char-rank-bar-track">
-                  <div
-                    className="char-rank-bar-fill"
-                    style={{ width: `${rankInfo.progressPercent}%` }}
-                    aria-label={`Progression ${rankInfo.progressPercent}%`}
-                  />
-                </div>
-                <div className="char-rank-pts">
-                  <span>{rankInfo.pointsInRank} pts</span>
-                  {rankInfo.pointsToNext !== null ? (
-                    <span>
-                      {rankInfo.pointsToNext} pts → Rang {rankInfo.level + 1}
-                    </span>
-                  ) : (
-                    <span className="char-rank-max">Rang maximum</span>
-                  )}
-                </div>
-              </div>
-
-              <dl className="char-dl">
-                <div className="char-dl-row">
-                  <dt>Konis</dt>
-                  <dd>{stat(character?.konis)}</dd>
-                </div>
-                <div className="char-dl-row">
-                  <dt>Légende</dt>
-                  <dd>{stat(character?.legende)}</dd>
-                </div>
-                <div className="char-dl-row char-dl-divider">
-                  <dt>Escouade</dt>
-                  <dd>{asGroup(character?.groupe)?.nom ?? '—'}</dd>
-                </div>
-                <div className="char-dl-row">
-                  <dt>Vaisseau</dt>
-                  <dd>{asShip(character?.vaisseau)?.nom ?? '—'}</dd>
-                </div>
-                {character?.roleVaisseau && (
-                  <div className="char-dl-row">
-                    <dt>Rôle</dt>
-                    <dd>
-                      {character.roleVaisseau === 'proprietaire' ? 'Propriétaire' : 'Passager'}
-                    </dd>
-                  </div>
-                )}
-                {asShip(character?.vaisseau)?.classe && (
-                  <div className="char-dl-row">
-                    <dt>Classe</dt>
-                    <dd>{CLASSE_LABEL[asShip(character?.vaisseau)!.classe!] ?? asShip(character?.vaisseau)!.classe}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-
-            <div className="char-card char-card-stats">
-              <h2 className="char-card-title">Attributs</h2>
-              <div className="char-stats-grid">
-                {(
-                  [
-                    ['Force', character?.force],
-                    ['Habilité', character?.habilite],
-                    ['Connaissances', character?.connaissances],
-                    ['Culture', character?.culture],
-                    ['Anticipation', character?.anticipation],
-                    ['Perception', character?.perception],
-                  ] as [string, number | undefined][]
-                ).map(([label, value]) => (
-                  <div key={label} className="char-stat-item">
-                    <span className="char-stat-label">{label}</span>
-                    <span className="char-stat-value">{stat(value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ── Rangée 2 : Armures ── */}
-          <div className="char-card">
-            <h2 className="char-card-title">Armures</h2>
-            <div className="char-equip-grid char-equip-grid-4">
-              <ArmorSlot label="Tête" armor={asArmor(character?.armureTete)} />
-              <ArmorSlot label="Torse" armor={asArmor(character?.armureTorse)} />
-              <ArmorSlot label="Bras" armor={asArmor(character?.armureBras)} />
-              <ArmorSlot label="Jambes" armor={asArmor(character?.armureJambes)} />
-            </div>
-          </div>
-
-          {/* ── Rangée 3 : Arsenal ── */}
-          <div className="char-card">
-            <h2 className="char-card-title">Arsenal</h2>
-            <div className="char-equip-grid char-equip-grid-3">
-              <WeaponSlot label="Principale" weapon={asWeapon(character?.armePrincipale)} />
-              <WeaponSlot label="Secondaire" weapon={asWeapon(character?.armeSecondaire)} />
-              <WeaponSlot label="Lourde" weapon={asWeapon(character?.armeLourde)} />
-              <WeaponSlot label="Poing" weapon={asWeapon(character?.armeDePoing)} />
-              <WeaponSlot label="Mêlée" weapon={asWeapon(character?.armeDeMelee)} />
-            </div>
-
-            {character?.backpack && (
-              <div className="char-backpack">
-                <h3 className="char-backpack-title">Backpack</h3>
-                <p className="char-backpack-content">{character.backpack}</p>
-              </div>
-            )}
-          </div>
-
-          {/* ── Rangée 4 : Compétences ── */}
-          {((character?.competences?.length ?? 0) > 0 ||
-            (character?.competencesSpeciales?.length ?? 0) > 0) && (
-            <div className="char-card">
-              <h2 className="char-card-title">Compétences</h2>
-              <div className="char-skills-grid">
-                {character?.competences?.map((c) => (
-                  <div key={c.id ?? c.competence} className="char-skill-item">
-                    <span className="char-skill-name">{c.competence}</span>
-                    <span className="char-skill-value">{c.valeur}</span>
-                  </div>
-                ))}
-                {character?.competencesSpeciales?.map((c) => (
-                  <div key={c.id ?? c.nom} className="char-skill-item char-skill-special">
-                    <span className="char-skill-name">{c.nom}</span>
-                    <span className="char-skill-value">{c.valeur}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

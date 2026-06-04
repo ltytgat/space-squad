@@ -22,6 +22,17 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
 
   const isAdmin = user && (user as { role?: string }).role === 'admin'
 
+  let characterId: string | number | null = null
+  if (user && !isAdmin) {
+    const { docs } = await payload.find({
+      collection: 'characters',
+      where: { user: { equals: user.id } },
+      depth: 0,
+      limit: 1,
+    })
+    if (docs[0]) characterId = docs[0].id
+  }
+
   return (
     <header className="ss-header">
       <div className="ss-header-inner">
@@ -70,7 +81,7 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
           {user && !isAdmin && (
             <>
               <a
-                href="/character"
+                href={characterId ? `/characters/${characterId}` : '/character'}
                 className={`ss-nav-link${activePage === 'character' ? ' ss-nav-link-active' : ''}`}
               >
                 Mon personnage

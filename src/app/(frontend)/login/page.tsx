@@ -18,10 +18,9 @@ export default async function LoginPage() {
   const payload = await getPayload({ config: payloadConfig })
   const { user } = await payload.auth({ headers })
 
-  // Déjà connecté → redirige vers la page appropriée
+  // Déjà connecté → redirige vers l'accueil (qui redirigera si besoin)
   if (user) {
-    const role = (user as { role?: string }).role
-    redirect(role === 'admin' ? '/characters' : '/character')
+    redirect('/')
   }
 
   return (

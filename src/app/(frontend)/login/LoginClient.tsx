@@ -36,7 +36,7 @@ export function LoginClient() {
       if (role === 'admin') {
         router.push('/characters')
       } else {
-        router.push('/character')
+        router.push('/')
       }
       router.refresh()
     } catch {
