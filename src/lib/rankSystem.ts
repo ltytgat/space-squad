@@ -9,14 +9,14 @@
 export const RANK_THRESHOLDS: readonly number[] = [
   0,    // Rang 1
   5,    // Rang 2
-  10,   // Rang 3
-  25,   // Rang 4
-  50,   // Rang 5
-  100,  // Rang 6
-  200,  // Rang 7
-  400,  // Rang 8
-  600,  // Rang 9
-  1000, // Rang 10
+  15,   // Rang 3
+  40,   // Rang 4
+  90,   // Rang 5
+  190,  // Rang 6
+  390,  // Rang 7
+  790,  // Rang 8
+  1390,  // Rang 9
+  2390, // Rang 10
 ]
 
 // ── Noms de grade par rang (index 0 = Rang 1) ────────────────────────────────
