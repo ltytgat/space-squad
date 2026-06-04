@@ -538,6 +538,17 @@ export default async function CharacterDetailPage({
   const totalPhysique = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
   const totalBouclier = armors.reduce((acc, a) => acc + (a.valeurBouclier ?? 0), 0)
 
+  // Totaux armes
+  const weapons = [
+    asWeapon(character.armePrincipale),
+    asWeapon(character.armeSecondaire),
+    asWeapon(character.armeLourde),
+    asWeapon(character.armeDePoing),
+    asWeapon(character.armeDeMelee),
+  ].filter(Boolean) as Weapon[]
+
+  const totalWeaponWeight = weapons.reduce((acc, w) => acc + (w.poids ?? 0), 0)
+
   // Détection des sets pour toutes les pièces
   const armorPieces = [
     asArmor(character.armureTete),
@@ -636,6 +647,27 @@ export default async function CharacterDetailPage({
   }
 
   const maxHP = getMaxHP()
+
+  // Calcul du mouvement
+  const getMovement = () => {
+    const origin = character.origine || 'Humain'
+    const bf = forceDieMod
+    const totalArmor = totalPhysique
+    const totalWeapons = totalWeaponWeight
+
+    let x = 10
+    if (origin === 'Strani') {
+      x = 14
+    } else if (origin === 'Vada') {
+      x = 6
+    }
+
+    // Formule: X - (Armure physique total - Bonus de Force + Poids des armes total)/2
+    const move = x - (totalArmor - bf + totalWeapons) / 2
+    return Math.floor(move)
+  }
+
+  const movement = getMovement()
 
   return (
     <div className="ss-root char-root">
@@ -744,6 +776,12 @@ export default async function CharacterDetailPage({
                       )}
                       <span className="char-hp-value">{maxHP}</span>
                     </div>
+                  </dd>
+                </div>
+                <div className="char-dl-row char-move-row">
+                  <dt>Mouvement</dt>
+                  <dd>
+                    <span className="char-move-value">{movement} m</span>
                   </dd>
                 </div>
                 <div className="char-dl-row char-dl-divider">

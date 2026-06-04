@@ -495,6 +495,22 @@
   text-shadow: 0 0 10px rgba(var(--ss-color-primary-rgb), 0.3);
 }
 
+.char-move-row {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+}
+
+.char-move-row dt {
+  color: #a0aec0 !important;
+  font-size: 0.85rem;
+}
+
+.char-move-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
 .char-name-container {
   display: flex;
   align-items: center;
