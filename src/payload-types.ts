@@ -454,6 +454,9 @@ export interface Character {
   culture?: number | null;
   anticipation?: number | null;
   perception?: number | null;
+  /**
+   * Malus de blessures (soustraits du total). Seuls les admins peuvent les modifier.
+   */
   malusForce?: number | null;
   malusHabilite?: number | null;
   malusConnaissances?: number | null;

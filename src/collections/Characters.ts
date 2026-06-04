@@ -174,15 +174,15 @@ export const Characters: CollectionConfig = {
         // ── Malus (Blessures) ──
         {
           type: 'row',
-          admin: {
-            description: 'Malus de blessures (soustraits du total). Seuls les admins peuvent les modifier.',
-          },
           fields: [
             {
               name: 'malusForce',
               type: 'number',
               label: 'Malus Force',
               defaultValue: 0,
+              admin: {
+                description: 'Malus de blessures (soustraits du total). Seuls les admins peuvent les modifier.',
+              },
               access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
             },
             {
