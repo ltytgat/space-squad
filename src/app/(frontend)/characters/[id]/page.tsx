@@ -29,12 +29,18 @@ type Weapon = {
   paliersSniper?: { distanceMax: number; modificateur: number }[]
   trancheMalusLonguePortee?: number
   malusParTranche?: number
+  valeurChauffe?: number
+  tempsRefroidissement?: number
 }
 
 type Mod = {
   id: number
   nom: string
   effet: string
+  modificateurs?: {
+    cible: string
+    valeur: number
+  }[]
 }
 
 type ArmorSet = {
@@ -85,11 +91,11 @@ type Character = {
   armureBras?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
   armureJambes?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
   armureBackpack?: { item?: Armor | string | null; mods?: (Mod | number)[] | null } | null
-  armePrincipale?: { item?: Weapon | string | null } | null
-  armeSecondaire?: { item?: Weapon | string | null } | null
-  armeLourde?: { item?: Weapon | string | null } | null
-  armeDePoing?: { item?: Weapon | string | null } | null
-  armeDeMelee?: { item?: Weapon | string | null } | null
+  armePrincipale?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
+  armeSecondaire?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
+  armeLourde?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
+  armeDePoing?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
+  armeDeMelee?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
   backpack?: string | null
   vaisseau?: Ship | string | null
   roleVaisseau?: string | null
@@ -159,6 +165,18 @@ function asMods(v: { mods?: (Mod | number)[] | null } | (Mod | number)[] | null 
   return mods.filter((m): m is Mod => typeof m === 'object' && m !== null)
 }
 
+function getStructuredMods(mods: Mod[]): Record<string, number> {
+  const total: Record<string, number> = {}
+  mods.forEach((m) => {
+    if (m.modificateurs && Array.isArray(m.modificateurs)) {
+      m.modificateurs.forEach((mod) => {
+        total[mod.cible] = (total[mod.cible] || 0) + mod.valeur
+      })
+    }
+  })
+  return total
+}
+
 function asWeapon(v: { item?: Weapon | string | null } | Weapon | string | null | undefined): Weapon | null {
   if (!v) return null
   if (typeof v === 'object' && 'item' in v) {
@@ -204,11 +222,17 @@ function ArmorSlot({
   armor,
   mods = [],
   setInfo,
+  bonusPhysique = 0,
+  bonusBouclier = 0,
+  bonusRupture = 0,
 }: {
   label: string
   armor: Armor | null
   mods?: Mod[]
   setInfo?: { name: string; count: number } | null
+  bonusPhysique?: number
+  bonusBouclier?: number
+  bonusRupture?: number
 }) {
   return (
     <div className={`char-equip-slot${armor ? '' : ' char-equip-slot-empty'}`}>
@@ -219,15 +243,19 @@ function ArmorSlot({
           <div className="char-equip-item-stats">
             {armor.valeurArmurePhysique != null && (
               <span title="Armure physique" className="stats-physique">
-                🛡 {armor.valeurArmurePhysique}
+                🛡 {armor.valeurArmurePhysique + bonusPhysique}
               </span>
             )}
             {armor.valeurBouclier != null && (
               <span title="Bouclier" className="stats-bouclier">
-                ⚡ {armor.valeurBouclier}
+                ⚡ {armor.valeurBouclier + bonusBouclier}
               </span>
             )}
-            {armor.valeurRupture != null && <span title="Rupture">💥 1 à {armor.valeurRupture}</span>}
+            {armor.valeurRupture != null && (
+              <span title="Rupture" className="stats-rupture">
+                💥 1 à {Math.max(0, armor.valeurRupture + bonusRupture)}
+              </span>
+            )}
           </div>
           {armor.modificateur && <div className="char-equip-item-mod-base">Mod: {armor.modificateur}</div>}
           {mods.length > 0 && (
@@ -258,11 +286,13 @@ function ArmorSlot({
 function WeaponSlot({
   label,
   weapon,
+  mods = [],
   forceDieMod,
   perceptionDieMod,
 }: {
   label: string
   weapon: Weapon | null
+  mods?: Mod[]
   forceDieMod: number
   perceptionDieMod: number
 }) {
@@ -272,11 +302,15 @@ function WeaponSlot({
   const isThermique = weapon?.type?.includes('thermique')
   const isPlasma = weapon?.type?.includes('plasma')
 
+  const structuredMods = getStructuredMods(mods)
+
   // Masquer les projectiles pour Thermique/Plasma
-  const showProjectiles = weapon?.projectilesParTir != null && !isThermique && !isPlasma
+  const bonusProjectiles = structuredMods['indicator_projectiles'] || 0
+  const totalProjectiles = (weapon?.projectilesParTir ?? 1) + bonusProjectiles
+  const showProjectiles = totalProjectiles != null && !isThermique && !isPlasma
 
   // Déterminer la classe de couleur pour les dégâts
-  const damageColorClass = weapon?.type?.[0] ? `weapon-type-${weapon.type[0]}` : ''
+  const damageColorClass = (weapon && weapon.type?.[0]) ? `weapon-type-${weapon.type[0]}` : ''
 
   // Calcul du bonus de dégâts
   const getFinalDamageData = () => {
@@ -292,6 +326,17 @@ function WeaponSlot({
     } else if (!isHeavy && !isPlasma) {
       // Pour les armes (hors lourde, mêlée ou plasma), on utilise Perception
       bonus = perceptionDieMod * multiplier
+    }
+
+    // Ajout des modificateurs structurés
+    bonus += structuredMods['degats_flat'] || 0
+    
+    // Bonus spécifiques (multiplicateurs supplémentaires de stat)
+    if (isMelee) {
+      bonus += (structuredMods['degats_mod_fo_x1'] || 0) * forceDieMod
+    }
+    if (weapon && weapon.categorie === 'shotgun') {
+      bonus += (structuredMods['degats_mod_pe_x1'] || 0) * perceptionDieMod
     }
 
     const finalDamageStr = bonus === 0 ? baseDamage : `${cleanDamage}${bonus > 0 ? '+' : ''}${bonus}${baseDamage.endsWith('!') ? '!' : ''}`
@@ -335,6 +380,10 @@ function WeaponSlot({
     if (!weapon) return null
 
     const rows: { label: string; mod: string }[] = []
+    const bonusPC = structuredMods['mod_portee_courte'] || 0
+    const bonusPM = structuredMods['mod_portee_moyenne'] || 0
+    const addPC = structuredMods['portee_courte'] || 0
+    const addPM = structuredMods['portee_moyenne'] || 0
 
     if (isMelee) {
       rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: '0' })
@@ -342,29 +391,36 @@ function WeaponSlot({
       rows.push({ label: `Max ${weapon.porteeFixe ?? 50}m`, mod: '0' })
     } else if (isSniper) {
       // Courte portée définie plus haut
+      const cpVal = (weapon.courtePortee ?? 0) + addPC
+      const cpMod = (weapon.modCourtePortee ?? 0) + bonusPC
       rows.push({
-        label: `< ${weapon.courtePortee ?? 0}m`,
-        mod: (weapon.modCourtePortee ?? 0) >= 0 ? `+${weapon.modCourtePortee}` : `${weapon.modCourtePortee}`,
+        label: `< ${cpVal}m`,
+        mod: cpMod >= 0 ? `+${cpMod}` : `${cpMod}`,
       })
       // Paliers sniper
       weapon.paliersSniper?.forEach((p) => {
+        const pMod = (p.modificateur ?? 0) + bonusPC // Les snipers ont souvent un bonus sur tous les paliers sauf le dernier
         rows.push({
           label: `< ${p.distanceMax}m`,
-          mod: (p.modificateur ?? 0) >= 0 ? `+${p.modificateur}` : `${p.modificateur}`,
+          mod: pMod >= 0 ? `+${pMod}` : `${pMod}`,
         })
       })
     } else {
       // Armes standard (Fusil, Pistolet, Shotgun)
       if (weapon.courtePortee != null) {
+        const cpVal = weapon.courtePortee + addPC
+        const cpMod = (weapon.modCourtePortee ?? 0) + bonusPC
         rows.push({
-          label: `< ${weapon.courtePortee}m`,
-          mod: (weapon.modCourtePortee ?? 0) >= 0 ? `+${weapon.modCourtePortee}` : `${weapon.modCourtePortee}`,
+          label: `< ${cpVal}m`,
+          mod: cpMod >= 0 ? `+${cpMod}` : `${cpMod}`,
         })
       }
       if (weapon.moyennePortee != null) {
+        const mpVal = weapon.moyennePortee + addPM
+        const mpMod = (weapon.modMoyennePortee ?? 0) + bonusPM
         rows.push({
-          label: `< ${weapon.moyennePortee}m`,
-          mod: (weapon.modMoyennePortee ?? 0) >= 0 ? `+${weapon.modMoyennePortee}` : `${weapon.modMoyennePortee}`,
+          label: `< ${mpVal}m`,
+          mod: mpMod >= 0 ? `+${mpMod}` : `${mpMod}`,
         })
       }
     }
@@ -398,6 +454,9 @@ function WeaponSlot({
       </table>
     )
   }
+
+  const bonusChargeur = structuredMods['chargeur'] || 0
+  const finalChargeur = weapon ? (weapon.tailleChargeur ?? 0) + bonusChargeur : 0
 
   return (
     <div className={`char-equip-slot${weapon ? '' : ' char-equip-slot-empty'}`}>
@@ -437,13 +496,13 @@ function WeaponSlot({
               {weapon.tailleChargeur != null && (
                 <div className="weapon-util-item" title="Chargeur">
                   <span className="util-icon">📦</span>
-                  <span className="util-value">{weapon.tailleChargeur}</span>
+                  <span className="util-value">{finalChargeur}</span>
                 </div>
               )}
               {showProjectiles && (
                 <div className="weapon-util-item" title="Projectiles/tir">
                   <span className="util-icon">×</span>
-                  <span className="util-value">{weapon.projectilesParTir}</span>
+                  <span className="util-value">{totalProjectiles}</span>
                 </div>
               )}
               {weapon.tempsRechargement != null && (
@@ -455,12 +514,39 @@ function WeaponSlot({
               {weapon.poids != null && (
                 <div className="weapon-util-item" title="Poids">
                   <span className="util-icon">⚖️</span>
-                  <span className="util-value">{weapon.poids}kg</span>
+                  <span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span>
                 </div>
               )}
+              {isThermique && weapon.valeurChauffe != null && (
+                <div className="weapon-util-item" title="Valeur de chauffe">
+                  <span className="util-icon">🔥</span>
+                  <span className="util-value">{weapon.valeurChauffe}%</span>
+                </div>
+              )}
+              {isThermique && weapon.tempsRefroidissement != null && (
+                <div className="weapon-util-item" title="Refroidissement">
+                  <span className="util-icon">❄️</span>
+                  <span className="util-value">{weapon.tempsRefroidissement}%</span>
+                </div>
+              )}
+              {structuredMods['indicator_surcharge'] ? (
+                 <div className="weapon-util-item" title="Surcharge thermique">
+                    <span className="util-icon">🔥</span>
+                    <span className="util-value">+{structuredMods['indicator_surcharge']}%</span>
+                 </div>
+              ) : null}
             </div>
           </div>
           {renderRangeTable()}
+          {mods.length > 0 && (
+            <div className="char-equip-item-mods-list">
+              {mods.map((m) => (
+                <div key={m.id} className="char-equip-mod-item" title={m.effet}>
+                  🔧 {m.nom}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="char-equip-empty">
@@ -537,6 +623,7 @@ export default async function CharacterDetailPage({
 
   const totalPhysique = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
   const totalBouclier = armors.reduce((acc, a) => acc + (a.valeurBouclier ?? 0), 0)
+  const totalRupture = armors.reduce((acc, a) => acc + (a.valeurRupture ?? 0), 0)
 
   // Totaux armes
   const weapons = [
@@ -548,6 +635,18 @@ export default async function CharacterDetailPage({
   ].filter(Boolean) as Weapon[]
 
   const totalWeaponWeight = weapons.reduce((acc, w) => acc + (w.poids ?? 0), 0)
+  
+  // Calcul du poids réduit par les mods d'armes et armures
+  const weaponMods = [
+    ...asMods(character.armePrincipale),
+    ...asMods(character.armeSecondaire),
+    ...asMods(character.armeLourde),
+    ...asMods(character.armeDePoing),
+    ...asMods(character.armeDeMelee),
+  ]
+  const structuredWeaponMods = getStructuredMods(weaponMods)
+  const reductionPoidsArmes = structuredWeaponMods['poids'] || 0
+  const totalWeaponWeightFinal = Math.max(0, totalWeaponWeight + reductionPoidsArmes)
 
   // Détection des sets pour toutes les pièces
   const armorPieces = [
@@ -580,19 +679,51 @@ export default async function CharacterDetailPage({
   })
 
   // 2. On analyse les effets des mods sur chaque pièce
-  const allMods = [
+  const allArmorMods = [
     ...asMods(character.armureTete),
     ...asMods(character.armureTorse),
     ...asMods(character.armureBras),
     ...asMods(character.armureJambes),
     ...asMods(character.armureBackpack),
   ]
-  allMods.forEach(m => {
+  allArmorMods.forEach(m => {
+    // Ancien système : parse du texte
     const modEffects = parseModifier(m.effet)
     Object.entries(modEffects).forEach(([key, val]) => {
       totalArmorMods[key] = (totalArmorMods[key] || 0) + val
     })
+
+    // Nouveau système : modificateurs structurés
+    if (m.modificateurs && Array.isArray(m.modificateurs)) {
+      const mapping: Record<string, string> = {
+        stat_force: 'force',
+        stat_habilite: 'habilite',
+        stat_connaissances: 'connaissances',
+        stat_culture: 'culture',
+        stat_anticipation: 'anticipation',
+        stat_perception: 'perception',
+        armure_physique: 'armure_physique',
+        armure_bouclier: 'armure_bouclier',
+        armure_rupture: 'armure_rupture',
+        poids: 'poids_armure',
+      }
+      m.modificateurs.forEach((mod) => {
+        const key = mapping[mod.cible]
+        if (key) {
+          totalArmorMods[key] = (totalArmorMods[key] || 0) + mod.valeur
+        }
+      })
+    }
   })
+
+  const bonusPhysique = totalArmorMods['armure_physique'] || 0
+  const bonusBouclier = totalArmorMods['armure_bouclier'] || 0
+  const bonusRupture = totalArmorMods['armure_rupture'] || 0
+  const reductionPoidsArmure = totalArmorMods['poids_armure'] || 0
+
+  const finalTotalPhysique = Math.max(0, totalPhysique + bonusPhysique)
+  const finalTotalBouclier = Math.max(0, totalBouclier + bonusBouclier)
+  const finalTotalRupture = Math.max(0, totalRupture + bonusRupture)
 
   // 3. Bonus de set (si applicable, on pourrait aussi parser le bonus de set)
   completedSets.forEach(s => {
@@ -603,7 +734,7 @@ export default async function CharacterDetailPage({
   })
 
   const getSetInfo = (armor: Armor | null) => {
-    if (!armor || !(armor.set && typeof armor.set === 'object')) return null
+    if (!armor || !armor.set || typeof armor.set !== 'object') return null
     const info = setsMap.get(armor.set.id)
     if (info) {
       return { name: info.set.nom, count: info.count }
@@ -628,11 +759,10 @@ export default async function CharacterDetailPage({
   const getDodgeStats = () => {
     const ba = anticipationDieMod
     const rank = rankInfo.level
-    const totalArmor = totalPhysique
     const bf = forceDieMod
 
     // Esquive de base (découvert) : 15+(Bonus d'anticipation * Rang/2) – ((Armure Physique totale – Bonus de force)/2)
-    const base = 15 + (ba * rank / 2) - ((totalArmor - bf) / 2)
+    const base = 15 + (ba * rank / 2) - ((finalTotalPhysique - bf) / 2)
     const decouvert = Math.floor(base)
 
     return {
@@ -644,6 +774,11 @@ export default async function CharacterDetailPage({
   }
 
   const dodge = getDodgeStats()
+
+  // Calcul du poids total pour l'encombrement (Impacte le mouvement)
+  const totalArmorWeight = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
+  const finalTotalArmorWeight = Math.max(0, totalArmorWeight + reductionPoidsArmure)
+  const totalWeight = totalWeaponWeightFinal + finalTotalArmorWeight
 
   // Calcul des points de blessures
   const getMaxHP = () => {
@@ -674,8 +809,6 @@ export default async function CharacterDetailPage({
   const getMovement = () => {
     const origin = character.origine || 'Humain'
     const bf = forceDieMod
-    const totalArmor = totalPhysique
-    const totalWeapons = totalWeaponWeight
 
     let x = 10
     if (origin === 'Strani') {
@@ -685,7 +818,7 @@ export default async function CharacterDetailPage({
     }
 
     // Formule: X - (Armure physique total - Bonus de Force + Poids des armes total)/2
-    const move = x - (totalArmor - bf + totalWeapons) / 2
+    const move = x - (finalTotalPhysique - bf + totalWeaponWeightFinal) / 2
     return Math.floor(move)
   }
 
@@ -947,29 +1080,44 @@ export default async function CharacterDetailPage({
                 armor={asArmor(character.armureTete)}
                 mods={asMods(character.armureTete)}
                 setInfo={getSetInfo(asArmor(character.armureTete))}
+                bonusPhysique={getStructuredMods(asMods(character.armureTete))['armure_physique']}
+                bonusBouclier={getStructuredMods(asMods(character.armureTete))['armure_bouclier']}
+                bonusRupture={getStructuredMods(asMods(character.armureTete))['armure_rupture']}
               />
               <ArmorSlot
                 label="Torse"
                 armor={asArmor(character.armureTorse)}
                 mods={asMods(character.armureTorse)}
                 setInfo={getSetInfo(asArmor(character.armureTorse))}
+                bonusPhysique={getStructuredMods(asMods(character.armureTorse))['armure_physique']}
+                bonusBouclier={getStructuredMods(asMods(character.armureTorse))['armure_bouclier']}
+                bonusRupture={getStructuredMods(asMods(character.armureTorse))['armure_rupture']}
               />
               <ArmorSlot
                 label="Bras"
                 armor={asArmor(character.armureBras)}
                 mods={asMods(character.armureBras)}
                 setInfo={getSetInfo(asArmor(character.armureBras))}
+                bonusPhysique={getStructuredMods(asMods(character.armureBras))['armure_physique']}
+                bonusBouclier={getStructuredMods(asMods(character.armureBras))['armure_bouclier']}
+                bonusRupture={getStructuredMods(asMods(character.armureBras))['armure_rupture']}
               />
               <ArmorSlot
                 label="Jambes"
                 armor={asArmor(character.armureJambes)}
                 mods={asMods(character.armureJambes)}
                 setInfo={getSetInfo(asArmor(character.armureJambes))}
+                bonusPhysique={getStructuredMods(asMods(character.armureJambes))['armure_physique']}
+                bonusBouclier={getStructuredMods(asMods(character.armureJambes))['armure_bouclier']}
+                bonusRupture={getStructuredMods(asMods(character.armureJambes))['armure_rupture']}
               />
               <ArmorSlot
                 label="Back-pack"
                 armor={asArmor(character.armureBackpack)}
                 mods={asMods(character.armureBackpack)}
+                bonusPhysique={getStructuredMods(asMods(character.armureBackpack))['armure_physique']}
+                bonusBouclier={getStructuredMods(asMods(character.armureBackpack))['armure_bouclier']}
+                bonusRupture={getStructuredMods(asMods(character.armureBackpack))['armure_rupture']}
               />
             </div>
           </div>
@@ -981,30 +1129,35 @@ export default async function CharacterDetailPage({
               <WeaponSlot
                 label="Principale"
                 weapon={asWeapon(character.armePrincipale)}
+                mods={asMods(character.armePrincipale)}
                 forceDieMod={forceDieMod}
                 perceptionDieMod={perceptionDieMod}
               />
               <WeaponSlot
                 label="Secondaire"
                 weapon={asWeapon(character.armeSecondaire)}
+                mods={asMods(character.armeSecondaire)}
                 forceDieMod={forceDieMod}
                 perceptionDieMod={perceptionDieMod}
               />
               <WeaponSlot
                 label="Lourde"
                 weapon={asWeapon(character.armeLourde)}
+                mods={asMods(character.armeLourde)}
                 forceDieMod={forceDieMod}
                 perceptionDieMod={perceptionDieMod}
               />
               <WeaponSlot
                 label="Poing"
                 weapon={asWeapon(character.armeDePoing)}
+                mods={asMods(character.armeDePoing)}
                 forceDieMod={forceDieMod}
                 perceptionDieMod={perceptionDieMod}
               />
               <WeaponSlot
                 label="Mêlée"
                 weapon={asWeapon(character.armeDeMelee)}
+                mods={asMods(character.armeDeMelee)}
                 forceDieMod={forceDieMod}
                 perceptionDieMod={perceptionDieMod}
               />

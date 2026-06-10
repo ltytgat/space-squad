@@ -409,7 +409,17 @@ export const Characters: CollectionConfig = {
                   relationTo: 'mods',
                   hasMany: true,
                   label: 'Mods',
-                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armes' },
+                      or: [
+                        { sousCategorieArme: { equals: 'toutes' } },
+                        { sousCategorieArme: { equals: 'fusils-pistolets' } },
+                        { sousCategorieArme: { equals: 'shotgun' } },
+                        { sousCategorieArme: { equals: 'snipers' } },
+                      ],
+                    }
+                  },
                 },
               ],
             },
@@ -426,7 +436,17 @@ export const Characters: CollectionConfig = {
                   relationTo: 'mods',
                   hasMany: true,
                   label: 'Mods',
-                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armes' },
+                      or: [
+                        { sousCategorieArme: { equals: 'toutes' } },
+                        { sousCategorieArme: { equals: 'fusils-pistolets' } },
+                        { sousCategorieArme: { equals: 'shotgun' } },
+                        { sousCategorieArme: { equals: 'snipers' } },
+                      ],
+                    }
+                  },
                 },
               ],
             },
@@ -454,7 +474,15 @@ export const Characters: CollectionConfig = {
                   relationTo: 'mods',
                   hasMany: true,
                   label: 'Mods',
-                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armes' },
+                      or: [
+                        { sousCategorieArme: { equals: 'toutes' } },
+                        { sousCategorieArme: { equals: 'fusils-pistolets' } },
+                      ],
+                    }
+                  },
                 },
               ],
             },
@@ -477,7 +505,15 @@ export const Characters: CollectionConfig = {
                   relationTo: 'mods',
                   hasMany: true,
                   label: 'Mods',
-                  filterOptions: { categoriePrincipale: { equals: 'armes' } },
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armes' },
+                      or: [
+                        { sousCategorieArme: { equals: 'toutes' } },
+                        { sousCategorieArme: { equals: 'fusils-pistolets' } },
+                      ],
+                    }
+                  },
                 },
               ],
             },

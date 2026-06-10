@@ -361,6 +361,39 @@ export interface Mod {
   sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
   sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
   effet: string;
+  modificateurs?:
+    | {
+        cible:
+          | 'stat_force'
+          | 'stat_habilite'
+          | 'stat_connaissances'
+          | 'stat_culture'
+          | 'stat_anticipation'
+          | 'stat_perception'
+          | 'armure_physique'
+          | 'armure_bouclier'
+          | 'armure_rupture'
+          | 'degats_flat'
+          | 'degats_mod_fo_x1'
+          | 'degats_mod_pe_x1'
+          | 'portee_courte'
+          | 'portee_moyenne'
+          | 'mod_portee_courte'
+          | 'mod_portee_moyenne'
+          | 'chargeur'
+          | 'poids'
+          | 'indicator_surcharge'
+          | 'indicator_projectiles'
+          | 'indicator_acide'
+          | 'indicator_tazer'
+          | 'indicator_gravite_faible'
+          | 'indicator_gravite_forte'
+          | 'indicator_lumiere'
+          | 'indicator_double_pistolet';
+        valeur: number;
+        id?: string | null;
+      }[]
+    | null;
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -990,6 +1023,13 @@ export interface ModsSelect<T extends boolean = true> {
   sousCategorieArme?: T;
   sousCategorieArmure?: T;
   effet?: T;
+  modificateurs?:
+    | T
+    | {
+        cible?: T;
+        valeur?: T;
+        id?: T;
+      };
   image?: T;
   updatedAt?: T;
   createdAt?: T;
