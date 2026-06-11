@@ -602,6 +602,40 @@ export const Characters: CollectionConfig = {
       ],
     },
 
+    // ── Inventaire (Consommables) ─────────────────────
+    {
+      name: 'inventaire',
+      type: 'array',
+      label: 'Inventaire',
+      admin: {
+        description: 'Liste des consommables possédés par le personnage.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'consommable',
+              type: 'relationship',
+              relationTo: 'consumables',
+              label: 'Consommable',
+              required: true,
+              admin: { width: '70%' },
+            },
+            {
+              name: 'quantite',
+              type: 'number',
+              label: 'Quantité',
+              required: true,
+              defaultValue: 1,
+              min: 1,
+              admin: { width: '30%' },
+            },
+          ],
+        },
+      ],
+    },
+
     // ── Compétences de base ───────────────────────────
     {
       name: 'competences',

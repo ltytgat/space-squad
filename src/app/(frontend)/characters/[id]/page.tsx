@@ -59,6 +59,16 @@ type Armor = {
   set?: ArmorSet | number | null
 }
 
+type Consumable = {
+  id: number
+  nom: string
+  categorie: 'soins' | 'munitions' | 'grenades' | 'tactique' | 'outils'
+  effet?: string
+  epreuve?: string
+  modificateurEpreuve?: number
+  prix?: number
+}
+
 type Ship = { id: number; nom: string; classe?: string; modele?: string }
 type Group = { id: number; nom: string }
 
@@ -102,6 +112,7 @@ type Character = {
   groupe?: Group | string | null
   competences?: { competence: string; valeur: number; id?: string }[]
   competencesSpeciales?: { nom: string; valeur: number; id?: string }[]
+  inventaire?: { consommable: Consumable | number; quantite: number; id?: string }[]
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1175,7 +1186,45 @@ export default async function CharacterDetailPage({
             )}
           </div>
 
-          {/* ── Rangée 4 : Compétences ── */}
+          {/* ── Rangée 4 : Inventaire ── */}
+          {((character.inventaire?.length ?? 0) > 0) && (
+            <div className="char-card">
+              <h2 className="char-card-title">Inventaire</h2>
+              <div className="char-inventory-list">
+                <table className="char-inventory-table">
+                  <thead>
+                    <tr>
+                      <th>Nom</th>
+                      <th>Catégorie</th>
+                      <th>Effet</th>
+                      <th>Épreuve</th>
+                      <th style={{ textAlign: 'center' }}>Qté</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {character.inventaire?.map((item) => {
+                      const cons = item.consommable as Consumable
+                      if (!cons || typeof cons !== 'object') return null
+                      return (
+                        <tr key={item.id ?? cons.id}>
+                          <td><strong>{cons.nom}</strong></td>
+                          <td>{cons.categorie.charAt(0).toUpperCase() + cons.categorie.slice(1)}</td>
+                          <td>{cons.effet}</td>
+                          <td>
+                            {cons.epreuve}
+                            {cons.modificateurEpreuve ? ` (${cons.modificateurEpreuve > 0 ? '+' : ''}${cons.modificateurEpreuve})` : ''}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>x{item.quantite}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── Rangée 5 : Compétences ── */}
           {((character.competences?.length ?? 0) > 0 ||
             (character.competencesSpeciales?.length ?? 0) > 0) && (
             <div className="char-card">

@@ -547,6 +547,16 @@ export interface Character {
   vaisseau?: (number | null) | Ship;
   roleVaisseau?: ('proprietaire' | 'passager') | null;
   /**
+   * Liste des consommables possédés par le personnage.
+   */
+  inventaire?:
+    | {
+        consommable: number | Consumable;
+        quantite: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Compétences de la liste standard et leur niveau.
    */
   competences?:
@@ -614,9 +624,13 @@ export interface Consumable {
    */
   effet?: string | null;
   /**
-   * Texte libre décrivant l'épreuve éventuelle.
+   * Texte libre décrivant l'épreuve éventuelle (ex: Physique, Habilité).
    */
   epreuve?: string | null;
+  /**
+   * Valeur numérique du modificateur (ex: -10, +5).
+   */
+  modificateurEpreuve?: number | null;
   prix?: number | null;
   image?: (number | null) | Media;
   updatedAt: string;
@@ -997,6 +1011,13 @@ export interface CharactersSelect<T extends boolean = true> {
   puceMk3?: T;
   vaisseau?: T;
   roleVaisseau?: T;
+  inventaire?:
+    | T
+    | {
+        consommable?: T;
+        quantite?: T;
+        id?: T;
+      };
   competences?:
     | T
     | {
@@ -1045,6 +1066,7 @@ export interface ConsumablesSelect<T extends boolean = true> {
   categorie?: T;
   effet?: T;
   epreuve?: T;
+  modificateurEpreuve?: T;
   prix?: T;
   image?: T;
   updatedAt?: T;

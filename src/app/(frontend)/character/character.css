@@ -992,6 +992,45 @@
 }
 
 
+/* ── Inventaire ── */
+
+.char-inventory-list {
+  overflow-x: auto;
+}
+
+.char-inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.char-inventory-table th {
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 2px solid var(--ss-border);
+  color: var(--ss-text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.char-inventory-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+  color: var(--ss-text-dim);
+}
+
+.char-inventory-table tr:last-child td {
+  border-bottom: none;
+}
+
+.char-inventory-table strong {
+  color: var(--ss-text-bright);
+  font-weight: 600;
+}
+
+
 /* ── Compétences ── */
 
 .char-skills-grid {

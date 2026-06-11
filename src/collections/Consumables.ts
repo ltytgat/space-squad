@@ -60,7 +60,16 @@ export const Consumables: CollectionConfig = {
           label: 'Épreuve',
           admin: {
             width: '25%',
-            description: 'Texte libre décrivant l\'épreuve éventuelle.',
+            description: "Texte libre décrivant l'épreuve éventuelle (ex: Physique, Habilité).",
+          },
+        },
+        {
+          name: 'modificateurEpreuve',
+          type: 'number',
+          label: "Modificateur d'épreuve",
+          admin: {
+            width: '25%',
+            description: "Valeur numérique du modificateur (ex: -10, +5).",
           },
         },
         {
