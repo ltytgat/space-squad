@@ -456,7 +456,9 @@ function WeaponSlot({
   }
 
   const bonusChargeur = structuredMods['chargeur'] || 0
-  const finalChargeur = weapon ? (weapon.tailleChargeur ?? 0) + bonusChargeur : 0
+  const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
+  const baseChargeur = weapon?.tailleChargeur ?? 0
+  const finalChargeur = weapon ? Math.ceil(baseChargeur * (1 + bonusChargeurPct / 100)) + bonusChargeur : 0
 
   return (
     <div className={`char-equip-slot${weapon ? '' : ' char-equip-slot-empty'}`}>
@@ -526,7 +528,9 @@ function WeaponSlot({
               {isThermique && weapon.tempsRefroidissement != null && (
                 <div className="weapon-util-item" title="Refroidissement">
                   <span className="util-icon">❄️</span>
-                  <span className="util-value">{weapon.tempsRefroidissement}%</span>
+                  <span className="util-value">
+                    {Math.round(weapon.tempsRefroidissement * (1 + (structuredMods['refroidissement_pct'] || 0) / 100))}%
+                  </span>
                 </div>
               )}
               {structuredMods['indicator_surcharge'] ? (
