@@ -391,7 +391,25 @@ export interface Mod {
           | 'indicator_gravite_faible'
           | 'indicator_gravite_forte'
           | 'indicator_lumiere'
-          | 'indicator_double_pistolet';
+          | 'indicator_double_pistolet'
+          | 'epreuve_pilotage_leger'
+          | 'epreuve_pilotage_intermediaire'
+          | 'epreuve_pilotage_lourd'
+          | 'epreuve_pilotage_blinde'
+          | 'epreuve_tir_pilote'
+          | 'epreuve_tir_tourelle'
+          | 'epreuve_tir_vehicule'
+          | 'epreuve_reparation'
+          | 'epreuve_negocier'
+          | 'epreuve_analyse'
+          | 'epreuve_culture'
+          | 'epreuve_discretion'
+          | 'epreuve_initiative'
+          | 'epreuve_tir_assaut'
+          | 'epreuve_tir_sniper'
+          | 'epreuve_tir_shotgun'
+          | 'epreuve_cac'
+          | 'epreuve_soins';
         valeur: number;
         id?: string | null;
       }[]

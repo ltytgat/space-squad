@@ -767,8 +767,50 @@ export default async function CharacterDetailPage({
   }
 
   const forceDieMod = getDieMod('force', character.force)
-  const perceptionDieMod = getDieMod('perception', character.perception)
+  const habiliteDieMod = getDieMod('habilite', character.habilite)
+  const connaissancesDieMod = getDieMod('connaissances', character.connaissances)
+  const cultureDieMod = getDieMod('culture', character.culture)
   const anticipationDieMod = getDieMod('anticipation', character.anticipation)
+  const perceptionDieMod = getDieMod('perception', character.perception)
+
+  // Calcul des épreuves
+  const getCompetenceValue = (name: string) => {
+    const comp = character.competences?.find(c => c.competence === name)
+    return comp ? comp.valeur : 0
+  }
+
+  const getEpreuveMod = (attrBonus: number, competenceName: string | null, modCible: string) => {
+    const compVal = competenceName ? getCompetenceValue(competenceName) : 0
+    const bonusMod = totalArmorMods[modCible] || 0
+    return attrBonus + 2 * compVal + bonusMod
+  }
+
+  const epreuves = {
+    vaisseau: [
+      { label: 'Pilotage – Chasseur/Léger', value: getEpreuveMod(habiliteDieMod, 'Chasseur', 'epreuve_pilotage_leger') },
+      { label: 'Pilotage – Bombardier/Intermédiaire', value: getEpreuveMod(habiliteDieMod, 'Bombardier', 'epreuve_pilotage_intermediaire') },
+      { label: 'Pilotage – Corvette/Poids lourds', value: getEpreuveMod(habiliteDieMod, 'Poids Lourds', 'epreuve_pilotage_lourd') },
+      { label: 'Pilotage – Frégate/Blindé', value: getEpreuveMod(habiliteDieMod, 'Transport de Troupes', 'epreuve_pilotage_blinde') },
+      { label: 'Tir – Pilote', value: getEpreuveMod(perceptionDieMod, null, 'epreuve_tir_pilote') },
+      { label: 'Tir – Tourelle', value: getEpreuveMod(perceptionDieMod, 'Canonnier', 'epreuve_tir_tourelle') },
+      { label: 'Tir - Véhicule', value: getEpreuveMod(perceptionDieMod, 'Stabilisation', 'epreuve_tir_vehicule') },
+    ],
+    pacifiques: [
+      { label: 'Réparation', value: getEpreuveMod(connaissancesDieMod, 'Mécanicien', 'epreuve_reparation') },
+      { label: 'Négocier / Influencer', value: getEpreuveMod(cultureDieMod, 'Diplomate', 'epreuve_negocier') },
+      { label: 'Crypter / Décrypter / Analyse', value: getEpreuveMod(connaissancesDieMod, 'Analyse', 'epreuve_analyse') },
+      { label: 'Culture', value: getEpreuveMod(cultureDieMod, 'Culture', 'epreuve_culture') },
+      { label: 'Discrétion', value: getEpreuveMod(anticipationDieMod, 'Furtivité', 'epreuve_discretion') },
+    ],
+    combat: [
+      { label: 'Initiative', value: getEpreuveMod(anticipationDieMod, 'Réactivité', 'epreuve_initiative') },
+      { label: 'Tir Fusil/Pistolet', value: getEpreuveMod(perceptionDieMod, 'Assaut', 'epreuve_tir_assaut') },
+      { label: 'Tir Sniper', value: getEpreuveMod(perceptionDieMod, 'Sniper', 'epreuve_tir_sniper') },
+      { label: 'Tir Shotgun', value: getEpreuveMod(perceptionDieMod, 'Shotgun', 'epreuve_tir_shotgun') },
+      { label: 'Frapper au CàC', value: getEpreuveMod(habiliteDieMod, 'Combat rapproché', 'epreuve_cac') },
+      { label: 'Premiers soins', value: getEpreuveMod(connaissancesDieMod, 'Médecine de terrain', 'epreuve_soins') },
+    ],
+  }
 
   // Calcul de l'esquive
   const getDodgeStats = () => {
@@ -1062,7 +1104,47 @@ export default async function CharacterDetailPage({
             </div>
           </div>
 
-          {/* ── Rangée 2 : Armures ── */}
+          {/* ── Rangée 2 : Épreuves ── */}
+          <div className="char-card">
+            <h2 className="char-card-title">Épreuves</h2>
+            <div className="char-epreuves-grid">
+              <div className="char-epreuves-section">
+                <h3 className="char-epreuves-subtitle">En vaisseau / véhicule</h3>
+                <div className="char-epreuves-list">
+                  {epreuves.vaisseau.map((e) => (
+                    <div key={e.label} className="char-epreuve-item">
+                      <span className="char-epreuve-label">{e.label}</span>
+                      <span className="char-epreuve-value">{e.value >= 0 ? '+' : ''}{e.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="char-epreuves-section">
+                <h3 className="char-epreuves-subtitle">Actions pacifiques</h3>
+                <div className="char-epreuves-list">
+                  {epreuves.pacifiques.map((e) => (
+                    <div key={e.label} className="char-epreuve-item">
+                      <span className="char-epreuve-label">{e.label}</span>
+                      <span className="char-epreuve-value">{e.value >= 0 ? '+' : ''}{e.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="char-epreuves-section">
+                <h3 className="char-epreuves-subtitle">Combat au sol</h3>
+                <div className="char-epreuves-list">
+                  {epreuves.combat.map((e) => (
+                    <div key={e.label} className="char-epreuve-item">
+                      <span className="char-epreuve-label">{e.label}</span>
+                      <span className="char-epreuve-value">{e.value >= 0 ? '+' : ''}{e.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Rangée 3 : Armures ── */}
           <div className="char-card">
             <div className="char-card-header-with-stats">
               <h2 className="char-card-title">Armures</h2>

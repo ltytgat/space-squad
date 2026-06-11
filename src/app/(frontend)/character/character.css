@@ -605,6 +605,71 @@
 }
 
 
+/* ── Épreuves ── */
+
+.char-epreuves-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.char-epreuves-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.char-epreuves-subtitle {
+  font-family: var(--ss-font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ss-text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.char-epreuves-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.char-epreuve-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--ss-radius);
+  gap: 0.5rem;
+}
+
+.char-epreuve-label {
+  font-size: 0.8rem;
+  color: var(--ss-text-dim);
+  flex: 1;
+}
+
+.char-epreuve-value {
+  font-family: var(--ss-font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ss-cyan);
+  min-width: 2rem;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .char-epreuves-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
 /* ── Équipement (slots) ── */
 
 .char-equip-grid {
