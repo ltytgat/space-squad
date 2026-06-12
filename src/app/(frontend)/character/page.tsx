@@ -80,35 +80,6 @@ function asWeapon(v: Weapon | string | null | undefined): Weapon | null {
   return v
 }
 
-function asShip(v: Ship | string | null | undefined): Ship | null {
-  if (!v || typeof v === 'string') return null
-  return v
-}
-
-function asGroup(v: Group | string | null | undefined): Group | null {
-  if (!v || typeof v === 'string') return null
-  return v
-}
-
-function stat(value: number | undefined) {
-  return value ?? 0
-}
-
-const CLASSE_LABEL: Record<string, string> = {
-  alpha: 'Alpha',
-  beta: 'Beta',
-  gamma: 'Gamma',
-  delta: 'Delta',
-}
-
-// Couleur du rang selon le niveau (pour les classes CSS)
-function rankTier(level: number): string {
-  if (level <= 3) return 'novice'
-  if (level <= 6) return 'advanced'
-  if (level <= 9) return 'elite'
-  return 'master'
-}
-
 // ── Sous-composants ──────────────────────────────────────────────────────────
 
 function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {

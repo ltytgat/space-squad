@@ -132,13 +132,13 @@ function parseModifier(modStr: string | null | undefined): Record<string, number
   const mods: Record<string, number> = {}
   // On cherche des patterns comme "Cha+2" ou "Fo+1" ou "+1 Fo"
   // On supporte les deux ordres pour plus de flexibilité
-  const regex = /([+-]\d+)\s*(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception)|(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception)\s*([+-]\d+)/gi
+  const regex = /([+-]\d+)\s*(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception|Mouv)|(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception|Mouv)\s*([+-]\d+)/gi
   let match
   const mapping: Record<string, string> = {
     fo: 'force',
     force: 'force',
     hab: 'habilite',
-    habilité: 'habilite',
+    habilite: 'habilite',
     int: 'connaissances',
     connaissances: 'connaissances',
     cha: 'culture',
@@ -147,6 +147,7 @@ function parseModifier(modStr: string | null | undefined): Record<string, number
     anticipation: 'anticipation',
     pe: 'perception',
     perception: 'perception',
+    mouv: 'mouvement',
   }
 
   while ((match = regex.exec(modStr)) !== null) {
@@ -638,9 +639,7 @@ export default async function CharacterDetailPage({
 
   const totalPhysique = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
   const totalBouclier = armors.reduce((acc, a) => acc + (a.valeurBouclier ?? 0), 0)
-  const totalRupture = armors.reduce((acc, a) => acc + (a.valeurRupture ?? 0), 0)
-
-  // Totaux armes
+// Totaux armes
   const weapons = [
     asWeapon(character.armePrincipale),
     asWeapon(character.armeSecondaire),
@@ -732,15 +731,9 @@ export default async function CharacterDetailPage({
   })
 
   const bonusPhysique = totalArmorMods['armure_physique'] || 0
-  const bonusBouclier = totalArmorMods['armure_bouclier'] || 0
-  const bonusRupture = totalArmorMods['armure_rupture'] || 0
-  const reductionPoidsArmure = totalArmorMods['poids_armure'] || 0
 
   const finalTotalPhysique = Math.max(0, totalPhysique + bonusPhysique)
-  const finalTotalBouclier = Math.max(0, totalBouclier + bonusBouclier)
-  const finalTotalRupture = Math.max(0, totalRupture + bonusRupture)
-
-  // 3. Bonus de set (si applicable, on pourrait aussi parser le bonus de set)
+// 3. Bonus de set (si applicable, on pourrait aussi parser le bonus de set)
   completedSets.forEach(s => {
     const setMods = parseModifier(s.set.bonus)
     Object.entries(setMods).forEach(([key, val]) => {
@@ -831,13 +824,6 @@ export default async function CharacterDetailPage({
   }
 
   const dodge = getDodgeStats()
-
-  // Calcul du poids total pour l'encombrement (Impacte le mouvement)
-  const totalArmorWeight = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
-  const finalTotalArmorWeight = Math.max(0, totalArmorWeight + reductionPoidsArmure)
-  const totalWeight = totalWeaponWeightFinal + finalTotalArmorWeight
-
-  // Calcul des points de blessures
   const getMaxHP = () => {
     const origin = character.origine || 'Humain'
     const bf = forceDieMod
@@ -874,8 +860,9 @@ export default async function CharacterDetailPage({
       x = 6
     }
 
-    // Formule: X - (Armure physique total - Bonus de Force + Poids des armes total)/2
-    const move = x - (finalTotalPhysique - bf + totalWeaponWeightFinal) / 2
+    // Formule: X - (Armure physique total - Bonus de Force + Poids des armes total)/2 + Bonus Mouvement
+    const bonusMouv = totalArmorMods['mouvement'] || 0
+    const move = x - (finalTotalPhysique - bf + totalWeaponWeightFinal) / 2 + bonusMouv
     return Math.floor(move)
   }
 
