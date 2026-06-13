@@ -83,6 +83,10 @@ export const LoreArticles: CollectionConfig = {
           value: 'technologie',
         },
         {
+          label: 'Chroniques',
+          value: 'chroniques',
+        },
+        {
           label: 'Culture',
           value: 'culture',
         },

@@ -230,7 +230,14 @@ export interface LoreArticle {
    * Généré automatiquement depuis le titre. Modifiable manuellement si besoin.
    */
   slug?: string | null;
-  category: 'chronologies' | 'especes-non-humaines' | 'politique' | 'technologie' | 'culture' | 'stardash';
+  category:
+    | 'chronologies'
+    | 'especes-non-humaines'
+    | 'politique'
+    | 'technologie'
+    | 'chroniques'
+    | 'culture'
+    | 'stardash';
   /**
    * Courte description affichée dans les listes et aperçus (facultatif).
    */

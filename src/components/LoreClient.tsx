@@ -11,6 +11,7 @@ export const CATEGORY_META: Record<
   'especes-non-humaines': { label: 'Espèces non-humaines', icon: '👽' },
   politique:              { label: 'Politique',            icon: '⚡' },
   technologie:            { label: 'Technologie',          icon: '🔬' },
+  chroniques:             { label: 'Chroniques',           icon: '📜' },
   culture:                { label: 'Culture',              icon: '🎭' },
   stardash:               { label: 'Stardash',             icon: '🚀' },
 }
@@ -22,6 +23,7 @@ const CATEGORY_ORDER: LoreArticle['category'][] = [
   'especes-non-humaines',
   'politique',
   'technologie',
+  'chroniques',
   'culture',
   'stardash',
 ]
