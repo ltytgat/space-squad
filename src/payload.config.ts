@@ -1,5 +1,20 @@
 import {postgresAdapter} from '@payloadcms/db-postgres'
-import {lexicalEditor} from '@payloadcms/richtext-lexical'
+import {
+  FixedToolbarFeature,
+  HeadingFeature,
+  HorizontalRuleFeature,
+  InlineCodeFeature,
+  ItalicFeature,
+  LexicalEditor,
+  LinkFeature,
+  OrderedListFeature,
+  ParagraphFeature,
+  lexicalEditor,
+  BlocksFeature,
+  BoldFeature,
+  UnorderedListFeature,
+} from '@payloadcms/richtext-lexical'
+import { KeyValueBlock } from './blocks/KeyValueBlock'
 import path from 'path'
 import {buildConfig} from 'payload'
 import {fileURLToPath} from 'url'
@@ -32,7 +47,16 @@ export default buildConfig({
         },
     },
     collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters, Mods, Consumables, Chips],
-    editor: lexicalEditor(),
+    editor: lexicalEditor({
+        features: ({ defaultFeatures }) => [
+            ...defaultFeatures,
+            BlocksFeature({
+                blocks: [
+                    KeyValueBlock,
+                ],
+            }),
+        ],
+    }),
     secret: process.env.PAYLOAD_SECRET || '',
     typescript: {
         outputFile: path.resolve(dirname, 'payload-types.ts'),

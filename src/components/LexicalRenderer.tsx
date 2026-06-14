@@ -104,6 +104,29 @@ function createRenderer(nextId: (base: string) => string) {
         )
       }
 
+      case 'block': {
+        const fields = node.fields as any
+        if (fields?.blockType === 'keyValue') {
+          const rows = fields.rows as Array<{ key: string; value: string; id?: string }>
+          if (!rows || rows.length === 0) return null
+          return (
+            <div key={key} className="lore-kv-table-wrapper">
+              <table className="lore-kv-table">
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="lore-kv-key">{row.key}</td>
+                      <td className="lore-kv-value">{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+        return null
+      }
+
       case 'link': {
         const fields = node.fields as Record<string, unknown> | undefined
         const newTab = fields?.newTab

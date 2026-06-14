@@ -659,3 +659,46 @@
     padding-block: 2rem 1.5rem;
   }
 }
+
+
+/* ── Key/Value Table Block ── */
+.lore-kv-table-wrapper {
+  margin: 2rem 0;
+  border: 1px solid var(--ss-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ss-card-bg, rgba(255, 255, 255, 0.03));
+}
+
+.lore-kv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.lore-kv-table tr:not(:last-child) {
+  border-bottom: 1px solid var(--ss-border, rgba(255, 255, 255, 0.1));
+}
+
+.lore-kv-table td {
+  padding: 0.75rem 1rem;
+  vertical-align: top;
+}
+
+.lore-kv-key {
+  width: 30%;
+  font-weight: 600;
+  color: var(--ss-text-dim, rgba(255, 255, 255, 0.6));
+  background: rgba(255, 255, 255, 0.02);
+  border-right: 1px solid var(--ss-border, rgba(255, 255, 255, 0.1));
+}
+
+.lore-kv-value {
+  color: var(--ss-text, #fff);
+}
+
+@media (max-width: 600px) {
+  .lore-kv-key {
+    width: 40%;
+  }
+}
