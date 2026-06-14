@@ -5,7 +5,6 @@ import {
   HorizontalRuleFeature,
   InlineCodeFeature,
   ItalicFeature,
-  LexicalEditor,
   LinkFeature,
   OrderedListFeature,
   ParagraphFeature,
