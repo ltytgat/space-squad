@@ -9,6 +9,7 @@ import { LexicalRenderer } from '@/components/LexicalRenderer'
 import { LoreToc } from '@/components/LoreToc'
 import { extractHeadings } from '@/components/lexical-utils'
 import { CATEGORY_META, DEFAULT_CATEGORY } from '@/components/LoreClient'
+import { ImageZoom } from '@/components/ImageZoom'
 import type { Media } from '@/payload-types'
 import '../lore.css'
 
@@ -104,8 +105,7 @@ export default async function LoreArticlePage({
 
           {cover?.url && (
             <div className="lore-article-cover">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ImageZoom
                 src={cover.url}
                 alt={cover.alt ?? article.title}
                 className="lore-article-cover-img"

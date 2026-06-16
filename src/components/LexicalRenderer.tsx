@@ -1,6 +1,7 @@
 import React from 'react'
 import { slugifyHeading, extractNodeText, type LexicalNode } from './lexical-utils'
 import type { Media } from '@/payload-types'
+import { ImageZoom } from './ImageZoom'
 
 type LexicalContent = {
   root: LexicalNode
@@ -92,8 +93,7 @@ function createRenderer(nextId: (base: string) => string) {
         const media = node.value as Media | null | undefined
         if (!media?.url) return null
         return (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <ImageZoom
             key={key}
             src={media.url}
             alt={media.alt ?? ''}
