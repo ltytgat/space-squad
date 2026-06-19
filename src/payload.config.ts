@@ -1,12 +1,21 @@
 import {postgresAdapter} from '@payloadcms/db-postgres'
 import {
+  FixedToolbarFeature,
+  HeadingFeature,
+  HorizontalRuleFeature,
+  InlineCodeFeature,
+  ItalicFeature,
+  LinkFeature,
+  OrderedListFeature,
+  ParagraphFeature,
   lexicalEditor,
   BlocksFeature,
+  BoldFeature,
+  UnorderedListFeature,
 } from '@payloadcms/richtext-lexical'
 import { KeyValueBlock } from './blocks/KeyValueBlock'
 import path from 'path'
 import {buildConfig} from 'payload'
-import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import {fileURLToPath} from 'url'
 import sharp from 'sharp'
 import {s3Storage} from '@payloadcms/storage-s3'
@@ -37,20 +46,6 @@ export default buildConfig({
         },
     },
     collections: [Users, Media, Pages, LoreArticles, Groups, Ships, Weapons, Armors, ArmorSets, Characters, Mods, Consumables, Chips],
-    email: nodemailerAdapter({
-        defaultFromAddress: process.env.SMTP_USER || 'rpgspacesquad@gmail.com',
-        defaultFromName: 'Space Squad',
-        transportOptions: {
-            service: "gmail",
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-            secure: false,
-        },
-    }),
     editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
             ...defaultFeatures,

@@ -8,9 +8,6 @@ export function SiteFooter() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.svg" alt="Space Squad" className="ss-footer-logo-img" />
         </div>
-        <nav className="ss-footer-nav">
-          <a href="/contact" className="ss-footer-link">Contact</a>
-        </nav>
         <p className="ss-footer-legal">
           © {new Date().getFullYear()} Space Squad — Marque déposée. Tous droits réservés.
         </p>
