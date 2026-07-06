@@ -1,17 +1,7 @@
 import {postgresAdapter} from '@payloadcms/db-postgres'
 import {
-  FixedToolbarFeature,
-  HeadingFeature,
-  HorizontalRuleFeature,
-  InlineCodeFeature,
-  ItalicFeature,
-  LinkFeature,
-  OrderedListFeature,
-  ParagraphFeature,
   lexicalEditor,
   BlocksFeature,
-  BoldFeature,
-  UnorderedListFeature,
 } from '@payloadcms/richtext-lexical'
 import { KeyValueBlock } from './blocks/KeyValueBlock'
 import path from 'path'
