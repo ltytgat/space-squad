@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { LoreArticle } from '@/payload-types'
 
 export const CATEGORY_META: Record<
-  LoreArticle['category'],
+  string,
   { label: string; icon: string }
 > = {
   chronologies:           { label: 'Chronologies',         icon: '📅' },
@@ -18,7 +17,7 @@ export const CATEGORY_META: Record<
 
 export const DEFAULT_CATEGORY = { label: 'Général', icon: '📁' }
 
-const CATEGORY_ORDER: LoreArticle['category'][] = [
+const CATEGORY_ORDER: string[] = [
   'chronologies',
   'especes-non-humaines',
   'politique',
@@ -28,7 +27,13 @@ const CATEGORY_ORDER: LoreArticle['category'][] = [
   'stardash',
 ]
 
-type ArticlePreview = Pick<LoreArticle, 'id' | 'title' | 'slug' | 'category' | 'excerpt'>
+type ArticlePreview = {
+  id: number | string
+  title: string
+  slug?: string | null
+  category: string
+  excerpt?: string | null
+}
 
 export function LoreClient({
   articles,
@@ -37,8 +42,8 @@ export function LoreClient({
   articles: ArticlePreview[]
   initialCategory?: string | null
 }) {
-  const [category, setCategory] = useState<LoreArticle['category'] | null>(
-    (initialCategory as LoreArticle['category']) ?? null,
+  const [category, setCategory] = useState<string | null>(
+    initialCategory ?? null,
   )
   const [search, setSearch] = useState('')
 

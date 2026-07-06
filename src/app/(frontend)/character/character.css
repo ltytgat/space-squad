@@ -1098,21 +1098,167 @@
 
 /* ── Compétences ── */
 
+.char-skill-points-header {
+  font-family: var(--ss-font-mono);
+  font-size: 0.85rem;
+  color: var(--ss-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.3rem 0.8rem;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  strong {
+    color: var(--ss-cyan);
+  }
+}
+
 .char-skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
 }
 
 .char-skill-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--ss-radius);
+  gap: 0.75rem;
+  transition: all 0.2s var(--ss-ease);
+}
+
+.char-skill-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.char-skill-plus {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: var(--ss-cyan);
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: var(--ss-font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s var(--ss-ease);
+
+  &:hover:not(:disabled) {
+    background: var(--ss-cyan);
+    color: var(--ss-bg);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+}
+
+.char-skill-learn-new {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--ss-radius);
+  color: var(--ss-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ss-ease);
+
+  &:hover {
+    background: rgba(0, 212, 255, 0.05);
+    border-color: var(--ss-cyan);
+    color: var(--ss-cyan);
+  }
+}
+
+.char-skill-learn-select {
+  grid-column: 1 / -1;
+  display: flex;
   gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid var(--ss-cyan);
+  border-radius: var(--ss-radius);
+
+  select {
+    flex: 1;
+    background: var(--ss-bg-alt);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--ss-text);
+    padding: 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+
+  button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--ss-text-muted);
+    padding: 0 1rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--ss-text);
+    }
+  }
+}
+
+/* ── Barre d'édition (Sticky bottom) ── */
+
+.char-edit-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 15, 20, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 2px solid var(--ss-cyan);
+  padding-block: 1rem;
+  z-index: 100;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  animation: slide-up 0.3s var(--ss-ease-out);
+
+  .ss-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  span {
+    font-family: var(--ss-font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ss-cyan);
+  }
+}
+
+.char-edit-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Status is-editing on root */
+.char-root.is-editing {
+  padding-bottom: 80px; /* Space for the bar */
 }
 
 .char-skill-special {
