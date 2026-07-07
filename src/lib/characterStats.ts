@@ -443,7 +443,7 @@ export function calculateStats(character: any) {
   ]
 
   statsKeys.forEach(([key, label, base, malus]: any) => {
-    const components = [
+    const components: { label: string; value: any; source?: string; sub?: string }[] = [
       { label: "Base", value: base || 0 }
     ]
     if (bonusSources[key]) {
