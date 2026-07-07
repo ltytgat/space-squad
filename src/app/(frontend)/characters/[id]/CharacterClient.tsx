@@ -33,6 +33,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const [isModified, setIsModified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showLearnNewSkill, setShowLearnNewSkill] = useState(false)
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
+  const [hoveredItem, setHoveredItem] = useState<{item: any, type: string, mods?: any[], x: number, y: number} | null>(null)
 
   // Statistiques calculées en temps réel
   const stats = useMemo(() => calculateStats(character), [character])
@@ -131,94 +133,79 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const learnedSkills = character.competences?.map((c: any) => c.competence) ?? []
   const availableSkills = allBaseSkills.filter(s => !learnedSkills.includes(s))
 
+  // Données d'inventaire filtrées (ne pas afficher ce qui est équipé)
+  const inventoryData = useMemo(() => {
+    const equippedArmorIds = [
+      character.armureTete?.item?.id || character.armureTete?.id || character.armureTete,
+      character.armureTorse?.item?.id || character.armureTorse?.id || character.armureTorse,
+      character.armureBras?.item?.id || character.armureBras?.id || character.armureBras,
+      character.armureJambes?.item?.id || character.armureJambes?.id || character.armureJambes,
+      character.armureBackpack?.item?.id || character.armureBackpack?.id || character.armureBackpack,
+    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
+
+    const equippedWeaponIds = [
+      character.armePrincipale?.item?.id || character.armePrincipale?.id || character.armePrincipale,
+      character.armeSecondaire?.item?.id || character.armeSecondaire?.id || character.armeSecondaire,
+      character.armeLourde?.item?.id || character.armeLourde?.id || character.armeLourde,
+      character.armeDeMelee?.item?.id || character.armeDeMelee?.id || character.armeDeMelee,
+    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
+
+    const equippedConsumableIds = [
+      character.consommableEquipe1?.id || character.consommableEquipe1,
+      character.consommableEquipe2?.id || character.consommableEquipe2,
+      character.consommableEquipe3?.id || character.consommableEquipe3,
+    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
+    
+    const equippedChipIds = [
+      character.puceMk1?.id || character.puceMk1,
+      character.puceMk2?.id || character.puceMk2,
+      character.puceMk3?.id || character.puceMk3,
+    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
+
+    const weapons = (character.inventaireArmes || []).filter((w: any) => {
+      const itemId = typeof w.item === 'object' ? w.item?.id : w.item
+      return !equippedWeaponIds.includes(String(itemId))
+    })
+    const armors = (character.inventaireArmures || []).filter((a: any) => {
+      const itemId = typeof a.item === 'object' ? a.item?.id : a.item
+      return !equippedArmorIds.includes(String(itemId))
+    })
+    const puces = (character.inventairePuces || []).filter((p: any) => !equippedChipIds.includes(String(p.id || p)))
+    const consumables = (character.inventaire || []).filter((c: any) => {
+      const item = c.consommable
+      const itemId = typeof item === 'object' ? item.id : item
+      return !equippedConsumableIds.includes(String(itemId))
+    })
+    const mods = character.inventaireMods || []
+
+    return [
+      { id: 'weapons', label: 'Armes', items: weapons },
+      { id: 'armors', label: 'Armures', items: armors },
+      { id: 'mods', label: 'Mods', items: mods },
+      { id: 'chips', label: 'Puces', items: puces },
+      { id: 'consumables', label: 'Consommables', items: consumables },
+    ].filter(cat => cat.items.length > 0)
+  }, [character])
+
   // Valeur de stockage pour les consommables équipés
   const backpackItem = character.armureBackpack?.item || character.armureBackpack
   const storageValue = (typeof backpackItem === 'object' ? backpackItem?.stockage : 0) || 0
 
-  // Helper rendu armure
-  const renderArmorSlot = (label: string, armor: any, mods: any[] = []) => {
-    const armorPiece = armor?.item || armor
-    const isEquipped = !!armorPiece && typeof armorPiece !== 'string'
-    
-    const structuredMods = getStructuredMods(mods)
-    const bonusPhysique = structuredMods['armure_physique'] || 0
-    const bonusBouclier = structuredMods['armure_bouclier'] || 0
-    const bonusRupture = structuredMods['armure_rupture'] || 0
-
-    let setInfo = null
-    if (isEquipped && armorPiece.set) {
-      const sId = typeof armorPiece.set === 'object' ? armorPiece.set.id : armorPiece.set
-      const info = stats.setsMap.get(sId)
-      if (info) setInfo = { name: info.set.nom, count: info.count }
-    }
-
+  // Helper image
+  const renderItemImage = (item: any) => {
+    const img = item.image
+    if (!img) return null
+    const url = typeof img === 'object' ? img.url : img
+    if (!url) return null
     return (
-      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
-        <span className="char-equip-slot-label">{label}</span>
-        {isEquipped ? (
-          <div className="char-equip-item">
-            <span className="char-equip-item-name">{armorPiece.nom}</span>
-            <div className="char-equip-item-stats">
-              {armorPiece.valeurArmurePhysique != null && (
-                <span title="Armure physique" className="stats-physique">
-                  🛡 {armorPiece.valeurArmurePhysique + bonusPhysique}
-                </span>
-              )}
-              {armorPiece.valeurBouclier != null && (
-                <span title="Bouclier" className="stats-bouclier">
-                  ⚡ {armorPiece.valeurBouclier + bonusBouclier}
-                </span>
-              )}
-              {armorPiece.valeurRupture != null && (
-                <span title="Rupture" className="stats-rupture">
-                  💥 1 à {Math.max(0, armorPiece.valeurRupture + bonusRupture)}
-                </span>
-              )}
-            </div>
-            {armorPiece.modificateur && <div className="char-equip-item-mod-base">Mod: {armorPiece.modificateur}</div>}
-            {mods.length > 0 && (
-              <div className="char-equip-item-mods-list">
-                {mods.map((m: any) => (
-                  <div key={m.id} className="char-equip-mod-item" title={m.effet}>
-                    🔧 {m.nom}
-                  </div>
-                ))}
-              </div>
-            )}
-            {setInfo && (
-              <div className={`char-equip-item-set-progression ${setInfo.count >= 4 ? 'set-complete' : ''}`}>
-                {setInfo.name} ({setInfo.count}/4)
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="char-equip-empty">
-            <span className="char-equip-empty-icon">🛡️</span>
-            <span className="char-equip-empty-text">Non équipé</span>
-          </div>
-        )}
+      <div className="char-item-image">
+        <img src={url} alt={item.nom} />
       </div>
     )
   }
 
-  // Helper rendu arme
-  const renderWeaponSlot = (label: string, weaponGroup: any) => {
-    const weapon = weaponGroup?.item
-    const mods = weaponGroup?.mods || []
-    const isEquipped = !!weapon && typeof weapon !== 'string'
-    
-    if (!isEquipped) {
-      return (
-        <div className="char-equip-slot char-equip-slot-empty">
-          <span className="char-equip-slot-label">{label}</span>
-          <div className="char-equip-empty">
-            <span className="char-equip-empty-icon">🔫</span>
-            <span className="char-equip-empty-text">Non équipé</span>
-          </div>
-        </div>
-      )
-    }
-
+  // Contenu détaillé d'une arme
+  const renderWeaponInner = (weapon: any, mods: any[] = []) => {
     const isMelee = weapon.categorie === 'melee'
     const isHeavy = weapon.categorie === 'lourde'
     const isSniper = weapon.categorie === 'sniper'
@@ -315,42 +302,171 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const finalChargeur = Math.ceil((weapon.tailleChargeur ?? 0) * (1 + bonusChargeurPct / 100)) + bonusChargeur
 
     return (
-      <div className="char-equip-slot">
-        <span className="char-equip-slot-label">{label}</span>
-        <div className="char-equip-item">
-          <span className="char-equip-item-name">{weapon.nom}</span>
-          <div className="char-equip-item-stats">
-            {damageData && (
-              <div className="weapon-damage-block">
-                <div className={`weapon-damage-badge ${damageColorClass}`}>
-                  <span className="weapon-damage-icon">⚔️</span>
-                  <span className="weapon-damage-value">{damageData.display}</span>
-                </div>
-                {!isPlasma && (
-                  <div className="weapon-damage-details">
-                    <div className="damage-stat"><span className="damage-stat-label">MIN</span><span className="damage-stat-val">{damageData.min}</span></div>
-                    <div className="damage-stat highlight"><span className="damage-stat-label">MOY</span><span className="damage-stat-val">{damageData.avg}</span></div>
-                    {damageData.max !== null && <div className="damage-stat"><span className="damage-stat-label">MAX</span><span className="damage-stat-val">{damageData.max}</span></div>}
-                  </div>
-                )}
+      <div className="char-equip-item">
+        {renderItemImage(weapon)}
+        <span className="char-equip-item-name">{weapon.nom}</span>
+        <div className="char-equip-item-stats">
+          {damageData && (
+            <div className="weapon-damage-block">
+              <div className={`weapon-damage-badge ${damageColorClass}`}>
+                <span className="weapon-damage-icon">⚔️</span>
+                <span className="weapon-damage-value">{damageData.display}</span>
               </div>
-            )}
-            <div className="weapon-utility-stats">
-              {weapon.tailleChargeur != null && <div className="weapon-util-item" title="Chargeur"><span className="util-icon">📦</span><span className="util-value">{finalChargeur}</span></div>}
-              {showProjectiles && <div className="weapon-util-item" title="Projectiles/tir"><span className="util-icon">×</span><span className="util-value">{totalProjectiles}</span></div>}
-              {weapon.tempsRechargement != null && <div className="weapon-util-item" title="Rechargement"><span className="util-icon">🔄</span><span className="util-value">{weapon.tempsRechargement}t</span></div>}
-              {weapon.poids != null && <div className="weapon-util-item" title="Poids"><span className="util-icon">⚖️</span><span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span></div>}
-              {isThermique && weapon.valeurChauffe != null && <div className="weapon-util-item" title="Valeur de chauffe"><span className="util-icon">🔥</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
-              {isThermique && weapon.tempsRefroidissement != null && <div className="weapon-util-item" title="Refroidissement"><span className="util-icon">❄️</span><span className="util-value">{Math.round(weapon.tempsRefroidissement * (1 + (structuredMods['refroidissement_pct'] || 0) / 100))}%</span></div>}
-            </div>
-          </div>
-          {renderRangeTable()}
-          {mods.length > 0 && (
-            <div className="char-equip-item-mods-list">
-              {mods.map((m: any) => <div key={m.id} className="char-equip-mod-item" title={m.effet}>🔧 {m.nom}</div>)}
+              {!isPlasma && (
+                <div className="weapon-damage-details">
+                  <div className="damage-stat"><span className="damage-stat-label">MIN</span><span className="damage-stat-val">{damageData.min}</span></div>
+                  <div className="damage-stat highlight"><span className="damage-stat-label">MOY</span><span className="damage-stat-val">{damageData.avg}</span></div>
+                  {damageData.max !== null && <div className="damage-stat"><span className="damage-stat-label">MAX</span><span className="damage-stat-val">{damageData.max}</span></div>}
+                </div>
+              )}
             </div>
           )}
+          <div className="weapon-utility-stats">
+            {weapon.tailleChargeur != null && <div className="weapon-util-item" title="Chargeur"><span className="util-icon">📦</span><span className="util-value">{finalChargeur}</span></div>}
+            {showProjectiles && <div className="weapon-util-item" title="Projectiles/tir"><span className="util-icon">×</span><span className="util-value">{totalProjectiles}</span></div>}
+            {weapon.tempsRechargement != null && <div className="weapon-util-item" title="Rechargement"><span className="util-icon">🔄</span><span className="util-value">{weapon.tempsRechargement}t</span></div>}
+            {weapon.poids != null && <div className="weapon-util-item" title="Poids"><span className="util-icon">⚖️</span><span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span></div>}
+            {isThermique && weapon.valeurChauffe != null && <div className="weapon-util-item" title="Valeur de chauffe"><span className="util-icon">🔥</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
+            {isThermique && weapon.tempsRefroidissement != null && <div className="weapon-util-item" title="Refroidissement"><span className="util-icon">❄️</span><span className="util-value">{Math.round(weapon.tempsRefroidissement * (1 + (structuredMods['refroidissement_pct'] || 0) / 100))}%</span></div>}
+          </div>
         </div>
+        {renderRangeTable()}
+        {mods.length > 0 && (
+          <div className="char-equip-item-mods-list">
+            {mods.map((m: any) => <div key={m.id} className="char-equip-mod-item" title={m.effet}>🔧 {m.nom}</div>)}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Contenu détaillé d'une armure
+  const renderArmorInner = (armorPiece: any, mods: any[] = []) => {
+    const structuredMods = getStructuredMods(mods)
+    const bonusPhysique = structuredMods['armure_physique'] || 0
+    const bonusBouclier = structuredMods['armure_bouclier'] || 0
+    const bonusRupture = structuredMods['armure_rupture'] || 0
+
+    let setInfo = null
+    if (armorPiece.set) {
+      const sId = typeof armorPiece.set === 'object' ? armorPiece.set.id : armorPiece.set
+      const info = stats.setsMap.get(sId)
+      if (info) setInfo = { name: info.set.nom, count: info.count }
+    }
+
+    return (
+      <div className="char-equip-item">
+        {renderItemImage(armorPiece)}
+        <span className="char-equip-item-name">{armorPiece.nom}</span>
+        <div className="char-equip-item-stats">
+          {armorPiece.valeurArmurePhysique != null && (
+            <span title="Armure physique" className="stats-physique">
+              🛡️ {armorPiece.valeurArmurePhysique + bonusPhysique}
+            </span>
+          )}
+          {armorPiece.valeurBouclier != null && (
+            <span title="Bouclier" className="stats-bouclier">
+              ⚡ {armorPiece.valeurBouclier + bonusBouclier}
+            </span>
+          )}
+          {armorPiece.valeurRupture != null && (
+            <span title="Rupture" className="stats-rupture">
+              💥 1 à {Math.max(0, armorPiece.valeurRupture + bonusRupture)}
+            </span>
+          )}
+        </div>
+        {armorPiece.modificateur && <div className="char-equip-item-mod-base">Mod: {armorPiece.modificateur}</div>}
+        {mods.length > 0 && (
+          <div className="char-equip-item-mods-list">
+            {mods.map((m: any) => (
+              <div key={m.id} className="char-equip-mod-item" title={m.effet}>
+                🔧 {m.nom}
+              </div>
+            ))}
+          </div>
+        )}
+        {setInfo && (
+          <div className={`char-equip-item-set-progression ${setInfo.count >= 4 ? 'set-complete' : ''}`}>
+            {setInfo.name} ({setInfo.count}/4)
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Contenu détaillé d'un mod
+  const renderModInner = (mod: any) => (
+    <div className="char-equip-item">
+      <span className="char-equip-item-name">{mod.nom}</span>
+      <div className="char-equip-item-mod-base">Effet: {mod.effet}</div>
+    </div>
+  )
+
+  // Contenu détaillé d'une puce
+  const renderChipInner = (chip: any) => (
+    <div className="char-equip-item">
+      <span className="char-equip-item-name">{chip.nom}</span>
+      <div className="char-equip-item-stats">
+        <span className="ss-tag">{chip.categorie}</span>
+      </div>
+      <div className="char-equip-item-mod-base">{chip.effet}</div>
+      {chip.cooldown && <div className="char-equip-item-mod-base">Cooldown: {chip.cooldown}t</div>}
+    </div>
+  )
+
+  // Contenu détaillé d'un consommable
+  const renderConsumableInner = (item: any) => (
+    <div className="char-equip-item">
+      {renderItemImage(item)}
+      <span className="char-equip-item-name">{item.nom}</span>
+      <div className="char-equip-item-stats">
+        <span className="ss-tag">{item.categorie}</span>
+      </div>
+      {item.effet && <div className="char-equip-item-mod-base">{item.effet}</div>}
+      {item.epreuve && <div className="char-equip-item-mod-base">Épreuve: {item.epreuve} ({ (item.modificateurEpreuve ?? 0) >= 0 ? '+' : '' }{item.modificateurEpreuve ?? 0})</div>}
+    </div>
+  )
+
+  // Helper rendu armure
+  const renderArmorSlot = (label: string, armor: any, mods: any[] = []) => {
+    const armorPiece = armor?.item || armor
+    const isEquipped = !!armorPiece && typeof armorPiece !== 'string'
+    
+    return (
+      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
+        <span className="char-equip-slot-label">{label}</span>
+        {isEquipped ? renderArmorInner(armorPiece, mods) : (
+          <div className="char-equip-empty">
+            <span className="char-equip-empty-icon">🛡️</span>
+            <span className="char-equip-empty-text">Non équipé</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Helper rendu arme
+  const renderWeaponSlot = (label: string, weaponGroup: any) => {
+    const weapon = weaponGroup?.item
+    const mods = weaponGroup?.mods || []
+    const isEquipped = !!weapon && typeof weapon !== 'string'
+    
+    if (!isEquipped) {
+      return (
+        <div className="char-equip-slot char-equip-slot-empty">
+          <span className="char-equip-slot-label">{label}</span>
+          <div className="char-equip-empty">
+            <span className="char-equip-empty-icon">🔫</span>
+            <span className="char-equip-empty-text">Non équipé</span>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="char-equip-slot">
+        <span className="char-equip-slot-label">{label}</span>
+        {renderWeaponInner(weapon, mods)}
       </div>
     )
   }
@@ -362,15 +478,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     return (
       <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
         <span className="char-equip-slot-label">{label}</span>
-        {isEquipped ? (
-          <div className="char-equip-item">
-            <span className="char-equip-item-name">{item.nom}</span>
-            <div className="char-equip-item-stats">
-              <span className="ss-tag">{item.categorie}</span>
-            </div>
-            {item.effet && <div className="char-equip-item-mod-base">{item.effet}</div>}
-          </div>
-        ) : (
+        {isEquipped ? renderConsumableInner(item) : (
           <div className="char-equip-empty">
             <span className="char-equip-empty-icon">🧪</span>
             <span className="char-equip-empty-text">Vide</span>
@@ -378,6 +486,40 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         )}
       </div>
     )
+  }
+
+  const handleMouseEnter = (e: React.MouseEvent, itemObj: any, type: string) => {
+    let item = itemObj
+    let mods: any[] = []
+    
+    if (type === 'weapons' || type === 'armors') {
+      item = itemObj.item
+      mods = itemObj.mods || []
+    } else if (type === 'consumables') {
+      item = itemObj.consommable
+    }
+
+    setHoveredItem({
+      item,
+      type,
+      mods,
+      x: e.clientX,
+      y: e.clientY
+    })
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (hoveredItem) {
+      setHoveredItem({ ...hoveredItem, x: e.clientX, y: e.clientY })
+    }
+  }
+
+  const handleMouseLeave = () => {
+    setHoveredItem(null)
+  }
+
+  const toggleCategory = (catId: string) => {
+    setCollapsedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
   }
 
   return (
@@ -579,6 +721,74 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             </div>
           </div>
 
+          {/* ── Section Inventaire ── */}
+          <div className="char-card">
+            <h2 className="char-card-title">Inventaire (Possessions)</h2>
+            {inventoryData.length === 0 ? (
+              <p className="char-empty-hint">L'inventaire est vide.</p>
+            ) : (
+              <div className="char-inventory-categories">
+                {inventoryData.map(cat => (
+                  <div key={cat.id} className="char-inventory-category">
+                    <button 
+                      className="char-inventory-category-header"
+                      onClick={() => toggleCategory(cat.id)}
+                    >
+                      <span className="char-inventory-category-title">{cat.label} ({cat.items.length})</span>
+                      <span className="char-inventory-category-icon">{collapsedCategories[cat.id] ? '▶' : '▼'}</span>
+                    </button>
+                    
+                    {!collapsedCategories[cat.id] && (
+                      <div className="char-inventory-list">
+                        <table className="char-inventory-table">
+                          <thead>
+                            <tr>
+                              <th>Nom</th>
+                              <th>Détails</th>
+                              {cat.id === 'consumables' && <th>Qté</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cat.items.map((itemObj: any, idx: number) => {
+                              const item = (cat.id === 'consumables') ? itemObj.consommable : (itemObj.item || itemObj)
+                              let subLabel = ""
+                              
+                              if (cat.id === 'weapons') {
+                                subLabel = item.categorie || ""
+                              } else if (cat.id === 'armors') {
+                                subLabel = item.categorie || ""
+                              } else if (cat.id === 'chips') {
+                                subLabel = item.categorie || ""
+                              } else if (cat.id === 'mods') {
+                                subLabel = item.categoriePrincipale || ""
+                              } else if (cat.id === 'consumables') {
+                                subLabel = item.categorie || ""
+                              }
+
+                              return (
+                                <tr 
+                                  key={idx} 
+                                  className="char-inventory-row-hoverable"
+                                  onMouseEnter={(e) => handleMouseEnter(e, itemObj, cat.id)}
+                                  onMouseMove={handleMouseMove}
+                                  onMouseLeave={handleMouseLeave}
+                                >
+                                  <td><strong>{item.nom}</strong></td>
+                                  <td>{subLabel}</td>
+                                  {cat.id === 'consumables' && <td>{itemObj.quantite}</td>}
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
@@ -592,6 +802,25 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               <button className="ss-button primary" onClick={handleSave} disabled={isSaving}>{isSaving ? 'Enregistrement...' : 'Valider'}</button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Tooltip d'inventaire */}
+      {hoveredItem && (
+        <div 
+          className="char-inventory-tooltip"
+          style={{ 
+            left: hoveredItem.x + 15, 
+            top: hoveredItem.y + 15,
+            position: 'fixed',
+            zIndex: 1000,
+            pointerEvents: 'none'
+          }}
+        >
+          {hoveredItem.type === 'weapons' && renderWeaponInner(hoveredItem.item, hoveredItem.mods)}
+          {hoveredItem.type === 'armors' && renderArmorInner(hoveredItem.item, hoveredItem.mods)}
+          {hoveredItem.type === 'chips' && renderChipInner(hoveredItem.item)}
+          {hoveredItem.type === 'consumables' && renderConsumableInner(hoveredItem.item)}
+          {hoveredItem.type === 'mods' && renderModInner(hoveredItem.item)}
         </div>
       )}
     </div>

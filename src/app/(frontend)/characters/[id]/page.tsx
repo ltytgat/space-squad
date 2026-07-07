@@ -66,6 +66,15 @@ type Consumable = {
   prix?: number
 }
 
+type Chip = {
+  id: number
+  nom: string
+  categorie: 'active' | 'passive'
+  effet: string
+  restriction?: string
+  cooldown?: number
+}
+
 type Ship = { id: number; nom: string; classe?: string; modele?: string }
 type Group = { id: number; nom: string }
 
@@ -111,6 +120,10 @@ type Character = {
   groupe?: Group | string | null
   competences?: { competence: string; valeur: number; id?: string }[]
   competencesSpeciales?: { nom: string; valeur: number; id?: string }[]
+  inventaireArmes?: { item: Weapon | number; mods?: (Mod | number)[] | null }[] | null
+  inventaireArmures?: { item: Armor | number; mods?: (Mod | number)[] | null }[] | null
+  inventaireMods?: (Mod | number)[] | null
+  inventairePuces?: (Chip | number)[] | null
   inventaire?: { consommable: Consumable | number; quantite: number; id?: string }[]
 }
 // ── Sous-composants ──────────────────────────────────────────────────────────

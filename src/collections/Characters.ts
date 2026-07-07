@@ -597,34 +597,106 @@ export const Characters: CollectionConfig = {
       ],
     },
 
-    // ── Inventaire (Consommables) ─────────────────────
+    // ── Inventaire Global (Possessions) ───────────────
     {
-      name: 'inventaire',
-      type: 'array',
-      label: 'Inventaire',
-      admin: {
-        description: 'Liste des consommables possédés par le personnage.',
-      },
+      type: 'collapsible',
+      label: 'Inventaire Global (Possessions)',
       fields: [
         {
-          type: 'row',
+          name: 'inventaireArmes',
+          type: 'array',
+          label: 'Armes en réserve',
           fields: [
             {
-              name: 'consommable',
-              type: 'relationship',
-              relationTo: 'consumables',
-              label: 'Consommable',
-              required: true,
-              admin: { width: '70%' },
+              type: 'row',
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'weapons',
+                  required: true,
+                  admin: { width: '50%' },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  admin: { width: '50%' },
+                },
+              ],
             },
+          ],
+        },
+        {
+          name: 'inventaireArmures',
+          type: 'array',
+          label: 'Armures en réserve',
+          fields: [
             {
-              name: 'quantite',
-              type: 'number',
-              label: 'Quantité',
-              required: true,
-              defaultValue: 1,
-              min: 1,
-              admin: { width: '30%' },
+              type: 'row',
+              fields: [
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'armors',
+                  required: true,
+                  admin: { width: '50%' },
+                },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  admin: { width: '50%' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'inventaireMods',
+          type: 'relationship',
+          relationTo: 'mods',
+          hasMany: true,
+          label: 'Mods en réserve',
+        },
+        {
+          name: 'inventairePuces',
+          type: 'relationship',
+          relationTo: 'chips',
+          hasMany: true,
+          label: 'Puces en réserve',
+        },
+        {
+          name: 'inventaire',
+          type: 'array',
+          label: 'Consommables (Réserve / Sac)',
+          admin: {
+            description: 'Liste des consommables possédés par le personnage.',
+          },
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'consommable',
+                  type: 'relationship',
+                  relationTo: 'consumables',
+                  label: 'Consommable',
+                  required: true,
+                  admin: { width: '70%' },
+                },
+                {
+                  name: 'quantite',
+                  type: 'number',
+                  label: 'Quantité',
+                  required: true,
+                  defaultValue: 1,
+                  min: 1,
+                  admin: { width: '30%' },
+                },
+              ],
             },
           ],
         },

@@ -570,6 +570,22 @@ export interface Character {
   puceMk3?: (number | null) | Chip;
   vaisseau?: (number | null) | Ship;
   roleVaisseau?: ('proprietaire' | 'passager') | null;
+  inventaireArmes?:
+    | {
+        item: number | Weapon;
+        mods?: (number | Mod)[] | null;
+        id?: string | null;
+      }[]
+    | null;
+  inventaireArmures?:
+    | {
+        item: number | Armor;
+        mods?: (number | Mod)[] | null;
+        id?: string | null;
+      }[]
+    | null;
+  inventaireMods?: (number | Mod)[] | null;
+  inventairePuces?: (number | Chip)[] | null;
   /**
    * Liste des consommables possédés par le personnage.
    */
@@ -1032,6 +1048,22 @@ export interface CharactersSelect<T extends boolean = true> {
   puceMk3?: T;
   vaisseau?: T;
   roleVaisseau?: T;
+  inventaireArmes?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+        id?: T;
+      };
+  inventaireArmures?:
+    | T
+    | {
+        item?: T;
+        mods?: T;
+        id?: T;
+      };
+  inventaireMods?: T;
+  inventairePuces?: T;
   inventaire?:
     | T
     | {

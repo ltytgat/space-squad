@@ -1058,6 +1058,92 @@
 
 
 /* ── Inventaire ── */
+.char-inventory-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.char-inventory-category {
+  margin-bottom: 0.25rem;
+}
+
+.char-inventory-category-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--ss-radius);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.char-inventory-category-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.char-inventory-category-title {
+  font-family: var(--ss-font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ss-cyan);
+}
+
+.char-inventory-category-icon {
+  font-size: 0.6rem;
+  opacity: 0.5;
+}
+
+.char-inventory-row-hoverable:hover {
+  background: rgba(0, 212, 255, 0.05);
+  cursor: help;
+}
+
+.char-inventory-tooltip {
+  width: 320px;
+  background: #0a0e14;
+  background-image: radial-gradient(circle at top left, rgba(0, 212, 255, 0.05), transparent);
+  border: 1px solid var(--ss-cyan);
+  border-radius: var(--ss-radius);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 212, 255, 0.1);
+  padding: 1rem;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+.char-item-image {
+  width: 100%;
+  height: 140px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--ss-radius-sm);
+  margin-bottom: 0.8rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.char-item-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.2));
+}
+
+/* Ajustements pour les détails dans le tooltip */
+.char-inventory-tooltip .char-equip-item {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
 
 .char-inventory-list {
   overflow-x: auto;
