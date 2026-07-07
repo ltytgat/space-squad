@@ -160,6 +160,15 @@ export function getBridgedArmorStats(armor: Armor, mods: Mod[]) {
 export function calculateStats(character: any) {
   const rankInfo = computeRank(character.pointsDeRang ?? 0)
 
+  const bonusSources: Record<string, { source: string; value: number }[]> = {}
+  const totalArmorMods: Record<string, number> = {}
+  const addBonus = (key: string, value: number, source: string) => {
+    if (!value) return
+    if (!bonusSources[key]) bonusSources[key] = []
+    bonusSources[key].push({ source, value })
+    totalArmorMods[key] = (totalArmorMods[key] || 0) + value
+  }
+
   const asArmor = (v: any): Armor | null => {
     if (!v) return null
     if (typeof v === 'object' && 'item' in v) {
@@ -202,7 +211,6 @@ export function calculateStats(character: any) {
   let totalPhysique = 0
   let totalBouclier = 0
   let totalArmorWeight = 0
-  const totalArmorMods: Record<string, number> = {}
 
   armorSlotsData.forEach(s => {
     const armor = asArmor(s)
@@ -214,20 +222,37 @@ export function calculateStats(character: any) {
       totalBouclier += bridged.bouclier
       totalArmorWeight += bridged.poids
 
-      // On ajoute les autres bonus (non bridés pour le moment sauf physique/bouclier/poids)
-      Object.entries(bridged.totalMods).forEach(([key, val]) => {
-        if (!['armure_physique', 'armure_bouclier', 'poids_armure'].includes(key)) {
-          totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+      // Collecte des sources de bonus pour les infobulles
+      mods.forEach(m => {
+        // Bonus du champ texte "effet"
+        const effects = parseModifier(m.effet)
+        Object.entries(effects).forEach(([k, v]) => addBonus(k, v, `Mod: ${m.nom} (${armor.nom})`))
+        
+        // Bonus des modificateurs structurés
+        if (m.modificateurs && Array.isArray(m.modificateurs)) {
+          const mapping: Record<string, string> = {
+            stat_force: 'force',
+            stat_habilite: 'habilite',
+            stat_connaissances: 'connaissances',
+            stat_culture: 'culture',
+            stat_anticipation: 'anticipation',
+            stat_perception: 'perception',
+          }
+          m.modificateurs.forEach(mod => {
+            const key = mapping[mod.cible] || mod.cible
+            if (!['armure_physique', 'armure_bouclier', 'armure_rupture', 'poids'].includes(mod.cible)) {
+              addBonus(key, mod.valeur, `Mod: ${m.nom} (${armor.nom})`)
+            }
+          })
         }
       })
       
       // Ajouter les modificateurs intrinsèques de l'armure (champ texte modificateur)
       const armorBaseMods = parseModifier(armor.modificateur)
       Object.entries(armorBaseMods).forEach(([key, val]) => {
-        if (key === 'armure_physique') totalPhysique += val
-        else if (key === 'armure_bouclier') totalBouclier += val
-        else if (key === 'poids_armure') totalArmorWeight -= val
-        else totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+        if (!['armure_physique', 'armure_bouclier', 'poids_armure'].includes(key)) {
+          addBonus(key, val, `Armure: ${armor.nom}`)
+        }
       })
     }
   })
@@ -249,6 +274,9 @@ export function calculateStats(character: any) {
   ]
   const structuredWeaponMods = getStructuredMods(weaponMods)
   const reductionPoidsArmes = structuredWeaponMods['poids'] || 0
+  if (reductionPoidsArmes) {
+    addBonus('poids_armes_reduction', reductionPoidsArmes, "Mods d'armes (allègement)")
+  }
   const totalWeaponWeightFinal = Math.max(0, totalWeaponWeight - reductionPoidsArmes)
 
   const armorPieces = [
@@ -274,7 +302,9 @@ export function calculateStats(character: any) {
     Object.entries(setMods).forEach(([key, val]) => {
       if (key === 'armure_physique') totalPhysique += val
       else if (key === 'armure_bouclier') totalBouclier += val
-      else totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+      else {
+        addBonus(key, val, `Set: ${s.set.nom}`)
+      }
     })
   })
 
@@ -365,6 +395,74 @@ export function calculateStats(character: any) {
   const bonusMouv = totalArmorMods['mouvement'] || 0
   const movement = Math.floor(xMouv - (totalArmorWeight - bf + totalWeaponWeightFinal) / 2 + bonusMouv)
 
+  // Construction du breakdown pour les infobulles
+  const breakdown: Record<string, any> = {
+    maxHP: {
+      label: "Blessures Max",
+      formula: "⌊(Base_Origine + Facteur * BF + BF * (Rang - 1)) / 3 + Bonus⌋",
+      components: [
+        { label: `Base (Origine: ${origin})`, value: hpBase },
+        { label: `Facteur (Origine: ${origin})`, value: hpFactor },
+        { label: "BF (Force)", value: bf },
+        { label: "Rang", value: rank },
+        { label: "Bonus Blessures", value: n, source: "Attribut personnage" }
+      ]
+    },
+    movement: {
+      label: "Mouvement",
+      formula: "⌊Base_Origine - (Poids_Armures - BF + Poids_Armes) / 2 + Bonus_Mouv⌋",
+      components: [
+        { label: `Base (Origine: ${origin})`, value: xMouv },
+        { label: "Poids Armures", value: totalArmorWeight, sub: "Poids cumulé des armures bridées" },
+        { label: "BF (Force)", value: bf },
+        { label: "Poids Armes", value: totalWeaponWeightFinal, sub: "Poids total - Allègement" },
+        { label: "Bonus Mouvement", value: bonusMouv }
+      ]
+    },
+    dodge: {
+      label: "Esquive (Découvert)",
+      formula: "15 + (BA * Rang / 2) - ((Poids_Armures - BF) / 2)",
+      components: [
+        { label: "Base fixe", value: 15 },
+        { label: "BA (Anticipation)", value: ba },
+        { label: "Rang", value: rank },
+        { label: "Poids Armures", value: totalArmorWeight },
+        { label: "BF (Force)", value: bf }
+      ]
+    }
+  }
+
+  // Ajout des caractéristiques au breakdown
+  const statsKeys = [
+    ['force', 'Force', character.force, character.malusForce],
+    ['habilite', 'Habilité', character.habilite, character.malusHabilite],
+    ['connaissances', 'Connaissances', character.connaissances, character.malusConnaissances],
+    ['culture', 'Culture', character.culture, character.malusCulture],
+    ['anticipation', 'Anticipation', character.anticipation, character.malusAnticipation],
+    ['perception', 'Perception', character.perception, character.malusPerception],
+  ]
+
+  statsKeys.forEach(([key, label, base, malus]: any) => {
+    const components = [
+      { label: "Base", value: base || 0 }
+    ]
+    if (bonusSources[key]) {
+      bonusSources[key].forEach(s => {
+        components.push({ label: s.source, value: s.value })
+      })
+    }
+    if (malus) {
+      components.push({ label: "Malus", value: -malus, source: "Attribut personnage" })
+    }
+
+    breakdown[key] = {
+      label,
+      formula: "Base + Σ(Bonus) - Malus",
+      dieFormula: "⌊(Total - 10) / 2⌋",
+      components
+    }
+  })
+
   return {
     rankInfo,
     totalPhysique: finalTotalPhysique,
@@ -383,6 +481,8 @@ export function calculateStats(character: any) {
     dodge,
     maxHP,
     movement,
-    setsMap
+    setsMap,
+    breakdown,
+    bonusSources
   }
 }

@@ -192,6 +192,32 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     )
   }
 
+  const renderStatTooltip = (data: any) => {
+    if (!data) return null
+    return (
+      <div className="char-stat-tooltip">
+        <div className="char-stat-tooltip-header">
+          <strong>Détail : {data.label}</strong>
+        </div>
+        <div className="char-stat-tooltip-formula">
+          <div className="char-stat-tooltip-section-title">Formule</div>
+          <code>{data.formula}</code>
+          {data.dieFormula && <div><code>Dés : {data.dieFormula}</code></div>}
+        </div>
+        <div className="char-stat-tooltip-components">
+          <div className="char-stat-tooltip-section-title">Composants</div>
+          {data.components.map((c: any, idx: number) => (
+            <div key={idx} className="char-stat-tooltip-component">
+              <span className="char-stat-tooltip-component-label">{c.label}</span>
+              <span className="char-stat-tooltip-component-value">{c.value >= 0 ? `+${c.value}` : c.value}</span>
+              {c.sub && <div className="char-stat-tooltip-component-sub">{c.sub}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   // Contenu détaillé d'une arme
   const renderWeaponInner = (weapon: any, mods: any[] = []) => {
     const isMelee = weapon.categorie === 'melee'
@@ -572,6 +598,17 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     })
   }
 
+  const handleStatMouseEnter = (e: React.MouseEvent, statKey: string) => {
+    const data = (stats as any).breakdown?.[statKey]
+    if (!data) return
+    setHoveredItem({
+      item: data,
+      type: 'stats',
+      x: e.clientX,
+      y: e.clientY
+    } as any)
+  }
+
   const handleMouseMove = (e: React.MouseEvent) => {
     setHoveredItem(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)
   }
@@ -847,17 +884,48 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                 <div className="char-dl-row"><dt>Konis</dt><dd>{character.konis || 0}</dd></div>
                 <div className="char-dl-row"><dt>Légende</dt><dd>{character.legende || 0}</dd></div>
                 <div className="char-dl-row char-hp-row">
-                  <dt>Blessures Max</dt>
+                  <dt 
+                    className="char-help-cursor"
+                    onMouseEnter={(e) => handleStatMouseEnter(e, 'maxHP')}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    Blessures Max
+                  </dt>
                   <dd><div className="char-stat-right">
                     {isAdmin && <MalusInput characterId={character.id} field="bonusPointsDeBlessures" initialValue={character.bonusPointsDeBlessures || 0} />}
                     <span className="char-hp-value">{stats.maxHP}</span>
                   </div></dd>
                 </div>
-                <div className="char-dl-row char-move-row"><dt>Mouvement</dt><dd><span className="char-move-value">{stats.movement} m</span></dd></div>
+                <div className="char-dl-row char-move-row">
+                  <dt 
+                    className="char-help-cursor"
+                    onMouseEnter={(e) => handleStatMouseEnter(e, 'movement')}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    Mouvement
+                  </dt>
+                  <dd><span className="char-move-value">{stats.movement} m</span></dd>
+                </div>
                 <div className="char-dodge-section">
                   <h3 className="char-dodge-title">Esquive</h3>
                   <table className="char-dodge-table">
-                    <thead><tr><th>Dépourvue</th><th className="char-dodge-base-header">Découvert</th><th>Protégé</th><th>Couvert</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Dépourvue</th>
+                        <th 
+                          className="char-dodge-base-header char-help-cursor"
+                          onMouseEnter={(e) => handleStatMouseEnter(e, 'dodge')}
+                          onMouseMove={handleMouseMove}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          Découvert
+                        </th>
+                        <th>Protégé</th>
+                        <th>Couvert</th>
+                      </tr>
+                    </thead>
                     <tbody><tr><td>{stats.dodge.depourvue}</td><td className="char-dodge-base">{stats.dodge.decouvert}</td><td>{stats.dodge.protege}</td><td>{stats.dodge.couvert}</td></tr></tbody>
                   </table>
                 </div>
@@ -883,7 +951,14 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   return (
                     <div key={label} className="char-stat-item">
                       <div className="char-stat-main">
-                        <span className="char-stat-label">{label}</span>
+                        <span 
+                          className="char-stat-label char-help-cursor"
+                          onMouseEnter={(e) => handleStatMouseEnter(e, key)}
+                          onMouseMove={handleMouseMove}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          {label}
+                        </span>
                         <div className="char-stat-right">
                           {isAdmin && <MalusInput characterId={character.id} field={`malus${key.charAt(0).toUpperCase()}${key.slice(1)}`} initialValue={currentMalus} />}
                           <span className="char-stat-value">{total} <span className="char-stat-die-mod">({dieModStr})</span></span>
@@ -1144,8 +1219,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         <div 
           className="char-inventory-tooltip"
           style={{ 
-            left: hoveredItem.x + 15, 
-            top: hoveredItem.y + 15,
+            left: (hoveredItem as any).x + 15, 
+            top: (hoveredItem as any).y + 15,
             position: 'fixed',
             zIndex: 1000,
             pointerEvents: 'none'
@@ -1156,6 +1231,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           {hoveredItem.type === 'chips' && renderChipInner(hoveredItem.item)}
           {hoveredItem.type === 'consumables' && renderConsumableInner(hoveredItem.item)}
           {hoveredItem.type === 'mods' && renderModInner(hoveredItem.item)}
+          {hoveredItem.type === 'stats' && renderStatTooltip(hoveredItem.item)}
         </div>
       )}
     </div>
