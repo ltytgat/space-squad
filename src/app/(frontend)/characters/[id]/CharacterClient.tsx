@@ -131,6 +131,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const learnedSkills = character.competences?.map((c: any) => c.competence) ?? []
   const availableSkills = allBaseSkills.filter(s => !learnedSkills.includes(s))
 
+  // Valeur de stockage pour les consommables équipés
+  const backpackItem = character.armureBackpack?.item || character.armureBackpack
+  const storageValue = (typeof backpackItem === 'object' ? backpackItem?.stockage : 0) || 0
+
   // Helper rendu armure
   const renderArmorSlot = (label: string, armor: any, mods: any[] = []) => {
     const armorPiece = armor?.item || armor
@@ -351,6 +355,31 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     )
   }
 
+  const renderConsumableSlot = (label: string, consumable: any) => {
+    const item = consumable
+    const isEquipped = !!item && typeof item !== 'string'
+
+    return (
+      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
+        <span className="char-equip-slot-label">{label}</span>
+        {isEquipped ? (
+          <div className="char-equip-item">
+            <span className="char-equip-item-name">{item.nom}</span>
+            <div className="char-equip-item-stats">
+              <span className="ss-tag">{item.categorie}</span>
+            </div>
+            {item.effet && <div className="char-equip-item-mod-base">{item.effet}</div>}
+          </div>
+        ) : (
+          <div className="char-equip-empty">
+            <span className="char-equip-empty-icon">🧪</span>
+            <span className="char-equip-empty-text">Vide</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className={`ss-root char-root ${isModified ? 'is-editing' : ''}`}>
       <div className="char-layout">
@@ -543,8 +572,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {renderWeaponSlot("Principale", character.armePrincipale)}
               {renderWeaponSlot("Secondaire", character.armeSecondaire)}
               {renderWeaponSlot("Lourde", character.armeLourde)}
-              {renderWeaponSlot("Poing", character.armeDePoing)}
               {renderWeaponSlot("Mêlée", character.armeDeMelee)}
+              {storageValue >= 1 && renderConsumableSlot("Consommable 1", character.consommableEquipe1)}
+              {storageValue >= 2 && renderConsumableSlot("Consommable 2", character.consommableEquipe2)}
+              {storageValue >= 3 && renderConsumableSlot("Consommable 3", character.consommableEquipe3)}
             </div>
           </div>
 

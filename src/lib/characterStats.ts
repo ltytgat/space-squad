@@ -145,7 +145,6 @@ export function calculateStats(character: any) {
     asWeapon(character.armePrincipale),
     asWeapon(character.armeSecondaire),
     asWeapon(character.armeLourde),
-    asWeapon(character.armeDePoing),
     asWeapon(character.armeDeMelee),
   ].filter(Boolean) as Weapon[]
 
@@ -155,7 +154,6 @@ export function calculateStats(character: any) {
     ...asMods(character.armePrincipale),
     ...asMods(character.armeSecondaire),
     ...asMods(character.armeLourde),
-    ...asMods(character.armeDePoing),
     ...asMods(character.armeDeMelee),
   ]
   const structuredWeaponMods = getStructuredMods(weaponMods)

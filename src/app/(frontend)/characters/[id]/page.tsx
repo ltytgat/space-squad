@@ -52,6 +52,7 @@ type Armor = {
   valeurBouclier?: number
   modificateur?: string
   valeurRupture?: number
+  stockage?: number
   set?: ArmorSet | number | null
 }
 
@@ -100,8 +101,10 @@ type Character = {
   armePrincipale?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
   armeSecondaire?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
   armeLourde?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
-  armeDePoing?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
   armeDeMelee?: { item?: Weapon | string | null; mods?: (Mod | number)[] | null } | null
+  consommableEquipe1?: Consumable | string | null
+  consommableEquipe2?: Consumable | string | null
+  consommableEquipe3?: Consumable | string | null
   backpack?: string | null
   vaisseau?: Ship | string | null
   roleVaisseau?: string | null

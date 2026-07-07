@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
-import { computeRank } from '@/lib/rankSystem'
 import './character.css'
 
 export const metadata = {
@@ -58,92 +57,16 @@ type Character = {
   armePrincipale?: Weapon | string | null
   armeSecondaire?: Weapon | string | null
   armeLourde?: Weapon | string | null
-  armeDePoing?: Weapon | string | null
   armeDeMelee?: Weapon | string | null
+  consommableEquipe1?: any
+  consommableEquipe2?: any
+  consommableEquipe3?: any
   backpack?: string | null
   vaisseau?: Ship | string | null
   roleVaisseau?: string | null
   groupe?: Group | string | null
   competences?: { competence: string; valeur: number; id?: string }[]
   competencesSpeciales?: { nom: string; valeur: number; id?: string }[]
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function asArmor(v: Armor | string | null | undefined): Armor | null {
-  if (!v || typeof v === 'string') return null
-  return v
-}
-
-function asWeapon(v: Weapon | string | null | undefined): Weapon | null {
-  if (!v || typeof v === 'string') return null
-  return v
-}
-
-// ── Sous-composants ──────────────────────────────────────────────────────────
-
-function ArmorSlot({ label, armor }: { label: string; armor: Armor | null }) {
-  return (
-    <div className={`char-equip-slot${armor ? '' : ' char-equip-slot-empty'}`}>
-      <span className="char-equip-slot-label">{label}</span>
-      {armor ? (
-        <div className="char-equip-item">
-          <span className="char-equip-item-name">{armor.nom}</span>
-          <div className="char-equip-item-stats">
-            {armor.valeurArmurePhysique != null && (
-              <span title="Armure physique">🛡 {armor.valeurArmurePhysique}</span>
-            )}
-            {armor.valeurBouclier != null && (
-              <span title="Bouclier">⚡ {armor.valeurBouclier}</span>
-            )}
-            {armor.modificateur != null && armor.modificateur !== 0 && (
-              <span title="Modificateur">
-                {armor.modificateur > 0 ? '+' : ''}
-                {armor.modificateur}
-              </span>
-            )}
-            {armor.valeurRupture != null && (
-              <span title="Rupture">💥 {armor.valeurRupture}</span>
-            )}
-          </div>
-        </div>
-      ) : (
-        <span className="char-equip-empty-label">—</span>
-      )}
-    </div>
-  )
-}
-
-function WeaponSlot({ label, weapon }: { label: string; weapon: Weapon | null }) {
-  return (
-    <div className={`char-equip-slot${weapon ? '' : ' char-equip-slot-empty'}`}>
-      <span className="char-equip-slot-label">{label}</span>
-      {weapon ? (
-        <div className="char-equip-item">
-          <span className="char-equip-item-name">{weapon.nom}</span>
-          <div className="char-equip-item-stats">
-            {weapon.valeurDegats != null && (
-              <span title="Dégâts">⚔ {weapon.valeurDegats}</span>
-            )}
-            {weapon.tailleChargeur != null && (
-              <span title="Chargeur">📦 {weapon.tailleChargeur}</span>
-            )}
-            {weapon.projectilesParTir != null && (
-              <span title="Projectiles/tir">× {weapon.projectilesParTir}</span>
-            )}
-            {weapon.valeurRechargement != null && (
-              <span title="Rechargement">🔄 {weapon.valeurRechargement}</span>
-            )}
-            {weapon.poids != null && (
-              <span title="Poids">{weapon.poids} kg</span>
-            )}
-          </div>
-        </div>
-      ) : (
-        <span className="char-equip-empty-label">—</span>
-      )}
-    </div>
-  )
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────

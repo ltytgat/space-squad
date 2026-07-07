@@ -558,14 +558,13 @@ export interface Character {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
   };
-  armeDePoing?: {
-    item?: (number | null) | Weapon;
-    mods?: (number | Mod)[] | null;
-  };
   armeDeMelee?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
   };
+  consommableEquipe1?: (number | null) | Consumable;
+  consommableEquipe2?: (number | null) | Consumable;
+  consommableEquipe3?: (number | null) | Consumable;
   puceMk1?: (number | null) | Chip;
   puceMk2?: (number | null) | Chip;
   puceMk3?: (number | null) | Chip;
@@ -624,20 +623,6 @@ export interface Character {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "chips".
- */
-export interface Chip {
-  id: number;
-  nom: string;
-  categorie: 'active' | 'passive';
-  effet: string;
-  restriction?: string | null;
-  cooldown?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "consumables".
  */
 export interface Consumable {
@@ -658,6 +643,20 @@ export interface Consumable {
   modificateurEpreuve?: number | null;
   prix?: number | null;
   image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chips".
+ */
+export interface Chip {
+  id: number;
+  nom: string;
+  categorie: 'active' | 'passive';
+  effet: string;
+  restriction?: string | null;
+  cooldown?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1019,18 +1018,15 @@ export interface CharactersSelect<T extends boolean = true> {
         item?: T;
         mods?: T;
       };
-  armeDePoing?:
-    | T
-    | {
-        item?: T;
-        mods?: T;
-      };
   armeDeMelee?:
     | T
     | {
         item?: T;
         mods?: T;
       };
+  consommableEquipe1?: T;
+  consommableEquipe2?: T;
+  consommableEquipe3?: T;
   puceMk1?: T;
   puceMk2?: T;
   puceMk3?: T;

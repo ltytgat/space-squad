@@ -487,37 +487,6 @@ export const Characters: CollectionConfig = {
               ],
             },
             {
-              name: 'armeDePoing',
-              type: 'group',
-              label: 'Arme de poing',
-              admin: { width: '33%' },
-              fields: [
-                {
-                  name: 'item',
-                  type: 'relationship',
-                  relationTo: 'weapons',
-                  label: 'Arme',
-                  filterOptions: { categorie: { equals: 'pistolet' } },
-                },
-                {
-                  name: 'mods',
-                  type: 'relationship',
-                  relationTo: 'mods',
-                  hasMany: true,
-                  label: 'Mods',
-                  filterOptions: ({ siblingData }) => {
-                    return {
-                      categoriePrincipale: { equals: 'armes' },
-                      or: [
-                        { sousCategorieArme: { equals: 'toutes' } },
-                        { sousCategorieArme: { equals: 'fusils-pistolets' } },
-                      ],
-                    }
-                  },
-                },
-              ],
-            },
-            {
               name: 'armeDeMelee',
               type: 'group',
               label: 'Arme de mêlée',
@@ -544,6 +513,32 @@ export const Characters: CollectionConfig = {
                   },
                 },
               ],
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'consommableEquipe1',
+              type: 'relationship',
+              relationTo: 'consumables',
+              label: 'Consommable équipé 1',
+              admin: { width: '33%' },
+            },
+            {
+              name: 'consommableEquipe2',
+              type: 'relationship',
+              relationTo: 'consumables',
+              label: 'Consommable équipé 2',
+              admin: { width: '33%' },
+            },
+            {
+              name: 'consommableEquipe3',
+              type: 'relationship',
+              relationTo: 'consumables',
+              label: 'Consommable équipé 3',
+              admin: { width: '33%' },
             },
           ],
         },
