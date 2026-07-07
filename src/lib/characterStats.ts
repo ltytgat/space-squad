@@ -7,6 +7,7 @@ export type Armor = {
   valeurArmurePhysique?: number | null
   valeurBouclier?: number | null
   valeurRupture?: number | null
+  poids?: number | null
   modificateur?: string | null
   set?: number | ArmorSet | null
 }
@@ -96,6 +97,66 @@ export function getStructuredMods(mods: Mod[]): Record<string, number> {
   return total
 }
 
+/**
+ * Calcule les statistiques d'une pièce d'armure en appliquant les restrictions sur les mods.
+ */
+export function getBridgedArmorStats(armor: Armor, mods: Mod[]) {
+  const totalMods: Record<string, number> = {}
+  mods.forEach(m => {
+    // Bonus du champ texte "effet"
+    const effects = parseModifier(m.effet)
+    Object.entries(effects).forEach(([k, v]) => totalMods[k] = (totalMods[k] || 0) + v)
+    
+    // Bonus des modificateurs structurés
+    if (m.modificateurs && Array.isArray(m.modificateurs)) {
+      const mapping: Record<string, string> = {
+        stat_force: 'force',
+        stat_habilite: 'habilite',
+        stat_connaissances: 'connaissances',
+        stat_culture: 'culture',
+        stat_anticipation: 'anticipation',
+        stat_perception: 'perception',
+        armure_physique: 'armure_physique',
+        armure_bouclier: 'armure_bouclier',
+        armure_rupture: 'armure_rupture',
+        poids: 'poids_armure',
+      }
+      m.modificateurs.forEach(mod => {
+        const key = mapping[mod.cible] || mod.cible
+        totalMods[key] = (totalMods[key] || 0) + mod.valeur
+      })
+    }
+  })
+
+  const basePhys = armor.valeurArmurePhysique ?? 0
+  const baseBouclier = armor.valeurBouclier ?? 0
+  // Rappel: poids de base = valeur armure physique si non spécifié
+  const basePoids = armor.poids ?? basePhys
+
+  let modArmor = totalMods['armure_physique'] || 0
+  let modShield = totalMods['armure_bouclier'] || 0
+  let modWeight = totalMods['poids_armure'] || 0
+
+  // Application des brides : le bonus ne peut excéder le double de la valeur de base
+  const appliedBonusPhys = Math.min(modArmor, 2 * basePhys)
+  const appliedBonusBouclier = Math.min(modShield, 2 * baseBouclier)
+
+  // Le poids augmente avec l'armure ajoutée (1pt = 1kg)
+  // Puis on applique le bonus de poids du mod (souvent positif pour alléger, à soustraire)
+  // Le poids final ne peut être inférieur à 0.
+  const finalWeight = Math.max(0, basePoids + appliedBonusPhys - modWeight)
+
+  return {
+    physique: basePhys + appliedBonusPhys,
+    bouclier: baseBouclier + appliedBonusBouclier,
+    poids: finalWeight,
+    bonusPhysique: appliedBonusPhys,
+    bonusBouclier: appliedBonusBouclier,
+    bonusPoids: modWeight, // On garde la valeur brute du mod pour info ou on peut mettre la diff
+    totalMods,
+  }
+}
+
 export function calculateStats(character: any) {
   const rankInfo = computeRank(character.pointsDeRang ?? 0)
 
@@ -130,16 +191,46 @@ export function calculateStats(character: any) {
     return v
   }
 
-  const armors = [
-    asArmor(character.armureTete),
-    asArmor(character.armureTorse),
-    asArmor(character.armureBras),
-    asArmor(character.armureJambes),
-    asArmor(character.armureBackpack),
-  ].filter(Boolean) as Armor[]
+  const armorSlotsData = [
+    character.armureTete,
+    character.armureTorse,
+    character.armureBras,
+    character.armureJambes,
+    character.armureBackpack,
+  ]
 
-  const totalPhysique = armors.reduce((acc, a) => acc + (a.valeurArmurePhysique ?? 0), 0)
-  const totalBouclier = armors.reduce((acc, a) => acc + (a.valeurBouclier ?? 0), 0)
+  let totalPhysique = 0
+  let totalBouclier = 0
+  let totalArmorWeight = 0
+  const totalArmorMods: Record<string, number> = {}
+
+  armorSlotsData.forEach(s => {
+    const armor = asArmor(s)
+    if (armor) {
+      const mods = asMods(s)
+      const bridged = getBridgedArmorStats(armor, mods)
+      
+      totalPhysique += bridged.physique
+      totalBouclier += bridged.bouclier
+      totalArmorWeight += bridged.poids
+
+      // On ajoute les autres bonus (non bridés pour le moment sauf physique/bouclier/poids)
+      Object.entries(bridged.totalMods).forEach(([key, val]) => {
+        if (!['armure_physique', 'armure_bouclier', 'poids_armure'].includes(key)) {
+          totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+        }
+      })
+      
+      // Ajouter les modificateurs intrinsèques de l'armure (champ texte modificateur)
+      const armorBaseMods = parseModifier(armor.modificateur)
+      Object.entries(armorBaseMods).forEach(([key, val]) => {
+        if (key === 'armure_physique') totalPhysique += val
+        else if (key === 'armure_bouclier') totalBouclier += val
+        else if (key === 'poids_armure') totalArmorWeight -= val
+        else totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+      })
+    }
+  })
 
   const weapons = [
     asWeapon(character.armePrincipale),
@@ -158,7 +249,7 @@ export function calculateStats(character: any) {
   ]
   const structuredWeaponMods = getStructuredMods(weaponMods)
   const reductionPoidsArmes = structuredWeaponMods['poids'] || 0
-  const totalWeaponWeightFinal = Math.max(0, totalWeaponWeight + reductionPoidsArmes)
+  const totalWeaponWeightFinal = Math.max(0, totalWeaponWeight - reductionPoidsArmes)
 
   const armorPieces = [
     asArmor(character.armureTete),
@@ -178,58 +269,16 @@ export function calculateStats(character: any) {
 
   const completedSets = Array.from(setsMap.values()).filter((s) => s.count >= 4)
 
-  const totalArmorMods: Record<string, number> = {}
-  armors.forEach(a => {
-    const armorMods = parseModifier(a.modificateur)
-    Object.entries(armorMods).forEach(([key, val]) => {
-      totalArmorMods[key] = (totalArmorMods[key] || 0) + val
-    })
-  })
-
-  const allArmorMods = [
-    ...asMods(character.armureTete),
-    ...asMods(character.armureTorse),
-    ...asMods(character.armureBras),
-    ...asMods(character.armureJambes),
-    ...asMods(character.armureBackpack),
-  ]
-  allArmorMods.forEach(m => {
-    const modEffects = parseModifier(m.effet)
-    Object.entries(modEffects).forEach(([key, val]) => {
-      totalArmorMods[key] = (totalArmorMods[key] || 0) + val
-    })
-
-    if (m.modificateurs && Array.isArray(m.modificateurs)) {
-      const mapping: Record<string, string> = {
-        stat_force: 'force',
-        stat_habilite: 'habilite',
-        stat_connaissances: 'connaissances',
-        stat_culture: 'culture',
-        stat_anticipation: 'anticipation',
-        stat_perception: 'perception',
-        armure_physique: 'armure_physique',
-        armure_bouclier: 'armure_bouclier',
-        armure_rupture: 'armure_rupture',
-        poids: 'poids_armure',
-      }
-      m.modificateurs.forEach((mod) => {
-        const key = mapping[mod.cible]
-        if (key) {
-          totalArmorMods[key] = (totalArmorMods[key] || 0) + mod.valeur
-        }
-      })
-    }
-  })
-
-  const bonusPhysique = totalArmorMods['armure_physique'] || 0
-  const finalTotalPhysique = Math.max(0, totalPhysique + bonusPhysique)
-
   completedSets.forEach(s => {
     const setMods = parseModifier(s.set.bonus)
     Object.entries(setMods).forEach(([key, val]) => {
-      totalArmorMods[key] = (totalArmorMods[key] || 0) + val
+      if (key === 'armure_physique') totalPhysique += val
+      else if (key === 'armure_bouclier') totalBouclier += val
+      else totalArmorMods[key] = (totalArmorMods[key] || 0) + val
     })
   })
+
+  const finalTotalPhysique = Math.max(0, totalPhysique)
 
   const getDieMod = (key: string, baseValue: number | undefined) => {
     const bonus = totalArmorMods[key] || 0
@@ -287,7 +336,7 @@ export function calculateStats(character: any) {
   const ba = anticipationDieMod
   const rank = rankInfo.level
   const bf = forceDieMod
-  const dodgeBase = 15 + (ba * rank / 2) - ((finalTotalPhysique - bf) / 2)
+  const dodgeBase = 15 + (ba * rank / 2) - ((totalArmorWeight - bf) / 2)
   const decouvert = Math.floor(dodgeBase)
 
   const dodge = {
@@ -314,12 +363,13 @@ export function calculateStats(character: any) {
   if (origin === 'Strani') xMouv = 14
   else if (origin === 'Vada') xMouv = 6
   const bonusMouv = totalArmorMods['mouvement'] || 0
-  const movement = Math.floor(xMouv - (finalTotalPhysique - bf + totalWeaponWeightFinal) / 2 + bonusMouv)
+  const movement = Math.floor(xMouv - (totalArmorWeight - bf + totalWeaponWeightFinal) / 2 + bonusMouv)
 
   return {
     rankInfo,
     totalPhysique: finalTotalPhysique,
     totalBouclier,
+    totalArmorWeight,
     totalWeaponWeightFinal,
     completedSets,
     totalArmorMods,

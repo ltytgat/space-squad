@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { calculateStats, getStructuredMods } from '@/lib/characterStats'
+import { calculateStats, getStructuredMods, getBridgedArmorStats } from '@/lib/characterStats'
 import { updateCharacter } from './actions'
 import { MalusInput } from './MalusInput'
 
@@ -128,8 +128,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         'competences', 'pointsDeCompetence',
         'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
         'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
+        'puceMk1', 'puceMk2', 'puceMk3',
         'consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3',
-        'inventaireArmes', 'inventaireArmures', 'inventaire', 'inventaireMods'
+        'inventaireArmes', 'inventaireArmures', 'inventaire', 'inventaireMods', 'inventairePuces'
       ]
       
       const saveData: any = {}
@@ -157,49 +158,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const learnedSkills = character.competences?.map((c: any) => c.competence) ?? []
   const availableSkills = allBaseSkills.filter(s => !learnedSkills.includes(s))
 
-  // Données d'inventaire filtrées (ne pas afficher ce qui est équipé)
+  // Données d'inventaire
   const inventoryData = useMemo(() => {
-    const equippedArmorIds = [
-      character.armureTete?.item?.id || character.armureTete?.id || character.armureTete,
-      character.armureTorse?.item?.id || character.armureTorse?.id || character.armureTorse,
-      character.armureBras?.item?.id || character.armureBras?.id || character.armureBras,
-      character.armureJambes?.item?.id || character.armureJambes?.id || character.armureJambes,
-      character.armureBackpack?.item?.id || character.armureBackpack?.id || character.armureBackpack,
-    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
-
-    const equippedWeaponIds = [
-      character.armePrincipale?.item?.id || character.armePrincipale?.id || character.armePrincipale,
-      character.armeSecondaire?.item?.id || character.armeSecondaire?.id || character.armeSecondaire,
-      character.armeLourde?.item?.id || character.armeLourde?.id || character.armeLourde,
-      character.armeDeMelee?.item?.id || character.armeDeMelee?.id || character.armeDeMelee,
-    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
-
-    const equippedConsumableIds = [
-      character.consommableEquipe1?.id || character.consommableEquipe1,
-      character.consommableEquipe2?.id || character.consommableEquipe2,
-      character.consommableEquipe3?.id || character.consommableEquipe3,
-    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
-    
-    const equippedChipIds = [
-      character.puceMk1?.id || character.puceMk1,
-      character.puceMk2?.id || character.puceMk2,
-      character.puceMk3?.id || character.puceMk3,
-    ].filter(id => id != null && typeof id !== 'object').map(id => String(id))
-
-    const weapons = (character.inventaireArmes || []).filter((w: any) => {
-      const itemId = typeof w.item === 'object' ? w.item?.id : w.item
-      return !equippedWeaponIds.includes(String(itemId))
-    })
-    const armors = (character.inventaireArmures || []).filter((a: any) => {
-      const itemId = typeof a.item === 'object' ? a.item?.id : a.item
-      return !equippedArmorIds.includes(String(itemId))
-    })
-    const puces = (character.inventairePuces || []).filter((p: any) => !equippedChipIds.includes(String(p.id || p)))
-    const consumables = (character.inventaire || []).filter((c: any) => {
-      const item = c.consommable
-      const itemId = typeof item === 'object' ? item.id : item
-      return !equippedConsumableIds.includes(String(itemId))
-    })
+    const weapons = character.inventaireArmes || []
+    const armors = character.inventaireArmures || []
+    const puces = character.inventairePuces || []
+    const consumables = character.inventaire || []
     const mods = character.inventaireMods || []
 
     return [
@@ -366,10 +330,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   // Contenu détaillé d'une armure
   const renderArmorInner = (armorPiece: any, mods: any[] = []) => {
-    const structuredMods = getStructuredMods(mods)
-    const bonusPhysique = structuredMods['armure_physique'] || 0
-    const bonusBouclier = structuredMods['armure_bouclier'] || 0
-    const bonusRupture = structuredMods['armure_rupture'] || 0
+    const stats_bridged = getBridgedArmorStats(armorPiece, mods)
+    const bonusRupture = stats_bridged.totalMods['armure_rupture'] || 0
 
     let setInfo = null
     if (armorPiece.set) {
@@ -385,12 +347,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         <div className="char-equip-item-stats">
           {armorPiece.valeurArmurePhysique != null && (
             <span title="Armure physique" className="stats-physique">
-              🛡️ {armorPiece.valeurArmurePhysique + bonusPhysique}
+              🛡️ {stats_bridged.physique}
             </span>
           )}
           {armorPiece.valeurBouclier != null && (
             <span title="Bouclier" className="stats-bouclier">
-              ⚡ {armorPiece.valeurBouclier + bonusBouclier}
+              ⚡ {stats_bridged.bouclier}
             </span>
           )}
           {armorPiece.valeurRupture != null && (
@@ -398,6 +360,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               💥 1 à {Math.max(0, armorPiece.valeurRupture + bonusRupture)}
             </span>
           )}
+          <span title="Poids" className="stats-poids">
+            ⚖️ {stats_bridged.poids}kg
+          </span>
         </div>
         {armorPiece.modificateur && <div className="char-equip-item-mod-base">Mod: {armorPiece.modificateur}</div>}
         {mods.length > 0 && (
@@ -457,7 +422,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const isEquipped = !!armorPiece && typeof armorPiece !== 'string'
     
     return (
-      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
+      <div 
+        className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}
+      >
         <div className="char-equip-slot-header">
           <span className="char-equip-slot-label">{label}</span>
           <button 
@@ -507,7 +474,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const isEquipped = !!weapon && typeof weapon !== 'string'
     
     return (
-      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
+      <div 
+        className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}
+      >
         <div className="char-equip-slot-header">
           <span className="char-equip-slot-label">{label}</span>
           <button 
@@ -528,12 +497,41 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     )
   }
 
+  const renderChipSlot = (label: string, chip: any, slotKey: string) => {
+    const isEquipped = !!chip && typeof chip !== 'string'
+    
+    return (
+      <div 
+        className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}
+      >
+        <div className="char-equip-slot-header">
+          <span className="char-equip-slot-label">{label}</span>
+          <button 
+            className="char-equip-change-btn" 
+            title="Changer de puce"
+            onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'chip' })}
+          >
+            🔄
+          </button>
+        </div>
+        {isEquipped ? renderChipInner(chip) : (
+          <div className="char-equip-empty">
+            <span className="char-equip-empty-icon">💾</span>
+            <span className="char-equip-empty-text">Non équipée</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const renderConsumableSlot = (label: string, consumable: any, slotKey: string) => {
     const item = consumable
     const isEquipped = !!item && typeof item !== 'string'
 
     return (
-      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
+      <div 
+        className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}
+      >
         <div className="char-equip-slot-header">
           <span className="char-equip-slot-label">{label}</span>
           <button 
@@ -575,9 +573,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (hoveredItem) {
-      setHoveredItem({ ...hoveredItem, x: e.clientX, y: e.clientY })
-    }
+    setHoveredItem(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)
   }
 
   const handleMouseLeave = () => {
@@ -630,14 +626,26 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     if (type === 'consumable') {
       // Pour les consommables, on retourne la liste plate des objets de l'inventaire
-      return (character.inventaire || []).filter((c: any) => (c.quantite || 0) > 0)
+      return (character.inventaire || []).filter((c: any) => (c.quantite || 0) > 0).map((c: any) => ({ ...c, fromInventory: true }))
     }
 
     if (type === 'armorMod') {
       return (character.inventaireMods || []).filter((m: any) => {
         return m.categoriePrincipale === 'armures' && 
                (m.sousCategorieArmure === 'toutes' || m.sousCategorieArmure === category)
-      })
+      }).map((m: any) => ({ ...m, fromInventory: true }))
+    }
+
+    if (type === 'chip') {
+      const inventory = (character.inventairePuces || []).map((p: any) => ({ ...p, fromInventory: true }))
+      const equippedSlots = ['puceMk1', 'puceMk2', 'puceMk3']
+      const equipped = equippedSlots
+        .filter(s => s !== slot)
+        .map(s => character[s])
+        .filter(p => p != null)
+        .map(p => ({ ...p, fromSlot: equippedSlots.find(s => character[s] === p) }))
+      
+      return [...equipped, ...inventory]
     }
 
     return []
@@ -654,6 +662,61 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     // Gérer le swap si l'objet vient d'un autre slot
     if (newItem.fromSlot) {
       newCharacter[newItem.fromSlot] = currentItem
+    } else if (newItem.fromInventory) {
+      const newItemId = newItem.id
+      // Retirer de l'inventaire
+      if (type === 'weapon') {
+        newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (currentItem) newCharacter.inventaireArmes = [...newCharacter.inventaireArmes, currentItem]
+      } else if (type === 'armor') {
+        newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (currentItem) newCharacter.inventaireArmures = [...newCharacter.inventaireArmures, currentItem]
+      } else if (type === 'consumable') {
+        newCharacter.inventaire = (newCharacter.inventaire || []).map((c: any) => {
+          if ((c.id || c) === newItemId) return { ...c, quantite: (c.quantite || 1) - 1 }
+          return c
+        }).filter((c: any) => c.quantite > 0)
+        
+        if (currentItem) {
+          const itemId = typeof currentItem === 'object' ? currentItem.id : currentItem
+          const existing = (newCharacter.inventaire || []).find((c: any) => {
+            const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
+            return String(cId) === String(itemId)
+          })
+          if (existing) {
+            newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
+              c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
+            )
+          } else {
+            newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: currentItem, quantite: 1 }]
+          }
+        }
+      } else if (type === 'armorMod') {
+        newCharacter.inventaireMods = (newCharacter.inventaireMods || []).filter((i: any) => (i.id || i) !== newItemId)
+      } else if (type === 'chip') {
+        newCharacter.inventairePuces = (newCharacter.inventairePuces || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (currentItem) newCharacter.inventairePuces = [...newCharacter.inventairePuces, currentItem]
+      }
+    } else if (currentItem) {
+      // Si on remplace par quelque chose qui n'est ni du slot ni de l'inventaire
+      // (théoriquement non possible avec l'UI, mais on gère par sécurité)
+      if (type === 'weapon') newCharacter.inventaireArmes = [...(newCharacter.inventaireArmes || []), currentItem]
+      if (type === 'armor') newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
+      if (type === 'chip') newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
+      if (type === 'consumable') {
+        const itemId = typeof currentItem === 'object' ? currentItem.id : currentItem
+        const existing = (newCharacter.inventaire || []).find((c: any) => {
+          const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
+          return String(cId) === String(itemId)
+        })
+        if (existing) {
+          newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
+            c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
+          )
+        } else {
+          newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: currentItem, quantite: 1 }]
+        }
+      }
     }
 
     // Nettoyer l'objet des propriétés temporaires
@@ -665,6 +728,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       newCharacter[currentSlot] = cleanItem
     } else if (type === 'armor') {
       newCharacter[currentSlot] = cleanItem
+    } else if (type === 'chip') {
+      newCharacter[currentSlot] = cleanItem
     } else if (type === 'consumable') {
       newCharacter[currentSlot] = cleanItem.consommable || cleanItem
     } else if (type === 'armorMod') {
@@ -673,9 +738,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       if (slot && idx !== undefined) {
         const armorData = { ...(newCharacter[slot] || {}) }
         const mods = [...(armorData.mods || [])]
+        const oldMod = mods[idx]
         mods[idx] = cleanItem
         armorData.mods = mods
         newCharacter[slot] = armorData
+        if (oldMod) newCharacter.inventaireMods = [...(newCharacter.inventaireMods || []), oldMod]
       }
     }
 
@@ -687,6 +754,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   const handleUnequip = (slot: string, type: string) => {
     const newCharacter = { ...character }
+    const currentItem = character[slot]
     
     if (type === 'armorMod') {
       const armorSlot = selectorConfig?.armorSlot
@@ -694,12 +762,36 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       if (armorSlot && idx !== undefined) {
         const armorData = { ...(newCharacter[armorSlot] || {}) }
         const mods = [...(armorData.mods || [])]
-        mods[idx] = null // Ou supprimer ? Payload préfère peut-être null ou filtrer
+        const oldMod = mods[idx]
+        mods[idx] = null
         armorData.mods = mods.filter(m => m !== null)
         newCharacter[armorSlot] = armorData
+        if (oldMod) newCharacter.inventaireMods = [...(newCharacter.inventaireMods || []), oldMod]
       }
     } else {
       newCharacter[slot] = null
+      if (currentItem) {
+        if (type === 'weapon') {
+          newCharacter.inventaireArmes = [...(newCharacter.inventaireArmes || []), currentItem]
+        } else if (type === 'armor') {
+          newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
+        } else if (type === 'chip') {
+          newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
+        } else if (type === 'consumable') {
+          const itemId = typeof currentItem === 'object' ? currentItem.id : currentItem
+          const existing = (newCharacter.inventaire || []).find((c: any) => {
+            const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
+            return String(cId) === String(itemId)
+          })
+          if (existing) {
+            newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
+              c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
+            )
+          } else {
+            newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: currentItem, quantite: 1 }]
+          }
+        }
+      }
     }
 
     setCharacter(newCharacter)
@@ -882,6 +974,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               <div className="char-card-totals">
                 <div className="char-total-item stats-physique"><span className="char-total-label">Physique</span><span className="char-total-value">{stats.totalPhysique}</span></div>
                 <div className="char-total-item stats-bouclier"><span className="char-total-label">Bouclier</span><span className="char-total-value">{stats.totalBouclier}</span></div>
+                <div className="char-total-item stats-poids"><span className="char-total-label">Poids total</span><span className="char-total-value">{stats.totalArmorWeight}kg</span></div>
               </div>
             </div>
             <div className="char-equip-grid char-equip-grid-5">
@@ -904,6 +997,16 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {storageValue >= 1 && renderConsumableSlot("Consommable 1", character.consommableEquipe1, 'consommableEquipe1')}
               {storageValue >= 2 && renderConsumableSlot("Consommable 2", character.consommableEquipe2, 'consommableEquipe2')}
               {storageValue >= 3 && renderConsumableSlot("Consommable 3", character.consommableEquipe3, 'consommableEquipe3')}
+            </div>
+          </div>
+
+          {/* ── Rangée 4 : Puces ── */}
+          <div className="char-card">
+            <h2 className="char-card-title">Puces Augmentées</h2>
+            <div className="char-equip-grid char-equip-grid-3">
+              {renderChipSlot("Slot Mk1", character.puceMk1, 'puceMk1')}
+              {renderChipSlot("Slot Mk2", character.puceMk2, 'puceMk2')}
+              {renderChipSlot("Slot Mk3", character.puceMk3, 'puceMk3')}
             </div>
           </div>
 

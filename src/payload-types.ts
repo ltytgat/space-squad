@@ -437,6 +437,10 @@ export interface Armor {
   valeurBouclier?: number | null;
   valeurRupture?: number | null;
   /**
+   * Si vide, égal à l'armure physique.
+   */
+  poids?: number | null;
+  /**
    * Champ texte pour les modificateurs divers.
    */
   modificateur?: string | null;
@@ -929,6 +933,7 @@ export interface ArmorsSelect<T extends boolean = true> {
   valeurArmurePhysique?: T;
   valeurBouclier?: T;
   valeurRupture?: T;
+  poids?: T;
   modificateur?: T;
   prix?: T;
   stockage?: T;

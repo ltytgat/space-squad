@@ -69,11 +69,20 @@ export const Armors: CollectionConfig = {
       type: 'row',
       fields: [
         {
+          name: 'poids',
+          type: 'number',
+          label: 'Poids (kg)',
+          admin: { 
+            width: '33%',
+            description: 'Si vide, égal à l\'armure physique.'
+          },
+        },
+        {
           name: 'modificateur',
           type: 'text',
           label: 'Modificateur',
           admin: {
-            width: '50%',
+            width: '33%',
             description: 'Champ texte pour les modificateurs divers.',
           },
         },
@@ -81,7 +90,7 @@ export const Armors: CollectionConfig = {
           name: 'prix',
           type: 'number',
           label: 'Prix',
-          admin: { width: '50%' },
+          admin: { width: '33%' },
         },
       ],
     },
