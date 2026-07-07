@@ -17,10 +17,7 @@ async function getAuthenticatedPayload() {
   return { payload, user: user as User | null }
 }
 
-export async function updateCharacterSkills(characterId: number, data: {
-  competences: Character['competences'],
-  pointsDeCompetence: number
-}) {
+export async function updateCharacter(characterId: number, data: any) {
   const { payload, user } = await getAuthenticatedPayload()
 
   if (!user) {
@@ -31,7 +28,7 @@ export async function updateCharacterSkills(characterId: number, data: {
   const character = await payload.findByID({
     collection: 'characters',
     id: characterId,
-    depth: 0, // Optimisation : pas besoin de peupler les relations
+    depth: 0,
     overrideAccess: true,
   })
 
@@ -48,20 +45,26 @@ export async function updateCharacterSkills(characterId: number, data: {
   }
 
   // Mise à jour du personnage
-  // On passe 'user' même avec overrideAccess: true pour que les hooks disposent de l'initiateur
   await payload.update({
     collection: 'characters',
     id: characterId,
-    data: {
-      competences: data.competences,
-      pointsDeCompetence: data.pointsDeCompetence,
-    },
+    data,
     user,
     overrideAccess: true,
   })
 
   revalidatePath(`/characters/${characterId}`)
   return { success: true }
+}
+
+export async function updateCharacterSkills(characterId: number, data: {
+  competences: Character['competences'],
+  pointsDeCompetence: number
+}) {
+  return updateCharacter(characterId, {
+    competences: data.competences,
+    pointsDeCompetence: data.pointsDeCompetence,
+  })
 }
 
 export async function updateMalus(characterId: number, field: string, value: number) {

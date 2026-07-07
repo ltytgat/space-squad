@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods } from '@/lib/characterStats'
-import { updateCharacterSkills } from './actions'
+import { updateCharacter } from './actions'
 import { MalusInput } from './MalusInput'
 
 type CharacterProps = {
@@ -35,6 +35,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const [showLearnNewSkill, setShowLearnNewSkill] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
   const [hoveredItem, setHoveredItem] = useState<{item: any, type: string, mods?: any[], x: number, y: number} | null>(null)
+  const [selectorConfig, setSelectorConfig] = useState<{
+    slot: string,
+    label: string,
+    type: 'weapon' | 'armor' | 'consumable' | 'armorMod',
+    category?: string,
+    currentId?: number | string,
+    armorSlot?: string,
+    modIndex?: number
+  } | null>(null)
 
   // Statistiques calculées en temps réel
   const stats = useMemo(() => calculateStats(character), [character])
@@ -113,13 +122,28 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await updateCharacterSkills(character.id, {
-        competences: character.competences,
-        pointsDeCompetence: character.pointsDeCompetence
+      // Préparer les données à sauvegarder
+      // On inclut les compétences ET l'équipement
+      const fieldsToSave = [
+        'competences', 'pointsDeCompetence',
+        'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
+        'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
+        'consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3',
+        'inventaireArmes', 'inventaireArmures', 'inventaire', 'inventaireMods'
+      ]
+      
+      const saveData: any = {}
+      fieldsToSave.forEach(field => {
+        if (character[field] !== undefined) {
+          // Pour les relations, Payload attend souvent des IDs ou des objets simplifiés
+          // Ici on va essayer d'envoyer les données telles qu'elles sont dans l'état local
+          // Payload gérera la conversion si nécessaire (ex: objet vers ID)
+          saveData[field] = character[field]
+        }
       })
+
+      await updateCharacter(character.id, saveData)
       setIsModified(false)
-      // On ne reset pas le character local car il est déjà à jour, 
-      // et la revalidation du serveur mettra à jour initialCharacter via les props.
       alert('Modifications enregistrées !')
     } catch (err) {
       console.error(err)
@@ -428,17 +452,48 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   )
 
   // Helper rendu armure
-  const renderArmorSlot = (label: string, armor: any, mods: any[] = []) => {
+  const renderArmorSlot = (label: string, armor: any, mods: any[] = [], slotKey: string, category: string) => {
     const armorPiece = armor?.item || armor
     const isEquipped = !!armorPiece && typeof armorPiece !== 'string'
     
     return (
       <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
-        <span className="char-equip-slot-label">{label}</span>
+        <div className="char-equip-slot-header">
+          <span className="char-equip-slot-label">{label}</span>
+          <button 
+            className="char-equip-change-btn" 
+            title="Changer d'équipement"
+            onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'armor', category })}
+          >
+            🔄
+          </button>
+        </div>
         {isEquipped ? renderArmorInner(armorPiece, mods) : (
           <div className="char-equip-empty">
             <span className="char-equip-empty-icon">🛡️</span>
             <span className="char-equip-empty-text">Non équipé</span>
+          </div>
+        )}
+        {/* Affichage des mods d'armure interactifs */}
+        {isEquipped && (
+          <div className="char-equip-mods-edit">
+            {[0].map(idx => {
+              const mod = mods[idx]
+              return (
+                <div key={idx} className="char-equip-mod-slot">
+                  {mod ? (
+                    <div className="char-equip-mod-filled">
+                      <span title={mod.effet}>🔧 {mod.nom}</span>
+                      <button onClick={() => handleOpenSelector({ slot: 'armorMod', label: `Mod ${label}`, type: 'armorMod', category, armorSlot: slotKey, modIndex: idx })}>🔄</button>
+                    </div>
+                  ) : (
+                    <button className="char-equip-mod-empty" onClick={() => handleOpenSelector({ slot: 'armorMod', label: `Mod ${label}`, type: 'armorMod', category, armorSlot: slotKey, modIndex: idx })}>
+                      + Ajouter Mod
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -446,38 +501,49 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   // Helper rendu arme
-  const renderWeaponSlot = (label: string, weaponGroup: any) => {
+  const renderWeaponSlot = (label: string, weaponGroup: any, slotKey: string, categoryConstraint: string) => {
     const weapon = weaponGroup?.item
     const mods = weaponGroup?.mods || []
     const isEquipped = !!weapon && typeof weapon !== 'string'
     
-    if (!isEquipped) {
-      return (
-        <div className="char-equip-slot char-equip-slot-empty">
+    return (
+      <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
+        <div className="char-equip-slot-header">
           <span className="char-equip-slot-label">{label}</span>
+          <button 
+            className="char-equip-change-btn" 
+            title="Changer d'arme"
+            onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'weapon', category: categoryConstraint })}
+          >
+            🔄
+          </button>
+        </div>
+        {isEquipped ? renderWeaponInner(weapon, mods) : (
           <div className="char-equip-empty">
             <span className="char-equip-empty-icon">🔫</span>
             <span className="char-equip-empty-text">Non équipé</span>
           </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="char-equip-slot">
-        <span className="char-equip-slot-label">{label}</span>
-        {renderWeaponInner(weapon, mods)}
+        )}
       </div>
     )
   }
 
-  const renderConsumableSlot = (label: string, consumable: any) => {
+  const renderConsumableSlot = (label: string, consumable: any, slotKey: string) => {
     const item = consumable
     const isEquipped = !!item && typeof item !== 'string'
 
     return (
       <div className={`char-equip-slot${isEquipped ? '' : ' char-equip-slot-empty'}`}>
-        <span className="char-equip-slot-label">{label}</span>
+        <div className="char-equip-slot-header">
+          <span className="char-equip-slot-label">{label}</span>
+          <button 
+            className="char-equip-change-btn" 
+            title="Changer de consommable"
+            onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'consumable' })}
+          >
+            🔄
+          </button>
+        </div>
         {isEquipped ? renderConsumableInner(item) : (
           <div className="char-equip-empty">
             <span className="char-equip-empty-icon">🧪</span>
@@ -520,6 +586,126 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   const toggleCategory = (catId: string) => {
     setCollapsedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
+  }
+
+  // Helper de filtrage pour le sélecteur
+  const getCompatibleItems = () => {
+    if (!selectorConfig) return []
+    const { type, category, slot } = selectorConfig
+
+    if (type === 'weapon') {
+      const inventory = (character.inventaireArmes || []).map((w: any) => ({ ...w, fromInventory: true }))
+      
+      // Ajouter les armes équipées compatibles (sauf celle du slot actuel)
+      const equippedSlots = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
+      const equipped = equippedSlots
+        .filter(s => s !== slot)
+        .map(s => character[s])
+        .filter(w => {
+          if (!w || !w.item) return false
+          const item = w.item
+          if (category === 'lourde') return item.categorie === 'lourde'
+          if (category === 'melee') return item.categorie === 'melee'
+          return !['lourde', 'melee'].includes(item.categorie)
+        })
+        .map(w => ({ ...w, fromSlot: equippedSlots.find(s => character[s] === w) }))
+
+      return [...equipped, ...inventory]
+    }
+    
+    if (type === 'armor') {
+      const inventory = (character.inventaireArmures || []).map((a: any) => ({ ...a, fromInventory: true }))
+      
+      // Pour les armures, peu de chances de vouloir swap car elles sont par slot strict,
+      // mais on respecte l'énoncé.
+      const equippedSlots = ['armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack']
+      const equipped = equippedSlots
+        .filter(s => s !== slot)
+        .map(s => character[s])
+        .filter(a => a && a.item && a.item.categorie === category)
+        .map(a => ({ ...a, fromSlot: equippedSlots.find(s => character[s] === a) }))
+
+      return [...equipped, ...inventory]
+    }
+
+    if (type === 'consumable') {
+      // Pour les consommables, on retourne la liste plate des objets de l'inventaire
+      return (character.inventaire || []).filter((c: any) => (c.quantite || 0) > 0)
+    }
+
+    if (type === 'armorMod') {
+      return (character.inventaireMods || []).filter((m: any) => {
+        return m.categoriePrincipale === 'armures' && 
+               (m.sousCategorieArmure === 'toutes' || m.sousCategorieArmure === category)
+      })
+    }
+
+    return []
+  }
+
+  const handleOpenSelector = (config: typeof selectorConfig) => {
+    setSelectorConfig(config)
+  }
+
+  const handleEquip = (newItem: any, currentSlot: string, type: string) => {
+    const newCharacter = { ...character }
+    const currentItem = character[currentSlot]
+
+    // Gérer le swap si l'objet vient d'un autre slot
+    if (newItem.fromSlot) {
+      newCharacter[newItem.fromSlot] = currentItem
+    }
+
+    // Nettoyer l'objet des propriétés temporaires
+    const cleanItem = { ...newItem }
+    delete cleanItem.fromSlot
+    delete cleanItem.fromInventory
+
+    if (type === 'weapon') {
+      newCharacter[currentSlot] = cleanItem
+    } else if (type === 'armor') {
+      newCharacter[currentSlot] = cleanItem
+    } else if (type === 'consumable') {
+      newCharacter[currentSlot] = cleanItem.consommable || cleanItem
+    } else if (type === 'armorMod') {
+      const slot = selectorConfig?.armorSlot
+      const idx = selectorConfig?.modIndex
+      if (slot && idx !== undefined) {
+        const armorData = { ...(newCharacter[slot] || {}) }
+        const mods = [...(armorData.mods || [])]
+        mods[idx] = cleanItem
+        armorData.mods = mods
+        newCharacter[slot] = armorData
+      }
+    }
+
+    setCharacter(newCharacter)
+    setIsModified(true)
+    setSelectorConfig(null)
+    setHoveredItem(null)
+  }
+
+  const handleUnequip = (slot: string, type: string) => {
+    const newCharacter = { ...character }
+    
+    if (type === 'armorMod') {
+      const armorSlot = selectorConfig?.armorSlot
+      const idx = selectorConfig?.modIndex
+      if (armorSlot && idx !== undefined) {
+        const armorData = { ...(newCharacter[armorSlot] || {}) }
+        const mods = [...(armorData.mods || [])]
+        mods[idx] = null // Ou supprimer ? Payload préfère peut-être null ou filtrer
+        armorData.mods = mods.filter(m => m !== null)
+        newCharacter[armorSlot] = armorData
+      }
+    } else {
+      newCharacter[slot] = null
+    }
+
+    setCharacter(newCharacter)
+    setIsModified(true)
+    setSelectorConfig(null)
+    setHoveredItem(null)
   }
 
   return (
@@ -699,11 +885,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               </div>
             </div>
             <div className="char-equip-grid char-equip-grid-5">
-              {renderArmorSlot("Tête", character.armureTete, character.armureTete?.mods)}
-              {renderArmorSlot("Torse", character.armureTorse, character.armureTorse?.mods)}
-              {renderArmorSlot("Bras", character.armureBras, character.armureBras?.mods)}
-              {renderArmorSlot("Jambes", character.armureJambes, character.armureJambes?.mods)}
-              {renderArmorSlot("Back-pack", character.armureBackpack, character.armureBackpack?.mods)}
+              {renderArmorSlot("Tête", character.armureTete, character.armureTete?.mods, 'armureTete', 'tete')}
+              {renderArmorSlot("Torse", character.armureTorse, character.armureTorse?.mods, 'armureTorse', 'torse')}
+              {renderArmorSlot("Bras", character.armureBras, character.armureBras?.mods, 'armureBras', 'bras')}
+              {renderArmorSlot("Jambes", character.armureJambes, character.armureJambes?.mods, 'armureJambes', 'jambes')}
+              {renderArmorSlot("Back-pack", character.armureBackpack, character.armureBackpack?.mods, 'armureBackpack', 'backpack')}
             </div>
           </div>
 
@@ -711,13 +897,13 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           <div className="char-card">
             <h2 className="char-card-title">Arsenal</h2>
             <div className="char-equip-grid char-equip-grid-3">
-              {renderWeaponSlot("Principale", character.armePrincipale)}
-              {renderWeaponSlot("Secondaire", character.armeSecondaire)}
-              {renderWeaponSlot("Lourde", character.armeLourde)}
-              {renderWeaponSlot("Mêlée", character.armeDeMelee)}
-              {storageValue >= 1 && renderConsumableSlot("Consommable 1", character.consommableEquipe1)}
-              {storageValue >= 2 && renderConsumableSlot("Consommable 2", character.consommableEquipe2)}
-              {storageValue >= 3 && renderConsumableSlot("Consommable 3", character.consommableEquipe3)}
+              {renderWeaponSlot("Principale", character.armePrincipale, 'armePrincipale', 'standard')}
+              {renderWeaponSlot("Secondaire", character.armeSecondaire, 'armeSecondaire', 'standard')}
+              {renderWeaponSlot("Lourde", character.armeLourde, 'armeLourde', 'lourde')}
+              {renderWeaponSlot("Mêlée", character.armeDeMelee, 'armeDeMelee', 'melee')}
+              {storageValue >= 1 && renderConsumableSlot("Consommable 1", character.consommableEquipe1, 'consommableEquipe1')}
+              {storageValue >= 2 && renderConsumableSlot("Consommable 2", character.consommableEquipe2, 'consommableEquipe2')}
+              {storageValue >= 3 && renderConsumableSlot("Consommable 3", character.consommableEquipe3, 'consommableEquipe3')}
             </div>
           </div>
 
@@ -804,6 +990,52 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           </div>
         </div>
       )}
+      {/* Sélecteur d'équipement */}
+      {selectorConfig && (
+        <div className="char-selector-overlay" onClick={() => { setSelectorConfig(null); setHoveredItem(null); }}>
+          <div className="char-selector-modal" onClick={e => e.stopPropagation()}>
+            <div className="char-selector-header">
+              <h3>Changer : {selectorConfig.label}</h3>
+              <button className="char-selector-close" onClick={() => { setSelectorConfig(null); setHoveredItem(null); }}>×</button>
+            </div>
+            <div className="char-selector-content">
+              <button 
+                className="char-selector-item char-selector-unequip"
+                onClick={() => handleUnequip(selectorConfig.slot, selectorConfig.type)}
+              >
+                Retirer l'objet / Vider l'emplacement
+              </button>
+              
+              <div className="char-selector-list">
+                {getCompatibleItems().length === 0 ? (
+                  <p className="char-selector-empty">Aucun objet compatible dans l'inventaire.</p>
+                ) : (
+                  getCompatibleItems().map((itemObj: any, idx: number) => {
+                    const item = (selectorConfig.type === 'consumable') ? itemObj.consommable : (itemObj.item || itemObj)
+                    return (
+                      <div 
+                        key={idx} 
+                        className="char-selector-item"
+                        onClick={() => handleEquip(itemObj, selectorConfig.slot, selectorConfig.type)}
+                        onMouseEnter={(e) => handleMouseEnter(e, itemObj, selectorConfig.type === 'armorMod' ? 'mods' : (selectorConfig.type === 'weapon' ? 'weapons' : (selectorConfig.type === 'armor' ? 'armors' : 'consumables')))}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <div className="char-selector-item-info">
+                          <strong>{item.nom}</strong>
+                          {selectorConfig.type === 'consumable' && <span className="ss-tag">Qté: {itemObj.quantite}</span>}
+                          {item.categorie && <span className="ss-tag">{item.categorie}</span>}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tooltip d'inventaire */}
       {hoveredItem && (
         <div 
