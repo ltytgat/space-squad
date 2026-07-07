@@ -38,7 +38,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const [selectorConfig, setSelectorConfig] = useState<{
     slot: string,
     label: string,
-    type: 'weapon' | 'armor' | 'consumable' | 'armorMod',
+    type: 'weapon' | 'armor' | 'consumable' | 'armorMod' | 'chip',
     category?: string,
     currentId?: number | string,
     armorSlot?: string,
@@ -1195,7 +1195,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                         key={idx} 
                         className="char-selector-item"
                         onClick={() => handleEquip(itemObj, selectorConfig.slot, selectorConfig.type)}
-                        onMouseEnter={(e) => handleMouseEnter(e, itemObj, selectorConfig.type === 'armorMod' ? 'mods' : (selectorConfig.type === 'weapon' ? 'weapons' : (selectorConfig.type === 'armor' ? 'armors' : 'consumables')))}
+                        onMouseEnter={(e) => handleMouseEnter(e, itemObj, selectorConfig.type === 'armorMod' ? 'mods' : (selectorConfig.type === 'weapon' ? 'weapons' : (selectorConfig.type === 'armor' ? 'armors' : (selectorConfig.type === 'chip' ? 'chips' : 'consumables'))))}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
                       >
