@@ -590,7 +590,9 @@ export const Characters: CollectionConfig = {
           type: 'select',
           label: 'Rôle à bord',
           options: [
-            { label: 'Propriétaire', value: 'proprietaire' },
+            { label: 'Pilote', value: 'pilote' },
+            { label: 'Copilote', value: 'copilote' },
+            { label: 'Canonnier', value: 'canonnier' },
             { label: 'Passager', value: 'passager' },
           ],
         },

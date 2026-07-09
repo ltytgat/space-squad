@@ -11,7 +11,18 @@ export const metadata = {
   title: 'Mon vaisseau — Space Squad',
 }
 
-type Ship = { id: number; nom: string; classe?: string; modele?: string }
+type ShipModel = {
+  id: number
+  nom: string
+  classe?: string
+  categorie?: string
+  tourelles?: number
+  blindage?: number
+  generateur?: string
+  prix?: string
+}
+
+type Ship = { id: number; nom: string; modele?: ShipModel | number | null }
 
 type CrewMember = {
   id: number
@@ -20,6 +31,20 @@ type CrewMember = {
   affiliation?: string
   roleVaisseau?: string
   user?: { id: number; email: string } | string | null
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  pilote: 'Pilote',
+  copilote: 'Copilote',
+  canonnier: 'Canonnier',
+  passager: 'Passager',
+}
+
+const CATEGORIE_LABEL: Record<string, string> = {
+  polyvalent: 'Polyvalent',
+  combat: 'Combat',
+  exploration: 'Exploration',
+  transport: 'Transport',
 }
 
 const CLASSE_LABEL: Record<string, string> = {
@@ -37,11 +62,11 @@ export default async function ShipPage() {
 
   if (!user) redirect('/login')
 
-  // Récupère le personnage du joueur (avec son vaisseau)
+  // Récupère le personnage du joueur (avec son vaisseau et le modèle)
   const { docs: charDocs } = await payload.find({
     collection: 'characters',
     where: { user: { equals: user.id } },
-    depth: 1,
+    depth: 2,
     limit: 1,
   })
 
@@ -49,6 +74,9 @@ export default async function ShipPage() {
   const ship = (character?.vaisseau && typeof character.vaisseau !== 'string'
     ? character.vaisseau
     : null) as Ship | null
+  const shipModel = (ship?.modele && typeof ship.modele !== 'number'
+    ? ship.modele
+    : null) as ShipModel | null
 
   // Récupère tous les membres à bord
   const crew: CrewMember[] = []
@@ -80,13 +108,16 @@ export default async function ShipPage() {
               <>
                 <h1 className="ship-name">{ship.nom}</h1>
                 <div className="ship-tags">
-                  {ship.classe && (
-                    <span className="ss-tag">Classe {CLASSE_LABEL[ship.classe] ?? ship.classe}</span>
+                  {shipModel?.classe && (
+                    <span className="ss-tag">Classe {CLASSE_LABEL[shipModel.classe] ?? shipModel.classe}</span>
                   )}
-                  {ship.modele && <span className="ss-tag">{ship.modele}</span>}
+                  {shipModel?.categorie && (
+                    <span className="ss-tag">{CATEGORIE_LABEL[shipModel.categorie] ?? shipModel.categorie}</span>
+                  )}
+                  {shipModel?.nom && <span className="ss-tag">{shipModel.nom}</span>}
                   {character?.roleVaisseau && (
                     <span className={`ss-tag ship-tag-role-${character.roleVaisseau}`}>
-                      {character.roleVaisseau === 'proprietaire' ? 'Propriétaire' : 'Passager'}
+                      {ROLE_LABEL[character.roleVaisseau] ?? character.roleVaisseau}
                     </span>
                   )}
                 </div>
@@ -114,16 +145,46 @@ export default async function ShipPage() {
                   <dt>Nom</dt>
                   <dd>{ship.nom}</dd>
                 </div>
-                {ship.classe && (
+                {shipModel?.classe && (
                   <div className="ship-dl-row">
                     <dt>Classe</dt>
-                    <dd>{CLASSE_LABEL[ship.classe] ?? ship.classe}</dd>
+                    <dd>{CLASSE_LABEL[shipModel.classe] ?? shipModel.classe}</dd>
                   </div>
                 )}
-                {ship.modele && (
+                {shipModel?.categorie && (
+                  <div className="ship-dl-row">
+                    <dt>Catégorie</dt>
+                    <dd>{CATEGORIE_LABEL[shipModel.categorie] ?? shipModel.categorie}</dd>
+                  </div>
+                )}
+                {shipModel?.nom && (
                   <div className="ship-dl-row">
                     <dt>Modèle</dt>
-                    <dd>{ship.modele}</dd>
+                    <dd>{shipModel.nom}</dd>
+                  </div>
+                )}
+                {shipModel?.blindage != null && (
+                  <div className="ship-dl-row">
+                    <dt>Blindage</dt>
+                    <dd>{shipModel.blindage}</dd>
+                  </div>
+                )}
+                {shipModel?.tourelles != null && (
+                  <div className="ship-dl-row">
+                    <dt>Tourelles</dt>
+                    <dd>{shipModel.tourelles}</dd>
+                  </div>
+                )}
+                {shipModel?.generateur && (
+                  <div className="ship-dl-row">
+                    <dt>Générateur</dt>
+                    <dd>{shipModel.generateur}</dd>
+                  </div>
+                )}
+                {shipModel?.prix && (
+                  <div className="ship-dl-row">
+                    <dt>Prix</dt>
+                    <dd>{shipModel.prix}</dd>
                   </div>
                 )}
               </dl>
@@ -154,7 +215,7 @@ export default async function ShipPage() {
                       <span
                         className={`ship-crew-role ship-crew-role-${member.roleVaisseau ?? 'passager'}`}
                       >
-                        {member.roleVaisseau === 'proprietaire' ? 'Propriétaire' : 'Passager'}
+                        {ROLE_LABEL[member.roleVaisseau ?? 'passager'] ?? member.roleVaisseau}
                       </span>
                     </div>
                   ))}

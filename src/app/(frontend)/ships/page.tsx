@@ -11,8 +11,23 @@ export const metadata = {
   title: 'Vaisseaux — Space Squad',
 }
 
-type Ship = { id: number; nom: string; classe?: string; modele?: string }
+type ShipModel = { id: number; nom: string; classe?: string; categorie?: string }
+type Ship = { id: number; nom: string; modele?: ShipModel | number | null }
 type CrewMember = { id: number; nom?: string; roleVaisseau?: string }
+
+const CATEGORIE_LABEL: Record<string, string> = {
+  polyvalent: 'Polyvalent',
+  combat: 'Combat',
+  exploration: 'Exploration',
+  transport: 'Transport',
+}
+
+const ROLE_LABEL: Record<string, string> = {
+  pilote: 'Pilote',
+  copilote: 'Copilote',
+  canonnier: 'Canonnier',
+  passager: 'Passager',
+}
 
 const CLASSE_LABEL: Record<string, string> = {
   alpha: 'Alpha',
@@ -31,7 +46,7 @@ export default async function ShipsPage() {
   if ((user as { role?: string }).role !== 'admin') redirect('/')
 
   const [{ docs: ships }, { docs: characters }] = await Promise.all([
-    payload.find({ collection: 'ships', depth: 0, limit: 200, sort: 'nom' }),
+    payload.find({ collection: 'ships', depth: 1, limit: 200, sort: 'nom' }),
     payload.find({
       collection: 'characters',
       depth: 0,
@@ -79,20 +94,26 @@ export default async function ShipsPage() {
             <div className="ships-grid">
               {(ships as Ship[]).map((ship) => {
                 const crew = crewByShip.get(ship.id) ?? []
-                const owners = crew.filter((c) => c.roleVaisseau === 'proprietaire')
+                const pilots = crew.filter((c) => c.roleVaisseau === 'pilote')
+                const copilots = crew.filter((c) => c.roleVaisseau === 'copilote')
+                const gunners = crew.filter((c) => c.roleVaisseau === 'canonnier')
                 const passengers = crew.filter((c) => c.roleVaisseau === 'passager')
+                const model = (ship.modele && typeof ship.modele !== 'number') ? ship.modele : null
 
                 return (
                   <div key={ship.id} className="ships-card">
                     <div className="ships-card-header">
                       <h3 className="ships-card-name">{ship.nom}</h3>
                       <div className="ships-card-tags">
-                        {ship.classe && (
+                        {model?.classe && (
                           <span className="ships-tag ships-tag-classe">
-                            Classe {CLASSE_LABEL[ship.classe] ?? ship.classe}
+                            Classe {CLASSE_LABEL[model.classe] ?? model.classe}
                           </span>
                         )}
-                        {ship.modele && <span className="ships-tag">{ship.modele}</span>}
+                        {model?.categorie && (
+                          <span className="ships-tag">{CATEGORIE_LABEL[model.categorie] ?? model.categorie}</span>
+                        )}
+                        {model?.nom && <span className="ships-tag">{model.nom}</span>}
                       </div>
                     </div>
 
@@ -101,26 +122,16 @@ export default async function ShipsPage() {
                         <p className="ships-crew-empty">Aucun équipage assigné</p>
                       ) : (
                         <>
-                          {owners.length > 0 && (
-                            <div className="ships-crew-group">
-                              <span className="ships-crew-group-label">Propriétaires</span>
+                          {[{ label: 'Pilotes', members: pilots }, { label: 'Copilotes', members: copilots }, { label: 'Canonniers', members: gunners }, { label: 'Passagers', members: passengers }].filter(g => g.members.length > 0).map(g => (
+                            <div key={g.label} className="ships-crew-group">
+                              <span className="ships-crew-group-label">{g.label}</span>
                               <ul className="ships-crew-list">
-                                {owners.map((m) => (
+                                {g.members.map((m) => (
                                   <li key={m.id}>{m.nom || 'Sans nom'}</li>
                                 ))}
                               </ul>
                             </div>
-                          )}
-                          {passengers.length > 0 && (
-                            <div className="ships-crew-group">
-                              <span className="ships-crew-group-label">Passagers</span>
-                              <ul className="ships-crew-list">
-                                {passengers.map((m) => (
-                                  <li key={m.id}>{m.nom || 'Sans nom'}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          ))}
                         </>
                       )}
                     </div>

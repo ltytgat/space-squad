@@ -73,6 +73,10 @@ export interface Config {
     'lore-articles': LoreArticle;
     groups: Group;
     ships: Ship;
+    'ship-models': ShipModel;
+    'ship-weapons': ShipWeapon;
+    'ship-modules': ShipModule;
+    'ship-consumables': ShipConsumable;
     weapons: Weapon;
     armors: Armor;
     'armor-sets': ArmorSet;
@@ -97,6 +101,10 @@ export interface Config {
     'lore-articles': LoreArticlesSelect<false> | LoreArticlesSelect<true>;
     groups: GroupsSelect<false> | GroupsSelect<true>;
     ships: ShipsSelect<false> | ShipsSelect<true>;
+    'ship-models': ShipModelsSelect<false> | ShipModelsSelect<true>;
+    'ship-weapons': ShipWeaponsSelect<false> | ShipWeaponsSelect<true>;
+    'ship-modules': ShipModulesSelect<false> | ShipModulesSelect<true>;
+    'ship-consumables': ShipConsumablesSelect<false> | ShipConsumablesSelect<true>;
     weapons: WeaponsSelect<false> | WeaponsSelect<true>;
     armors: ArmorsSelect<false> | ArmorsSelect<true>;
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
@@ -282,205 +290,98 @@ export interface Group {
 export interface Ship {
   id: number;
   nom: string;
-  classe?: ('alpha' | 'beta' | 'gamma' | 'delta') | null;
-  modele?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "weapons".
- */
-export interface Weapon {
-  id: number;
-  nom: string;
-  fabricant?: string | null;
-  categorie: 'fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'melee' | 'lourde';
-  type: ('thermique' | 'cinetique' | 'plasma' | 'explosif' | 'melee')[];
+  modele: number | ShipModel;
   /**
-   * Format: [nombre de dés]d[taille du dé]
+   * Le personnage qui a acheté ce vaisseau.
    */
-  valeurDegats?: string | null;
-  poids?: number | null;
-  prix?: number | null;
+  proprietaire?: (number | null) | Character;
+  blindageActuel?: number | null;
+  bouclierActuel?: number | null;
+  esquiveActuelle?: number | null;
+  consommationActuelle?: number | null;
+  pilote?: (number | null) | Character;
+  copilote?: (number | null) | Character;
   /**
-   * Pour la mélée, correspond à la taille de la lame. Pour les armes lourdes, il s'agit de la portée maximale fixe.
+   * Un canonnier par tourelle disponible.
    */
-  porteeFixe?: number | null;
-  projectilesParTir?: number | null;
-  valeurChauffe?: number | null;
-  /**
-   * Distance maximale pour le premier palier.
-   */
-  courtePortee?: number | null;
-  modCourtePortee?: number | null;
-  /**
-   * Distance maximale pour le second palier.
-   */
-  moyennePortee?: number | null;
-  modMoyennePortee?: number | null;
-  /**
-   * Définissez les 3 paliers de distance (le 1er étant déjà la courte portée au-dessus).
-   */
-  paliersSniper?:
+  canonniers?:
     | {
-        distanceMax: number;
-        modificateur: number;
+        personnage?: (number | null) | Character;
+        tourelle?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  moduleGenerateur?: (number | null) | ShipModule;
+  modulePropulseurs?: (number | null) | ShipModule;
+  moduleSurvie?: (number | null) | ShipModule;
+  moduleBoucliers?: (number | null) | ShipModule;
+  /**
+   * Modules supplémentaires installés (limité par le nombre d'emplacements du modèle).
+   */
+  modulesSupplementaires?: (number | ShipModule)[] | null;
+  /**
+   * Armes montées sur les points d'emport du pilote.
+   */
+  armesPilote?: (number | ShipWeapon)[] | null;
+  armesTourelles?:
+    | {
+        tourelle?: number | null;
+        armes?: (number | ShipWeapon)[] | null;
         id?: string | null;
       }[]
     | null;
   /**
-   * Distance additionnelle après le dernier palier provoquant un malus cumulatif.
+   * Limité par le nombre d'emplacements consommables du modèle.
    */
-  trancheMalusLonguePortee?: number | null;
-  malusParTranche?: number | null;
-  /**
-   * Pour les armes plasma, correspond à la taille du conteneur.
-   */
-  tailleChargeur?: number | null;
-  tempsRechargement?: number | null;
-  zoneEffet?: string | null;
-  /**
-   * Pourcentage de refroidissement par unité de temps.
-   */
-  tempsRefroidissement?: number | null;
-  details?: string | null;
-  image?: (number | null) | Media;
-  /**
-   * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
-   */
-  mods?: (number | Mod)[] | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "mods".
- */
-export interface Mod {
-  id: number;
-  nom: string;
-  categoriePrincipale: 'armes' | 'armures';
-  /**
-   * Pour une arme, le prix est un pourcentage du prix de l'arme (ex: 0.10 pour 10%). Pour une armure, c'est un prix fixe.
-   */
-  prix?: number | null;
-  sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
-  sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
-  effet: string;
-  modificateurs?:
+  consommablesVaisseau?:
     | {
-        cible:
-          | 'stat_force'
-          | 'stat_habilite'
-          | 'stat_connaissances'
-          | 'stat_culture'
-          | 'stat_anticipation'
-          | 'stat_perception'
-          | 'armure_physique'
-          | 'armure_bouclier'
-          | 'armure_rupture'
-          | 'degats_flat'
-          | 'degats_mod_fo_x1'
-          | 'degats_mod_pe_x1'
-          | 'portee_courte'
-          | 'portee_moyenne'
-          | 'mod_portee_courte'
-          | 'mod_portee_moyenne'
-          | 'chargeur'
-          | 'chargeur_pct'
-          | 'poids'
-          | 'refroidissement_pct'
-          | 'indicator_surcharge'
-          | 'indicator_projectiles'
-          | 'indicator_acide'
-          | 'indicator_tazer'
-          | 'indicator_gravite_faible'
-          | 'indicator_gravite_forte'
-          | 'indicator_lumiere'
-          | 'indicator_double_pistolet'
-          | 'epreuve_pilotage_leger'
-          | 'epreuve_pilotage_intermediaire'
-          | 'epreuve_pilotage_lourd'
-          | 'epreuve_pilotage_blinde'
-          | 'epreuve_tir_pilote'
-          | 'epreuve_tir_tourelle'
-          | 'epreuve_tir_vehicule'
-          | 'epreuve_reparation'
-          | 'epreuve_negocier'
-          | 'epreuve_analyse'
-          | 'epreuve_culture'
-          | 'epreuve_discretion'
-          | 'epreuve_initiative'
-          | 'epreuve_tir_assaut'
-          | 'epreuve_tir_sniper'
-          | 'epreuve_tir_shotgun'
-          | 'epreuve_cac'
-          | 'epreuve_soins';
-        valeur: number;
+        consommable: number | ShipConsumable;
+        quantite: number;
         id?: string | null;
       }[]
     | null;
+  notes?: string | null;
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "armors".
+ * via the `definition` "ship-models".
  */
-export interface Armor {
+export interface ShipModel {
   id: number;
   nom: string;
-  categorie: 'tete' | 'torse' | 'bras' | 'jambes' | 'backpack';
-  valeurArmurePhysique?: number | null;
-  valeurBouclier?: number | null;
-  valeurRupture?: number | null;
+  classe: 'alpha' | 'beta' | 'gamma' | 'delta';
+  categorie: 'polyvalent' | 'combat' | 'exploration' | 'transport';
+  tourelles: number;
   /**
-   * Si vide, égal à l'armure physique.
+   * Nombre d'armes équipables par le pilote.
    */
-  poids?: number | null;
+  pointsEmportPilote: number;
   /**
-   * Champ texte pour les modificateurs divers.
+   * Nombre d'armes par tourelle, séparés par des +. Ex: 1+2 pour 2 tourelles.
    */
-  modificateur?: string | null;
-  prix?: number | null;
+  pointsEmportTourelles?: string | null;
+  blindage: number;
   /**
-   * Capacité de stockage (uniquement pour les back-packs).
+   * Puissance du générateur de base (ex: 6 GW).
    */
-  stockage?: number | null;
+  generateur?: string | null;
+  /**
+   * Emplacements de modules. Format: base+tourelle(s). Ex: 1+1 = 1 base + 1 tourelle.
+   */
+  modulesSupplementaires?: string | null;
+  consommables: number;
+  /**
+   * Prix du vaisseau (ex: 100 k, 1 M, 1,25 M).
+   */
+  prix?: string | null;
+  /**
+   * Esquive de base selon la taille : Alpha=15, Beta=12, Gamma=9, Delta=6.
+   */
+  esquiveBase?: number | null;
   image?: (number | null) | Media;
-  /**
-   * Set auquel appartient cette pièce d'armure.
-   */
-  set?: (number | null) | ArmorSet;
-  /**
-   * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
-   */
-  mods?: (number | Mod)[] | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "armor-sets".
- */
-export interface ArmorSet {
-  id: number;
-  nom: string;
-  /**
-   * Bonus appliqué lorsque le set est complet.
-   */
-  bonus: string;
-  image?: (number | null) | Media;
-  /**
-   * Liste des pièces d'armure appartenant à ce set.
-   */
-  pieces?: {
-    docs?: (number | Armor)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
   updatedAt: string;
   createdAt: string;
 }
@@ -573,7 +474,7 @@ export interface Character {
   puceMk2?: (number | null) | Chip;
   puceMk3?: (number | null) | Chip;
   vaisseau?: (number | null) | Ship;
-  roleVaisseau?: ('proprietaire' | 'passager') | null;
+  roleVaisseau?: ('pilote' | 'copilote' | 'canonnier' | 'passager') | null;
   inventaireArmes?:
     | {
         item: number | Weapon;
@@ -643,6 +544,203 @@ export interface Character {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "armors".
+ */
+export interface Armor {
+  id: number;
+  nom: string;
+  categorie: 'tete' | 'torse' | 'bras' | 'jambes' | 'backpack';
+  valeurArmurePhysique?: number | null;
+  valeurBouclier?: number | null;
+  valeurRupture?: number | null;
+  /**
+   * Si vide, égal à l'armure physique.
+   */
+  poids?: number | null;
+  /**
+   * Champ texte pour les modificateurs divers.
+   */
+  modificateur?: string | null;
+  prix?: number | null;
+  /**
+   * Capacité de stockage (uniquement pour les back-packs).
+   */
+  stockage?: number | null;
+  image?: (number | null) | Media;
+  /**
+   * Set auquel appartient cette pièce d'armure.
+   */
+  set?: (number | null) | ArmorSet;
+  /**
+   * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
+   */
+  mods?: (number | Mod)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "armor-sets".
+ */
+export interface ArmorSet {
+  id: number;
+  nom: string;
+  /**
+   * Bonus appliqué lorsque le set est complet.
+   */
+  bonus: string;
+  image?: (number | null) | Media;
+  /**
+   * Liste des pièces d'armure appartenant à ce set.
+   */
+  pieces?: {
+    docs?: (number | Armor)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mods".
+ */
+export interface Mod {
+  id: number;
+  nom: string;
+  categoriePrincipale: 'armes' | 'armures';
+  /**
+   * Pour une arme, le prix est un pourcentage du prix de l'arme (ex: 0.10 pour 10%). Pour une armure, c'est un prix fixe.
+   */
+  prix?: number | null;
+  sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
+  sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
+  effet: string;
+  modificateurs?:
+    | {
+        cible:
+          | 'stat_force'
+          | 'stat_habilite'
+          | 'stat_connaissances'
+          | 'stat_culture'
+          | 'stat_anticipation'
+          | 'stat_perception'
+          | 'armure_physique'
+          | 'armure_bouclier'
+          | 'armure_rupture'
+          | 'degats_flat'
+          | 'degats_mod_fo_x1'
+          | 'degats_mod_pe_x1'
+          | 'portee_courte'
+          | 'portee_moyenne'
+          | 'mod_portee_courte'
+          | 'mod_portee_moyenne'
+          | 'chargeur'
+          | 'chargeur_pct'
+          | 'poids'
+          | 'refroidissement_pct'
+          | 'indicator_surcharge'
+          | 'indicator_projectiles'
+          | 'indicator_acide'
+          | 'indicator_tazer'
+          | 'indicator_gravite_faible'
+          | 'indicator_gravite_forte'
+          | 'indicator_lumiere'
+          | 'indicator_double_pistolet'
+          | 'epreuve_pilotage_leger'
+          | 'epreuve_pilotage_intermediaire'
+          | 'epreuve_pilotage_lourd'
+          | 'epreuve_pilotage_blinde'
+          | 'epreuve_tir_pilote'
+          | 'epreuve_tir_tourelle'
+          | 'epreuve_tir_vehicule'
+          | 'epreuve_reparation'
+          | 'epreuve_negocier'
+          | 'epreuve_analyse'
+          | 'epreuve_culture'
+          | 'epreuve_discretion'
+          | 'epreuve_initiative'
+          | 'epreuve_tir_assaut'
+          | 'epreuve_tir_sniper'
+          | 'epreuve_tir_shotgun'
+          | 'epreuve_cac'
+          | 'epreuve_soins';
+        valeur: number;
+        id?: string | null;
+      }[]
+    | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "weapons".
+ */
+export interface Weapon {
+  id: number;
+  nom: string;
+  fabricant?: string | null;
+  categorie: 'fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'melee' | 'lourde';
+  type: ('thermique' | 'cinetique' | 'plasma' | 'explosif' | 'melee')[];
+  /**
+   * Format: [nombre de dés]d[taille du dé]
+   */
+  valeurDegats?: string | null;
+  poids?: number | null;
+  prix?: number | null;
+  /**
+   * Pour la mélée, correspond à la taille de la lame. Pour les armes lourdes, il s'agit de la portée maximale fixe.
+   */
+  porteeFixe?: number | null;
+  projectilesParTir?: number | null;
+  valeurChauffe?: number | null;
+  /**
+   * Distance maximale pour le premier palier.
+   */
+  courtePortee?: number | null;
+  modCourtePortee?: number | null;
+  /**
+   * Distance maximale pour le second palier.
+   */
+  moyennePortee?: number | null;
+  modMoyennePortee?: number | null;
+  /**
+   * Définissez les 3 paliers de distance (le 1er étant déjà la courte portée au-dessus).
+   */
+  paliersSniper?:
+    | {
+        distanceMax: number;
+        modificateur: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Distance additionnelle après le dernier palier provoquant un malus cumulatif.
+   */
+  trancheMalusLonguePortee?: number | null;
+  malusParTranche?: number | null;
+  /**
+   * Pour les armes plasma, correspond à la taille du conteneur.
+   */
+  tailleChargeur?: number | null;
+  tempsRechargement?: number | null;
+  zoneEffet?: string | null;
+  /**
+   * Pourcentage de refroidissement par unité de temps.
+   */
+  tempsRefroidissement?: number | null;
+  details?: string | null;
+  image?: (number | null) | Media;
+  /**
+   * ATTENTION : Ce champ est conservé pour la compatibilité mais les mods doivent être gérés au niveau du personnage.
+   */
+  mods?: (number | Mod)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "consumables".
  */
 export interface Consumable {
@@ -677,6 +775,121 @@ export interface Chip {
   effet: string;
   restriction?: string | null;
   cooldown?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-modules".
+ */
+export interface ShipModule {
+  id: number;
+  nom: string;
+  famille:
+    | '_base_header'
+    | 'generateur'
+    | 'propulseurs'
+    | 'survie'
+    | 'boucliers'
+    | '_supp_header'
+    | 'blindage'
+    | 'reparateur'
+    | 'hangar'
+    | 'scanner'
+    | 'infirmerie'
+    | 'sas-abordage'
+    | 'ordinateur-tir'
+    | 'harmonisateur'
+    | 'baie-amarrage'
+    | 'pilotage-assiste'
+    | 'propulseurs-stardash';
+  typeModule: 'base' | 'supplementaire';
+  taille: '1' | '2' | '3' | '4';
+  modele: 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+  consommation?: number | null;
+  prix?: string | null;
+  /**
+   * Puissance du générateur (ex: 6 GW).
+   */
+  puissance?: string | null;
+  /**
+   * Bonus apportés (ex: Esquive +3, Tir(pilote)+2, Crypto +1, Dash +1).
+   */
+  modificateurs?: string | null;
+  bouclierMax?: number | null;
+  /**
+   * Nombre de tours avant réactivation.
+   */
+  cooldownBouclier?: number | null;
+  rechargeBouclier?: number | null;
+  /**
+   * Réparations par tour (max). Ex: 3 (12).
+   */
+  reparations?: string | null;
+  malusPoids?: number | null;
+  blindageBonus?: number | null;
+  /**
+   * Capacité ou nombre de places.
+   */
+  capacite?: string | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-weapons".
+ */
+export interface ShipWeapon {
+  id: number;
+  nom: string;
+  taille: '1' | '2' | '3' | '4';
+  modele: 'G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+  type: 'thermique' | 'cinetique' | 'explosif' | 'blindage';
+  categorie?: ('cartouche' | 'cinetique' | 'lance-missile' | 'mine' | 'bouclier-joute') | null;
+  degats?: string | null;
+  moyenne?: number | null;
+  chauffe?: number | null;
+  ballesParSalve?: number | null;
+  chargeur?: number | null;
+  distance?: string | null;
+  cooldown?: number | null;
+  bonusBlindage?: number | null;
+  /**
+   * Nombre de points d'emport consommés (ex: x2 pour lance-missiles).
+   */
+  pointsEmport?: number | null;
+  /**
+   * Prix de l'arme (ex: 100 k, 1 M).
+   */
+  prix?: string | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-consumables".
+ */
+export interface ShipConsumable {
+  id: number;
+  nom: string;
+  categorie?: ('munitions' | 'cartouches' | 'roquettes' | 'mines' | 'reparation' | 'energie' | 'autre') | null;
+  taille?: ('toutes' | '1' | '2' | '3' | '4') | null;
+  modele?: ('G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S') | null;
+  /**
+   * Calibre ou capacité (ex: 1200 MJ, 50mm).
+   */
+  calibre?: string | null;
+  /**
+   * Bonus apporté (ex: Dgts+4, Tir +2, Refroidissement).
+   */
+  bonus?: string | null;
+  prix?: string | null;
+  effet?: string | null;
+  image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -727,6 +940,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ships';
         value: number | Ship;
+      } | null)
+    | ({
+        relationTo: 'ship-models';
+        value: number | ShipModel;
+      } | null)
+    | ({
+        relationTo: 'ship-weapons';
+        value: number | ShipWeapon;
+      } | null)
+    | ({
+        relationTo: 'ship-modules';
+        value: number | ShipModule;
+      } | null)
+    | ({
+        relationTo: 'ship-consumables';
+        value: number | ShipConsumable;
       } | null)
     | ({
         relationTo: 'weapons';
@@ -880,8 +1109,132 @@ export interface GroupsSelect<T extends boolean = true> {
  */
 export interface ShipsSelect<T extends boolean = true> {
   nom?: T;
-  classe?: T;
   modele?: T;
+  proprietaire?: T;
+  blindageActuel?: T;
+  bouclierActuel?: T;
+  esquiveActuelle?: T;
+  consommationActuelle?: T;
+  pilote?: T;
+  copilote?: T;
+  canonniers?:
+    | T
+    | {
+        personnage?: T;
+        tourelle?: T;
+        id?: T;
+      };
+  moduleGenerateur?: T;
+  modulePropulseurs?: T;
+  moduleSurvie?: T;
+  moduleBoucliers?: T;
+  modulesSupplementaires?: T;
+  armesPilote?: T;
+  armesTourelles?:
+    | T
+    | {
+        tourelle?: T;
+        armes?: T;
+        id?: T;
+      };
+  consommablesVaisseau?:
+    | T
+    | {
+        consommable?: T;
+        quantite?: T;
+        id?: T;
+      };
+  notes?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-models_select".
+ */
+export interface ShipModelsSelect<T extends boolean = true> {
+  nom?: T;
+  classe?: T;
+  categorie?: T;
+  tourelles?: T;
+  pointsEmportPilote?: T;
+  pointsEmportTourelles?: T;
+  blindage?: T;
+  generateur?: T;
+  modulesSupplementaires?: T;
+  consommables?: T;
+  prix?: T;
+  esquiveBase?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-weapons_select".
+ */
+export interface ShipWeaponsSelect<T extends boolean = true> {
+  nom?: T;
+  taille?: T;
+  modele?: T;
+  type?: T;
+  categorie?: T;
+  degats?: T;
+  moyenne?: T;
+  chauffe?: T;
+  ballesParSalve?: T;
+  chargeur?: T;
+  distance?: T;
+  cooldown?: T;
+  bonusBlindage?: T;
+  pointsEmport?: T;
+  prix?: T;
+  description?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-modules_select".
+ */
+export interface ShipModulesSelect<T extends boolean = true> {
+  nom?: T;
+  famille?: T;
+  typeModule?: T;
+  taille?: T;
+  modele?: T;
+  consommation?: T;
+  prix?: T;
+  puissance?: T;
+  modificateurs?: T;
+  bouclierMax?: T;
+  cooldownBouclier?: T;
+  rechargeBouclier?: T;
+  reparations?: T;
+  malusPoids?: T;
+  blindageBonus?: T;
+  capacite?: T;
+  description?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-consumables_select".
+ */
+export interface ShipConsumablesSelect<T extends boolean = true> {
+  nom?: T;
+  categorie?: T;
+  taille?: T;
+  modele?: T;
+  calibre?: T;
+  bonus?: T;
+  prix?: T;
+  effet?: T;
+  image?: T;
   updatedAt?: T;
   createdAt?: T;
 }
