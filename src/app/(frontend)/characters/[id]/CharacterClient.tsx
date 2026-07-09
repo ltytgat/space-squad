@@ -111,6 +111,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     return () => window.removeEventListener('popstate', handlePopState)
   }, [isModified])
 
+  const handleMalusUpdate = (field: string, value: number) => {
+    setCharacter((prev: any) => ({ ...prev, [field]: value }))
+  }
+
   const handleCancel = () => {
     if (confirm('Voulez-vous vraiment annuler toutes les modifications ?')) {
       setCharacter(initialCharacter)
@@ -893,7 +897,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     Blessures Max
                   </dt>
                   <dd><div className="char-stat-right">
-                    {isAdmin && <MalusInput characterId={character.id} field="bonusPointsDeBlessures" initialValue={character.bonusPointsDeBlessures || 0} />}
+                    {isAdmin && <MalusInput characterId={character.id} field="bonusPointsDeBlessures" initialValue={character.bonusPointsDeBlessures || 0} onUpdate={handleMalusUpdate} />}
                     <span className="char-hp-value">{stats.maxHP}</span>
                   </div></dd>
                 </div>
@@ -960,7 +964,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                           {label}
                         </span>
                         <div className="char-stat-right">
-                          {isAdmin && <MalusInput characterId={character.id} field={`malus${key.charAt(0).toUpperCase()}${key.slice(1)}`} initialValue={currentMalus} />}
+                          {isAdmin && <MalusInput characterId={character.id} field={`malus${key.charAt(0).toUpperCase()}${key.slice(1)}`} initialValue={currentMalus} onUpdate={handleMalusUpdate} />}
                           <span className="char-stat-value">{total} <span className="char-stat-die-mod">({dieModStr})</span></span>
                         </div>
                       </div>

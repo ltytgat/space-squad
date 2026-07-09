@@ -7,15 +7,17 @@ interface MalusInputProps {
   characterId: number
   field: string
   initialValue: number
+  onUpdate?: (field: string, value: number) => void
 }
 
-export function MalusInput({ characterId, field, initialValue }: MalusInputProps) {
+export function MalusInput({ characterId, field, initialValue, onUpdate }: MalusInputProps) {
   const [value, setValue] = useState(initialValue)
   const [isPending, startTransition] = useTransition()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = parseInt(e.target.value) || 0
     setValue(newVal)
+    if (onUpdate) onUpdate(field, newVal)
     
     startTransition(async () => {
       try {
