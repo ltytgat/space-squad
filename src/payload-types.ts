@@ -74,6 +74,7 @@ export interface Config {
     groups: Group;
     ships: Ship;
     'ship-models': ShipModel;
+    'ship-sale-models': ShipSaleModel;
     'ship-weapons': ShipWeapon;
     'ship-modules': ShipModule;
     'ship-consumables': ShipConsumable;
@@ -102,6 +103,7 @@ export interface Config {
     groups: GroupsSelect<false> | GroupsSelect<true>;
     ships: ShipsSelect<false> | ShipsSelect<true>;
     'ship-models': ShipModelsSelect<false> | ShipModelsSelect<true>;
+    'ship-sale-models': ShipSaleModelsSelect<false> | ShipSaleModelsSelect<true>;
     'ship-weapons': ShipWeaponsSelect<false> | ShipWeaponsSelect<true>;
     'ship-modules': ShipModulesSelect<false> | ShipModulesSelect<true>;
     'ship-consumables': ShipConsumablesSelect<false> | ShipConsumablesSelect<true>;
@@ -365,18 +367,10 @@ export interface ShipModel {
   pointsEmportTourelles?: string | null;
   blindage: number;
   /**
-   * Puissance du générateur de base (ex: 6 GW).
-   */
-  generateur?: string | null;
-  /**
    * Emplacements de modules. Format: base+tourelle(s). Ex: 1+1 = 1 base + 1 tourelle.
    */
   modulesSupplementaires?: string | null;
   consommables: number;
-  /**
-   * Prix du vaisseau (ex: 100 k, 1 M, 1,25 M).
-   */
-  prix?: string | null;
   /**
    * Esquive de base selon la taille : Alpha=15, Beta=12, Gamma=9, Delta=6.
    */
@@ -895,6 +889,38 @@ export interface ShipConsumable {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-sale-models".
+ */
+export interface ShipSaleModel {
+  id: number;
+  nom: string;
+  /**
+   * Le châssis de base sur lequel ce modèle est construit.
+   */
+  chassis: number | ShipModel;
+  /**
+   * Prix du modèle complet (ex: 100 k, 1 M, 1,25 M).
+   */
+  prix?: string | null;
+  generateur: number | ShipModule;
+  propulseurs: number | ShipModule;
+  boucliers: number | ShipModule;
+  survie: number | ShipModule;
+  armes?:
+    | {
+        arme: number | ShipWeapon;
+        emplacement?: ('pilote' | 'tourelle-1' | 'tourelle-2' | 'tourelle-3' | 'tourelle-4') | null;
+        id?: string | null;
+      }[]
+    | null;
+  modulesOptionnels?: (number | ShipModule)[] | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -944,6 +970,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ship-models';
         value: number | ShipModel;
+      } | null)
+    | ({
+        relationTo: 'ship-sale-models';
+        value: number | ShipSaleModel;
       } | null)
     | ({
         relationTo: 'ship-weapons';
@@ -1161,11 +1191,34 @@ export interface ShipModelsSelect<T extends boolean = true> {
   pointsEmportPilote?: T;
   pointsEmportTourelles?: T;
   blindage?: T;
-  generateur?: T;
   modulesSupplementaires?: T;
   consommables?: T;
-  prix?: T;
   esquiveBase?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-sale-models_select".
+ */
+export interface ShipSaleModelsSelect<T extends boolean = true> {
+  nom?: T;
+  chassis?: T;
+  prix?: T;
+  generateur?: T;
+  propulseurs?: T;
+  boucliers?: T;
+  survie?: T;
+  armes?:
+    | T
+    | {
+        arme?: T;
+        emplacement?: T;
+        id?: T;
+      };
+  modulesOptionnels?: T;
+  description?: T;
   image?: T;
   updatedAt?: T;
   createdAt?: T;

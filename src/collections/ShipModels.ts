@@ -2,16 +2,17 @@ import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 
 /**
- * Catalogue des modèles de vaisseaux.
- * Chaque modèle a des propriétés fixes (non modifiables par les joueurs).
+ * Châssis de vaisseaux.
+ * Propriétés structurelles fixes (tourelles, blindage, emplacements, etc.).
+ * Les composants initiaux sont définis dans les modèles de vente (ShipSaleModels).
  * Taille 1 = Alpha, Taille 2 = Beta, Taille 3 = Gamma, Taille 4 = Delta
  */
 export const ShipModels: CollectionConfig = {
   slug: 'ship-models',
-  labels: { singular: 'Modèle de vaisseau', plural: 'Modèles de vaisseaux' },
+  labels: { singular: 'Châssis de vaisseau', plural: 'Châssis de vaisseaux' },
   admin: {
     useAsTitle: 'nom',
-    defaultColumns: ['nom', 'classe', 'categorie', 'tourelles', 'blindage', 'prix'],
+    defaultColumns: ['nom', 'classe', 'categorie', 'tourelles', 'blindage'],
     group: 'Vaisseaux',
   },
   access: {
@@ -28,7 +29,7 @@ export const ShipModels: CollectionConfig = {
           name: 'nom',
           type: 'text',
           required: true,
-          label: 'Nom du modèle',
+          label: 'Nom du châssis',
           unique: true,
           admin: { width: '34%' },
         },
@@ -108,15 +109,6 @@ export const ShipModels: CollectionConfig = {
           admin: { width: '25%' },
         },
         {
-          name: 'generateur',
-          type: 'text',
-          label: 'Générateur',
-          admin: {
-            width: '25%',
-            description: 'Puissance du générateur de base (ex: 6 GW).',
-          },
-        },
-        {
           name: 'modulesSupplementaires',
           type: 'text',
           label: 'Modules supplémentaires',
@@ -135,14 +127,6 @@ export const ShipModels: CollectionConfig = {
           admin: { width: '25%' },
         },
       ],
-    },
-    {
-      name: 'prix',
-      type: 'text',
-      label: 'Prix',
-      admin: {
-        description: 'Prix du vaisseau (ex: 100 k, 1 M, 1,25 M).',
-      },
     },
     {
       name: 'esquiveBase',
