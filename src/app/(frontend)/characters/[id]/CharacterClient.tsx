@@ -631,7 +631,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const { type, category, slot } = selectorConfig
 
     if (type === 'weapon') {
-      const inventory = (character.inventaireArmes || []).map((w: any) => ({ ...w, fromInventory: true }))
+      const inventory = (character.inventaireArmes || []).map((w: any, idx: number) => ({ ...w, fromInventory: true, inventoryIndex: idx }))
       
       // Ajouter les armes équipées compatibles (sauf celle du slot actuel)
       const equippedSlots = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
@@ -651,7 +651,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
     
     if (type === 'armor') {
-      const inventory = (character.inventaireArmures || []).map((a: any) => ({ ...a, fromInventory: true }))
+      const inventory = (character.inventaireArmures || []).map((a: any, idx: number) => ({ ...a, fromInventory: true, inventoryIndex: idx }))
       
       // Pour les armures, peu de chances de vouloir swap car elles sont par slot strict,
       // mais on respecte l'énoncé.
@@ -667,18 +667,22 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     if (type === 'consumable') {
       // Pour les consommables, on retourne la liste plate des objets de l'inventaire
-      return (character.inventaire || []).filter((c: any) => (c.quantite || 0) > 0).map((c: any) => ({ ...c, fromInventory: true }))
+      return (character.inventaire || [])
+        .map((c: any, idx: number) => ({ ...c, fromInventory: true, inventoryIndex: idx }))
+        .filter((c: any) => (c.quantite || 0) > 0)
     }
 
     if (type === 'armorMod') {
-      return (character.inventaireMods || []).filter((m: any) => {
-        return m.categoriePrincipale === 'armures' && 
-               (m.sousCategorieArmure === 'toutes' || m.sousCategorieArmure === category)
-      }).map((m: any) => ({ ...m, fromInventory: true }))
+      return (character.inventaireMods || [])
+        .map((m: any, idx: number) => ({ ...m, fromInventory: true, inventoryIndex: idx }))
+        .filter((m: any) => {
+          return m.categoriePrincipale === 'armures' && 
+                 (m.sousCategorieArmure === 'toutes' || m.sousCategorieArmure === category)
+        })
     }
 
     if (type === 'chip') {
-      const inventory = (character.inventairePuces || []).map((p: any) => ({ ...p, fromInventory: true }))
+      const inventory = (character.inventairePuces || []).map((p: any, idx: number) => ({ ...p, fromInventory: true, inventoryIndex: idx }))
       const equippedSlots = ['puceMk1', 'puceMk2', 'puceMk3']
       const equipped = equippedSlots
         .filter(s => s !== slot)
@@ -705,16 +709,28 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       newCharacter[newItem.fromSlot] = currentItem
     } else if (newItem.fromInventory) {
       const newItemId = newItem.id
+      const inventoryIndex = newItem.inventoryIndex
+
       // Retirer de l'inventaire
       if (type === 'weapon') {
-        newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (inventoryIndex !== undefined) {
+          newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((_: any, idx: number) => idx !== inventoryIndex)
+        } else {
+          newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((i: any) => (i.id || i) !== newItemId)
+        }
         if (currentItem) newCharacter.inventaireArmes = [...newCharacter.inventaireArmes, currentItem]
       } else if (type === 'armor') {
-        newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (inventoryIndex !== undefined) {
+          newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((_: any, idx: number) => idx !== inventoryIndex)
+        } else {
+          newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((i: any) => (i.id || i) !== newItemId)
+        }
         if (currentItem) newCharacter.inventaireArmures = [...newCharacter.inventaireArmures, currentItem]
       } else if (type === 'consumable') {
-        newCharacter.inventaire = (newCharacter.inventaire || []).map((c: any) => {
-          if ((c.id || c) === newItemId) return { ...c, quantite: (c.quantite || 1) - 1 }
+        newCharacter.inventaire = (newCharacter.inventaire || []).map((c: any, idx: number) => {
+          if (inventoryIndex !== undefined ? idx === inventoryIndex : (c.id || c) === newItemId) {
+            return { ...c, quantite: (c.quantite || 1) - 1 }
+          }
           return c
         }).filter((c: any) => c.quantite > 0)
         
@@ -733,9 +749,17 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           }
         }
       } else if (type === 'armorMod') {
-        newCharacter.inventaireMods = (newCharacter.inventaireMods || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (inventoryIndex !== undefined) {
+          newCharacter.inventaireMods = (newCharacter.inventaireMods || []).filter((_: any, idx: number) => idx !== inventoryIndex)
+        } else {
+          newCharacter.inventaireMods = (newCharacter.inventaireMods || []).filter((i: any) => (i.id || i) !== newItemId)
+        }
       } else if (type === 'chip') {
-        newCharacter.inventairePuces = (newCharacter.inventairePuces || []).filter((i: any) => (i.id || i) !== newItemId)
+        if (inventoryIndex !== undefined) {
+          newCharacter.inventairePuces = (newCharacter.inventairePuces || []).filter((_: any, idx: number) => idx !== inventoryIndex)
+        } else {
+          newCharacter.inventairePuces = (newCharacter.inventairePuces || []).filter((i: any) => (i.id || i) !== newItemId)
+        }
         if (currentItem) newCharacter.inventairePuces = [...newCharacter.inventairePuces, currentItem]
       }
     } else if (currentItem) {
@@ -764,6 +788,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const cleanItem = { ...newItem }
     delete cleanItem.fromSlot
     delete cleanItem.fromInventory
+    delete cleanItem.inventoryIndex
 
     if (type === 'weapon') {
       newCharacter[currentSlot] = cleanItem
