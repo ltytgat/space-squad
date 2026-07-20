@@ -3,13 +3,14 @@
 import { useMemo, useState } from 'react'
 
 type Group = { id: number; nom: string }
+type Faction = { id: number; nom: string }
 
 type Character = {
   id: number
   nom?: string
   sexe?: string
   origine?: string
-  affiliation?: string
+  affiliation?: string | Faction | null
   pointsDeRang?: number
   konis?: number
   legende?: number
@@ -41,6 +42,12 @@ function groupId(g: Group | string | null | undefined): string | number {
   if (!g) return ''
   if (typeof g === 'string') return g
   return g.id
+}
+
+function affiliationName(a: Character['affiliation']): string {
+  if (!a) return ''
+  if (typeof a === 'string') return a
+  return a.nom
 }
 
 function shipName(v: Character['vaisseau']): string {
@@ -115,56 +122,59 @@ export function CharactersClient({ characters, groups }: Props) {
         <p className="chars-empty">Aucun personnage dans cette escouade.</p>
       ) : (
         <div className="chars-grid">
-          {filtered.map((c) => (
-            <a key={c.id} href={`/characters/${c.id}`} className="chars-card">
-              <div className="chars-card-header">
-                <h3 className="chars-card-name">{c.nom || <em>Sans nom</em>}</h3>
-                <div className="chars-card-tags">
-                  {c.origine && (
-                    <span className="chars-tag chars-tag-origine">{c.origine}</span>
-                  )}
-                  {c.sexe && <span className="chars-tag">{c.sexe}</span>}
-                  {c.affiliation && (
-                    <span className={`chars-tag ${AFFIL_COLORS[c.affiliation] ?? ''}`}>
-                      {c.affiliation}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <dl className="chars-card-dl">
-                <div className="chars-card-dl-row">
-                  <dt>Escouade</dt>
-                  <dd>{groupName(c.groupe) || '—'}</dd>
-                </div>
-                <div className="chars-card-dl-row">
-                  <dt>Vaisseau</dt>
-                  <dd>{shipName(c.vaisseau)}</dd>
-                </div>
-                {c.roleVaisseau && (
-                  <div className="chars-card-dl-row">
-                    <dt>Rôle</dt>
-                    <dd>{c.roleVaisseau === 'proprietaire' ? 'Propriétaire' : 'Passager'}</dd>
+          {filtered.map((c) => {
+            const affName = affiliationName(c.affiliation)
+            return (
+              <a key={c.id} href={`/characters/${c.id}`} className="chars-card">
+                <div className="chars-card-header">
+                  <h3 className="chars-card-name">{c.nom || <em>Sans nom</em>}</h3>
+                  <div className="chars-card-tags">
+                    {c.origine && (
+                      <span className="chars-tag chars-tag-origine">{c.origine}</span>
+                    )}
+                    {c.sexe && <span className="chars-tag">{c.sexe}</span>}
+                    {affName && (
+                      <span className={`chars-tag ${AFFIL_COLORS[affName] ?? ''}`}>
+                        {affName}
+                      </span>
+                    )}
                   </div>
-                )}
-              </dl>
+                </div>
 
-              <div className="chars-card-stats">
-                <div className="chars-stat">
-                  <span className="chars-stat-label">Rang</span>
-                  <span className="chars-stat-value">{c.pointsDeRang ?? 0}</span>
+                <dl className="chars-card-dl">
+                  <div className="chars-card-dl-row">
+                    <dt>Escouade</dt>
+                    <dd>{groupName(c.groupe) || '—'}</dd>
+                  </div>
+                  <div className="chars-card-dl-row">
+                    <dt>Vaisseau</dt>
+                    <dd>{shipName(c.vaisseau)}</dd>
+                  </div>
+                  {c.roleVaisseau && (
+                    <div className="chars-card-dl-row">
+                      <dt>Rôle</dt>
+                      <dd>{c.roleVaisseau === 'proprietaire' ? 'Propriétaire' : 'Passager'}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                <div className="chars-card-stats">
+                  <div className="chars-stat">
+                    <span className="chars-stat-label">Rang</span>
+                    <span className="chars-stat-value">{c.pointsDeRang ?? 0}</span>
+                  </div>
+                  <div className="chars-stat">
+                    <span className="chars-stat-label">Konis</span>
+                    <span className="chars-stat-value">{c.konis ?? 0}</span>
+                  </div>
+                  <div className="chars-stat">
+                    <span className="chars-stat-label">Légende</span>
+                    <span className="chars-stat-value">{c.legende ?? 0}</span>
+                  </div>
                 </div>
-                <div className="chars-stat">
-                  <span className="chars-stat-label">Konis</span>
-                  <span className="chars-stat-value">{c.konis ?? 0}</span>
-                </div>
-                <div className="chars-stat">
-                  <span className="chars-stat-label">Légende</span>
-                  <span className="chars-stat-value">{c.legende ?? 0}</span>
-                </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            )
+          })}
         </div>
       )}
     </div>
