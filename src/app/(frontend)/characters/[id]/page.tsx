@@ -78,13 +78,19 @@ type Chip = {
 type Ship = { id: number; nom: string; classe?: string; modele?: string }
 type Group = { id: number; nom: string }
 
+type Faction = {
+  id: number
+  nom: string
+  rangs?: { nom: string; pointsRequis: number }[]
+}
+
 type Character = {
   id: number
   user?: { id: number } | string | null
   nom?: string
   sexe?: string
   origine?: string
-  affiliation?: string
+  affiliation?: string | Faction | null
   pointsDeRang?: number
   konis?: number
   legende?: number

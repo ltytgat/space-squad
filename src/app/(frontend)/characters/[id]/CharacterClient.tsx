@@ -48,6 +48,27 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   // Statistiques calculées en temps réel
   const stats = useMemo(() => calculateStats(character), [character])
 
+  const factionRank = useMemo(() => {
+    const val = character.rangDeFaction
+    if (!val) return null
+
+    const affiliation = character.affiliation
+    if (typeof affiliation === 'object' && affiliation?.rangs && affiliation.rangs.length > 0) {
+      // On considère que val est l'index 1-basé du rang
+      const idx = parseInt(val) - 1
+      if (!isNaN(idx) && affiliation.rangs[idx]) {
+        return affiliation.rangs[idx].nom
+      }
+    }
+
+    return val
+  }, [character.affiliation, character.rangDeFaction])
+  
+  const affiliationName = useMemo(() => {
+    if (!character.affiliation) return null
+    return typeof character.affiliation === 'object' ? character.affiliation.nom : character.affiliation
+  }, [character.affiliation])
+
   // Empêcher de quitter sans sauvegarder
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -890,7 +911,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             <div className="char-tags">
               {character.origine && <span className="ss-tag">{character.origine}</span>}
               {character.sexe && <span className="ss-tag">{character.sexe}</span>}
-              {character.affiliation && <span className={`ss-tag char-tag-affil-${character.affiliation.toLowerCase()}`}>{character.affiliation}</span>}
+              {affiliationName && <span className={`ss-tag char-tag-affil-${affiliationName.toLowerCase()}`}>{affiliationName}</span>}
             </div>
           </div>
         </div>
@@ -1208,16 +1229,18 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
               {character.affiliation && (
                 <div className="char-reputation-section">
-                  <h3 className="char-reputation-subtitle">Faction : {character.affiliation}</h3>
+                  <h3 className="char-reputation-subtitle">
+                    Faction : {affiliationName}
+                  </h3>
                   <div className="char-faction-grid">
                     <div className="char-faction-item">
                       <span className="char-faction-label">Points de faction</span>
                       <span className="char-faction-value">{character.pointsDeFaction || 0}</span>
                     </div>
-                    {character.rangDeFaction && (
+                    {factionRank && (
                       <div className="char-faction-item">
                         <span className="char-faction-label">Rang actuel</span>
-                        <span className="char-faction-value">{character.rangDeFaction}</span>
+                        <span className="char-faction-value">{factionRank}</span>
                       </div>
                     )}
                   </div>

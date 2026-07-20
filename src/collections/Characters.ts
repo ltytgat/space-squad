@@ -84,13 +84,9 @@ export const Characters: CollectionConfig = {
     },
     {
       name: 'affiliation',
-      type: 'select',
+      type: 'relationship',
+      relationTo: 'factions',
       label: 'Affiliation',
-      options: [
-        { label: 'Alliance', value: 'Alliance' },
-        { label: 'Union', value: 'Union' },
-        { label: 'Guilde', value: 'Guilde' },
-      ],
     },
     {
       name: 'groupe',

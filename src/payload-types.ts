@@ -85,6 +85,7 @@ export interface Config {
     mods: Mod;
     consumables: Consumable;
     chips: Chip;
+    factions: Faction;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -114,6 +115,7 @@ export interface Config {
     mods: ModsSelect<false> | ModsSelect<true>;
     consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
     chips: ChipsSelect<false> | ChipsSelect<true>;
+    factions: FactionsSelect<false> | FactionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -392,7 +394,7 @@ export interface Character {
   nom?: string | null;
   sexe?: ('M' | 'F' | 'X') | null;
   origine?: ('Humain' | 'Strani' | 'Vada') | null;
-  affiliation?: ('Alliance' | 'Union' | 'Guilde') | null;
+  affiliation?: (number | null) | Faction;
   groupe?: (number | null) | Group;
   pointsDeRang?: number | null;
   pointsDeCompetence?: number | null;
@@ -530,6 +532,23 @@ export interface Character {
     | {
         nom: string;
         valeur: number;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "factions".
+ */
+export interface Faction {
+  id: number;
+  nom: string;
+  rangs?:
+    | {
+        nom: string;
+        pointsRequis: number;
         id?: string | null;
       }[]
     | null;
@@ -1014,6 +1033,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'chips';
         value: number | Chip;
+      } | null)
+    | ({
+        relationTo: 'factions';
+        value: number | Faction;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1546,6 +1569,22 @@ export interface ChipsSelect<T extends boolean = true> {
   effet?: T;
   restriction?: T;
   cooldown?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "factions_select".
+ */
+export interface FactionsSelect<T extends boolean = true> {
+  nom?: T;
+  rangs?:
+    | T
+    | {
+        nom?: T;
+        pointsRequis?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
