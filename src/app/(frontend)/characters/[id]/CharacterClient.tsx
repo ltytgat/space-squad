@@ -631,20 +631,24 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const { type, category, slot } = selectorConfig
 
     if (type === 'weapon') {
-      const inventory = (character.inventaireArmes || []).map((w: any, idx: number) => ({ ...w, fromInventory: true, inventoryIndex: idx }))
+      const filterFn = (w: any) => {
+        if (!w || !w.item) return false
+        const item = w.item
+        if (category === 'lourde') return item.categorie === 'lourde'
+        if (category === 'melee') return item.categorie === 'melee'
+        return !['lourde', 'melee'].includes(item.categorie)
+      }
+
+      const inventory = (character.inventaireArmes || [])
+        .map((w: any, idx: number) => ({ ...w, fromInventory: true, inventoryIndex: idx }))
+        .filter(filterFn)
       
       // Ajouter les armes équipées compatibles (sauf celle du slot actuel)
       const equippedSlots = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
       const equipped = equippedSlots
         .filter(s => s !== slot)
         .map(s => character[s])
-        .filter(w => {
-          if (!w || !w.item) return false
-          const item = w.item
-          if (category === 'lourde') return item.categorie === 'lourde'
-          if (category === 'melee') return item.categorie === 'melee'
-          return !['lourde', 'melee'].includes(item.categorie)
-        })
+        .filter(filterFn)
         .map(w => ({ ...w, fromSlot: equippedSlots.find(s => character[s] === w) }))
 
       return [...equipped, ...inventory]

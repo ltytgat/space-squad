@@ -402,7 +402,17 @@ export const Characters: CollectionConfig = {
               label: 'Arme principale',
               admin: { width: '50%' },
               fields: [
-                { name: 'item', type: 'relationship', relationTo: 'weapons', label: 'Arme' },
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'weapons',
+                  label: 'Arme',
+                  filterOptions: {
+                    categorie: {
+                      not_in: ['lourde', 'melee'],
+                    },
+                  },
+                },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -429,7 +439,17 @@ export const Characters: CollectionConfig = {
               label: 'Arme secondaire',
               admin: { width: '50%' },
               fields: [
-                { name: 'item', type: 'relationship', relationTo: 'weapons', label: 'Arme' },
+                {
+                  name: 'item',
+                  type: 'relationship',
+                  relationTo: 'weapons',
+                  label: 'Arme',
+                  filterOptions: {
+                    categorie: {
+                      not_in: ['lourde', 'melee'],
+                    },
+                  },
+                },
                 {
                   name: 'mods',
                   type: 'relationship',
