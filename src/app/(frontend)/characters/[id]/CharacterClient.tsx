@@ -1186,6 +1186,46 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             )}
           </div>
 
+          {/* ── Réputation et Faction ── */}
+          <div className="char-card">
+            <h2 className="char-card-title">Réputation et Faction</h2>
+            <div className="char-reputation-layout">
+              <div className="char-reputation-section">
+                <h3 className="char-reputation-subtitle">Réputation</h3>
+                {(!character.reputation || character.reputation.length === 0) ? (
+                  <p className="char-empty-hint">Aucune réputation enregistrée.</p>
+                ) : (
+                  <div className="char-reputation-list">
+                    {character.reputation.map((rep: any, idx: number) => (
+                      <div key={idx} className="char-reputation-item">
+                        <span className="char-reputation-cat">{rep.categorie}</span>
+                        <span className="char-reputation-val">{rep.valeur}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {character.affiliation && (
+                <div className="char-reputation-section">
+                  <h3 className="char-reputation-subtitle">Faction : {character.affiliation}</h3>
+                  <div className="char-faction-grid">
+                    <div className="char-faction-item">
+                      <span className="char-faction-label">Points de faction</span>
+                      <span className="char-faction-value">{character.pointsDeFaction || 0}</span>
+                    </div>
+                    {character.rangDeFaction && (
+                      <div className="char-faction-item">
+                        <span className="char-faction-label">Rang actuel</span>
+                        <span className="char-faction-value">{character.rangDeFaction}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
 
