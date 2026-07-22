@@ -862,7 +862,6 @@ export interface ShipWeapon {
   type: 'thermique' | 'cinetique' | 'explosif' | 'blindage';
   categorie?: ('cartouche' | 'cinetique' | 'lance-missile' | 'mine' | 'bouclier-joute') | null;
   degats?: string | null;
-  moyenne?: number | null;
   chauffe?: number | null;
   ballesParSalve?: number | null;
   chargeur?: number | null;
@@ -1257,7 +1256,6 @@ export interface ShipWeaponsSelect<T extends boolean = true> {
   type?: T;
   categorie?: T;
   degats?: T;
-  moyenne?: T;
   chauffe?: T;
   ballesParSalve?: T;
   chargeur?: T;

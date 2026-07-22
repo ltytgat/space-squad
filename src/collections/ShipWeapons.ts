@@ -96,12 +96,6 @@ export const ShipWeapons: CollectionConfig = {
             placeholder: 'ex: 2D12+3',
           },
         },
-        {
-          name: 'moyenne',
-          type: 'number',
-          label: 'Moyenne',
-          admin: { width: '25%' },
-        },
       ],
     },
     {
