@@ -815,8 +815,14 @@ export interface ShipModule {
     | 'harmonisateur'
     | 'baie-amarrage'
     | 'pilotage-assiste'
-    | 'propulseurs-stardash';
-  typeModule: 'base' | 'supplementaire';
+    | 'propulseurs-stardash'
+    | 'cabines-equipage'
+    | '_tourelles_header'
+    | 'bombardement'
+    | 'shotgun'
+    | 'tir-concentre'
+    | 'dispersion';
+  typeModule: 'base' | 'supplementaire' | 'tourelle';
   taille: '1' | '2' | '3' | '4';
   modele: 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
   consommation?: number | null;
@@ -845,6 +851,17 @@ export interface ShipModule {
    * Capacité ou nombre de places.
    */
   capacite?: string | null;
+  consommationParPersonne?: number | null;
+  nombrePlaces?: number | null;
+  consommationSupplementaire?: number | null;
+  portee?: string | null;
+  bonusDegatsPourcentage?: number | null;
+  bonusDegatsPar100MJ?: number | null;
+  mjMaxUtilisable?: number | null;
+  /**
+   * Angle de tir de la dispersion (ex: 45°, 90°).
+   */
+  angleTir?: string | null;
   description?: string | null;
   image?: (number | null) | Media;
   updatedAt: string;
@@ -1290,6 +1307,14 @@ export interface ShipModulesSelect<T extends boolean = true> {
   malusPoids?: T;
   blindageBonus?: T;
   capacite?: T;
+  consommationParPersonne?: T;
+  nombrePlaces?: T;
+  consommationSupplementaire?: T;
+  portee?: T;
+  bonusDegatsPourcentage?: T;
+  bonusDegatsPar100MJ?: T;
+  mjMaxUtilisable?: T;
+  angleTir?: T;
   description?: T;
   image?: T;
   updatedAt?: T;

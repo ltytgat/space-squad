@@ -49,6 +49,12 @@ export const ShipModules: CollectionConfig = {
             { label: "Baie d'amarrage", value: 'baie-amarrage' },
             { label: 'Pilotage assisté', value: 'pilotage-assiste' },
             { label: 'Propulseurs Stardash', value: 'propulseurs-stardash' },
+            { label: "Cabines d'équipage", value: 'cabines-equipage' },
+            { label: '── Modules tourelles ──', value: '_tourelles_header' },
+            { label: 'Bombardement', value: 'bombardement' },
+            { label: 'Shotgun', value: 'shotgun' },
+            { label: 'Tir concentré', value: 'tir-concentre' },
+            { label: 'Dispersion', value: 'dispersion' },
           ],
           admin: { width: '30%' },
         },
@@ -60,6 +66,7 @@ export const ShipModules: CollectionConfig = {
           options: [
             { label: 'Module de base', value: 'base' },
             { label: 'Module supplémentaire', value: 'supplementaire' },
+            { label: 'Module Tourelle', value: 'tourelle' },
           ],
           admin: { width: '30%' },
         },
@@ -186,6 +193,97 @@ export const ShipModules: CollectionConfig = {
       admin: {
         condition: (data) => ['hangar', 'infirmerie', 'sas-abordage'].includes(data.famille),
         description: 'Capacité ou nombre de places.',
+      },
+    },
+
+    // ── Cabines d'équipage ──
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'consommationParPersonne',
+          type: 'number',
+          label: 'Consommation par personne (GW)',
+          admin: {
+            width: '50%',
+            condition: (data) => data.famille === 'cabines-equipage',
+          },
+        },
+        {
+          name: 'nombrePlaces',
+          type: 'number',
+          label: 'Nombre de places',
+          admin: {
+            width: '50%',
+            condition: (data) => data.famille === 'cabines-equipage',
+          },
+        },
+      ],
+    },
+
+    // ── Modules tourelles ──
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'consommationSupplementaire',
+          type: 'number',
+          label: 'Consommation supplémentaire (%)',
+          admin: {
+            width: '33%',
+            condition: (data) => ['bombardement', 'shotgun', 'dispersion'].includes(data.famille),
+          },
+        },
+        {
+          name: 'portee',
+          type: 'text',
+          label: 'Portée',
+          admin: {
+            width: '33%',
+            condition: (data) => ['bombardement', 'shotgun', 'dispersion'].includes(data.famille),
+          },
+        },
+        {
+          name: 'bonusDegatsPourcentage',
+          type: 'number',
+          label: 'Bonus de dégâts (%)',
+          admin: {
+            width: '33%',
+            condition: (data) => ['bombardement', 'shotgun'].includes(data.famille),
+          },
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'bonusDegatsPar100MJ',
+          type: 'number',
+          label: 'Bonus de dégâts (%) par 100 MJ dépensée',
+          admin: {
+            width: '50%',
+            condition: (data) => data.famille === 'tir-concentre',
+          },
+        },
+        {
+          name: 'mjMaxUtilisable',
+          type: 'number',
+          label: 'Quantité de MJ max utilisable',
+          admin: {
+            width: '50%',
+            condition: (data) => data.famille === 'tir-concentre',
+          },
+        },
+      ],
+    },
+    {
+      name: 'angleTir',
+      type: 'text',
+      label: 'Angle de tir',
+      admin: {
+        condition: (data) => data.famille === 'dispersion',
+        description: "Angle de tir de la dispersion (ex: 45°, 90°).",
       },
     },
     {
