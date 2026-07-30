@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods, getBridgedArmorStats } from '@/lib/characterStats'
 import { updateCharacter } from './actions'
 import { MalusInput } from './MalusInput'
+import { KitUsageInput } from './KitUsageInput'
 
 type CharacterProps = {
   character: any
@@ -982,6 +983,35 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     </thead>
                     <tbody><tr><td>{stats.dodge.depourvue}</td><td className="char-dodge-base">{stats.dodge.decouvert}</td><td>{stats.dodge.protege}</td><td>{stats.dodge.couvert}</td></tr></tbody>
                   </table>
+                </div>
+                <div className="char-kits-section">
+                  <h3 className="char-kits-title" title="Le nombre d'utilisations max est égal au modificateur de Connaissances">
+                    Kits de survie (Usages)
+                  </h3>
+                  <div className="char-kits-grid">
+                    <div className="char-kit-item">
+                      <span className="char-kit-label">Réparation</span>
+                      <KitUsageInput 
+                        characterId={character.id}
+                        field="utilisationsKitsReparation"
+                        initialValue={character.utilisationsKitsReparation || 0}
+                        maxValue={stats.maxKits}
+                        onUpdate={handleMalusUpdate}
+                        disabled={!isOwner && !isAdmin}
+                      />
+                    </div>
+                    <div className="char-kit-item">
+                      <span className="char-kit-label">Premiers soins</span>
+                      <KitUsageInput 
+                        characterId={character.id}
+                        field="utilisationsKitsSoins"
+                        initialValue={character.utilisationsKitsSoins || 0}
+                        maxValue={stats.maxKits}
+                        onUpdate={handleMalusUpdate}
+                        disabled={!isOwner && !isAdmin}
+                      />
+                    </div>
+                  </div>
                 </div>
               </dl>
             </div>

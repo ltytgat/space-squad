@@ -409,6 +409,8 @@ export interface Character {
   pointsDeCompetence?: number | null;
   konis?: number | null;
   legende?: number | null;
+  utilisationsKitsReparation?: number | null;
+  utilisationsKitsSoins?: number | null;
   /**
    * Bonus fixe N ajouté aux points de blessures max. Modifiable uniquement par un admin.
    */
@@ -1440,6 +1442,8 @@ export interface CharactersSelect<T extends boolean = true> {
   pointsDeCompetence?: T;
   konis?: T;
   legende?: T;
+  utilisationsKitsReparation?: T;
+  utilisationsKitsSoins?: T;
   bonusPointsDeBlessures?: T;
   reputation?:
     | T

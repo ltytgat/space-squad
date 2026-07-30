@@ -105,6 +105,20 @@ export const Characters: CollectionConfig = {
         { name: 'konis', type: 'number', label: 'Konis', defaultValue: 0 },
         { name: 'legende', type: 'number', label: 'Légende', defaultValue: 0 },
         {
+          name: 'utilisationsKitsReparation',
+          type: 'number',
+          label: 'Kits Réparation utilisés',
+          defaultValue: 0,
+          min: 0,
+        },
+        {
+          name: 'utilisationsKitsSoins',
+          type: 'number',
+          label: 'Kits Soins utilisés',
+          defaultValue: 0,
+          min: 0,
+        },
+        {
           name: 'bonusPointsDeBlessures',
           type: 'number',
           label: 'Bonus Blessures (N)',

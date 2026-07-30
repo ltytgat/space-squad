@@ -325,6 +325,8 @@ export function calculateStats(character: any) {
   const anticipationDieMod = getDieMod('anticipation', character.anticipation)
   const perceptionDieMod = getDieMod('perception', character.perception)
 
+  const maxKits = Math.max(0, connaissancesDieMod)
+
   const getCompetenceValue = (name: string) => {
     const comp = character.competences?.find((c: any) => c.competence === name)
     return comp ? comp.valeur : 0
@@ -339,9 +341,9 @@ export function calculateStats(character: any) {
   const epreuves = {
     vaisseau: [
       { label: 'Pilotage – Chasseur/Léger', value: getEpreuveMod(habiliteDieMod, 'Chasseur', 'epreuve_pilotage_leger') },
-      { label: 'Pilotage – Bombardier/Intermédiaire', value: getEpreuveMod(habiliteDieMod, 'Bombardier', 'epreuve_pilotage_intermediaire') },
-      { label: 'Pilotage – Corvette/Poids lourds', value: getEpreuveMod(habiliteDieMod, 'Poids Lourds', 'epreuve_pilotage_lourd') },
-      { label: 'Pilotage – Frégate/Blindé', value: getEpreuveMod(habiliteDieMod, 'Transport de Troupes', 'epreuve_pilotage_blinde') },
+      { label: 'Pilotage – Bombardier/Intermédiaire', value: getEpreuveMod(habiliteDieMod, 'Bombardier', 'epreuve_pilotage_intermediaire') - 5 },
+      { label: 'Pilotage – Corvette/Poids lourds', value: getEpreuveMod(habiliteDieMod, 'Poids Lourds', 'epreuve_pilotage_lourd') - 10 },
+      { label: 'Pilotage – Frégate/Blindé', value: getEpreuveMod(habiliteDieMod, 'Transport de Troupes', 'epreuve_pilotage_blinde') - 15 },
       { label: 'Tir – Pilote', value: getEpreuveMod(perceptionDieMod, null, 'epreuve_tir_pilote') },
       { label: 'Tir – Tourelle', value: getEpreuveMod(perceptionDieMod, 'Canonnier', 'epreuve_tir_tourelle') },
       { label: 'Tir - Véhicule', value: getEpreuveMod(perceptionDieMod, 'Stabilisation', 'epreuve_tir_vehicule') },
@@ -477,6 +479,7 @@ export function calculateStats(character: any) {
     cultureDieMod,
     anticipationDieMod,
     perceptionDieMod,
+    maxKits,
     epreuves,
     dodge,
     maxHP,
