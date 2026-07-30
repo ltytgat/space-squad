@@ -6,6 +6,7 @@ import { calculateStats, getStructuredMods, getBridgedArmorStats } from '@/lib/c
 import { updateCharacter } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
+import { CoachingInput } from './CoachingInput'
 
 type CharacterProps = {
   character: any
@@ -1032,22 +1033,42 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   const total = (baseValue || 0) + bonus - currentMalus
                   const dieMod = Math.floor((total - 10) / 2)
                   const dieModStr = dieMod >= 0 ? `+${dieMod}` : `${dieMod}`
+                  
+                  const capKey = key.charAt(0).toUpperCase() + key.slice(1)
+                  const coachingLabel = character[`coaching${capKey}Label`]
+                  const coachingMax = character[`coaching${capKey}Max`] || 0
+                  const coachingValue = character[`coaching${capKey}Value`] || 0
+
                   return (
-                    <div key={label} className="char-stat-item">
-                      <div className="char-stat-main">
-                        <span 
-                          className="char-stat-label char-help-cursor"
-                          onMouseEnter={(e) => handleStatMouseEnter(e, key)}
-                          onMouseMove={handleMouseMove}
-                          onMouseLeave={handleMouseLeave}
-                        >
-                          {label}
-                        </span>
-                        <div className="char-stat-right">
-                          {isAdmin && <MalusInput characterId={character.id} field={`malus${key.charAt(0).toUpperCase()}${key.slice(1)}`} initialValue={currentMalus} onUpdate={handleMalusUpdate} />}
-                          <span className="char-stat-value">{total} <span className="char-stat-die-mod">({dieModStr})</span></span>
+                    <div key={label} className="char-stat-item-wrapper">
+                      <div className="char-stat-item">
+                        <div className="char-stat-main">
+                          <span 
+                            className="char-stat-label char-help-cursor"
+                            onMouseEnter={(e) => handleStatMouseEnter(e, key)}
+                            onMouseMove={handleMouseMove}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            {label}
+                          </span>
+                          <div className="char-stat-right">
+                            {isAdmin && <MalusInput characterId={character.id} field={`malus${capKey}`} initialValue={currentMalus} onUpdate={handleMalusUpdate} />}
+                            <span className="char-stat-value">{total} <span className="char-stat-die-mod">({dieModStr})</span></span>
+                          </div>
                         </div>
                       </div>
+                      {coachingLabel && (
+                        <div className="char-stat-coaching">
+                          <span className="char-stat-coaching-label">{coachingLabel}</span>
+                          <CoachingInput 
+                            characterId={character.id}
+                            field={`coaching${capKey}Value`}
+                            initialValue={coachingValue}
+                            maxValue={coachingMax}
+                            disabled={!isOwner && !isAdmin}
+                          />
+                        </div>
+                      )}
                     </div>
                   )
                 })}

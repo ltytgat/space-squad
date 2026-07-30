@@ -250,6 +250,65 @@ export const Characters: CollectionConfig = {
       ],
     },
 
+    // ── Coaching (Admin) ──────────────────────────────
+    {
+      type: 'collapsible',
+      label: 'Coaching (Admin)',
+      admin: {
+        description: 'Configuration du coaching par caractéristique. Le libellé active l\'affichage pour le joueur.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'coachingForceLabel', type: 'text', label: 'Coaching Force - Libellé', admin: { width: '40%' } },
+            { name: 'coachingForceMax', type: 'number', label: 'Max', admin: { width: '30%' } },
+            { name: 'coachingForceValue', type: 'number', label: 'Valeur actuelle', defaultValue: 0, admin: { width: '30%' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'coachingHabiliteLabel', type: 'text', label: 'Coaching Habilité - Libellé', admin: { width: '40%' } },
+            { name: 'coachingHabiliteMax', type: 'number', label: 'Max', admin: { width: '30%' } },
+            { name: 'coachingHabiliteValue', type: 'number', label: 'Valeur actuelle', defaultValue: 0, admin: { width: '30%' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'coachingConnaissancesLabel', type: 'text', label: 'Coaching Connaissances - Libellé', admin: { width: '40%' } },
+            { name: 'coachingConnaissancesMax', type: 'number', label: 'Max', admin: { width: '30%' } },
+            { name: 'coachingConnaissancesValue', type: 'number', label: 'Valeur actuelle', defaultValue: 0, admin: { width: '30%' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'coachingCultureLabel', type: 'text', label: 'Coaching Culture - Libellé', admin: { width: '40%' } },
+            { name: 'coachingCultureMax', type: 'number', label: 'Max', admin: { width: '30%' } },
+            { name: 'coachingCultureValue', type: 'number', label: 'Valeur actuelle', defaultValue: 0, admin: { width: '30%' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'coachingAnticipationLabel', type: 'text', label: 'Coaching Anticipation - Libellé', admin: { width: '40%' } },
+            { name: 'coachingAnticipationMax', type: 'number', label: 'Max', admin: { width: '30%' } },
+            { name: 'coachingAnticipationValue', type: 'number', label: 'Valeur actuelle', defaultValue: 0, admin: { width: '30%' } },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'coachingPerceptionLabel', type: 'text', label: 'Coaching Perception - Libellé', admin: { width: '40%' } },
+            { name: 'coachingPerceptionMax', type: 'number', label: 'Max', admin: { width: '30%' } },
+            { name: 'coachingPerceptionValue', type: 'number', label: 'Valeur actuelle', defaultValue: 0, admin: { width: '30%' } },
+          ],
+        },
+      ],
+    },
+
     // ── Armures ───────────────────────────────────────
     {
       type: 'collapsible',

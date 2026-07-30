@@ -44,11 +44,29 @@ export async function updateCharacter(characterId: number, data: any) {
     throw new Error('Non autorisé')
   }
 
+  // Filtrer les données si l'utilisateur n'est pas admin
+  let updateData = { ...data }
+  if (!isAdmin) {
+    const forbiddenPatterns = [
+      /^coaching.*(Label|Max)$/,
+      /^malus.*$/,
+      /^bonusPointsDeBlessures$/,
+      /^pointsDeRang$/,
+      /^pointsDeCompetence$/,
+    ]
+
+    Object.keys(updateData).forEach((key) => {
+      if (forbiddenPatterns.some((pattern) => pattern.test(key))) {
+        delete updateData[key]
+      }
+    })
+  }
+
   // Mise à jour du personnage
   await payload.update({
     collection: 'characters',
     id: characterId,
-    data,
+    data: updateData,
     user,
     overrideAccess: true,
   })

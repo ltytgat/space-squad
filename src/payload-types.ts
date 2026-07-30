@@ -439,6 +439,24 @@ export interface Character {
   malusCulture?: number | null;
   malusAnticipation?: number | null;
   malusPerception?: number | null;
+  coachingForceLabel?: string | null;
+  coachingForceMax?: number | null;
+  coachingForceValue?: number | null;
+  coachingHabiliteLabel?: string | null;
+  coachingHabiliteMax?: number | null;
+  coachingHabiliteValue?: number | null;
+  coachingConnaissancesLabel?: string | null;
+  coachingConnaissancesMax?: number | null;
+  coachingConnaissancesValue?: number | null;
+  coachingCultureLabel?: string | null;
+  coachingCultureMax?: number | null;
+  coachingCultureValue?: number | null;
+  coachingAnticipationLabel?: string | null;
+  coachingAnticipationMax?: number | null;
+  coachingAnticipationValue?: number | null;
+  coachingPerceptionLabel?: string | null;
+  coachingPerceptionMax?: number | null;
+  coachingPerceptionValue?: number | null;
   armureTete?: {
     item?: (number | null) | Armor;
     mods?: (number | Mod)[] | null;
@@ -1466,6 +1484,24 @@ export interface CharactersSelect<T extends boolean = true> {
   malusCulture?: T;
   malusAnticipation?: T;
   malusPerception?: T;
+  coachingForceLabel?: T;
+  coachingForceMax?: T;
+  coachingForceValue?: T;
+  coachingHabiliteLabel?: T;
+  coachingHabiliteMax?: T;
+  coachingHabiliteValue?: T;
+  coachingConnaissancesLabel?: T;
+  coachingConnaissancesMax?: T;
+  coachingConnaissancesValue?: T;
+  coachingCultureLabel?: T;
+  coachingCultureMax?: T;
+  coachingCultureValue?: T;
+  coachingAnticipationLabel?: T;
+  coachingAnticipationMax?: T;
+  coachingAnticipationValue?: T;
+  coachingPerceptionLabel?: T;
+  coachingPerceptionMax?: T;
+  coachingPerceptionValue?: T;
   armureTete?:
     | T
     | {
