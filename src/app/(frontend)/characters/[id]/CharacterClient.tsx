@@ -256,7 +256,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const isHeavy = weapon.categorie === 'lourde'
     const isSniper = weapon.categorie === 'sniper'
     const isThermique = weapon.type?.includes('thermique')
-    const isCinetique = weapon.type?.includes('cinetique')
+    weapon.type?.includes('cinetique');
     const isPlasma = weapon.type?.includes('plasma')
     const structuredMods = getStructuredMods(mods)
 
@@ -578,7 +578,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           )}
           <div className="weapon-utility-stats">
             {weapon.tailleChargeur != null && <div className="weapon-util-item" title="Chargeur"><span className="util-icon">📦</span><span className="util-value">{maxAmmo}</span></div>}
-            {showProjectiles && <div className="weapon-util-item" title="Projectiles/tir"><span className="util-icon">×</span><span className="util-value">{totalProjectiles}</span></div>}
+            {showProjectiles && <div className="weapon-util-item" title="Projectiles/tir"><span className="util-icon">✴️</span><span className="util-value">{totalProjectiles}</span></div>}
             {weapon.tempsRechargement != null && <div className="weapon-util-item" title="Rechargement"><span className="util-icon">🔄</span><span className="util-value">{weapon.tempsRechargement}t</span></div>}
             {weapon.poids != null && <div className="weapon-util-item" title="Poids"><span className="util-icon">⚖️</span><span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span></div>}
             {isThermique && weapon.valeurChauffe != null && <div className="weapon-util-item" title="Valeur de chauffe"><span className="util-icon">🔥</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}

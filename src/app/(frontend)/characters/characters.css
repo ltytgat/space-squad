@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--ss-text-muted);
   margin-bottom: 1rem;
 
@@ -82,7 +82,7 @@
   gap: 0.5rem;
   padding: 0.4rem 0.9rem;
   border-radius: 100px;
-  font-size: 0.825rem;
+  font-size: 0.95rem;
   font-weight: 500;
   border: 1px solid var(--ss-border);
   background: transparent;
@@ -105,7 +105,7 @@
 
 .chars-filter-count {
   font-family: var(--ss-font-mono);
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   background: rgba(255, 255, 255, 0.1);
   padding: 0.05rem 0.4rem;
   border-radius: 100px;
@@ -161,7 +161,7 @@
 
 .chars-card-name {
   font-family: var(--ss-font-display);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--ss-text);
@@ -177,7 +177,7 @@
 
 .chars-tag {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -225,7 +225,7 @@
   gap: 0.5rem;
   padding-block: 0.35rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 
   &:last-child { border-bottom: none; }
 
@@ -255,7 +255,7 @@
 }
 
 .chars-stat-label {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -265,7 +265,7 @@
 
 .chars-stat-value {
   font-family: var(--ss-font-mono);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--ss-cyan);
 }
