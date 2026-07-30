@@ -334,6 +334,7 @@ export interface Ship {
   armesTourelles?:
     | {
         tourelle?: number | null;
+        module?: (number | null) | ShipModule;
         armes?:
           | {
               arme: number | ShipWeapon;
@@ -1236,6 +1237,7 @@ export interface ShipsSelect<T extends boolean = true> {
     | T
     | {
         tourelle?: T;
+        module?: T;
         armes?:
           | T
           | {

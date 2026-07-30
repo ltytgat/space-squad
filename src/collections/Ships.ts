@@ -225,13 +225,23 @@ export const Ships: CollectionConfig = {
                   name: 'tourelle',
                   type: 'number',
                   label: 'Tourelle n°',
+                  admin: { width: '20%' },
+                },
+                {
+                  name: 'module',
+                  type: 'relationship',
+                  relationTo: 'ship-modules',
+                  label: 'Module de tourelle',
+                  filterOptions: {
+                    typeModule: { equals: 'tourelle' },
+                  },
                   admin: { width: '30%' },
                 },
                 {
                   name: 'armes',
                   type: 'array',
                   label: 'Armes',
-                  admin: { width: '70%' },
+                  admin: { width: '50%' },
                   fields: [
                     {
                       name: 'arme',
