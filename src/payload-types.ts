@@ -302,7 +302,6 @@ export interface Ship {
   blindageActuel?: number | null;
   bouclierActuel?: number | null;
   esquiveActuelle?: number | null;
-  consommationActuelle?: number | null;
   pilote?: (number | null) | Character;
   copilote?: (number | null) | Character;
   /**
@@ -1183,7 +1182,6 @@ export interface ShipsSelect<T extends boolean = true> {
   blindageActuel?: T;
   bouclierActuel?: T;
   esquiveActuelle?: T;
-  consommationActuelle?: T;
   pilote?: T;
   copilote?: T;
   canonniers?:
