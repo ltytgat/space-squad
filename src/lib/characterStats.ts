@@ -55,7 +55,7 @@ export type Mod = {
 export function parseModifier(modStr: string | null | undefined): Record<string, number> {
   if (!modStr) return {}
   const mods: Record<string, number> = {}
-  const regex = /([+-]\d+)\s*(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception|Mouv)|(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception|Mouv)\s*([+-]\d+)/gi
+  const regex = /([+-]\d+)\s*(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception|Mouv|Mouvement|Dégâts|Portée|Chargeur|Munitions|Refroidissement)|(Fo|INT|ANT|Hab|Cha|Pe|Force|Habilité|Connaissances|Culture|Anticipation|Perception|Mouv|Mouvement|Dégâts|Portée|Chargeur|Munitions|Refroidissement)\s*([+-]\d+)/gi
   let match
   const mapping: Record<string, string> = {
     fo: 'force',
@@ -71,6 +71,12 @@ export function parseModifier(modStr: string | null | undefined): Record<string,
     pe: 'perception',
     perception: 'perception',
     mouv: 'mouvement',
+    mouvement: 'mouvement',
+    degats: 'degats_flat',
+    portee: 'portee_flat',
+    chargeur: 'chargeur',
+    munitions: 'chargeur',
+    refroidissement: 'refroidissement_flat',
   }
 
   while ((match = regex.exec(modStr)) !== null) {

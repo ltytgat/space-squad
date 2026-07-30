@@ -480,18 +480,30 @@ export interface Character {
   armePrincipale?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
+    munitionsActuelles?: number | null;
+    chargeurRelie?: (number | null) | Consumable;
+    chauffeActuelle?: number | null;
   };
   armeSecondaire?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
+    munitionsActuelles?: number | null;
+    chargeurRelie?: (number | null) | Consumable;
+    chauffeActuelle?: number | null;
   };
   armeLourde?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
+    munitionsActuelles?: number | null;
+    chargeurRelie?: (number | null) | Consumable;
+    chauffeActuelle?: number | null;
   };
   armeDeMelee?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
+    munitionsActuelles?: number | null;
+    chargeurRelie?: (number | null) | Consumable;
+    chauffeActuelle?: number | null;
   };
   consommableEquipe1?: (number | null) | Consumable;
   consommableEquipe2?: (number | null) | Consumable;
@@ -505,6 +517,9 @@ export interface Character {
     | {
         item: number | Weapon;
         mods?: (number | Mod)[] | null;
+        munitionsActuelles?: number | null;
+        chargeurRelie?: (number | null) | Consumable;
+        chauffeActuelle?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -790,6 +805,7 @@ export interface Consumable {
   id: number;
   nom: string;
   categorie: 'soins' | 'munitions' | 'grenades' | 'tactique' | 'outils';
+  typeMunition?: ('chargeur' | 'cartouche' | 'conteneur') | null;
   /**
    * Texte libre décrivant l'effet du consommable.
    */
@@ -1538,24 +1554,36 @@ export interface CharactersSelect<T extends boolean = true> {
     | {
         item?: T;
         mods?: T;
+        munitionsActuelles?: T;
+        chargeurRelie?: T;
+        chauffeActuelle?: T;
       };
   armeSecondaire?:
     | T
     | {
         item?: T;
         mods?: T;
+        munitionsActuelles?: T;
+        chargeurRelie?: T;
+        chauffeActuelle?: T;
       };
   armeLourde?:
     | T
     | {
         item?: T;
         mods?: T;
+        munitionsActuelles?: T;
+        chargeurRelie?: T;
+        chauffeActuelle?: T;
       };
   armeDeMelee?:
     | T
     | {
         item?: T;
         mods?: T;
+        munitionsActuelles?: T;
+        chargeurRelie?: T;
+        chauffeActuelle?: T;
       };
   consommableEquipe1?: T;
   consommableEquipe2?: T;
@@ -1570,6 +1598,9 @@ export interface CharactersSelect<T extends boolean = true> {
     | {
         item?: T;
         mods?: T;
+        munitionsActuelles?: T;
+        chargeurRelie?: T;
+        chauffeActuelle?: T;
         id?: T;
       };
   inventaireArmures?:
@@ -1634,6 +1665,7 @@ export interface ModsSelect<T extends boolean = true> {
 export interface ConsumablesSelect<T extends boolean = true> {
   nom?: T;
   categorie?: T;
+  typeMunition?: T;
   effet?: T;
   epreuve?: T;
   modificateurEpreuve?: T;

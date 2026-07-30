@@ -40,6 +40,20 @@ export const Consumables: CollectionConfig = {
           ],
           admin: { width: '50%' },
         },
+        {
+          name: 'typeMunition',
+          type: 'select',
+          label: 'Type de Munition',
+          options: [
+            { label: 'Chargeur (Cinétique)', value: 'chargeur' },
+            { label: 'Cartouche (Thermique)', value: 'cartouche' },
+            { label: 'Conteneur (Plasma)', value: 'conteneur' },
+          ],
+          admin: {
+            width: '50%',
+            condition: (data) => data.categorie === 'munitions',
+          },
+        },
       ],
     },
     {

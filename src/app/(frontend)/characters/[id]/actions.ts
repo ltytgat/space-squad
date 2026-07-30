@@ -75,6 +75,106 @@ export async function updateCharacter(characterId: number, data: any) {
   return { success: true }
 }
 
+export async function updateWeaponStatus(
+  characterId: number, 
+  slot: string, 
+  data: { munitionsActuelles?: number; chauffeActuelle?: number; chargeurRelie?: any }
+) {
+  const { payload, user } = await getAuthenticatedPayload()
+  if (!user) throw new Error('Non autorisé')
+
+  const character = await payload.findByID({
+    collection: 'characters',
+    id: characterId,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (!character) throw new Error('Personnage non trouvé')
+
+  // Vérifier que l'utilisateur est admin ou propriétaire
+  const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
+  if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
+
+  const updatedWeaponGroup = {
+    ...(character[slot as keyof typeof character] as any),
+    ...data
+  }
+
+  await payload.update({
+    collection: 'characters',
+    id: characterId,
+    data: {
+      [slot]: updatedWeaponGroup
+    },
+    user,
+    overrideAccess: true,
+  })
+
+  revalidatePath(`/characters/${characterId}`)
+  return { success: true }
+}
+
+export async function reloadWeapon(
+  characterId: number,
+  slot: string,
+  consumableId: number,
+  newAmmoCount: number,
+  fromSlot?: string
+) {
+  const { payload, user } = await getAuthenticatedPayload()
+  if (!user) throw new Error('Non autorisé')
+
+  const character = await payload.findByID({
+    collection: 'characters',
+    id: characterId,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (!character) throw new Error('Personnage non trouvé')
+
+  // Vérifier que l'utilisateur est admin ou propriétaire
+  const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
+  if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
+
+  // Mettre à jour le slot d'arme
+  const currentWeaponGroup = character[slot as keyof typeof character] as any
+  const updatedWeaponGroup = {
+    ...currentWeaponGroup,
+    munitionsActuelles: newAmmoCount,
+    chargeurRelie: consumableId,
+    chauffeActuelle: 0
+  }
+
+  const updateData: any = {
+    [slot]: updatedWeaponGroup,
+  }
+
+  if (fromSlot) {
+    // Si ça vient d'un slot équipé, on vide ce slot
+    updateData[fromSlot] = null
+  } else {
+    // Sinon, on met à jour l'inventaire : diminuer la quantité du consommable
+    const updatedInventory = (character.inventaire || []).map((item: any) => {
+      const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
+      if (String(cId) === String(consumableId)) {
+        return { ...item, quantite: (item.quantite || 1) - 1 }
+      }
+      return item
+    }).filter((item: any) => item.quantite > 0)
+    updateData.inventaire = updatedInventory
+  }
+
+  await payload.update({
+    collection: 'characters',
+    id: characterId,
+    data: updateData,
+    user,
+    overrideAccess: true,
+  })
+
+  revalidatePath(`/characters/${characterId}`)
+  return { success: true }
+}
 export async function updateCharacterSkills(characterId: number, data: {
   competences: Character['competences'],
   pointsDeCompetence: number

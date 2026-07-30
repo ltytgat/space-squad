@@ -1271,6 +1271,181 @@
   }
 }
 
+/* ── Ammunition Tracking ── */
+.weapon-ammo-tracking {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.weapon-ammo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.weapon-ammo-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--ss-font-mono);
+  font-size: 0.9rem;
+}
+
+.ammo-count {
+  color: var(--ss-cyan);
+  font-weight: 700;
+}
+
+.ammo-max {
+  color: var(--ss-text-muted);
+  font-size: 0.8rem;
+}
+
+.weapon-ammo-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ammo-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--ss-text);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+}
+
+.ammo-btn:hover:not(:disabled) {
+  background: rgba(var(--ss-color-primary-rgb), 0.2);
+  border-color: var(--ss-color-primary);
+}
+
+.ammo-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.reload-btn {
+  padding-inline: 0.6rem;
+  width: auto !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.weapon-heat-tracking {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.weapon-heat-bar-container {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.weapon-heat-bar {
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.weapon-heat-bar.level-1 { background: #ffaa00; }
+.weapon-heat-bar.level-2 { background: #ff4400; box-shadow: 0 0 10px rgba(255, 68, 0, 0.6); }
+.weapon-heat-bar.level-3 { background: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); }
+.weapon-heat-bar.level-4 { background: #aa00ff; box-shadow: 0 0 20px rgba(170, 0, 255, 1); animation: heat-pulse 1s infinite alternate; }
+
+@keyframes heat-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.5); }
+}
+
+.weapon-linked-mag {
+  font-size: 0.75rem;
+  background: rgba(0, 212, 255, 0.05);
+  border-left: 2px solid var(--ss-cyan);
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.mag-name {
+  color: var(--ss-cyan);
+  font-weight: 600;
+  display: block;
+}
+
+.mag-effect {
+  font-style: italic;
+  color: var(--ss-text-muted);
+  font-size: 0.7rem;
+}
+
+.char-mag-effect-preview {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ss-text-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.ss-tag.tag-equipped {
+  background: var(--ss-cyan);
+  color: #000;
+  border-color: var(--ss-cyan);
+}
+
+.weapon-heat-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heat-value {
+  font-family: var(--ss-font-mono);
+  font-size: 0.75rem;
+  color: #ffcc00;
+}
+
+.heat-btn-group {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.heat-btn {
+  font-size: 0.9rem;
+  padding: 0;
+  width: 26px;
+  height: 26px;
+}
+
+.heat-btn.fire:hover {
+  background: rgba(255, 68, 0, 0.2);
+  border-color: #ff4400;
+}
+
+.heat-btn.cool:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: var(--ss-cyan);
+}
+
 /* ── Backpack ── */
 
 .char-backpack {

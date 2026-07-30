@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { calculateStats, getStructuredMods, getBridgedArmorStats } from '@/lib/characterStats'
-import { updateCharacter } from './actions'
+import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier } from '@/lib/characterStats'
+import { updateCharacter, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
 import { CoachingInput } from './CoachingInput'
@@ -45,6 +45,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     currentId?: number | string,
     armorSlot?: string,
     modIndex?: number
+  } | null>(null)
+  const [reloadSelectorConfig, setReloadSelectorConfig] = useState<{
+    slotKey: string,
+    ammoType: string,
+    availableMags: any[]
   } | null>(null)
 
   // Statistiques calculées en temps réel
@@ -246,19 +251,153 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   // Contenu détaillé d'une arme
-  const renderWeaponInner = (weapon: any, mods: any[] = []) => {
+  const renderWeaponInner = (weapon: any, mods: any[] = [], weaponGroup: any = null, slotKey: string | null = null) => {
     const isMelee = weapon.categorie === 'melee'
     const isHeavy = weapon.categorie === 'lourde'
     const isSniper = weapon.categorie === 'sniper'
     const isThermique = weapon.type?.includes('thermique')
+    const isCinetique = weapon.type?.includes('cinetique')
     const isPlasma = weapon.type?.includes('plasma')
     const structuredMods = getStructuredMods(mods)
+
+    // Bonus des chargeurs
+    const magEffet = weaponGroup?.chargeurRelie?.effet
+    const magMods = magEffet ? parseModifier(magEffet) : {}
 
     const bonusProjectiles = structuredMods['indicator_projectiles'] || 0
     const totalProjectiles = (weapon.projectilesParTir ?? 1) + bonusProjectiles
     const showProjectiles = totalProjectiles != null && !isThermique && !isPlasma
 
     const damageColorClass = (weapon.type?.[0]) ? `weapon-type-${weapon.type[0]}` : ''
+
+    // Récupérer les stats de munitions/chauffe depuis le weaponGroup (équipé)
+    const munitionsActuelles = weaponGroup?.munitionsActuelles ?? 0
+    const chauffeActuelle = weaponGroup?.chauffeActuelle ?? 0
+    
+    const bonusChargeur = (structuredMods['chargeur'] || 0) + (magMods['chargeur'] || 0)
+    const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
+    const maxAmmo = Math.ceil((weapon.tailleChargeur ?? 0) * (1 + bonusChargeurPct / 100)) + bonusChargeur
+
+    const handleFire = async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      let newData: any = {}
+      if (isThermique) {
+        const value = weapon.valeurChauffe ?? 10
+        newData = { chauffeActuelle: Math.min(400, chauffeActuelle + value) }
+      } else {
+        const cost = totalProjectiles || 1
+        newData = { munitionsActuelles: Math.max(0, munitionsActuelles - cost) }
+      }
+      
+      // Mise à jour optimiste
+      setCharacter((prev: any) => ({
+        ...prev,
+        [slotKey!]: { ...prev[slotKey!], ...newData }
+      }))
+      
+      await updateWeaponStatus(character.id, slotKey!, newData)
+    }
+
+    const handleCool = async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      // Le refroidissement utilise la valeur de chauffe et non la valeur de refroidissement
+      const value = weapon.valeurChauffe ?? 10
+      const newData = { chauffeActuelle: Math.max(0, chauffeActuelle - value) }
+      
+      // Mise à jour optimiste
+      setCharacter((prev: any) => ({
+        ...prev,
+        [slotKey!]: { ...prev[slotKey!], ...newData }
+      }))
+      
+      await updateWeaponStatus(character.id, slotKey!, newData)
+    }
+
+    const handleReload = async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      let ammoType: 'chargeur' | 'cartouche' | 'conteneur' = 'chargeur'
+      if (isThermique) ammoType = 'cartouche'
+      else if (isPlasma) ammoType = 'conteneur'
+
+      const checkCompatibility = (item: any) => {
+        if (!item || typeof item === 'string') return false
+        if (item.typeMunition === ammoType) return true
+        const nom = item.nom?.toLowerCase() || ""
+        if (ammoType === 'chargeur' && nom.includes('chargeur')) return true
+        if (ammoType === 'cartouche' && nom.includes('cartouche')) return true
+        if (ammoType === 'conteneur' && nom.includes('conteneur')) return true
+        return false
+      }
+
+      // 1. Chercher dans les consommables équipés (PRIORITAIRES)
+      const equippedMags: any[] = []
+      const slots = ['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3']
+      slots.forEach(slot => {
+        const item = character[slot]
+        if (checkCompatibility(item)) {
+          equippedMags.push({ 
+            consommable: item, 
+            quantite: 1, 
+            fromSlot: slot 
+          })
+        }
+      })
+
+      // 2. Chercher dans l'inventaire
+      const inventoryMags = (character.inventaire || []).filter((invItem: any) => {
+        return checkCompatibility(invItem.consommable)
+      })
+
+      const compatibleMags = [...equippedMags, ...inventoryMags]
+
+      if (compatibleMags.length === 0) {
+        alert(`Aucun ${ammoType} compatible trouvé.`)
+        return
+      }
+
+      if (compatibleMags.length > 1) {
+        setReloadSelectorConfig({
+          slotKey: slotKey!,
+          ammoType,
+          availableMags: compatibleMags
+        })
+        return
+      }
+
+      const mag = compatibleMags[0]
+      const magConsumableId = mag.consommable.id || mag.consommable
+      const newAmmoCount = isThermique ? 0 : maxAmmo
+
+      // Mise à jour optimiste
+      let updatedInventory = character.inventaire
+      let updatedSlots: any = {}
+
+      if (mag.fromSlot) {
+        updatedSlots[mag.fromSlot] = null
+      } else {
+        updatedInventory = (character.inventaire || []).map((item: any) => {
+          const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
+          if (String(cId) === String(magConsumableId)) {
+            return { ...item, quantite: (item.quantite || 1) - 1 }
+          }
+          return item
+        }).filter((item: any) => item.quantite > 0)
+      }
+
+      setCharacter((prev: any) => ({
+        ...prev,
+        [slotKey!]: { 
+          ...prev[slotKey!], 
+          munitionsActuelles: newAmmoCount, 
+          chargeurRelie: mag.consommable, 
+          chauffeActuelle: 0 
+        },
+        inventaire: updatedInventory,
+        ...updatedSlots
+      }))
+
+      await reloadWeapon(character.id, slotKey!, magConsumableId, newAmmoCount, mag.fromSlot)
+    }
 
     const getFinalDamageData = () => {
       let baseDamage = weapon.valeurDegats
@@ -270,7 +409,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       if (isMelee) bonus = stats.forceDieMod * multiplier
       else if (!isHeavy && !isPlasma) bonus = stats.perceptionDieMod * multiplier
 
-      bonus += structuredMods['degats_flat'] || 0
+      bonus += (structuredMods['degats_flat'] || 0) + (magMods['degats_flat'] || 0)
       if (isMelee) bonus += (structuredMods['degats_mod_fo_x1'] || 0) * stats.forceDieMod
       if (weapon.categorie === 'shotgun') bonus += (structuredMods['degats_mod_pe_x1'] || 0) * stats.perceptionDieMod
 
@@ -301,8 +440,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       const rows: { label: string; mod: string }[] = []
       const bonusPC = structuredMods['mod_portee_courte'] || 0
       const bonusPM = structuredMods['mod_portee_moyenne'] || 0
-      const addPC = structuredMods['portee_courte'] || 0
-      const addPM = structuredMods['portee_moyenne'] || 0
+      const addPC = (structuredMods['portee_courte'] || 0) + (magMods['portee_flat'] || 0)
+      const addPM = (structuredMods['portee_moyenne'] || 0) + (magMods['portee_flat'] || 0)
 
       if (isMelee) rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: '0' })
       else if (isHeavy) rows.push({ label: `Max ${weapon.porteeFixe ?? 50}m`, mod: '0' })
@@ -338,14 +477,89 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       )
     }
 
-    const bonusChargeur = structuredMods['chargeur'] || 0
-    const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
-    const finalChargeur = Math.ceil((weapon.tailleChargeur ?? 0) * (1 + bonusChargeurPct / 100)) + bonusChargeur
 
     return (
       <div className="char-equip-item">
         {renderItemImage(weapon)}
         <span className="char-equip-item-name">{weapon.nom}</span>
+
+        {weaponGroup?.chargeurRelie && (
+          <div className="weapon-linked-mag">
+            <span className="mag-name">🔋 {weaponGroup.chargeurRelie.nom}</span>
+            {weaponGroup.chargeurRelie.effet && <span className="mag-effect">({weaponGroup.chargeurRelie.effet})</span>}
+          </div>
+        )}
+        
+        {/* Traitement spécifique Munitions / Chauffe */}
+        {slotKey && !isMelee && (
+          <div className="weapon-ammo-tracking">
+            {!isThermique ? (
+              <div className="weapon-ammo-header">
+                <div className="weapon-ammo-status">
+                  <span className="ammo-count">{munitionsActuelles}</span>
+                  <span className="ammo-max">/ {maxAmmo}</span>
+                </div>
+                <div className="weapon-ammo-controls">
+                  <button 
+                    className="ammo-btn" 
+                    onClick={handleFire} 
+                    disabled={munitionsActuelles <= 0}
+                    title="Tirer"
+                  >
+                    🔥
+                  </button>
+                  <button 
+                    className="ammo-btn reload-btn" 
+                    onClick={handleReload}
+                    title="Recharger (choisir un chargeur de l'inventaire)"
+                  >
+                    Reload
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="weapon-heat-tracking">
+                <div className="weapon-heat-bar-container">
+                  <div 
+                    className={`weapon-heat-bar level-${Math.floor((chauffeActuelle - 0.1) / 100) + 1}`} 
+                    style={{ 
+                      width: `${(chauffeActuelle % 100) || (chauffeActuelle > 0 ? 100 : 0)}%`,
+                    }}
+                  />
+                </div>
+                <div className="weapon-heat-controls">
+                  <span className="heat-value">{chauffeActuelle}%</span>
+                  <div className="heat-btn-group">
+                    <button 
+                      className="ammo-btn heat-btn cool" 
+                      onClick={handleCool} 
+                      disabled={chauffeActuelle <= 0}
+                      title="Refroidir"
+                    >
+                      ❄️
+                    </button>
+                    <button 
+                      className="ammo-btn heat-btn fire" 
+                      onClick={handleFire} 
+                      disabled={chauffeActuelle >= 400}
+                      title="Tirer (chauffe)"
+                    >
+                      🔥
+                    </button>
+                    <button 
+                      className="ammo-btn reload-btn" 
+                      onClick={handleReload}
+                      title="Changer cartouche (consomme une cartouche et reset chauffe)"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="char-equip-item-stats">
           {damageData && (
             <div className="weapon-damage-block">
@@ -363,12 +577,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             </div>
           )}
           <div className="weapon-utility-stats">
-            {weapon.tailleChargeur != null && <div className="weapon-util-item" title="Chargeur"><span className="util-icon">📦</span><span className="util-value">{finalChargeur}</span></div>}
+            {weapon.tailleChargeur != null && <div className="weapon-util-item" title="Chargeur"><span className="util-icon">📦</span><span className="util-value">{maxAmmo}</span></div>}
             {showProjectiles && <div className="weapon-util-item" title="Projectiles/tir"><span className="util-icon">×</span><span className="util-value">{totalProjectiles}</span></div>}
             {weapon.tempsRechargement != null && <div className="weapon-util-item" title="Rechargement"><span className="util-icon">🔄</span><span className="util-value">{weapon.tempsRechargement}t</span></div>}
             {weapon.poids != null && <div className="weapon-util-item" title="Poids"><span className="util-icon">⚖️</span><span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span></div>}
             {isThermique && weapon.valeurChauffe != null && <div className="weapon-util-item" title="Valeur de chauffe"><span className="util-icon">🔥</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
-            {isThermique && weapon.tempsRefroidissement != null && <div className="weapon-util-item" title="Refroidissement"><span className="util-icon">❄️</span><span className="util-value">{Math.round(weapon.tempsRefroidissement * (1 + (structuredMods['refroidissement_pct'] || 0) / 100))}%</span></div>}
+            {isThermique && <div className="weapon-util-item" title="Refroidissement (Valeur de chauffe)"><span className="util-icon">❄️</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
           </div>
         </div>
         {renderRangeTable()}
@@ -540,7 +754,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             🔄
           </button>
         </div>
-        {isEquipped ? renderWeaponInner(weapon, mods) : (
+        {isEquipped ? renderWeaponInner(weapon, mods, weaponGroup, slotKey) : (
           <div className="char-equip-empty">
             <span className="char-equip-empty-icon">🔫</span>
             <span className="char-equip-empty-text">Non équipé</span>
@@ -1379,6 +1593,90 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           {hoveredItem.type === 'consumables' && renderConsumableInner(hoveredItem.item)}
           {hoveredItem.type === 'mods' && renderModInner(hoveredItem.item)}
           {hoveredItem.type === 'stats' && renderStatTooltip(hoveredItem.item)}
+        </div>
+      )}
+
+      {/* Sélecteur de recharge */}
+      {reloadSelectorConfig && (
+        <div className="char-selector-overlay" onClick={() => setReloadSelectorConfig(null)}>
+          <div className="char-selector-modal" onClick={e => e.stopPropagation()}>
+            <div className="char-selector-header">
+              <h3>Choisir : {reloadSelectorConfig.ammoType}</h3>
+              <button className="char-selector-close" onClick={() => setReloadSelectorConfig(null)}>×</button>
+            </div>
+            <div className="char-selector-content">
+              <div className="char-selector-list">
+                {reloadSelectorConfig.availableMags.map((itemObj: any, idx: number) => {
+                  const item = itemObj.consommable
+                  return (
+                    <div 
+                      key={idx} 
+                      className="char-selector-item"
+                      onClick={() => {
+                        const mag = itemObj
+                        const magConsumableId = mag.consommable.id || mag.consommable
+                        
+                        const weaponGroup = character[reloadSelectorConfig.slotKey]
+                        const weapon = weaponGroup.item
+                        const structuredMods = getStructuredMods(weaponGroup.mods || [])
+                        const magEffet = mag.consommable.effet
+                        const magMods = magEffet ? parseModifier(magEffet) : {}
+                        const bonusChargeur = (structuredMods['chargeur'] || 0) + (magMods['chargeur'] || 0)
+                        const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
+                        const maxAmmo = Math.ceil((weapon.tailleChargeur ?? 0) * (1 + bonusChargeurPct / 100)) + bonusChargeur
+                        
+                        const isThermique = weapon.type?.includes('thermique')
+                        const newAmmoCount = isThermique ? 0 : maxAmmo
+
+                        let updatedInventory = character.inventaire
+                        let updatedSlots: any = {}
+
+                        if (mag.fromSlot) {
+                          updatedSlots[mag.fromSlot] = null
+                        } else {
+                          updatedInventory = (character.inventaire || []).map((it: any) => {
+                            const cId = typeof it.consommable === 'object' ? it.consommable.id : it.consommable
+                            if (String(cId) === String(magConsumableId)) {
+                              return { ...it, quantite: (it.quantite || 1) - 1 }
+                            }
+                            return it
+                          }).filter((it: any) => it.quantite > 0)
+                        }
+
+                        setCharacter((prev: any) => ({
+                          ...prev,
+                          [reloadSelectorConfig.slotKey]: { 
+                            ...prev[reloadSelectorConfig.slotKey], 
+                            munitionsActuelles: newAmmoCount, 
+                            chargeurRelie: mag.consommable,
+                            chauffeActuelle: 0 
+                          },
+                          inventaire: updatedInventory,
+                          ...updatedSlots
+                        }))
+
+                        reloadWeapon(character.id, reloadSelectorConfig.slotKey, magConsumableId, newAmmoCount, mag.fromSlot)
+                        setReloadSelectorConfig(null)
+                      }}
+                      onMouseEnter={(e) => handleMouseEnter(e, itemObj, 'consumables')}
+                      onMouseMove={handleMouseMove}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <div className="char-selector-item-info">
+                        <strong>{item.nom}</strong>
+                        {itemObj.fromSlot ? (
+                          <span className="ss-tag tag-equipped">Équipé</span>
+                        ) : (
+                          <span className="ss-tag">Qté: {itemObj.quantite}</span>
+                        )}
+                        {item.effet && <span className="char-mag-effect-preview">{item.effet}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -500,6 +500,32 @@ export const Characters: CollectionConfig = {
                     }
                   },
                 },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'munitionsActuelles',
+                      type: 'number',
+                      label: 'Munitions',
+                      defaultValue: 0,
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chargeurRelie',
+                      type: 'relationship',
+                      relationTo: 'consumables',
+                      label: 'Chargeur engagé',
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chauffeActuelle',
+                      type: 'number',
+                      label: 'Chauffe (%)',
+                      defaultValue: 0,
+                      admin: { width: '34%' },
+                    },
+                  ],
+                },
               ],
             },
             {
@@ -537,6 +563,32 @@ export const Characters: CollectionConfig = {
                     }
                   },
                 },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'munitionsActuelles',
+                      type: 'number',
+                      label: 'Munitions',
+                      defaultValue: 0,
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chargeurRelie',
+                      type: 'relationship',
+                      relationTo: 'consumables',
+                      label: 'Chargeur engagé',
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chauffeActuelle',
+                      type: 'number',
+                      label: 'Chauffe (%)',
+                      defaultValue: 0,
+                      admin: { width: '34%' },
+                    },
+                  ],
+                },
               ],
             },
           ],
@@ -573,6 +625,32 @@ export const Characters: CollectionConfig = {
                     }
                   },
                 },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'munitionsActuelles',
+                      type: 'number',
+                      label: 'Munitions',
+                      defaultValue: 0,
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chargeurRelie',
+                      type: 'relationship',
+                      relationTo: 'consumables',
+                      label: 'Chargeur engagé',
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chauffeActuelle',
+                      type: 'number',
+                      label: 'Chauffe (%)',
+                      defaultValue: 0,
+                      admin: { width: '34%' },
+                    },
+                  ],
+                },
               ],
             },
             {
@@ -600,6 +678,32 @@ export const Characters: CollectionConfig = {
                       or: [{ sousCategorieArme: { equals: 'toutes' } }, { sousCategorieArme: { equals: 'melee' } }],
                     }
                   },
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'munitionsActuelles',
+                      type: 'number',
+                      label: 'Munitions',
+                      defaultValue: 0,
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chargeurRelie',
+                      type: 'relationship',
+                      relationTo: 'consumables',
+                      label: 'Chargeur engagé',
+                      admin: { width: '33%' },
+                    },
+                    {
+                      name: 'chauffeActuelle',
+                      type: 'number',
+                      label: 'Chauffe (%)',
+                      defaultValue: 0,
+                      admin: { width: '34%' },
+                    },
+                  ],
                 },
               ],
             },
@@ -714,6 +818,32 @@ export const Characters: CollectionConfig = {
                   relationTo: 'mods',
                   hasMany: true,
                   admin: { width: '50%' },
+                },
+              ],
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'munitionsActuelles',
+                  type: 'number',
+                  label: 'Munitions',
+                  defaultValue: 0,
+                  admin: { width: '33%' },
+                },
+                {
+                  name: 'chargeurRelie',
+                  type: 'relationship',
+                  relationTo: 'consumables',
+                  label: 'Chargeur engagé',
+                  admin: { width: '33%' },
+                },
+                {
+                  name: 'chauffeActuelle',
+                  type: 'number',
+                  label: 'Chauffe (%)',
+                  defaultValue: 0,
+                  admin: { width: '34%' },
                 },
               ],
             },
