@@ -401,7 +401,7 @@ export function calculateStats(character: any) {
   if (origin === 'Strani') xMouv = 14
   else if (origin === 'Vada') xMouv = 6
   const bonusMouv = totalArmorMods['mouvement'] || 0
-  const movement = Math.floor(xMouv - (totalArmorWeight - bf + totalWeaponWeightFinal) / 2 + bonusMouv)
+  const movement = xMouv - Math.floor((totalArmorWeight - bf + totalWeaponWeightFinal) / 2) + bonusMouv
 
   // Construction du breakdown pour les infobulles
   const breakdown: Record<string, any> = {
@@ -418,7 +418,7 @@ export function calculateStats(character: any) {
     },
     movement: {
       label: "Mouvement",
-      formula: "⌊Base_Origine - (Poids_Armures - BF + Poids_Armes) / 2 + Bonus_Mouv⌋",
+      formula: "Base_Origine - ⌊(Poids_Armures - BF + Poids_Armes) / 2⌋ + Bonus_Mouv",
       components: [
         { label: `Base (Origine: ${origin})`, value: xMouv },
         { label: "Poids Armures", value: totalArmorWeight, sub: "Poids cumulé des armures bridées" },
