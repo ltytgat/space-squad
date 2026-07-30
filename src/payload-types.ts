@@ -325,11 +325,21 @@ export interface Ship {
   /**
    * Armes montées sur les points d'emport du pilote.
    */
-  armesPilote?: (number | ShipWeapon)[] | null;
+  armesPilote?:
+    | {
+        arme: number | ShipWeapon;
+        id?: string | null;
+      }[]
+    | null;
   armesTourelles?:
     | {
         tourelle?: number | null;
-        armes?: (number | ShipWeapon)[] | null;
+        armes?:
+          | {
+              arme: number | ShipWeapon;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -1196,12 +1206,22 @@ export interface ShipsSelect<T extends boolean = true> {
   moduleSurvie?: T;
   moduleBoucliers?: T;
   modulesSupplementaires?: T;
-  armesPilote?: T;
+  armesPilote?:
+    | T
+    | {
+        arme?: T;
+        id?: T;
+      };
   armesTourelles?:
     | T
     | {
         tourelle?: T;
-        armes?: T;
+        armes?:
+          | T
+          | {
+              arme?: T;
+              id?: T;
+            };
         id?: T;
       };
   consommablesVaisseau?:

@@ -199,13 +199,19 @@ export const Ships: CollectionConfig = {
       fields: [
         {
           name: 'armesPilote',
-          type: 'relationship',
-          relationTo: 'ship-weapons',
-          hasMany: true,
+          type: 'array',
           label: 'Armes du pilote',
           admin: {
             description: "Armes montées sur les points d'emport du pilote.",
           },
+          fields: [
+            {
+              name: 'arme',
+              type: 'relationship',
+              relationTo: 'ship-weapons',
+              required: true,
+            },
+          ],
         },
         {
           name: 'armesTourelles',
@@ -223,11 +229,17 @@ export const Ships: CollectionConfig = {
                 },
                 {
                   name: 'armes',
-                  type: 'relationship',
-                  relationTo: 'ship-weapons',
-                  hasMany: true,
+                  type: 'array',
                   label: 'Armes',
                   admin: { width: '70%' },
+                  fields: [
+                    {
+                      name: 'arme',
+                      type: 'relationship',
+                      relationTo: 'ship-weapons',
+                      required: true,
+                    },
+                  ],
                 },
               ],
             },
