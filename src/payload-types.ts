@@ -905,7 +905,7 @@ export interface ShipWeapon {
 export interface ShipConsumable {
   id: number;
   nom: string;
-  categorie?: ('munitions' | 'cartouches' | 'roquettes' | 'mines' | 'reparation' | 'energie' | 'autre') | null;
+  quantiteEquipable?: number | null;
   taille?: ('toutes' | '1' | '2' | '3' | '4') | null;
   modele?: ('G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S') | null;
   /**
@@ -1326,7 +1326,7 @@ export interface ShipModulesSelect<T extends boolean = true> {
  */
 export interface ShipConsumablesSelect<T extends boolean = true> {
   nom?: T;
-  categorie?: T;
+  quantiteEquipable?: T;
   taille?: T;
   modele?: T;
   calibre?: T;

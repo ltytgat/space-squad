@@ -6,7 +6,7 @@ export const ShipConsumables: CollectionConfig = {
   labels: { singular: 'Consommable de vaisseau', plural: 'Consommables de vaisseau' },
   admin: {
     useAsTitle: 'nom',
-    defaultColumns: ['nom', 'categorie', 'taille', 'prix'],
+    defaultColumns: ['nom', 'quantiteEquipable', 'taille', 'prix'],
     group: 'Vaisseaux',
   },
   access: {
@@ -27,18 +27,9 @@ export const ShipConsumables: CollectionConfig = {
           admin: { width: '40%' },
         },
         {
-          name: 'categorie',
-          type: 'select',
-          label: 'Catégorie',
-          options: [
-            { label: 'Munitions (cinétique)', value: 'munitions' },
-            { label: 'Cartouches (thermique)', value: 'cartouches' },
-            { label: 'Roquettes', value: 'roquettes' },
-            { label: 'Mines', value: 'mines' },
-            { label: 'Réparation', value: 'reparation' },
-            { label: 'Énergie', value: 'energie' },
-            { label: 'Autre', value: 'autre' },
-          ],
+          name: 'quantiteEquipable',
+          type: 'number',
+          label: 'Quantité équipable',
           admin: { width: '30%' },
         },
         {
