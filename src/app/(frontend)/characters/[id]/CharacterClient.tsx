@@ -435,13 +435,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       const newAmmoCount = isThermique ? 0 : maxAmmo
 
       // Mise à jour optimiste
-      let updatedInventory = character.inventaire
-      let updatedSlots: any = {}
+      const newCharacter = { ...character }
 
       if (mag.fromEquippedIndex !== undefined) {
         newCharacter.consommablesEquipes = (newCharacter.consommablesEquipes || []).filter((_: any, idx: number) => idx !== mag.fromEquippedIndex)
       } else {
-        updatedInventory = (character.inventaire || []).map((item: any) => {
+        newCharacter.inventaire = (newCharacter.inventaire || []).map((item: any) => {
           const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
           if (String(cId) === String(magConsumableId)) {
             return { ...item, quantite: (item.quantite || 1) - 1 }
@@ -458,7 +457,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           chargeurRelie: mag.consommable, 
           chauffeActuelle: 0 
         },
-        inventaire: updatedInventory,
+        inventaire: newCharacter.inventaire,
         consommablesEquipes: newCharacter.consommablesEquipes || prev.consommablesEquipes
       }))
 
@@ -1865,9 +1864,14 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                         const newAmmoCount = isThermique ? 0 : maxAmmo
 
                         let updatedInventory = character.inventaire
+                        let updatedEquipped = character.consommablesEquipes
                         let updatedSlots: any = {}
+                        let fromSlotOrIndex = mag.fromSlot
 
-                        if (mag.fromSlot) {
+                        if (mag.fromEquippedIndex !== undefined) {
+                          updatedEquipped = (updatedEquipped || []).filter((_: any, i: number) => i !== mag.fromEquippedIndex)
+                          fromSlotOrIndex = `equipped[${mag.fromEquippedIndex}]`
+                        } else if (mag.fromSlot) {
                           updatedSlots[mag.fromSlot] = null
                         } else {
                           updatedInventory = (character.inventaire || []).map((it: any) => {
@@ -1888,10 +1892,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                             chauffeActuelle: 0 
                           },
                           inventaire: updatedInventory,
+                          consommablesEquipes: updatedEquipped,
                           ...updatedSlots
                         }))
 
-                        reloadWeapon(character.id, reloadSelectorConfig.slotKey, magConsumableId, newAmmoCount, mag.fromSlot)
+                        reloadWeapon(character.id, reloadSelectorConfig.slotKey, magConsumableId, newAmmoCount, fromSlotOrIndex)
                         setReloadSelectorConfig(null)
                       }}
                       onMouseEnter={(e) => handleMouseEnter(e, itemObj, 'consumables')}
