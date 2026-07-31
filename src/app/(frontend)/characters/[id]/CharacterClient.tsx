@@ -139,6 +139,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     return () => window.removeEventListener('popstate', handlePopState)
   }, [isModified])
 
+  // Fermer le tooltip lors de l'ouverture/fermeture des sélecteurs
+  useEffect(() => {
+    setHoveredItem(null)
+  }, [selectorConfig, reloadSelectorConfig])
+
   const handleMalusUpdate = (field: string, value: number) => {
     setCharacter((prev: any) => ({ ...prev, [field]: value }))
   }
@@ -715,6 +720,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   // Contenu détaillé d'un mod
   const renderModInner = (mod: any) => (
     <div className="char-equip-item">
+      {renderItemImage(mod)}
       <span className="char-equip-item-name">{mod.nom}</span>
       <div className="char-equip-item-mod-base">Effet: {mod.effet}</div>
     </div>
