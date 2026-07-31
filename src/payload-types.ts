@@ -505,6 +505,10 @@ export interface Character {
     chargeurRelie?: (number | null) | Consumable;
     chauffeActuelle?: number | null;
   };
+  /**
+   * Consommables portés sur le backpack. L'espace total dépend du backpack équipé.
+   */
+  consommablesEquipes?: (number | Consumable)[] | null;
   consommableEquipe1?: (number | null) | Consumable;
   consommableEquipe2?: (number | null) | Consumable;
   consommableEquipe3?: (number | null) | Consumable;
@@ -805,6 +809,10 @@ export interface Consumable {
   id: number;
   nom: string;
   categorie: 'soins' | 'munitions' | 'grenades' | 'tactique' | 'outils';
+  /**
+   * Nombre de demi-emplacements occupés (1: moitié, 2: entier, 4: double).
+   */
+  taille: number;
   typeMunition?: ('chargeur' | 'cartouche' | 'conteneur') | null;
   /**
    * Texte libre décrivant l'effet du consommable.
@@ -1585,6 +1593,7 @@ export interface CharactersSelect<T extends boolean = true> {
         chargeurRelie?: T;
         chauffeActuelle?: T;
       };
+  consommablesEquipes?: T;
   consommableEquipe1?: T;
   consommableEquipe2?: T;
   consommableEquipe3?: T;
@@ -1665,6 +1674,7 @@ export interface ModsSelect<T extends boolean = true> {
 export interface ConsumablesSelect<T extends boolean = true> {
   nom?: T;
   categorie?: T;
+  taille?: T;
   typeMunition?: T;
   effet?: T;
   epreuve?: T;

@@ -150,8 +150,17 @@ export async function reloadWeapon(
   }
 
   if (fromSlot) {
-    // Si ça vient d'un slot équipé, on vide ce slot
-    updateData[fromSlot] = null
+    if (fromSlot.startsWith('equipped[')) {
+      const match = fromSlot.match(/\[(\d+)\]/)
+      const idx = match ? parseInt(match[1]) : -1
+      if (idx > -1) {
+        const currentEquipped = (character as any).consommablesEquipes || []
+        updateData.consommablesEquipes = currentEquipped.filter((_: any, i: number) => i !== idx)
+      }
+    } else {
+      // Si ça vient d'un slot équipé classique (ancien système ou autres slots)
+      updateData[fromSlot] = null
+    }
   } else {
     // Sinon, on met à jour l'inventaire : diminuer la quantité du consommable
     const updatedInventory = (character.inventaire || []).map((item: any) => {

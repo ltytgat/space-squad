@@ -41,6 +41,17 @@ export const Consumables: CollectionConfig = {
           admin: { width: '50%' },
         },
         {
+          name: 'taille',
+          type: 'number',
+          label: 'Taille',
+          required: true,
+          defaultValue: 2,
+          admin: {
+            width: '50%',
+            description: 'Nombre de demi-emplacements occupés (1: moitié, 2: entier, 4: double).',
+          },
+        },
+        {
           name: 'typeMunition',
           type: 'select',
           label: 'Type de Munition',

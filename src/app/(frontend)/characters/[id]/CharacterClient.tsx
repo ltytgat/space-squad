@@ -209,7 +209,17 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   // Valeur de stockage pour les consommables équipés
   const backpackItem = character.armureBackpack?.item || character.armureBackpack
-  const storageValue = (typeof backpackItem === 'object' ? backpackItem?.stockage : 0) || 0
+  const storageCapacity = (typeof backpackItem === 'object' ? backpackItem?.stockage : 0) || 0
+  const maxStorageUnits = storageCapacity * 2
+
+  const usedStorageUnits = useMemo(() => {
+    return (character.consommablesEquipes || []).reduce((acc: number, item: any) => {
+      const itemData = typeof item === 'object' ? item : null
+      return acc + (itemData?.taille || 2)
+    }, 0)
+  }, [character.consommablesEquipes])
+
+  const storageValue = storageCapacity // Pour compatibilité temporaire
 
   // Helper image
   const renderItemImage = (item: any) => {
@@ -331,14 +341,13 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
       // 1. Chercher dans les consommables équipés (PRIORITAIRES)
       const equippedMags: any[] = []
-      const slots = ['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3']
-      slots.forEach(slot => {
-        const item = character[slot]
+      const equippedConsumables = character.consommablesEquipes || []
+      equippedConsumables.forEach((item: any, idx: number) => {
         if (checkCompatibility(item)) {
           equippedMags.push({ 
             consommable: item, 
             quantite: 1, 
-            fromSlot: slot 
+            fromEquippedIndex: idx 
           })
         }
       })
@@ -372,8 +381,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       let updatedInventory = character.inventaire
       let updatedSlots: any = {}
 
-      if (mag.fromSlot) {
-        updatedSlots[mag.fromSlot] = null
+      if (mag.fromEquippedIndex !== undefined) {
+        newCharacter.consommablesEquipes = (newCharacter.consommablesEquipes || []).filter((_: any, idx: number) => idx !== mag.fromEquippedIndex)
       } else {
         updatedInventory = (character.inventaire || []).map((item: any) => {
           const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
@@ -393,10 +402,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           chauffeActuelle: 0 
         },
         inventaire: updatedInventory,
-        ...updatedSlots
+        consommablesEquipes: newCharacter.consommablesEquipes || prev.consommablesEquipes
       }))
 
-      await reloadWeapon(character.id, slotKey!, magConsumableId, newAmmoCount, mag.fromSlot)
+      // Note: reloadWeapon action needs adjustment if it strictly expects mag.fromSlot
+      await reloadWeapon(character.id, slotKey!, magConsumableId, newAmmoCount, mag.fromEquippedIndex !== undefined ? `equipped[${mag.fromEquippedIndex}]` : undefined)
     }
 
     const getFinalDamageData = () => {
@@ -671,17 +681,23 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   )
 
   // Contenu détaillé d'un consommable
-  const renderConsumableInner = (item: any) => (
-    <div className="char-equip-item">
-      {renderItemImage(item)}
-      <span className="char-equip-item-name">{item.nom}</span>
-      <div className="char-equip-item-stats">
-        <span className="ss-tag">{item.categorie}</span>
+  const renderConsumableInner = (item: any) => {
+    const sizeText = item.taille === 1 ? '½' : (item.taille === 4 ? 'x2' : '')
+    return (
+      <div className="char-equip-item">
+        {renderItemImage(item)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <span className="char-equip-item-name">{item.nom}</span>
+          {sizeText && <span style={{ fontSize: '0.8em', backgroundColor: '#444', padding: '2px 5px', borderRadius: '4px' }}>{sizeText}</span>}
+        </div>
+        <div className="char-equip-item-stats">
+          <span className="ss-tag">{item.categorie}</span>
+        </div>
+        {item.effet && <div className="char-equip-item-mod-base">{item.effet}</div>}
+        {item.epreuve && <div className="char-equip-item-mod-base">Épreuve: {item.epreuve} ({ (item.modificateurEpreuve ?? 0) >= 0 ? '+' : '' }{item.modificateurEpreuve ?? 0})</div>}
       </div>
-      {item.effet && <div className="char-equip-item-mod-base">{item.effet}</div>}
-      {item.epreuve && <div className="char-equip-item-mod-base">Épreuve: {item.epreuve} ({ (item.modificateurEpreuve ?? 0) >= 0 ? '+' : '' }{item.modificateurEpreuve ?? 0})</div>}
-    </div>
-  )
+    )
+  }
 
   // Helper rendu armure
   const renderArmorSlot = (label: string, armor: any, mods: any[] = [], slotKey: string, category: string) => {
@@ -801,13 +817,27 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       >
         <div className="char-equip-slot-header">
           <span className="char-equip-slot-label">{label}</span>
-          <button 
-            className="char-equip-change-btn" 
-            title="Changer de consommable"
-            onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'consumable' })}
-          >
-            🔄
-          </button>
+          <div className="char-equip-slot-actions">
+            {isEquipped && (
+              <button 
+                className="char-equip-change-btn" 
+                title="Déséquiper"
+                onClick={() => {
+                  const idx = parseInt(slotKey.match(/\[(\d+)\]/)?.[1] || '-1')
+                  if (idx > -1) handleUnequipConsumable(idx)
+                }}
+              >
+                ❌
+              </button>
+            )}
+            <button 
+              className="char-equip-change-btn" 
+              title="Changer de consommable"
+              onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'consumable' })}
+            >
+              🔄
+            </button>
+          </div>
         </div>
         {isEquipped ? renderConsumableInner(item) : (
           <div className="char-equip-empty">
@@ -941,8 +971,101 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     setSelectorConfig(config)
   }
 
+  const handleUnequipConsumable = (idx: number) => {
+    const newCharacter = { ...character }
+    const currentEquipped = [...(newCharacter.consommablesEquipes || [])]
+    const itemToUnequip = currentEquipped[idx]
+    
+    if (!itemToUnequip) return
+
+    currentEquipped.splice(idx, 1)
+    newCharacter.consommablesEquipes = currentEquipped
+
+    // Remettre dans l'inventaire
+    const itemData = itemToUnequip.consommable || itemToUnequip
+    const itemId = typeof itemData === 'object' ? itemData.id : itemData
+    const existing = (newCharacter.inventaire || []).find((c: any) => {
+      const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
+      return String(cId) === String(itemId)
+    })
+    
+    if (existing) {
+      newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
+        c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
+      )
+    } else {
+      newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: itemData, quantite: 1 }]
+    }
+
+    setCharacter(newCharacter)
+    setIsModified(true)
+  }
+
   const handleEquip = (newItem: any, currentSlot: string, type: string) => {
     const newCharacter = { ...character }
+
+    if (type === 'consumable' && (currentSlot === 'consommablesEquipes' || currentSlot.startsWith('equipped['))) {
+      const itemData = newItem.consommable || newItem
+      const itemSize = itemData.taille || 2
+      
+      if (currentSlot === 'consommablesEquipes') {
+        // Ajout d'un nouveau
+        if (usedStorageUnits + itemSize > maxStorageUnits) {
+          alert(`Pas assez d'espace ! (Capacité: ${maxStorageUnits/2}, Utilisé: ${usedStorageUnits/2}, Requis: ${itemSize/2})`)
+          return
+        }
+        newCharacter.consommablesEquipes = [...(newCharacter.consommablesEquipes || []), itemData]
+      } else if (currentSlot.startsWith('equipped[')) {
+        // Remplacement
+        const idx = parseInt(currentSlot.match(/\[(\d+)\]/)?.[1] || '-1')
+        const oldItem = (newCharacter.consommablesEquipes || [])[idx]
+        const oldSize = oldItem?.taille || 2
+        
+        if (usedStorageUnits - oldSize + itemSize > maxStorageUnits) {
+          alert(`Pas assez d'espace ! (Capacité: ${maxStorageUnits/2}, Utilisé: ${(usedStorageUnits-oldSize)/2}, Requis: ${itemSize/2})`)
+          return
+        }
+        
+        const newEquipped = [...(newCharacter.consommablesEquipes || [])]
+        newEquipped[idx] = itemData
+        newCharacter.consommablesEquipes = newEquipped
+        
+        // Remettre l'ancien dans l'inventaire
+        if (oldItem) {
+          const oldData = oldItem.consommable || oldItem
+          const oldId = typeof oldData === 'object' ? oldData.id : oldData
+          const existing = (newCharacter.inventaire || []).find((c: any) => {
+            const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
+            return String(cId) === String(oldId)
+          })
+          if (existing) {
+            newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
+              c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
+            )
+          } else {
+            newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: oldData, quantite: 1 }]
+          }
+        }
+      }
+
+      // Retirer le nouveau de l'inventaire
+      if (newItem.fromInventory) {
+        const newItemId = newItem.id
+        const inventoryIndex = newItem.inventoryIndex
+        newCharacter.inventaire = (newCharacter.inventaire || []).map((c: any, idx: number) => {
+          if (inventoryIndex !== undefined ? idx === inventoryIndex : (c.id || c) === newItemId) {
+            return { ...c, quantite: (c.quantite || 1) - 1 }
+          }
+          return c
+        }).filter((c: any) => c.quantite > 0)
+      }
+
+      setCharacter(newCharacter)
+      setIsModified(true)
+      setSelectorConfig(null)
+      return
+    }
+
     const currentItem = character[currentSlot]
 
     // Gérer le swap si l'objet vient d'un autre slot
@@ -967,28 +1090,6 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((i: any) => (i.id || i) !== newItemId)
         }
         if (currentItem) newCharacter.inventaireArmures = [...newCharacter.inventaireArmures, currentItem]
-      } else if (type === 'consumable') {
-        newCharacter.inventaire = (newCharacter.inventaire || []).map((c: any, idx: number) => {
-          if (inventoryIndex !== undefined ? idx === inventoryIndex : (c.id || c) === newItemId) {
-            return { ...c, quantite: (c.quantite || 1) - 1 }
-          }
-          return c
-        }).filter((c: any) => c.quantite > 0)
-        
-        if (currentItem) {
-          const itemId = typeof currentItem === 'object' ? currentItem.id : currentItem
-          const existing = (newCharacter.inventaire || []).find((c: any) => {
-            const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
-            return String(cId) === String(itemId)
-          })
-          if (existing) {
-            newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
-              c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
-            )
-          } else {
-            newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: currentItem, quantite: 1 }]
-          }
-        }
       } else if (type === 'armorMod') {
         if (inventoryIndex !== undefined) {
           newCharacter.inventaireMods = (newCharacter.inventaireMods || []).filter((_: any, idx: number) => idx !== inventoryIndex)
@@ -1009,20 +1110,6 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       if (type === 'weapon') newCharacter.inventaireArmes = [...(newCharacter.inventaireArmes || []), currentItem]
       if (type === 'armor') newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
       if (type === 'chip') newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
-      if (type === 'consumable') {
-        const itemId = typeof currentItem === 'object' ? currentItem.id : currentItem
-        const existing = (newCharacter.inventaire || []).find((c: any) => {
-          const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
-          return String(cId) === String(itemId)
-        })
-        if (existing) {
-          newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
-            c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
-          )
-        } else {
-          newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: currentItem, quantite: 1 }]
-        }
-      }
     }
 
     // Nettoyer l'objet des propriétés temporaires
@@ -1037,8 +1124,6 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       newCharacter[currentSlot] = cleanItem
     } else if (type === 'chip') {
       newCharacter[currentSlot] = cleanItem
-    } else if (type === 'consumable') {
-      newCharacter[currentSlot] = cleanItem.consommable || cleanItem
     } else if (type === 'armorMod') {
       const slot = selectorConfig?.armorSlot
       const idx = selectorConfig?.modIndex
@@ -1084,19 +1169,6 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
         } else if (type === 'chip') {
           newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
-        } else if (type === 'consumable') {
-          const itemId = typeof currentItem === 'object' ? currentItem.id : currentItem
-          const existing = (newCharacter.inventaire || []).find((c: any) => {
-            const cId = typeof c.consommable === 'object' ? c.consommable.id : c.consommable
-            return String(cId) === String(itemId)
-          })
-          if (existing) {
-            newCharacter.inventaire = newCharacter.inventaire.map((c: any) => 
-              c === existing ? { ...c, quantite: (c.quantite || 0) + 1 } : c
-            )
-          } else {
-            newCharacter.inventaire = [...(newCharacter.inventaire || []), { consommable: currentItem, quantite: 1 }]
-          }
         }
       }
     }
@@ -1388,9 +1460,38 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {renderWeaponSlot("Secondaire", character.armeSecondaire, 'armeSecondaire', 'standard')}
               {renderWeaponSlot("Lourde", character.armeLourde, 'armeLourde', 'lourde')}
               {renderWeaponSlot("Mêlée", character.armeDeMelee, 'armeDeMelee', 'melee')}
-              {storageValue >= 1 && renderConsumableSlot("Consommable 1", character.consommableEquipe1, 'consommableEquipe1')}
-              {storageValue >= 2 && renderConsumableSlot("Consommable 2", character.consommableEquipe2, 'consommableEquipe2')}
-              {storageValue >= 3 && renderConsumableSlot("Consommable 3", character.consommableEquipe3, 'consommableEquipe3')}
+            </div>
+
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2em', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  🧪 Consommables ({usedStorageUnits / 2} / {storageCapacity})
+                </h3>
+                {usedStorageUnits < maxStorageUnits && (
+                  <button 
+                    className="ss-button ss-button-small"
+                    onClick={() => handleOpenSelector({ slot: 'consommablesEquipes', label: 'Ajouter un consommable', type: 'consumable' })}
+                  >
+                    + Ajouter
+                  </button>
+                )}
+              </div>
+              
+              {(!character.consommablesEquipes || character.consommablesEquipes.length === 0) ? (
+                <p style={{ color: '#666', fontStyle: 'italic', margin: '10px 0' }}>Aucun consommable équipé.</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+                  {character.consommablesEquipes.map((c: any, idx: number) => (
+                    renderConsumableSlot(`Consommable ${idx + 1}`, c, `equipped[${idx}]`)
+                  ))}
+                </div>
+              )}
+
+              {usedStorageUnits > maxStorageUnits && (
+                <p style={{ color: '#ff4444', fontSize: '0.9em', marginTop: '10px' }}>
+                  ⚠️ Capacité de stockage dépassée !
+                </p>
+              )}
             </div>
           </div>
 
