@@ -731,6 +731,19 @@ export interface Mod {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Ajoute des emplacements de consommables spécifiques quand ce mod est équipé.
+   */
+  bonusConsommables?:
+    | {
+        categorie: 'soins' | 'munitions' | 'grenades' | 'tactique' | 'outils';
+        /**
+         * Nombre d'emplacements entiers (taille 2) ajoutés.
+         */
+        quantite: number;
+        id?: string | null;
+      }[]
+    | null;
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -1661,6 +1674,13 @@ export interface ModsSelect<T extends boolean = true> {
     | {
         cible?: T;
         valeur?: T;
+        id?: T;
+      };
+  bonusConsommables?:
+    | T
+    | {
+        categorie?: T;
+        quantite?: T;
         id?: T;
       };
   image?: T;

@@ -161,6 +161,44 @@ export const Mods: CollectionConfig = {
       ],
     },
     {
+      name: 'bonusConsommables',
+      type: 'array',
+      label: 'Emplacements de consommables bonus',
+      admin: {
+        description: 'Ajoute des emplacements de consommables spécifiques quand ce mod est équipé.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'categorie',
+              type: 'select',
+              label: 'Catégorie',
+              required: true,
+              options: [
+                { label: 'Soins', value: 'soins' },
+                { label: 'Munitions', value: 'munitions' },
+                { label: 'Grenades', value: 'grenades' },
+                { label: 'Tactique', value: 'tactique' },
+                { label: 'Outils', value: 'outils' },
+              ],
+            },
+            {
+              name: 'quantite',
+              type: 'number',
+              label: 'Nombre d\'emplacements',
+              required: true,
+              defaultValue: 1,
+              admin: {
+                description: 'Nombre d\'emplacements entiers (taille 2) ajoutés.',
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
       name: 'image',
       type: 'upload',
       relationTo: 'media',

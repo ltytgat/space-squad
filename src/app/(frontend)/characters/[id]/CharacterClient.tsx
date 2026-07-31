@@ -212,12 +212,64 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const storageCapacity = (typeof backpackItem === 'object' ? backpackItem?.stockage : 0) || 0
   const maxStorageUnits = storageCapacity * 2
 
+  // Calcul des emplacements bonus par pièce d'armure
+  const armorBonusSlots = useMemo(() => {
+    const slots = ['armureTete', 'armureTorse', 'armureBras', 'armureJambes']
+    const result: Record<string, { category: string, quantity: number, modName: string }[]> = {}
+    
+    slots.forEach(slotKey => {
+      const armorGroup = character[slotKey]
+      if (armorGroup?.mods) {
+        const bonuses: { category: string, quantity: number, modName: string }[] = []
+        armorGroup.mods.forEach((mod: any) => {
+          if (mod.bonusConsommables) {
+            mod.bonusConsommables.forEach((b: any) => {
+              bonuses.push({ category: b.categorie, quantity: b.quantite, modName: mod.nom })
+            })
+          }
+        })
+        if (bonuses.length > 0) result[slotKey] = bonuses
+      }
+    })
+    return result
+  }, [character])
+
+  // Distribution des consommables équipés entre les slots d'armure et le backpack
+  const distributedConsumables = useMemo(() => {
+    const all = [...(character.consommablesEquipes || [])].map((item, index) => {
+      const itemData = typeof item === 'object' ? item : { id: item }
+      return { ...itemData, originalIndex: index }
+    })
+    
+    const byArmor: Record<string, any[]> = {}
+    
+    // On parcourt les armures et leurs bonus
+    Object.entries(armorBonusSlots).forEach(([slotKey, bonuses]) => {
+      byArmor[slotKey] = []
+      bonuses.forEach(bonus => {
+        let remainingUnits = bonus.quantity * 2
+        while (remainingUnits > 0) {
+          // On cherche un item qui correspond à la catégorie et qui rentre dans ce qui reste du bonus
+          const idx = all.findIndex(item => item.categorie === bonus.category && (item.taille || 2) <= remainingUnits)
+          if (idx > -1) {
+            const item = all.splice(idx, 1)[0]
+            byArmor[slotKey].push(item)
+            remainingUnits -= (item.taille || 2)
+          } else {
+            break
+          }
+        }
+      })
+    })
+    
+    return { byArmor, general: all }
+  }, [character.consommablesEquipes, armorBonusSlots])
+
   const usedStorageUnits = useMemo(() => {
-    return (character.consommablesEquipes || []).reduce((acc: number, item: any) => {
-      const itemData = typeof item === 'object' ? item : null
-      return acc + (itemData?.taille || 2)
+    return distributedConsumables.general.reduce((acc: number, item: any) => {
+      return acc + (item?.taille || 2)
     }, 0)
-  }, [character.consommablesEquipes])
+  }, [distributedConsumables.general])
 
   const storageValue = storageCapacity // Pour compatibilité temporaire
 
@@ -746,6 +798,49 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             })}
           </div>
         )}
+
+        {/* Affichage des slots de consommables bonus fournis par les mods */}
+        {isEquipped && armorBonusSlots[slotKey] && (
+          <div className="char-armor-bonus-consumables" style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+            {armorBonusSlots[slotKey].map((bonus, bIdx) => {
+              const items = distributedConsumables.byArmor[slotKey]?.filter(c => c.categorie === bonus.category) || []
+              const totalUnits = bonus.quantity * 2
+              let usedUnits = 0
+              items.forEach(c => usedUnits += (c.taille || 2))
+              
+              return (
+                <div key={bIdx} style={{ marginBottom: '5px' }}>
+                  <div style={{ fontSize: '0.75em', color: '#aaa', marginBottom: '5px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>📦 Slots {bonus.category} ({bonus.modName})</span>
+                    <span>{usedUnits/2} / {bonus.quantity}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {items.map((item, iIdx) => (
+                      <div key={iIdx} className="char-mini-consumable" style={{ position: 'relative' }}>
+                        {renderItemImage(item)}
+                        <button 
+                          style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f44', border: 'none', borderRadius: '50%', color: 'white', width: '15px', height: '15px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          onClick={() => handleUnequipConsumable(item.originalIndex)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {usedUnits < totalUnits && (
+                      <button 
+                        className="char-equip-mod-empty" 
+                        style={{ padding: '2px 8px', fontSize: '0.8em' }}
+                        onClick={() => handleOpenSelector({ slot: 'consommablesEquipes', label: `Ajouter ${bonus.category}`, type: 'consumable', category: bonus.category })}
+                      >
+                        + {bonus.category}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     )
   }
@@ -940,7 +1035,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       // Pour les consommables, on retourne la liste plate des objets de l'inventaire
       return (character.inventaire || [])
         .map((c: any, idx: number) => ({ ...c, fromInventory: true, inventoryIndex: idx }))
-        .filter((c: any) => (c.quantite || 0) > 0)
+        .filter((c: any) => {
+          const itemData = c.consommable || c
+          const matchesCategory = !category || itemData.categorie === category
+          return (c.quantite || 0) > 0 && matchesCategory
+        })
     }
 
     if (type === 'armorMod') {
@@ -1006,12 +1105,43 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     if (type === 'consumable' && (currentSlot === 'consommablesEquipes' || currentSlot.startsWith('equipped['))) {
       const itemData = newItem.consommable || newItem
-      const itemSize = itemData.taille || 2
       
+      const checkCapacity = (itemToAdd: any, replacingIdx: number = -1) => {
+        let simEquipped = [...(newCharacter.consommablesEquipes || [])]
+        if (replacingIdx > -1) {
+          simEquipped[replacingIdx] = itemToAdd
+        } else {
+          simEquipped.push(itemToAdd)
+        }
+        
+        const allBonuses: Record<string, number> = {}
+        Object.values(armorBonusSlots).forEach(bonuses => {
+          bonuses.forEach(b => {
+            allBonuses[b.category] = (allBonuses[b.category] || 0) + (b.quantity * 2)
+          })
+        })
+        
+        const usageByCategory: Record<string, number> = {}
+        simEquipped.forEach(item => {
+          const itemInfo = typeof item === 'object' ? item : item
+          const cat = itemInfo.categorie
+          usageByCategory[cat] = (usageByCategory[cat] || 0) + (itemInfo.taille || 2)
+        })
+        
+        let totalExcess = 0
+        Object.keys(usageByCategory).forEach(cat => {
+          const used = usageByCategory[cat]
+          const bonus = allBonuses[cat] || 0
+          totalExcess += Math.max(0, used - bonus)
+        })
+        
+        return totalExcess <= maxStorageUnits
+      }
+
       if (currentSlot === 'consommablesEquipes') {
         // Ajout d'un nouveau
-        if (usedStorageUnits + itemSize > maxStorageUnits) {
-          alert(`Pas assez d'espace ! (Capacité: ${maxStorageUnits/2}, Utilisé: ${usedStorageUnits/2}, Requis: ${itemSize/2})`)
+        if (!checkCapacity(itemData)) {
+          alert(`Pas assez d'espace de stockage !`)
           return
         }
         newCharacter.consommablesEquipes = [...(newCharacter.consommablesEquipes || []), itemData]
@@ -1019,10 +1149,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         // Remplacement
         const idx = parseInt(currentSlot.match(/\[(\d+)\]/)?.[1] || '-1')
         const oldItem = (newCharacter.consommablesEquipes || [])[idx]
-        const oldSize = oldItem?.taille || 2
         
-        if (usedStorageUnits - oldSize + itemSize > maxStorageUnits) {
-          alert(`Pas assez d'espace ! (Capacité: ${maxStorageUnits/2}, Utilisé: ${(usedStorageUnits-oldSize)/2}, Requis: ${itemSize/2})`)
+        if (!checkCapacity(itemData, idx)) {
+          alert(`Pas assez d'espace de stockage !`)
           return
         }
         
@@ -1481,8 +1610,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                 <p style={{ color: '#666', fontStyle: 'italic', margin: '10px 0' }}>Aucun consommable équipé.</p>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
-                  {character.consommablesEquipes.map((c: any, idx: number) => (
-                    renderConsumableSlot(`Consommable ${idx + 1}`, c, `equipped[${idx}]`)
+                  {distributedConsumables.general.map((c: any, idx: number) => (
+                    renderConsumableSlot(`Consommable ${idx + 1}`, c, `equipped[${c.originalIndex}]`)
                   ))}
                 </div>
               )}

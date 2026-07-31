@@ -48,6 +48,10 @@ export type Mod = {
     cible: string
     valeur: number
   }[] | null
+  bonusConsommables?: {
+    categorie: string
+    quantite: number
+  }[] | null
 }
 
 // Types simplifiés pour les calculs
