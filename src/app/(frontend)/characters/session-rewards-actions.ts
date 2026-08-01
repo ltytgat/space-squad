@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character, Faction } from '@/payload-types'
+import { computeFactionPoints, type FactionLite } from './session-rewards-formula'
 
 /**
  * Payload envoyé par le drawer "Terminer la session".
@@ -25,12 +26,22 @@ export type SessionRewardsInput = {
     pr: boolean
     pointsDeCompetence: boolean
     reputation: boolean
+    /** Application des points de faction (bonus commanditaire + points de mission). */
+    faction: boolean
   }
   values: {
     konisTotal: number
     pr: number
     factionId?: number | null
     reputationValeur: number
+    /**
+     * Id de la faction commanditaire ; `null` = « Autre ».
+     * Sert au bonus commanditaire (10×grade) et au calcul Union.
+     */
+    commanditaireId?: number | null
+    ciblesAbattues: number
+    ciblesCapturees: number
+    horsConfederation: boolean
   }
   perCharacter: Record<
     string,
@@ -48,18 +59,27 @@ type PerCharSnapshot = {
     konis: number
     pointsDeRang: number
     pointsDeCompetence: number
+    pointsDeFaction: number
     reputation: { categorie: string; valeur: number }[]
   }
   after: {
     konis: number
     pointsDeRang: number
     pointsDeCompetence: number
+    pointsDeFaction: number
     reputation: { categorie: string; valeur: number }[]
   }
   delta: {
     konis: number
     pointsDeRang: number
     pointsDeCompetence: number
+    pointsDeFaction: number
+    /** Décomposition des points de faction : bonus commanditaire + points liés à l'affiliation. */
+    pointsDeFactionBreakdown: {
+      commanditaire: number
+      faction: number
+      factionLabel: string | null
+    }
     reputation: { categorie: string; delta: number } | null
   }
 }
@@ -118,6 +138,20 @@ export async function applySessionRewards(input: SessionRewardsInput) {
     if (!factionName) throw new Error('La faction sélectionnée n’a pas de nom')
   }
 
+  // — Résolution éventuelle de la faction commanditaire (nom nécessaire pour
+  //   la règle Union : « +5 si le commanditaire n'est pas l'Union »).
+  let commanditaireName: string | null = null
+  if (input.apply.faction && input.values.commanditaireId != null) {
+    const faction = await payload.findByID({
+      collection: 'factions',
+      id: input.values.commanditaireId,
+      depth: 0,
+      overrideAccess: true,
+    }).catch(() => null)
+    if (!faction) throw new Error('Faction commanditaire introuvable')
+    commanditaireName = (faction as Faction).nom ?? null
+  }
+
   // — Répartition des konis par personnage.
   //   L'admin peut avoir ajusté manuellement les valeurs par personnage
   //   (perCharacter), sinon on tombe sur la division du total.
@@ -139,11 +173,12 @@ export async function applySessionRewards(input: SessionRewardsInput) {
         pointsDeCompetence: 0,
       }
 
-      // Snapshot avant.
+      // Snapshot avant. `depth: 1` pour récupérer l'affiliation peuplée
+      //   (nom + rangs) — nécessaire au calcul des points de faction.
       const before = (await payload.findByID({
         collection: 'characters',
         id: charId,
-        depth: 0,
+        depth: 1,
         overrideAccess: true,
         req: reqOpts as any,
       })) as Character
@@ -151,6 +186,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       const beforeKonis = before.konis ?? 0
       const beforePR = before.pointsDeRang ?? 0
       const beforePC = before.pointsDeCompetence ?? 0
+      const beforePF = (before as any).pointsDeFaction ?? 0
       const beforeRep = Array.isArray(before.reputation)
         ? before.reputation.map((r) => ({
             categorie: r.categorie,
@@ -163,6 +199,26 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       const deltaPC = input.apply.pointsDeCompetence
         ? perChar.pointsDeCompetence ?? 0
         : 0
+
+      // Points de faction — calcul via la formule partagée.
+      //   Le "konisGain" pour la Guilde correspond aux konis reçus durant
+      //   cette session par ce personnage précis (pas au total actuel).
+      const affiliation = (before.affiliation && typeof before.affiliation === 'object'
+        ? (before.affiliation as unknown as FactionLite)
+        : null)
+      const factionPtsBreakdown = input.apply.faction
+        ? computeFactionPoints({
+            affiliation,
+            rangDeFaction: (before as any).rangDeFaction ?? null,
+            konisGain: deltaKonis,
+            commanditaireId: input.values.commanditaireId ?? null,
+            commanditaireName,
+            ciblesAbattues: input.values.ciblesAbattues || 0,
+            ciblesCapturees: input.values.ciblesCapturees || 0,
+            horsConfederation: !!input.values.horsConfederation,
+          })
+        : { total: 0, commanditaire: 0, faction: 0, factionLabel: null }
+      const deltaPF = factionPtsBreakdown.total
 
       // Mise à jour de la réputation : on cherche l'entrée par nom de faction.
       let afterRep = beforeRep
@@ -189,11 +245,13 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       const nextKonis = beforeKonis + deltaKonis
       const nextPR = beforePR + deltaPR
       const nextPC = beforePC + deltaPC
+      const nextPF = beforePF + deltaPF
 
       const updateData: Partial<Character> = {}
       if (deltaKonis !== 0) updateData.konis = nextKonis
       if (deltaPR !== 0) updateData.pointsDeRang = nextPR
       if (deltaPC !== 0) updateData.pointsDeCompetence = nextPC
+      if (deltaPF !== 0) (updateData as any).pointsDeFaction = nextPF
       if (repDelta) (updateData as any).reputation = afterRep
 
       if (Object.keys(updateData).length > 0) {
@@ -214,18 +272,26 @@ export async function applySessionRewards(input: SessionRewardsInput) {
           konis: beforeKonis,
           pointsDeRang: beforePR,
           pointsDeCompetence: beforePC,
+          pointsDeFaction: beforePF,
           reputation: beforeRep,
         },
         after: {
           konis: nextKonis,
           pointsDeRang: nextPR,
           pointsDeCompetence: nextPC,
+          pointsDeFaction: nextPF,
           reputation: afterRep,
         },
         delta: {
           konis: deltaKonis,
           pointsDeRang: deltaPR,
           pointsDeCompetence: deltaPC,
+          pointsDeFaction: deltaPF,
+          pointsDeFactionBreakdown: {
+            commanditaire: factionPtsBreakdown.commanditaire,
+            faction: factionPtsBreakdown.faction,
+            factionLabel: factionPtsBreakdown.factionLabel,
+          },
           reputation: repDelta,
         },
       })
@@ -244,6 +310,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
           apply: input.apply,
           values: input.values,
           factionName,
+          commanditaireName,
           konisPart,
         },
         perCharacter: perCharacterLog,

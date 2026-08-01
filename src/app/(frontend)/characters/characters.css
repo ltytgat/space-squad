@@ -608,6 +608,21 @@
   margin-top: 0.25rem;
 }
 
+/* Décomposition des points de faction (commanditaire + faction) sous le total. */
+.sr-td-hint {
+  color: var(--ss-text-muted);
+  font-family: var(--ss-font-mono);
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+  opacity: 0.85;
+}
+
+/* Toggle affiché en ligne à côté d'autres champs (ex. « Mission hors Confédération »). */
+.sr-toggle-inline {
+  align-self: end;
+  margin-bottom: 0.35rem;
+}
+
 .sr-plus { color: #4ade80; }
 .sr-minus { color: #f87171; }
 

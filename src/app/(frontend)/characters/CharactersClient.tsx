@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import { SessionRewardsDrawer } from './SessionRewardsDrawer'
 
 type Group = { id: number; nom: string }
-type Faction = { id: number; nom: string }
+type Rang = { nom: string; pointsRequis: number }
+type Faction = { id: number; nom: string; rangs?: Rang[] }
 
 type Character = {
   id: number
@@ -14,6 +15,8 @@ type Character = {
   affiliation?: string | Faction | null
   pointsDeRang?: number
   pointsDeCompetence?: number
+  pointsDeFaction?: number
+  rangDeFaction?: string | null
   konis?: number
   legende?: number
   groupe?: Group | string | null
@@ -309,6 +312,18 @@ export function CharactersClient({ characters, groups, factions }: Props) {
           konis: c.konis,
           pointsDeRang: c.pointsDeRang,
           pointsDeCompetence: c.pointsDeCompetence,
+          pointsDeFaction: c.pointsDeFaction,
+          rangDeFaction: c.rangDeFaction ?? null,
+          // L'affiliation est peuplée par le server component (depth: 1) ;
+          //   quand ce n'est pas un objet, on retombe sur null.
+          affiliation:
+            c.affiliation && typeof c.affiliation === 'object'
+              ? {
+                  id: c.affiliation.id,
+                  nom: c.affiliation.nom,
+                  rangs: c.affiliation.rangs,
+                }
+              : null,
         }))}
         factions={factions}
         scopeType={isGroupScope ? 'group' : 'selection'}

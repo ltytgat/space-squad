@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { applySessionRewards, type SessionRewardsInput } from './session-rewards-actions'
+import { computeFactionPoints, type FactionLite } from './session-rewards-formula'
 
-type Faction = { id: number; nom: string }
+type Rang = { nom: string; pointsRequis: number }
+type Faction = { id: number; nom: string; rangs?: Rang[] }
 
 export type DrawerCharacter = {
   id: number
@@ -11,6 +13,10 @@ export type DrawerCharacter = {
   konis?: number
   pointsDeRang?: number
   pointsDeCompetence?: number
+  pointsDeFaction?: number
+  rangDeFaction?: string | null
+  /** Affiliation peuplée avec ses rangs (nécessaire au calcul des points de faction). */
+  affiliation?: FactionLite | null
 }
 
 interface Props {
@@ -49,12 +55,20 @@ export function SessionRewardsDrawer({
   const [applyPR, setApplyPR] = useState(true)
   const [applyPC, setApplyPC] = useState(true)
   const [applyRep, setApplyRep] = useState(true)
+  const [applyFaction, setApplyFaction] = useState(true)
 
   // — Valeurs générales.
   const [konisTotal, setKonisTotal] = useState<number>(0)
   const [pr, setPR] = useState<number>(0)
   const [factionId, setFactionId] = useState<number | ''>('')
   const [repValeur, setRepValeur] = useState<number>(0)
+
+  // — Fin de mission : commanditaire + cibles + hors Confédération.
+  //   `commanditaire === 'other'` = option « Autre » (pas de faction commanditaire).
+  const [commanditaire, setCommanditaire] = useState<number | 'other' | ''>('')
+  const [ciblesAbattues, setCiblesAbattues] = useState<number>(0)
+  const [ciblesCapturees, setCiblesCapturees] = useState<number>(0)
+  const [horsConfederation, setHorsConfederation] = useState<boolean>(false)
 
   // — Ajustements par personnage.
   //   konis : par défaut floor(konisTotal / N), mais si l'admin a saisi une
@@ -79,6 +93,15 @@ export function SessionRewardsDrawer({
     [konisTotal, N],
   )
 
+  // Nom de la faction commanditaire (utilisé par la règle Union) + son id
+  //   normalisé pour la formule (null = « Autre »).
+  const commanditaireId: number | null =
+    typeof commanditaire === 'number' ? commanditaire : null
+  const commanditaireName: string | null = useMemo(() => {
+    if (typeof commanditaire !== 'number') return null
+    return factions.find((f) => f.id === commanditaire)?.nom ?? null
+  }, [commanditaire, factions])
+
   // Récap : compose les deltas effectifs par personnage.
   const preview = useMemo(() => {
     return characters.map((c) => {
@@ -90,15 +113,30 @@ export function SessionRewardsDrawer({
       const dPR = applyPR ? pr || 0 : 0
       const dPC = applyPC ? perCharPC[c.id] ?? 0 : 0
       const dRep = applyRep && factionId && repValeur !== 0 ? repValeur : 0
+      const fpts = applyFaction
+        ? computeFactionPoints({
+            affiliation: c.affiliation ?? null,
+            rangDeFaction: c.rangDeFaction ?? null,
+            konisGain: dKonis,
+            commanditaireId,
+            commanditaireName,
+            ciblesAbattues,
+            ciblesCapturees,
+            horsConfederation,
+          })
+        : { total: 0, commanditaire: 0, faction: 0, factionLabel: null }
       return {
         c,
         dKonis,
         dPR,
         dPC,
         dRep,
+        dPF: fpts.total,
+        dPFBreakdown: fpts,
         nextKonis: (c.konis ?? 0) + dKonis,
         nextPR: (c.pointsDeRang ?? 0) + dPR,
         nextPC: (c.pointsDeCompetence ?? 0) + dPC,
+        nextPF: (c.pointsDeFaction ?? 0) + fpts.total,
       }
     })
   }, [
@@ -107,6 +145,7 @@ export function SessionRewardsDrawer({
     applyPR,
     applyPC,
     applyRep,
+    applyFaction,
     touchedKonis,
     perCharKonis,
     perCharPC,
@@ -114,13 +153,19 @@ export function SessionRewardsDrawer({
     pr,
     factionId,
     repValeur,
+    commanditaireId,
+    commanditaireName,
+    ciblesAbattues,
+    ciblesCapturees,
+    horsConfederation,
   ])
 
   const nothingToApply =
     (!applyKonis || (konisTotal === 0 && Object.keys(perCharKonis).length === 0)) &&
     (!applyPR || pr === 0) &&
     (!applyPC || Object.values(perCharPC).every((v) => !v)) &&
-    (!applyRep || !factionId || repValeur === 0)
+    (!applyRep || !factionId || repValeur === 0) &&
+    (!applyFaction || preview.every((p) => p.dPF === 0))
 
   async function handleSubmit() {
     if (submitting) return
@@ -137,12 +182,17 @@ export function SessionRewardsDrawer({
           pr: applyPR,
           pointsDeCompetence: applyPC,
           reputation: applyRep,
+          faction: applyFaction,
         },
         values: {
           konisTotal: applyKonis ? konisTotal : 0,
           pr: applyPR ? pr : 0,
           factionId: applyRep && factionId ? Number(factionId) : null,
           reputationValeur: applyRep ? repValeur : 0,
+          commanditaireId: applyFaction && typeof commanditaire === 'number' ? commanditaire : null,
+          ciblesAbattues: applyFaction ? ciblesAbattues : 0,
+          ciblesCapturees: applyFaction ? ciblesCapturees : 0,
+          horsConfederation: applyFaction ? horsConfederation : false,
         },
         perCharacter: Object.fromEntries(
           characters.map((c) => [
@@ -302,6 +352,85 @@ export function SessionRewardsDrawer({
             </div>
           </section>
 
+          {/* ── Fin de mission (points de faction) ── */}
+          <section className="sr-section">
+            <h3 className="sr-section-title">Fin de mission</h3>
+
+            <div className="sr-field">
+              <label className="sr-toggle">
+                <input
+                  type="checkbox"
+                  checked={applyFaction}
+                  onChange={(e) => setApplyFaction(e.target.checked)}
+                />
+                <span>Points de faction</span>
+              </label>
+
+              <div className="sr-field-row">
+                <label className="sr-inline">
+                  Commanditaire
+                  <select
+                    disabled={!applyFaction}
+                    value={commanditaire}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (v === '' || v === 'other') {
+                        setCommanditaire(v as '' | 'other')
+                      } else {
+                        setCommanditaire(Number(v))
+                      }
+                    }}
+                  >
+                    <option value="">— Choisir —</option>
+                    {factions.map((f) => (
+                      <option key={f.id} value={f.id}>{f.nom}</option>
+                    ))}
+                    <option value="other">Autre</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="sr-field-row">
+                <label className="sr-inline">
+                  Cibles abattues
+                  <input
+                    type="number"
+                    min={0}
+                    disabled={!applyFaction}
+                    value={ciblesAbattues}
+                    onChange={(e) => setCiblesAbattues(Number(e.target.value) || 0)}
+                  />
+                </label>
+                <label className="sr-inline">
+                  Cibles capturées
+                  <input
+                    type="number"
+                    min={0}
+                    disabled={!applyFaction}
+                    value={ciblesCapturees}
+                    onChange={(e) => setCiblesCapturees(Number(e.target.value) || 0)}
+                  />
+                </label>
+                <label className="sr-toggle sr-toggle-inline">
+                  <input
+                    type="checkbox"
+                    disabled={!applyFaction}
+                    checked={horsConfederation}
+                    onChange={(e) => setHorsConfederation(e.target.checked)}
+                  />
+                  <span>Mission hors Confédération</span>
+                </label>
+              </div>
+
+              <p className="sr-hint">
+                Bonus commanditaire : 10 × grade actuel pour les personnages affiliés.
+                {' '}Alliance : 2/cible abattue, 6/cible capturée.
+                {' '}Guilde : palier selon konis gagnés (doublé si hors Confédération).
+                {' '}Union : 15 pts (+10 hors Conf. ; +5 si commanditaire ≠ Union).
+              </p>
+            </div>
+          </section>
+
           {/* ── Ajustements individuels + récap ── */}
           <section className="sr-section">
             <h3 className="sr-section-title">Récapitulatif &amp; ajustements</h3>
@@ -314,10 +443,23 @@ export function SessionRewardsDrawer({
                     <th>PR</th>
                     <th>Pts compétence</th>
                     <th>Réputation</th>
+                    <th>Pts faction</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.map(({ c, dKonis, dPR, dPC, dRep, nextKonis, nextPR, nextPC }) => (
+                  {preview.map(({
+                    c,
+                    dKonis,
+                    dPR,
+                    dPC,
+                    dRep,
+                    dPF,
+                    dPFBreakdown,
+                    nextKonis,
+                    nextPR,
+                    nextPC,
+                    nextPF,
+                  }) => (
                     <tr key={c.id}>
                       <td className="sr-td-name">{c.nom || <em>Sans nom</em>}</td>
                       <td>
@@ -382,6 +524,31 @@ export function SessionRewardsDrawer({
                           <span className={dRep > 0 ? 'sr-plus' : 'sr-minus'}>
                             {dRep > 0 ? '+' : ''}{dRep}
                           </span>
+                        ) : (
+                          <span className="sr-td-preview">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {applyFaction && dPF !== 0 ? (
+                          <>
+                            <div className="sr-td-preview">
+                              {(c.pointsDeFaction ?? 0)} → <strong>{nextPF}</strong>
+                              <span className={dPF > 0 ? 'sr-plus' : 'sr-minus'}>
+                                {' '}({dPF > 0 ? '+' : ''}{dPF})
+                              </span>
+                            </div>
+                            {(dPFBreakdown.commanditaire !== 0 || dPFBreakdown.faction !== 0) && (
+                              <div className="sr-td-hint">
+                                {dPFBreakdown.commanditaire !== 0 && (
+                                  <>+{dPFBreakdown.commanditaire} commanditaire</>
+                                )}
+                                {dPFBreakdown.commanditaire !== 0 && dPFBreakdown.faction !== 0 && ' · '}
+                                {dPFBreakdown.faction !== 0 && dPFBreakdown.factionLabel && (
+                                  <>+{dPFBreakdown.faction} {dPFBreakdown.factionLabel}</>
+                                )}
+                              </div>
+                            )}
+                          </>
                         ) : (
                           <span className="sr-td-preview">—</span>
                         )}
