@@ -23,7 +23,7 @@ export default async function CharactersPage() {
   // Réservé aux admins
   if ((user as { role?: string }).role !== 'admin') redirect('/')
 
-  const [{ docs: characters }, { docs: groups }] = await Promise.all([
+  const [{ docs: characters }, { docs: groups }, { docs: factions }] = await Promise.all([
     payload.find({
       collection: 'characters',
       depth: 1,
@@ -32,6 +32,12 @@ export default async function CharactersPage() {
     }),
     payload.find({
       collection: 'groups',
+      depth: 0,
+      limit: 100,
+      sort: 'nom',
+    }),
+    payload.find({
+      collection: 'factions',
       depth: 0,
       limit: 100,
       sort: 'nom',
@@ -63,6 +69,7 @@ export default async function CharactersPage() {
           <CharactersClient
             characters={characters as Parameters<typeof CharactersClient>[0]['characters']}
             groups={groups as Parameters<typeof CharactersClient>[0]['groups']}
+            factions={factions as Parameters<typeof CharactersClient>[0]['factions']}
           />
         </div>
       </div>

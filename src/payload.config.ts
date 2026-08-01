@@ -29,6 +29,7 @@ import {Mods} from './collections/Mods'
 import {Consumables} from './collections/Consumables'
 import {Chips} from './collections/Chips'
 import {Factions} from './collections/Factions'
+import {SessionRewards} from './collections/SessionRewards'
 
 
 const filename = fileURLToPath(import.meta.url)
@@ -41,7 +42,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, Weapons, Armors, ArmorSets, Characters, Mods, Consumables, Chips, Factions],
+    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, Weapons, Armors, ArmorSets, Characters, Mods, Consumables, Chips, Factions, SessionRewards],
     editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
             ...defaultFeatures,

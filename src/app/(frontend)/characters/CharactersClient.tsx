@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { SessionRewardsDrawer } from './SessionRewardsDrawer'
 
 type Group = { id: number; nom: string }
 type Faction = { id: number; nom: string }
@@ -12,6 +13,7 @@ type Character = {
   origine?: string
   affiliation?: string | Faction | null
   pointsDeRang?: number
+  pointsDeCompetence?: number
   konis?: number
   legende?: number
   groupe?: Group | string | null
@@ -23,13 +25,6 @@ const AFFIL_COLORS: Record<string, string> = {
   Alliance: 'char-affil-alliance',
   Union: 'char-affil-union',
   Guilde: 'char-affil-guilde',
-}
-
-const CLASSE_LABEL: Record<string, string> = {
-  alpha: 'Alpha',
-  beta: 'Beta',
-  gamma: 'Gamma',
-  delta: 'Delta',
 }
 
 function groupName(g: Group | string | null | undefined): string {
@@ -58,16 +53,59 @@ function shipName(v: Character['vaisseau']): string {
 interface Props {
   characters: Character[]
   groups: Group[]
+  factions: Faction[]
 }
 
-export function CharactersClient({ characters, groups }: Props) {
+export function CharactersClient({ characters, groups, factions }: Props) {
   const [activeGroup, setActiveGroup] = useState<number | 'none' | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const filtered = useMemo(() => {
     if (!activeGroup) return characters
     if (activeGroup === 'none') return characters.filter((c) => !c.groupe)
     return characters.filter((c) => groupId(c.groupe) === activeGroup)
   }, [characters, activeGroup])
+
+  // Personnages ciblés par l'action "Terminer la session" :
+  //  — si une sélection est active, on la privilégie,
+  //  — sinon on retombe sur les personnages de l'escouade filtrée.
+  const targeted = useMemo(() => {
+    if (selected.size > 0) {
+      return characters.filter((c) => selected.has(c.id))
+    }
+    if (activeGroup && activeGroup !== 'none') {
+      return filtered
+    }
+    return []
+  }, [selected, characters, activeGroup, filtered])
+
+  const isGroupScope =
+    selected.size === 0 && activeGroup !== null && activeGroup !== 'none'
+
+  const scopeLabel = isGroupScope
+    ? `Escouade ${groups.find((g) => g.id === activeGroup)?.nom ?? ''}`.trim()
+    : `${selected.size} personnage${selected.size > 1 ? 's' : ''} sélectionné${selected.size > 1 ? 's' : ''}`
+
+  function toggleSelected(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectAllVisible() {
+    setSelected(new Set(filtered.map((c) => c.id)))
+  }
+
+  function clearSelection() {
+    setSelected(new Set())
+  }
+
+  const showActionBar = targeted.length > 0
 
   return (
     <div className="chars-client">
@@ -108,6 +146,21 @@ export function CharactersClient({ characters, groups }: Props) {
             </span>
           </button>
         )}
+
+        {/* Toggle du mode sélection */}
+        <button
+          type="button"
+          className={`chars-filter-btn${selectionMode ? ' chars-filter-btn-active' : ''}`}
+          onClick={() => {
+            setSelectionMode((v) => {
+              if (v) clearSelection()
+              return !v
+            })
+          }}
+          title="Activer la sélection manuelle de personnages"
+        >
+          {selectionMode ? 'Fin de la sélection' : 'Sélectionner…'}
+        </button>
       </div>
 
       {/* ── Résultats ── */}
@@ -115,6 +168,9 @@ export function CharactersClient({ characters, groups }: Props) {
         {filtered.length} personnage{filtered.length !== 1 ? 's' : ''}
         {activeGroup && activeGroup !== 'none' && (
           <> dans <strong>{groups.find((g) => g.id === activeGroup)?.nom}</strong></>
+        )}
+        {selected.size > 0 && (
+          <> — <strong>{selected.size} sélectionné{selected.size > 1 ? 's' : ''}</strong></>
         )}
       </p>
 
@@ -124,8 +180,35 @@ export function CharactersClient({ characters, groups }: Props) {
         <div className="chars-grid">
           {filtered.map((c) => {
             const affName = affiliationName(c.affiliation)
+            const isSelected = selected.has(c.id)
+            const CardTag: any = selectionMode ? 'div' : 'a'
+            const cardProps = selectionMode
+              ? {
+                  role: 'button',
+                  tabIndex: 0,
+                  onClick: () => toggleSelected(c.id),
+                  onKeyDown: (e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggleSelected(c.id)
+                    }
+                  },
+                }
+              : { href: `/characters/${c.id}` }
             return (
-              <a key={c.id} href={`/characters/${c.id}`} className="chars-card">
+              <CardTag
+                key={c.id}
+                className={`chars-card${isSelected ? ' chars-card-selected' : ''}${selectionMode ? ' chars-card-selectable' : ''}`}
+                {...cardProps}
+              >
+                {selectionMode && (
+                  <span
+                    className={`chars-card-check${isSelected ? ' chars-card-check-on' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {isSelected ? '✓' : ''}
+                  </span>
+                )}
                 <div className="chars-card-header">
                   <h3 className="chars-card-name">{c.nom || <em>Sans nom</em>}</h3>
                   <div className="chars-card-tags">
@@ -172,11 +255,66 @@ export function CharactersClient({ characters, groups }: Props) {
                     <span className="chars-stat-value">{c.legende ?? 0}</span>
                   </div>
                 </div>
-              </a>
+              </CardTag>
             )
           })}
         </div>
       )}
+
+      {/* ── Barre d'actions contextuelle ── */}
+      {showActionBar && (
+        <div className="chars-actionbar" role="region" aria-label="Actions sur la sélection">
+          <div className="chars-actionbar-info">
+            <strong>{scopeLabel}</strong>
+            <span className="chars-actionbar-count">
+              {targeted.length} fiche{targeted.length > 1 ? 's' : ''} concernée{targeted.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="chars-actionbar-actions">
+            {selectionMode && selected.size < filtered.length && (
+              <button
+                type="button"
+                className="chars-actionbar-btn chars-actionbar-btn-secondary"
+                onClick={selectAllVisible}
+              >
+                Tout sélectionner
+              </button>
+            )}
+            {selected.size > 0 && (
+              <button
+                type="button"
+                className="chars-actionbar-btn chars-actionbar-btn-secondary"
+                onClick={clearSelection}
+              >
+                Vider
+              </button>
+            )}
+            <button
+              type="button"
+              className="chars-actionbar-btn chars-actionbar-btn-primary"
+              onClick={() => setDrawerOpen(true)}
+            >
+              Terminer la session
+            </button>
+          </div>
+        </div>
+      )}
+
+      <SessionRewardsDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        characters={targeted.map((c) => ({
+          id: c.id,
+          nom: c.nom,
+          konis: c.konis,
+          pointsDeRang: c.pointsDeRang,
+          pointsDeCompetence: c.pointsDeCompetence,
+        }))}
+        factions={factions}
+        scopeType={isGroupScope ? 'group' : 'selection'}
+        groupId={isGroupScope ? (activeGroup as number) : null}
+        scopeLabel={scopeLabel}
+      />
     </div>
   )
 }
