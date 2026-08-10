@@ -367,8 +367,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     const handleCool = async (e: React.MouseEvent) => {
       e.stopPropagation()
-      // Le refroidissement utilise la valeur de chauffe et non la valeur de refroidissement
-      const value = weapon.valeurChauffe ?? 10
+      const value = weapon.tempsRefroidissement ?? 10
       const newData = { chauffeActuelle: Math.max(0, chauffeActuelle - value) }
       
       // Mise à jour optimiste
@@ -648,7 +647,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             {weapon.tempsRechargement != null && <div className="weapon-util-item" title="Rechargement"><span className="util-icon">🔄</span><span className="util-value">{weapon.tempsRechargement}t</span></div>}
             {weapon.poids != null && <div className="weapon-util-item" title="Poids"><span className="util-icon">⚖️</span><span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span></div>}
             {isThermique && weapon.valeurChauffe != null && <div className="weapon-util-item" title="Valeur de chauffe"><span className="util-icon">🔥</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
-            {isThermique && <div className="weapon-util-item" title="Refroidissement (Valeur de chauffe)"><span className="util-icon">❄️</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
+            {isThermique && <div className="weapon-util-item" title="Refroidissement (Valeur de chauffe)"><span className="util-icon">❄️</span><span className="util-value">{weapon.tempsRefroidissement}%</span></div>}
           </div>
         </div>
         {renderRangeTable()}
