@@ -35,6 +35,17 @@ export function factionGrade(
   faction: FactionLite | null | undefined,
 ): number {
   if (!rangDeFaction || !faction?.rangs || faction.rangs.length === 0) return 0
+
+  // `rangDeFaction` est actuellement stocké comme un index 1-basé ("1",
+  // "2", ...). Le conserver en priorité permet notamment de respecter
+  // l'ordre des rangs défini dans le document de faction.
+  const numericGrade = Number(rangDeFaction)
+  if (Number.isInteger(numericGrade) && numericGrade >= 1 && numericGrade <= faction.rangs.length) {
+    return numericGrade
+  }
+
+  // Compatibilité avec les anciennes valeurs éventuellement stockées sous
+  // forme de nom de rang.
   const sorted = [...faction.rangs].sort(
     (a, b) => (a.pointsRequis ?? 0) - (b.pointsRequis ?? 0),
   )
