@@ -267,6 +267,18 @@ export function calculateStats(character: any) {
     }
   })
 
+  // Bonus/malus de caractéristiques accordé par l'origine du personnage.
+  // Ils passent par les mêmes sources que les mods d'armure afin d'apparaître
+  // dans les breakdowns des bulles d'information.
+  const origin = character.origine || 'Humain'
+  if (origin === 'Strani') {
+    addBonus('perception', 2, 'Origine : Strani')
+    addBonus('force', -2, 'Origine : Strani')
+  } else if (origin === 'Vada') {
+    addBonus('force', 2, 'Origine : Vada')
+    addBonus('perception', -2, 'Origine : Vada')
+  }
+
   const weapons = [
     asWeapon(character.armePrincipale),
     asWeapon(character.armeSecondaire),
@@ -388,7 +400,6 @@ export function calculateStats(character: any) {
     couvert: Math.floor(decouvert * 2),
   }
 
-  const origin = character.origine || 'Humain'
   const n = character.bonusPointsDeBlessures || 0
   let hpBase = 30
   let hpFactor = 5
