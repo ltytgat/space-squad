@@ -120,6 +120,7 @@ type Character = {
   consommableEquipe1?: Consumable | string | null
   consommableEquipe2?: Consumable | string | null
   consommableEquipe3?: Consumable | string | null
+  consommablesEquipes?: (Consumable | number)[] | null
   backpack?: string | null
   vaisseau?: Ship | string | null
   roleVaisseau?: string | null

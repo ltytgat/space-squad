@@ -167,6 +167,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
         'puceMk1', 'puceMk2', 'puceMk3',
         'consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3',
+        'consommablesEquipes',
         'inventaireArmes', 'inventaireArmures', 'inventaire', 'inventaireMods', 'inventairePuces'
       ]
       
