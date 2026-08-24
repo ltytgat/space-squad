@@ -78,6 +78,7 @@ export const Mods: CollectionConfig = {
         { label: 'Torse', value: 'torse' },
         { label: 'Bras', value: 'bras' },
         { label: 'Jambes', value: 'jambes' },
+        { label: 'Back-pack', value: 'backpack' },
       ],
     },
     {

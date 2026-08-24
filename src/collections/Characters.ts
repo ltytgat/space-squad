@@ -450,6 +450,19 @@ export const Characters: CollectionConfig = {
                   label: 'Back-pack',
                   filterOptions: { categorie: { equals: 'backpack' } },
                 },
+                {
+                  name: 'mods',
+                  type: 'relationship',
+                  relationTo: 'mods',
+                  hasMany: true,
+                  label: 'Mods',
+                  filterOptions: ({ siblingData }) => {
+                    return {
+                      categoriePrincipale: { equals: 'armures' },
+                      or: [{ sousCategorieArmure: { equals: 'toutes' } }, { sousCategorieArmure: { equals: 'backpack' } }],
+                    }
+                  },
+                },
               ],
             },
           ],

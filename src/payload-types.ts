@@ -478,6 +478,7 @@ export interface Character {
   };
   armureBackpack?: {
     item?: (number | null) | Armor;
+    mods?: (number | Mod)[] | null;
   };
   armePrincipale?: {
     item?: (number | null) | Weapon;
@@ -678,7 +679,7 @@ export interface Mod {
    */
   prix?: number | null;
   sousCategorieArme?: ('toutes' | 'fusils-pistolets' | 'shotgun' | 'snipers' | 'melee') | null;
-  sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
+  sousCategorieArmure?: ('toutes' | 'tete' | 'torse' | 'bras' | 'jambes' | 'backpack') | null;
   effet: string;
   modificateurs?:
     | {
@@ -1632,6 +1633,7 @@ export interface CharactersSelect<T extends boolean = true> {
     | T
     | {
         item?: T;
+        mods?: T;
       };
   armePrincipale?:
     | T

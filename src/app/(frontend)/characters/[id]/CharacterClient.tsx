@@ -220,7 +220,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   // Calcul des emplacements bonus par pièce d'armure
   const armorBonusSlots = useMemo(() => {
-    const slots = ['armureTete', 'armureTorse', 'armureBras', 'armureJambes']
+    const slots = ['armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack']
     const result: Record<string, { category: string, quantity: number, modName: string }[]> = {}
     
     slots.forEach(slotKey => {
