@@ -15,6 +15,50 @@ export const Ships: CollectionConfig = {
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
+  hooks: {
+    beforeChange: [async ({ data, operation, req }) => {
+      if (operation !== 'create' || !data?.modele) return data
+
+      const saleModel = await req.payload.findByID({
+        collection: 'ship-sale-models',
+        id: typeof data.modele === 'object' ? data.modele.id : data.modele,
+        depth: 1,
+      }) as any
+
+      if (!saleModel) return data
+      const chassis = typeof saleModel.chassis === 'object'
+        ? saleModel.chassis
+        : await req.payload.findByID({ collection: 'ship-models', id: saleModel.chassis, depth: 0 })
+
+      const installedArmes = saleModel.armes ?? []
+      const pilotWeapons = installedArmes
+        .filter((entry: any) => !entry.emplacement || entry.emplacement === 'pilote')
+        .map((entry: any) => ({ arme: typeof entry.arme === 'object' ? entry.arme.id : entry.arme }))
+      const turretWeapons = Array.from({ length: chassis?.tourelles ?? 0 }, (_, index) => ({
+        tourelle: index + 1,
+        armes: installedArmes
+          .filter((entry: any) => entry.emplacement === `tourelle-${index + 1}`)
+          .map((entry: any) => ({ arme: typeof entry.arme === 'object' ? entry.arme.id : entry.arme })),
+      })).filter((turret: any) => turret.armes.length > 0)
+
+      return {
+        ...data,
+        moduleGenerateur: data.moduleGenerateur ?? (typeof saleModel.generateur === 'object' ? saleModel.generateur.id : saleModel.generateur),
+        modulePropulseurs: data.modulePropulseurs ?? (typeof saleModel.propulseurs === 'object' ? saleModel.propulseurs.id : saleModel.propulseurs),
+        moduleBoucliers: data.moduleBoucliers ?? (typeof saleModel.boucliers === 'object' ? saleModel.boucliers.id : saleModel.boucliers),
+        moduleSurvie: data.moduleSurvie ?? (typeof saleModel.survie === 'object' ? saleModel.survie.id : saleModel.survie),
+        modulesSupplementaires: data.modulesSupplementaires ?? (saleModel.modulesOptionnels ?? []).map((module: any) => typeof module === 'object' ? module.id : module),
+        armesPilote: data.armesPilote ?? pilotWeapons,
+        armesTourelles: data.armesTourelles ?? turretWeapons,
+        blindageActuel: data.blindageActuel ?? chassis?.blindage,
+        bouclierActuel: data.bouclierActuel ?? 0,
+        esquiveActuelle: data.esquiveActuelle ?? chassis?.esquiveBase,
+        inventaireModules: data.inventaireModules ?? [],
+        inventaireArmes: data.inventaireArmes ?? [],
+        inventaireConsommables: data.inventaireConsommables ?? [],
+      }
+    }],
+  },
   fields: [
     // ── Identité ──────────────────────────────────────
     {
@@ -30,7 +74,7 @@ export const Ships: CollectionConfig = {
         {
           name: 'modele',
           type: 'relationship',
-          relationTo: 'ship-models',
+          relationTo: 'ship-sale-models',
           required: true,
           label: 'Modèle',
           admin: { width: '50%' },
@@ -293,6 +337,40 @@ export const Ships: CollectionConfig = {
                 },
               ],
             },
+          ],
+        },
+      ],
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Inventaire du vaisseau',
+      fields: [
+        {
+          name: 'inventaireModules',
+          type: 'array',
+          label: 'Modules disponibles',
+          fields: [
+            { name: 'module', type: 'relationship', relationTo: 'ship-modules', required: true },
+            { name: 'quantite', type: 'number', required: true, defaultValue: 1, min: 1 },
+          ],
+        },
+        {
+          name: 'inventaireArmes',
+          type: 'array',
+          label: 'Armes disponibles',
+          fields: [
+            { name: 'arme', type: 'relationship', relationTo: 'ship-weapons', required: true },
+            { name: 'quantite', type: 'number', required: true, defaultValue: 1, min: 1 },
+          ],
+        },
+        {
+          name: 'inventaireConsommables',
+          type: 'array',
+          label: 'Consommables disponibles',
+          fields: [
+            { name: 'consommable', type: 'relationship', relationTo: 'ship-consumables', required: true },
+            { name: 'quantite', type: 'number', required: true, defaultValue: 1, min: 1 },
           ],
         },
       ],

@@ -178,6 +178,29 @@ export default async function CharacterDetailPage({
 
   if (!isAdmin && !isOwner) redirect('/')
 
+  const assignedShipId = typeof character.vaisseau === 'object' ? character.vaisseau?.id : character.vaisseau
+  const groupId = typeof character.groupe === 'object' ? character.groupe?.id : character.groupe
+  let relatedShips: any[] = []
+  if (groupId) {
+    const { docs: groupCharacters } = await payload.find({
+      collection: 'characters', where: { groupe: { equals: groupId } }, depth: 0, limit: 500, overrideAccess: true,
+    })
+    const ownerIds = groupCharacters.map((member: any) => member.id)
+    if (ownerIds.length > 0) {
+      const { docs: groupShips } = await payload.find({
+        collection: 'ships', where: { proprietaire: { in: ownerIds } }, depth: 4, limit: 200, sort: 'nom',
+      })
+      relatedShips = groupShips as any[]
+    }
+  }
+  if (assignedShipId && !relatedShips.some((ship: any) => ship.id === assignedShipId)) {
+    try {
+      relatedShips.unshift(await payload.findByID({ collection: 'ships', id: assignedShipId, depth: 4 }))
+    } catch {
+      // Référence conservée vers un vaisseau supprimé.
+    }
+  }
+
   // Récupérer la liste des compétences de base via le schéma (ou une constante partagée)
   // Ici on va extraire COMPETENCES_BASE du fichier src/collections/Characters.ts si possible
   // Mais pour faire simple et rapide, je vais utiliser les options du champ select de la collection
@@ -194,6 +217,7 @@ export default async function CharacterDetailPage({
         isAdmin={isAdmin} 
         isOwner={isOwner}
         allBaseSkills={allBaseSkills}
+        relatedShips={JSON.parse(JSON.stringify(relatedShips.filter(Boolean)))}
       />
       <SiteFooter />
     </>

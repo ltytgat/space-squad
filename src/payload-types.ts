@@ -296,7 +296,7 @@ export interface Group {
 export interface Ship {
   id: number;
   nom: string;
-  modele: number | ShipModel;
+  modele: number | ShipSaleModel;
   /**
    * Le personnage qui a acheté ce vaisseau.
    */
@@ -356,7 +356,60 @@ export interface Ship {
         id?: string | null;
       }[]
     | null;
+  inventaireModules?:
+    | {
+        module: number | ShipModule;
+        quantite: number;
+        id?: string | null;
+      }[]
+    | null;
+  inventaireArmes?:
+    | {
+        arme: number | ShipWeapon;
+        quantite: number;
+        id?: string | null;
+      }[]
+    | null;
+  inventaireConsommables?:
+    | {
+        consommable: number | ShipConsumable;
+        quantite: number;
+        id?: string | null;
+      }[]
+    | null;
   notes?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-sale-models".
+ */
+export interface ShipSaleModel {
+  id: number;
+  nom: string;
+  /**
+   * Le châssis de base sur lequel ce modèle est construit.
+   */
+  chassis: number | ShipModel;
+  /**
+   * Prix du modèle complet (ex: 100 k, 1 M, 1,25 M).
+   */
+  prix?: string | null;
+  generateur: number | ShipModule;
+  propulseurs: number | ShipModule;
+  boucliers: number | ShipModule;
+  survie: number | ShipModule;
+  armes?:
+    | {
+        arme: number | ShipWeapon;
+        emplacement?: ('pilote' | 'tourelle-1' | 'tourelle-2' | 'tourelle-3' | 'tourelle-4') | null;
+        id?: string | null;
+      }[]
+    | null;
+  modulesOptionnels?: (number | ShipModule)[] | null;
+  description?: string | null;
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -389,6 +442,113 @@ export interface ShipModel {
    * Esquive de base selon la taille : Alpha=15, Beta=12, Gamma=9, Delta=6.
    */
   esquiveBase?: number | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-modules".
+ */
+export interface ShipModule {
+  id: number;
+  nom: string;
+  famille:
+    | '_base_header'
+    | 'generateur'
+    | 'propulseurs'
+    | 'survie'
+    | 'boucliers'
+    | '_supp_header'
+    | 'blindage'
+    | 'reparateur'
+    | 'hangar'
+    | 'scanner'
+    | 'infirmerie'
+    | 'sas-abordage'
+    | 'ordinateur-tir'
+    | 'harmonisateur'
+    | 'baie-amarrage'
+    | 'pilotage-assiste'
+    | 'propulseurs-stardash'
+    | 'cabines-equipage'
+    | '_tourelles_header'
+    | 'bombardement'
+    | 'shotgun'
+    | 'tir-concentre'
+    | 'dispersion';
+  typeModule: 'base' | 'supplementaire' | 'tourelle';
+  taille: '1' | '2' | '3' | '4';
+  modele: 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+  consommation?: number | null;
+  prix?: string | null;
+  /**
+   * Puissance du générateur (ex: 6 GW).
+   */
+  puissance?: string | null;
+  /**
+   * Bonus apportés (ex: Esquive +3, Tir(pilote)+2, Crypto +1, Dash +1).
+   */
+  modificateurs?: string | null;
+  bouclierMax?: number | null;
+  /**
+   * Nombre de tours avant réactivation.
+   */
+  cooldownBouclier?: number | null;
+  rechargeBouclier?: number | null;
+  /**
+   * Réparations par tour (max). Ex: 3 (12).
+   */
+  reparations?: string | null;
+  malusPoids?: number | null;
+  blindageBonus?: number | null;
+  /**
+   * Capacité ou nombre de places.
+   */
+  capacite?: string | null;
+  consommationParPersonne?: number | null;
+  nombrePlaces?: number | null;
+  consommationSupplementaire?: number | null;
+  portee?: string | null;
+  bonusDegatsPourcentage?: number | null;
+  bonusDegatsPar100MJ?: number | null;
+  mjMaxUtilisable?: number | null;
+  /**
+   * Angle de tir de la dispersion (ex: 45°, 90°).
+   */
+  angleTir?: string | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-weapons".
+ */
+export interface ShipWeapon {
+  id: number;
+  nom: string;
+  taille: '1' | '2' | '3' | '4';
+  modele: 'G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+  type: 'thermique' | 'cinetique' | 'explosif' | 'blindage';
+  categorie?: ('cartouche' | 'cinetique' | 'lance-missile' | 'mine' | 'bouclier-joute') | null;
+  degats?: string | null;
+  chauffe?: number | null;
+  ballesParSalve?: number | null;
+  chargeur?: number | null;
+  distance?: string | null;
+  cooldown?: number | null;
+  bonusBlindage?: number | null;
+  /**
+   * Nombre de points d'emport consommés (ex: x2 pour lance-missiles).
+   */
+  pointsEmport?: number | null;
+  /**
+   * Prix de l'arme (ex: 100 k, 1 M).
+   */
+  prix?: string | null;
+  description?: string | null;
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -863,113 +1023,6 @@ export interface Chip {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ship-modules".
- */
-export interface ShipModule {
-  id: number;
-  nom: string;
-  famille:
-    | '_base_header'
-    | 'generateur'
-    | 'propulseurs'
-    | 'survie'
-    | 'boucliers'
-    | '_supp_header'
-    | 'blindage'
-    | 'reparateur'
-    | 'hangar'
-    | 'scanner'
-    | 'infirmerie'
-    | 'sas-abordage'
-    | 'ordinateur-tir'
-    | 'harmonisateur'
-    | 'baie-amarrage'
-    | 'pilotage-assiste'
-    | 'propulseurs-stardash'
-    | 'cabines-equipage'
-    | '_tourelles_header'
-    | 'bombardement'
-    | 'shotgun'
-    | 'tir-concentre'
-    | 'dispersion';
-  typeModule: 'base' | 'supplementaire' | 'tourelle';
-  taille: '1' | '2' | '3' | '4';
-  modele: 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
-  consommation?: number | null;
-  prix?: string | null;
-  /**
-   * Puissance du générateur (ex: 6 GW).
-   */
-  puissance?: string | null;
-  /**
-   * Bonus apportés (ex: Esquive +3, Tir(pilote)+2, Crypto +1, Dash +1).
-   */
-  modificateurs?: string | null;
-  bouclierMax?: number | null;
-  /**
-   * Nombre de tours avant réactivation.
-   */
-  cooldownBouclier?: number | null;
-  rechargeBouclier?: number | null;
-  /**
-   * Réparations par tour (max). Ex: 3 (12).
-   */
-  reparations?: string | null;
-  malusPoids?: number | null;
-  blindageBonus?: number | null;
-  /**
-   * Capacité ou nombre de places.
-   */
-  capacite?: string | null;
-  consommationParPersonne?: number | null;
-  nombrePlaces?: number | null;
-  consommationSupplementaire?: number | null;
-  portee?: string | null;
-  bonusDegatsPourcentage?: number | null;
-  bonusDegatsPar100MJ?: number | null;
-  mjMaxUtilisable?: number | null;
-  /**
-   * Angle de tir de la dispersion (ex: 45°, 90°).
-   */
-  angleTir?: string | null;
-  description?: string | null;
-  image?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ship-weapons".
- */
-export interface ShipWeapon {
-  id: number;
-  nom: string;
-  taille: '1' | '2' | '3' | '4';
-  modele: 'G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
-  type: 'thermique' | 'cinetique' | 'explosif' | 'blindage';
-  categorie?: ('cartouche' | 'cinetique' | 'lance-missile' | 'mine' | 'bouclier-joute') | null;
-  degats?: string | null;
-  chauffe?: number | null;
-  ballesParSalve?: number | null;
-  chargeur?: number | null;
-  distance?: string | null;
-  cooldown?: number | null;
-  bonusBlindage?: number | null;
-  /**
-   * Nombre de points d'emport consommés (ex: x2 pour lance-missiles).
-   */
-  pointsEmport?: number | null;
-  /**
-   * Prix de l'arme (ex: 100 k, 1 M).
-   */
-  prix?: string | null;
-  description?: string | null;
-  image?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ship-consumables".
  */
 export interface ShipConsumable {
@@ -988,38 +1041,6 @@ export interface ShipConsumable {
   bonus?: string | null;
   prix?: string | null;
   effet?: string | null;
-  image?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ship-sale-models".
- */
-export interface ShipSaleModel {
-  id: number;
-  nom: string;
-  /**
-   * Le châssis de base sur lequel ce modèle est construit.
-   */
-  chassis: number | ShipModel;
-  /**
-   * Prix du modèle complet (ex: 100 k, 1 M, 1,25 M).
-   */
-  prix?: string | null;
-  generateur: number | ShipModule;
-  propulseurs: number | ShipModule;
-  boucliers: number | ShipModule;
-  survie: number | ShipModule;
-  armes?:
-    | {
-        arme: number | ShipWeapon;
-        emplacement?: ('pilote' | 'tourelle-1' | 'tourelle-2' | 'tourelle-3' | 'tourelle-4') | null;
-        id?: string | null;
-      }[]
-    | null;
-  modulesOptionnels?: (number | ShipModule)[] | null;
-  description?: string | null;
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
@@ -1348,6 +1369,27 @@ export interface ShipsSelect<T extends boolean = true> {
         id?: T;
       };
   consommablesVaisseau?:
+    | T
+    | {
+        consommable?: T;
+        quantite?: T;
+        id?: T;
+      };
+  inventaireModules?:
+    | T
+    | {
+        module?: T;
+        quantite?: T;
+        id?: T;
+      };
+  inventaireArmes?:
+    | T
+    | {
+        arme?: T;
+        quantite?: T;
+        id?: T;
+      };
+  inventaireConsommables?:
     | T
     | {
         consommable?: T;

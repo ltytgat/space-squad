@@ -103,7 +103,7 @@ export default async function ShipsPage() {
                 return (
                   <div key={ship.id} className="ships-card">
                     <div className="ships-card-header">
-                      <h3 className="ships-card-name">{ship.nom}</h3>
+                      <h3 className="ships-card-name"><a href={`/ships/${ship.id}`}>{ship.nom}</a></h3>
                       <div className="ships-card-tags">
                         {model?.classe && (
                           <span className="ships-tag ships-tag-classe">
@@ -116,6 +116,8 @@ export default async function ShipsPage() {
                         {model?.nom && <span className="ships-tag">{model.nom}</span>}
                       </div>
                     </div>
+
+                    <a className="ships-card-link" href={`/ships/${ship.id}`}>Ouvrir la fiche <span aria-hidden="true">→</span></a>
 
                     <div className="ships-crew">
                       {crew.length === 0 ? (

@@ -86,6 +86,34 @@
   gap: 1.25rem;
 }
 
+.ship-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .75rem; }
+.ship-stat { background: var(--ss-bg-card); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: 1rem; display: flex; flex-direction: column; gap: .35rem; }
+.ship-stat span, .ship-muted { color: var(--ss-text-muted); font-size: .8rem; }
+.ship-stat strong { color: var(--ss-cyan); font-size: 1.1rem; }
+.ship-state-grid, .ship-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.ship-form-grid { grid-template-columns: repeat(2, 1fr); }
+.ship-field { display: flex; flex-direction: column; gap: .4rem; color: var(--ss-text-muted); font-size: .8rem; }
+.ship-field input, .ship-field select, .ship-equipment-row input { color: var(--ss-text); background: var(--ss-bg-alt); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .55rem .65rem; }
+.ship-equipment-list { display: flex; flex-direction: column; gap: .5rem; }
+.ship-equipment-row { display: flex; align-items: center; gap: 1rem; padding: .75rem; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: var(--ss-radius); }
+.ship-equipment-row strong { flex: 1; color: var(--ss-text); }
+.ship-equipment-row span { color: var(--ss-text-muted); font-size: .8rem; }
+.ship-equipment-row label { display: flex; align-items: center; gap: .35rem; color: var(--ss-text-muted); font-size: .75rem; }
+.ship-equipment-row input { width: 4.5rem; padding: .35rem; }
+.ship-equipment-row select { flex: 1; color: var(--ss-text); background: var(--ss-bg-alt); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .55rem .65rem; }
+.ship-remove-button { color: var(--ss-text-muted); background: transparent; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .4rem .6rem; cursor: pointer; }
+.ship-read-only input, .ship-read-only select, .ship-read-only button { pointer-events: none; opacity: .72; }
+.ship-subtitle { color: var(--ss-text); font-size: .85rem; margin: .5rem 0; }
+.ship-subtitle-line { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.ship-turret + .ship-turret { margin-top: 1rem; }
+.ship-inventory-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ship-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-bottom: 2rem; }
+
+@media (max-width: 700px) {
+  .ship-stats-grid, .ship-state-grid, .ship-form-grid { grid-template-columns: repeat(2, 1fr); }
+  .ship-equipment-row { align-items: flex-start; flex-wrap: wrap; }
+}
+
 /* ── Cards ── */
 
 .ship-card {

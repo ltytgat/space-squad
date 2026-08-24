@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeFactionPoints, factionGrade } from '../../src/app/(frontend)/characters/session-rewards-formula'
+import { computeFactionPoints, factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
 
 const faction = {
   id: 7,

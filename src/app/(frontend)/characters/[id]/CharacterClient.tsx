@@ -13,9 +13,10 @@ type CharacterProps = {
   isAdmin: boolean
   isOwner: boolean
   allBaseSkills: string[]
+  relatedShips: any[]
 }
 
-const CLASSE_LABEL: Record<string, string> = {
+const SHIP_CLASS_LABEL: Record<string, string> = {
   alpha: 'Alpha',
   beta: 'Beta',
   gamma: 'Gamma',
@@ -29,7 +30,7 @@ function rankTier(level: number): string {
   return 'master'
 }
 
-export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, allBaseSkills }: CharacterProps) {
+export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, allBaseSkills, relatedShips }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
   const [isModified, setIsModified] = useState(false)
@@ -276,8 +277,6 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       return acc + (item?.taille || 2)
     }, 0)
   }, [distributedConsumables.general])
-
-  const storageValue = storageCapacity // Pour compatibilité temporaire
 
   // Helper image
   const renderItemImage = (item: any) => {
@@ -1637,6 +1636,30 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {renderChipSlot("Slot Mk2", character.puceMk2, 'puceMk2')}
               {renderChipSlot("Slot Mk3", character.puceMk3, 'puceMk3')}
             </div>
+          </div>
+
+          {/* ── Section Vaisseaux ── */}
+          <div className="char-card">
+            <h2 className="char-card-title">Vaisseaux</h2>
+            {relatedShips.length === 0 ? (
+              <p className="char-empty-hint">Aucun vaisseau accessible.</p>
+            ) : (
+              <div className="char-ships-list">
+                {relatedShips.map((ship: any) => {
+                  const assigned = character.vaisseau && (typeof character.vaisseau === 'object' ? character.vaisseau.id : character.vaisseau) === ship.id
+                  const owner = typeof ship.proprietaire === 'object' ? ship.proprietaire : null
+                  const model = typeof ship.modele === 'object' ? ship.modele : null
+                  const chassis = typeof model?.chassis === 'object' ? model.chassis : null
+                  const shipClass = chassis?.classe ? (SHIP_CLASS_LABEL[chassis.classe] ?? chassis.classe) : null
+                  return (
+                    <a className={`char-ship-link${assigned ? ' char-ship-link-assigned' : ''}`} href={`/ship/${ship.id}`} key={ship.id}>
+                      <span className="char-ship-link-main"><strong>{ship.nom}</strong><span>{shipClass || 'Classe inconnue'}{model?.nom ? ` · ${model.nom}` : ''}</span></span>
+                      <span className="char-ship-link-meta">{assigned ? 'Affecté' : owner?.nom ? `Propriété de ${owner.nom}` : 'Groupe'}<span aria-hidden="true">→</span></span>
+                    </a>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Section Inventaire ── */}
