@@ -20,6 +20,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
     "@aws-sdk/lib-storage": "^3.1057.0",
+    "@eslint/eslintrc": "^3.3.6",
     "@payloadcms/db-postgres": "3.84.0",
     "@payloadcms/next": "3.84.0",
     "@payloadcms/richtext-lexical": "3.84.0",
