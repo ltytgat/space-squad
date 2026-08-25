@@ -80,11 +80,51 @@
 
 .ship-content {
   padding-block: 2rem 4rem;
-  max-width: 640px;
+  max-width: 1280px;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
+
+.ship-tag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: .3rem .65rem;
+  border: 1px solid rgba(0, 212, 255, .25);
+  border-radius: 999px;
+  color: var(--ss-cyan);
+  background: var(--ss-cyan-dim);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.ship-tag-class { color: #c8a6ff; border-color: rgba(200, 166, 255, .3); background: rgba(150, 100, 255, .12); }
+.ship-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.ship-column { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+.ship-stat-warning { border-color: rgba(255, 174, 0, .6); }
+.ship-stat-warning strong, .ship-stat-warning small, .ship-warning { color: #ffb000; }
+.ship-stat small { color: var(--ss-text-muted); font-size: .7rem; }
+.ship-warning { margin: 0; padding: .7rem .8rem; border: 1px solid rgba(255, 174, 0, .35); border-radius: var(--ss-radius); background: rgba(255, 174, 0, .08); font-size: .8rem; }
+.ship-crew-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
+.ship-crew-group { padding: .75rem; border: 1px solid rgba(255,255,255,.07); border-radius: var(--ss-radius); background: rgba(255,255,255,.025); }
+.ship-crew-group h3 { margin: 0 0 .65rem; color: var(--ss-cyan); font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; }
+.ship-crew-group .ship-muted { margin: 0; }
+.ship-crew-item { display: flex; flex-direction: column; gap: .4rem; padding: .55rem 0; border-top: 1px solid rgba(255,255,255,.06); }
+.ship-crew-item:first-of-type { border-top: 0; }
+.ship-crew-item select { width: 100%; color: var(--ss-text-muted); background: var(--ss-bg-alt); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .35rem; font-size: .72rem; }
+.ship-weapon { display: flex; flex-direction: column; gap: .65rem; padding: .9rem; border: 1px solid rgba(255,255,255,.08); border-left: 3px solid var(--ss-cyan); border-radius: var(--ss-radius); background: rgba(255,255,255,.025); }
+.ship-weapon-kinetic { border-left-color: #d8a94a; }
+.ship-weapon-heading, .ship-weapon-summary, .ship-weapon-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
+.ship-weapon-heading strong { flex: 1; color: var(--ss-text); }
+.ship-weapon-icon { color: var(--ss-cyan); font-size: 1.2rem; }
+.ship-weapon-summary, .ship-weapon small { color: var(--ss-text-muted); font-size: .75rem; }
+.ship-weapon-controls b { margin-right: auto; color: var(--ss-text); font-size: .8rem; }
+.ship-weapon-controls button, .ship-equipment-row button { color: var(--ss-text-muted); background: transparent; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .4rem .55rem; cursor: pointer; font-size: .72rem; }
+.ship-weapon-controls button:hover, .ship-equipment-row button:hover { color: var(--ss-cyan); border-color: var(--ss-cyan); }
+.ship-meter { height: .45rem; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.1); }
+.ship-meter span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ss-cyan), #ff5c4d); transition: width .2s ease; }
 
 .ship-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .75rem; }
 .ship-stat { background: var(--ss-bg-card); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: 1rem; display: flex; flex-direction: column; gap: .35rem; }
@@ -111,7 +151,13 @@
 
 @media (max-width: 700px) {
   .ship-stats-grid, .ship-state-grid, .ship-form-grid { grid-template-columns: repeat(2, 1fr); }
+  .ship-main-grid, .ship-crew-grid { grid-template-columns: 1fr; }
   .ship-equipment-row { align-items: flex-start; flex-wrap: wrap; }
+}
+
+@media (min-width: 701px) and (max-width: 980px) {
+  .ship-crew-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ship-main-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Cards ── */

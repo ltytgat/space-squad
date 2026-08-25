@@ -1,6 +1,7 @@
 import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -38,14 +39,15 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
     <main className="ship-layout">
       <div className="ship-page-header">
         <div className="ss-container">
-          <nav className="ship-breadcrumb" aria-label="Fil d'Ariane">
-            <a href="/">Accueil</a>
+            <nav className="ship-breadcrumb" aria-label="Fil d'Ariane">
+            <Link href="/">Accueil</Link>
             <span aria-hidden="true">›</span>
-            <a href="/ships">Vaisseaux</a>
+            <Link href="/ships">Vaisseaux</Link>
             <span aria-hidden="true">›</span>
             <span>{ship.nom}</span>
           </nav>
           <h1 className="ship-name">{ship.nom}</h1>
+          <div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div>
         </div>
       </div>
       <ShipClient ship={JSON.parse(JSON.stringify(ship))} crew={JSON.parse(JSON.stringify(crew))} isAdmin />
