@@ -32,6 +32,7 @@ export function getShipLimits(ship: ShipRecord) {
     pilotWeaponPoints: Number(chassis?.pointsEmportPilote ?? 0),
     turretCount: Number(chassis?.tourelles ?? 0),
     turretWeaponPoints: turretWeaponSlots,
+    turretWeaponSlotLimits: String(chassis?.pointsEmportTourelles ?? '').split('+').filter(Boolean).map((value) => Number(value) || 0),
     moduleSlots: String(chassis?.modulesSupplementaires ?? '').split('+').filter(Boolean).reduce((sum, value) => sum + (Number(value) || 0), 0),
     consumableSlots: Number(chassis?.consommables ?? 0),
   }

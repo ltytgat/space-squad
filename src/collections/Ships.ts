@@ -1,6 +1,22 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 
+const shipWeaponStateFields = () => [
+  {
+    name: 'munitionsActuelles',
+    type: 'number' as const,
+    label: 'Munitions actuelles',
+    defaultValue: 0,
+  },
+  {
+    name: 'chargeurRelie',
+    type: 'relationship' as const,
+    relationTo: 'ship-consumables' as const,
+    label: 'Munition chargée',
+  },
+  { name: 'chauffeActuelle', type: 'number' as const, label: 'Chauffe actuelle', defaultValue: 0 },
+]
+
 export const Ships: CollectionConfig = {
   slug: 'ships',
   labels: { singular: 'Vaisseau', plural: 'Vaisseaux' },
@@ -16,48 +32,77 @@ export const Ships: CollectionConfig = {
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   hooks: {
-    beforeChange: [async ({ data, operation, req }) => {
-      if (operation !== 'create' || !data?.modele) return data
+    beforeChange: [
+      async ({ data, operation, req }) => {
+        if (operation !== 'create' || !data?.modele) return data
 
-      const saleModel = await req.payload.findByID({
-        collection: 'ship-sale-models',
-        id: typeof data.modele === 'object' ? data.modele.id : data.modele,
-        depth: 1,
-      }) as any
+        const saleModel = (await req.payload.findByID({
+          collection: 'ship-sale-models',
+          id: typeof data.modele === 'object' ? data.modele.id : data.modele,
+          depth: 1,
+        })) as any
 
-      if (!saleModel) return data
-      const chassis = typeof saleModel.chassis === 'object'
-        ? saleModel.chassis
-        : await req.payload.findByID({ collection: 'ship-models', id: saleModel.chassis, depth: 0 })
+        if (!saleModel) return data
+        const chassis =
+          typeof saleModel.chassis === 'object'
+            ? saleModel.chassis
+            : await req.payload.findByID({
+                collection: 'ship-models',
+                id: saleModel.chassis,
+                depth: 0,
+              })
 
-      const installedArmes = saleModel.armes ?? []
-      const pilotWeapons = installedArmes
-        .filter((entry: any) => !entry.emplacement || entry.emplacement === 'pilote')
-        .map((entry: any) => ({ arme: typeof entry.arme === 'object' ? entry.arme.id : entry.arme }))
-      const turretWeapons = Array.from({ length: chassis?.tourelles ?? 0 }, (_, index) => ({
-        tourelle: index + 1,
-        armes: installedArmes
-          .filter((entry: any) => entry.emplacement === `tourelle-${index + 1}`)
-          .map((entry: any) => ({ arme: typeof entry.arme === 'object' ? entry.arme.id : entry.arme })),
-      })).filter((turret: any) => turret.armes.length > 0)
+        const installedArmes = saleModel.armes ?? []
+        const pilotWeapons = installedArmes
+          .filter((entry: any) => !entry.emplacement || entry.emplacement === 'pilote')
+          .map((entry: any) => ({
+            arme: typeof entry.arme === 'object' ? entry.arme.id : entry.arme,
+          }))
+        const turretWeapons = Array.from({ length: chassis?.tourelles ?? 0 }, (_, index) => ({
+          tourelle: index + 1,
+          armes: installedArmes
+            .filter((entry: any) => entry.emplacement === `tourelle-${index + 1}`)
+            .map((entry: any) => ({
+              arme: typeof entry.arme === 'object' ? entry.arme.id : entry.arme,
+            })),
+        })).filter((turret: any) => turret.armes.length > 0)
 
-      return {
-        ...data,
-        moduleGenerateur: data.moduleGenerateur ?? (typeof saleModel.generateur === 'object' ? saleModel.generateur.id : saleModel.generateur),
-        modulePropulseurs: data.modulePropulseurs ?? (typeof saleModel.propulseurs === 'object' ? saleModel.propulseurs.id : saleModel.propulseurs),
-        moduleBoucliers: data.moduleBoucliers ?? (typeof saleModel.boucliers === 'object' ? saleModel.boucliers.id : saleModel.boucliers),
-        moduleSurvie: data.moduleSurvie ?? (typeof saleModel.survie === 'object' ? saleModel.survie.id : saleModel.survie),
-        modulesSupplementaires: data.modulesSupplementaires ?? (saleModel.modulesOptionnels ?? []).map((module: any) => typeof module === 'object' ? module.id : module),
-        armesPilote: data.armesPilote ?? pilotWeapons,
-        armesTourelles: data.armesTourelles ?? turretWeapons,
-        blindageActuel: data.blindageActuel ?? chassis?.blindage,
-        bouclierActuel: data.bouclierActuel ?? 0,
-        esquiveActuelle: data.esquiveActuelle ?? chassis?.esquiveBase,
-        inventaireModules: data.inventaireModules ?? [],
-        inventaireArmes: data.inventaireArmes ?? [],
-        inventaireConsommables: data.inventaireConsommables ?? [],
-      }
-    }],
+        return {
+          ...data,
+          moduleGenerateur:
+            data.moduleGenerateur ??
+            (typeof saleModel.generateur === 'object'
+              ? saleModel.generateur.id
+              : saleModel.generateur),
+          modulePropulseurs:
+            data.modulePropulseurs ??
+            (typeof saleModel.propulseurs === 'object'
+              ? saleModel.propulseurs.id
+              : saleModel.propulseurs),
+          moduleBoucliers:
+            data.moduleBoucliers ??
+            (typeof saleModel.boucliers === 'object'
+              ? saleModel.boucliers.id
+              : saleModel.boucliers),
+          moduleSurvie:
+            data.moduleSurvie ??
+            (typeof saleModel.survie === 'object' ? saleModel.survie.id : saleModel.survie),
+          modulesSupplementaires:
+            data.modulesSupplementaires ??
+            (saleModel.modulesOptionnels ?? []).map((module: any) =>
+              typeof module === 'object' ? module.id : module,
+            ),
+          armesPilote: data.armesPilote ?? pilotWeapons,
+          armesTourelles: data.armesTourelles ?? turretWeapons,
+          blindageActuel: data.blindageActuel ?? chassis?.blindage,
+          bouclierActuel: data.bouclierActuel ?? 0,
+          esquiveActuelle: data.esquiveActuelle ?? chassis?.esquiveBase,
+          inventaireModules: data.inventaireModules ?? [],
+          inventaireArmes: data.inventaireArmes ?? [],
+          inventaireConsommables: data.inventaireConsommables ?? [],
+        }
+      },
+    ],
   },
   fields: [
     // ── Identité ──────────────────────────────────────
@@ -230,7 +275,8 @@ export const Ships: CollectionConfig = {
             typeModule: { equals: 'supplementaire' },
           },
           admin: {
-            description: "Modules supplémentaires installés (limité par le nombre d'emplacements du modèle).",
+            description:
+              "Modules supplémentaires installés (limité par le nombre d'emplacements du modèle).",
           },
         },
       ],
@@ -255,6 +301,7 @@ export const Ships: CollectionConfig = {
               relationTo: 'ship-weapons',
               required: true,
             },
+            ...shipWeaponStateFields(),
           ],
         },
         {
@@ -293,6 +340,7 @@ export const Ships: CollectionConfig = {
                       relationTo: 'ship-weapons',
                       required: true,
                     },
+                    ...shipWeaponStateFields(),
                   ],
                 },
               ],
@@ -369,7 +417,12 @@ export const Ships: CollectionConfig = {
           type: 'array',
           label: 'Consommables disponibles',
           fields: [
-            { name: 'consommable', type: 'relationship', relationTo: 'ship-consumables', required: true },
+            {
+              name: 'consommable',
+              type: 'relationship',
+              relationTo: 'ship-consumables',
+              required: true,
+            },
             { name: 'quantite', type: 'number', required: true, defaultValue: 1, min: 1 },
           ],
         },

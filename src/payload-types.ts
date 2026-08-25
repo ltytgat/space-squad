@@ -330,6 +330,9 @@ export interface Ship {
   armesPilote?:
     | {
         arme: number | ShipWeapon;
+        munitionsActuelles?: number | null;
+        chargeurRelie?: (number | null) | ShipConsumable;
+        chauffeActuelle?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -340,6 +343,9 @@ export interface Ship {
         armes?:
           | {
               arme: number | ShipWeapon;
+              munitionsActuelles?: number | null;
+              chargeurRelie?: (number | null) | ShipConsumable;
+              chauffeActuelle?: number | null;
               id?: string | null;
             }[]
           | null;
@@ -1353,6 +1359,9 @@ export interface ShipsSelect<T extends boolean = true> {
     | T
     | {
         arme?: T;
+        munitionsActuelles?: T;
+        chargeurRelie?: T;
+        chauffeActuelle?: T;
         id?: T;
       };
   armesTourelles?:
@@ -1364,6 +1373,9 @@ export interface ShipsSelect<T extends boolean = true> {
           | T
           | {
               arme?: T;
+              munitionsActuelles?: T;
+              chargeurRelie?: T;
+              chauffeActuelle?: T;
               id?: T;
             };
         id?: T;
