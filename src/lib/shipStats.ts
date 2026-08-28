@@ -40,17 +40,35 @@ export function getShipLimits(ship: ShipRecord) {
 
 export function getShipStats(ship: ShipRecord) {
   const chassis = getChassis(ship)
-  const modules = [ship?.moduleGenerateur, ship?.modulePropulseurs, ship?.moduleSurvie, ship?.moduleBoucliers, ...(ship?.modulesSupplementaires ?? [])]
-    .map(objectOf).filter(Boolean)
+  const moduleEntries = [
+    { module: ship?.moduleGenerateur, label: 'Générateur' },
+    { module: ship?.modulePropulseurs, label: 'Propulseurs' },
+    { module: ship?.moduleSurvie, label: 'Système de survie' },
+    { module: ship?.moduleBoucliers, label: 'Boucliers' },
+    ...(ship?.modulesSupplementaires ?? []).map((module: any, index: number) => ({
+      module,
+      label: `Module supplémentaire ${index + 1}`,
+    })),
+  ]
+  const modules = moduleEntries.map(({ module }) => objectOf(module)).filter(Boolean)
   const numeric = (key: string) => modules.reduce((sum, module) => sum + (Number(module?.[key]) || 0), 0)
   const generator = objectOf(ship?.moduleGenerateur)
   const thrusters = objectOf(ship?.modulePropulseurs)
   const pilot = objectOf(ship?.pilote) ?? (ship?.crew ?? []).find((member: any) => member?.roleVaisseau === 'pilote')
-  const weaponConsumption = [...(ship?.armesPilote ?? []), ...(ship?.armesTourelles ?? []).flatMap((turret: any) => turret.armes ?? [])]
-    .reduce((sum: number, entry: any) => sum + (Number(objectOf(entry.arme)?.consommation) || 0), 0)
   const maxShield = numeric('bouclierMax')
   const maxArmor = (Number(chassis?.blindage) || 0) + numeric('blindageBonus')
-  const consumption = numeric('consommation') + weaponConsumption
+  const consumption = numeric('consommation')
+  const consumptionBreakdown = [
+    ...moduleEntries
+      .map(({ module, label }) => {
+        const item = objectOf(module)
+        const value = Number(item?.consommation) || 0
+        return item && value > 0 && module !== ship?.moduleGenerateur
+          ? { label: item.nom || label, value }
+          : null
+      })
+      .filter((component): component is { label: string; value: number } => component !== null),
+  ]
   const power = numericText(generator?.puissance)
   const evasionBase = Number(chassis?.esquiveBase) || 0
   const evasionPilot = getPilotAbilityBonus(pilot)
@@ -66,6 +84,7 @@ export function getShipStats(ship: ShipRecord) {
     evasionThrusters,
     power,
     consumption,
+    consumptionBreakdown,
     overConsumption: consumption > power,
   }
 }

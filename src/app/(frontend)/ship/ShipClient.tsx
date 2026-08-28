@@ -637,7 +637,7 @@ export function ShipClient({
               formula: 'Σ composants ≤ puissance générateur',
               components: [
                 { label: 'Puissance générateur', value: stats.power },
-                { label: 'Consommation composants', value: stats.consumption },
+                ...stats.consumptionBreakdown,
               ],
             })
           }

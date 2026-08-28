@@ -7,11 +7,17 @@ const ship = { modele: { chassis }, blindageActuel: 18, bouclierActuel: 3, modul
 describe('ship rules', () => {
   it('exposes chassis capacities and calculated runtime values', () => {
     expect(getShipLimits(ship)).toMatchObject({ pilotWeaponPoints: 2, turretCount: 1, moduleSlots: 1, consumableSlots: 2 })
-    expect(getShipStats(ship)).toMatchObject({ maxArmor: 20, maxShield: 6, armor: 18, shield: 3, evasion: 20, power: 6, consumption: 4 })
+    expect(getShipStats(ship)).toMatchObject({ maxArmor: 20, maxShield: 6, armor: 18, shield: 3, evasion: 20, power: 6, consumption: 3 })
   })
 
   it('flags power overflow', () => {
     expect(getShipStats({ ...ship, modulePropulseurs: { consommation: 10 } }).overConsumption).toBe(true)
+  })
+
+  it('details consumption for every installed module and weapon', () => {
+    expect(getShipStats(ship).consumptionBreakdown).toEqual([
+      { label: 'Propulseurs', value: 2 },
+    ])
   })
 
   it('rejects weapon capacity overflow', () => {
