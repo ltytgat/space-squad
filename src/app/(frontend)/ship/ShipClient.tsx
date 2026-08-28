@@ -13,6 +13,7 @@ import {
 } from './actions'
 
 const object = (value: any) => (typeof value === 'object' && value ? value : null)
+const isTurretModule = (value: any) => object(value)?.typeModule === 'tourelle'
 const id = (value: any) => object(value)?.id ?? value
 const numberFrom = (value: unknown) => {
   const match = String(value ?? '')
@@ -81,6 +82,9 @@ export function ShipClient({
   const chassis = getChassis(ship)
   const limits = getShipLimits(ship)
   const stats = useMemo(() => getShipStats({ ...ship, crew }), [ship, crew])
+  const additionalModules = (draft.modulesSupplementaires ?? [])
+    .map((module: any, index: number) => ({ module, index }))
+    .filter(({ module }: any) => !isTurretModule(module))
   const shieldTotal = shieldFront + shieldRear
   const showStatTooltip = (event: React.MouseEvent, data: StatTooltipData) =>
     setHoveredStat({ data, x: event.clientX, y: event.clientY })
@@ -803,10 +807,10 @@ export function ShipClient({
             <div className="ship-subtitle-line">
               <h3 className="ship-subtitle">Modules supplémentaires</h3>
               <span className="ship-tag">
-                {(draft.modulesSupplementaires ?? []).length} / {limits.moduleSlots}
+                {additionalModules.length} / {limits.moduleSlots}
               </span>
             </div>
-            {(draft.modulesSupplementaires ?? []).map((module: any, index: number) => (
+            {additionalModules.map(({ module, index }: any) => (
               <div className="ship-equipment-row" key={id(module) ?? index}>
                 <strong>{object(module)?.nom ?? 'Module'}</strong>
                 <button

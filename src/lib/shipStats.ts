@@ -2,6 +2,7 @@ export type ShipRecord = any
 
 const idOf = (value: any) => typeof value === 'object' && value ? value.id : value
 const objectOf = (value: any) => typeof value === 'object' && value ? value : null
+const isTurretModule = (value: any) => objectOf(value)?.typeModule === 'tourelle'
 
 const numericText = (value: unknown) => {
   const match = String(value ?? '').replace(',', '.').match(/-?\d+(?:\.\d+)?/)
@@ -33,7 +34,9 @@ export function getShipLimits(ship: ShipRecord) {
     turretCount: Number(chassis?.tourelles ?? 0),
     turretWeaponPoints: turretWeaponSlots,
     turretWeaponSlotLimits: String(chassis?.pointsEmportTourelles ?? '').split('+').filter(Boolean).map((value) => Number(value) || 0),
-    moduleSlots: String(chassis?.modulesSupplementaires ?? '').split('+').filter(Boolean).reduce((sum, value) => sum + (Number(value) || 0), 0),
+    // Le premier nombre correspond aux emplacements du vaisseau ; les suivants
+    // sont réservés aux modules de tourelle.
+    moduleSlots: Number(String(chassis?.modulesSupplementaires ?? '').split('+')[0]) || 0,
     consumableSlots: Number(chassis?.consommables ?? 0),
   }
 }
@@ -45,10 +48,15 @@ export function getShipStats(ship: ShipRecord) {
     { module: ship?.modulePropulseurs, label: 'Propulseurs' },
     { module: ship?.moduleSurvie, label: 'Système de survie' },
     { module: ship?.moduleBoucliers, label: 'Boucliers' },
-    ...(ship?.modulesSupplementaires ?? []).map((module: any, index: number) => ({
+    ...(ship?.modulesSupplementaires ?? []).filter((module: any) => !isTurretModule(module)).map((module: any, index: number) => ({
       module,
       label: `Module supplémentaire ${index + 1}`,
     })),
+    ...(ship?.armesTourelles ?? []).flatMap((turret: any, index: number) =>
+      turret.module
+        ? [{ module: turret.module, label: `Module de la tourelle ${turret.tourelle ?? index + 1}` }]
+        : [],
+    ),
   ]
   const modules = moduleEntries.map(({ module }) => objectOf(module)).filter(Boolean)
   const numeric = (key: string) => modules.reduce((sum, module) => sum + (Number(module?.[key]) || 0), 0)
@@ -94,7 +102,7 @@ export function validateShipConfiguration(ship: ShipRecord) {
   const pilotPoints = (ship?.armesPilote ?? []).reduce((sum: number, entry: any) => sum + (Number(objectOf(entry.arme)?.pointsEmport) || 1), 0)
   if (pilotPoints > limits.pilotWeaponPoints) throw new Error("Les points d'emport du pilote sont dépassés")
   if ((ship?.armesTourelles ?? []).some((entry: any) => Number(entry.tourelle) < 1 || Number(entry.tourelle) > limits.turretCount)) throw new Error('Une tourelle est incompatible avec le châssis')
-  const moduleCount = (ship?.modulesSupplementaires ?? []).length
+  const moduleCount = (ship?.modulesSupplementaires ?? []).filter((module: any) => !isTurretModule(module)).length
   if (moduleCount > limits.moduleSlots) throw new Error('Les emplacements de modules sont dépassés')
   if ((ship?.consommablesVaisseau ?? []).length > limits.consumableSlots) throw new Error('Les emplacements de consommables sont dépassés')
   const size = Number(getChassis(ship)?.classe?.replace('alpha', '1').replace('beta', '2').replace('gamma', '3').replace('delta', '4'))
