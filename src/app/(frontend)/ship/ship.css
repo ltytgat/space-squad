@@ -158,6 +158,11 @@
 .ship-read-only input, .ship-read-only select, .ship-read-only button { pointer-events: none; opacity: .72; }
 .ship-subtitle { color: var(--ss-text); font-size: .85rem; margin: .5rem 0; }
 .ship-subtitle-line { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.ship-turret-module { display: flex; flex-direction: column; gap: .45rem; margin-bottom: .75rem; padding: .75rem; border: 1px solid rgba(200, 166, 255, .25); border-left: 3px solid #c8a6ff; border-radius: var(--ss-radius); background: rgba(200, 166, 255, .06); }
+.ship-turret-module-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; color: var(--ss-text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.ship-turret-module-heading strong { color: #c8a6ff; font-size: .85rem; text-transform: none; letter-spacing: normal; }
+.ship-turret-module-effects { display: flex; flex-wrap: wrap; gap: .4rem .75rem; color: var(--ss-text); font-size: .78rem; }
+.ship-turret-module-description { margin: 0; color: var(--ss-text-muted); font-size: .75rem; }
 .ship-turret + .ship-turret { margin-top: 1rem; }
 .ship-inventory-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
 .ship-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-bottom: 2rem; }

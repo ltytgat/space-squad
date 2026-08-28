@@ -542,6 +542,35 @@ export function ShipClient({
     ) : (
       <p className="ship-muted">Aucune arme installée.</p>
     )
+  const renderTurretModule = (moduleValue: any) => {
+    const module = object(moduleValue)
+    if (!module) return null
+    const effects = [
+      module.modificateurs && `Modificateurs : ${module.modificateurs}`,
+      module.consommationSupplementaire != null && `Consommation supplémentaire : +${module.consommationSupplementaire}%`,
+      module.portee && `Portée : ${module.portee}`,
+      module.bonusDegatsPourcentage != null && `Bonus de dégâts : +${module.bonusDegatsPourcentage}%`,
+      module.bonusDegatsPar100MJ != null && `Bonus de dégâts / 100 MJ : +${module.bonusDegatsPar100MJ}%`,
+      module.mjMaxUtilisable != null && `MJ maximum utilisables : ${module.mjMaxUtilisable}`,
+      module.angleTir && `Angle de tir : ${module.angleTir}`,
+    ].filter(Boolean)
+    return (
+      <div className="ship-turret-module">
+        <div className="ship-turret-module-heading">
+          <span>Module de tourelle</span>
+          <strong>{module.nom ?? 'Module'}</strong>
+        </div>
+        {effects.length > 0 ? (
+          <div className="ship-turret-module-effects">
+            {effects.map((effect, index) => <span key={index}>{effect}</span>)}
+          </div>
+        ) : (
+          <span className="ship-muted">Aucun effet renseigné.</span>
+        )}
+        {module.description && <p className="ship-turret-module-description">{module.description}</p>}
+      </div>
+    )
+  }
   const selectAmmoSource = async (source: any) => {
     if (readOnly || !ammoSelector) return
     const { turretIndex, weaponIndex } = ammoSelector
@@ -591,12 +620,13 @@ export function ShipClient({
     }
     setAmmoSelector(null)
   }
-  const renderWeaponLocation = (title: string, entries: any[], turretIndex = -1, slots = 0) => (
+  const renderWeaponLocation = (title: string, entries: any[], turretIndex = -1, slots = 0, turretModule?: any) => (
     <section className="ship-card" key={`${title}-${turretIndex}`}>
       <div className="ship-subtitle-line">
         <h2 className="ship-card-title">{title}</h2>
         <span className="ship-tag">{slots} emplacement(s)</span>
       </div>
+      {turretModule && renderTurretModule(turretModule)}
       {weaponList(entries, turretIndex)}
     </section>
   )
@@ -836,6 +866,7 @@ export function ShipClient({
               turret.armes ?? [],
               index,
               limits.turretWeaponSlotLimits[index] ?? 0,
+              turret.module,
             ),
           )}
           <section className="ship-card">
