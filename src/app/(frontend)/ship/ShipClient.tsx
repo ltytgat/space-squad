@@ -9,6 +9,7 @@ import {
   updateShipState,
   updateShipTurretWeaponState,
   updateShipWeaponState,
+  logShipAmmoState,
 } from './actions'
 
 const object = (value: any) => (typeof value === 'object' && value ? value : null)
@@ -24,7 +25,11 @@ const coolingFrom = (ammo: any) => {
   return match ? Number(match[1]) : 0
 }
 const isAmmunition = (item: any) =>
-  /cartouche|munition|balle|cinetique/i.test(`${item?.nom ?? ''} ${item?.categorie ?? ''}`)
+  /cartouche|chargeur|munition|balle|obus|cinetique/i.test(`${item?.nom ?? ''} ${item?.categorie ?? ''}`)
+const isKineticAmmunition = (item: any) =>
+  isAmmunition(item) && !/cartouche/i.test(`${item?.nom ?? ''} ${item?.typeMunition ?? ''}`)
+const ammoName = (item: any) => String(item?.nom ?? '').normalize('NFKC').replace(/\s+/gu, ' ').trim()
+const sameAmmo = (left: any, right: any) => ammoName(left) === ammoName(right) && Boolean(ammoName(left))
 
 export function ShipClient({
   ship: initialShip,
@@ -53,6 +58,10 @@ export function ShipClient({
     y: number
   } | null>(null)
   const [weaponSelector, setWeaponSelector] = useState<{
+    turretIndex: number
+    weaponIndex: number
+  } | null>(null)
+  const [ammoSelector, setAmmoSelector] = useState<{
     turretIndex: number
     weaponIndex: number
   } | null>(null)
@@ -313,15 +322,17 @@ export function ShipClient({
     if (!weapon) return null
     const thermal = weapon.type === 'thermique'
     const explosive = weapon.type === 'explosif'
+    const kinetic = !thermal && !explosive
     const inventoryEntries = ship.inventaireConsommables ?? []
     const loaded = object(entry.chargeurRelie)
     const compatibleEntries = inventoryEntries.filter((item: any) => {
       const ammo = object(item.consommable)
       const isTypeCompatible = thermal
-        ? /cartouche/i.test(ammo?.nom ?? '')
-        : /cinetique|balle|munition/i.test(`${ammo?.nom} ${ammo?.categorie ?? ''}`)
-      const sameModel = thermal || !loaded || id(ammo) === id(loaded)
-      return isTypeCompatible && sameModel && Number(item.quantite ?? 0) > 0
+        ? /cartouche/i.test(`${ammo?.typeMunition ?? ''} ${ammo?.nom ?? ''}`)
+        : kinetic
+          ? isKineticAmmunition(ammo)
+          : /cinetique|balle|munition/i.test(`${ammo?.nom} ${ammo?.categorie ?? ''}`)
+      return isTypeCompatible && Number(item.quantite ?? 0) > 0
     })
     const compatible = compatibleEntries
       .map((item: any) => object(item.consommable))
@@ -339,46 +350,89 @@ export function ShipClient({
         turretIndex,
       )
     const reload = async () => {
-      const ammo = compatible[0]
-      const ammoEntry = compatibleEntries[0]
-      if (!ammo || !ammoEntry) return alert('Aucune munition compatible dans la réserve.')
       const capacity = Number(weapon.chargeur) || 0
-      const requiredUnits = thermal ? 1 : Math.max(0, capacity - ammoCount)
-      if (!thermal) {
-        const availableUnits = compatibleEntries
-          .filter((item: any) => id(object(item.consommable)) === id(ammo))
-          .reduce((sum: number, item: any) => sum + Number(item.quantite ?? 0), 0)
-        if (availableUnits < requiredUnits)
-          return alert(`Il manque ${requiredUnits - availableUnits} munition(s) de ce modèle.`)
+      if (!thermal && capacity > 0 && ammoCount >= capacity) {
+        console.info('[ship-ammo] chargeur plein', { weapon: weapon.nom, ammoCount, capacity, loaded: loaded?.nom })
+        return alert('Chargeur plein')
       }
-      let remainingUnits = requiredUnits
+      const loadedEntry = loaded
+        ? inventoryEntries.find((item: any) => sameAmmo(item.consommable, loaded) && Number(item.quantite ?? 0) > 0)
+        : null
+      console.info('[ship-ammo] comparaisons directes', inventoryEntries.map((item: any) => {
+        const reserveName = String(object(item.consommable)?.nom ?? '')
+        const loadedName = String(loaded?.nom ?? '')
+        return { loaded: JSON.stringify(loadedName), reserve: JSON.stringify(reserveName), loadedLength: loadedName.length, reserveLength: reserveName.length, strictEqual: loadedName === reserveName, quantity: item.quantite }
+      }))
+      if (loaded && !loadedEntry) {
+        console.warn('[ship-ammo] comparaison sans résultat', {
+          loadedRaw: JSON.stringify(loaded?.nom),
+          loadedName: ammoName(loaded),
+          reserveNames: inventoryEntries.map((item: any) => JSON.stringify(object(item.consommable)?.nom)),
+          reserveNormalized: inventoryEntries.map((item: any) => ammoName(object(item.consommable))),
+        })
+      }
+      if (kinetic && loaded && !loadedEntry && ammoCount <= 0) {
+        await logShipAmmoState(ship.id, weapon.nom, loaded.nom)
+        if (!compatible.length) return alert('Aucune munition compatible dans la rÃ©serve.')
+        setAmmoSelector({ turretIndex, weaponIndex: index })
+        return
+      }
+      const ammo = loadedEntry ? loadedEntry.consommable : (!loaded ? compatible[0] : null)
+      const ammoEntry = loadedEntry ?? compatibleEntries[0]
+      console.info('[ship-ammo] entrée retenue', { entryFound: Boolean(loadedEntry), entryAmmo: object(loadedEntry?.consommable)?.nom ?? null, ammo: ammo?.nom ?? null })
+      console.info('[ship-ammo] recherche', { weapon: weapon.nom, loaded: loaded?.nom ?? null, ammoFound: ammo?.nom ?? null, reserve: inventoryEntries.map((item: any) => ({ name: object(item.consommable)?.nom ?? null, quantity: item.quantite })) })
+      if (!ammo || !ammoEntry) await logShipAmmoState(ship.id, weapon.nom, loaded?.nom)
+      if (!ammo || !ammoEntry) return alert('Aucune munition compatible dans la réserve.')
+      const changingType = false
+      const requiredUnits = thermal ? 1 : Math.max(0, capacity - (changingType ? 0 : ammoCount))
+      const availableUnits = inventoryEntries
+        .filter((item: any) => sameAmmo(item.consommable, ammo))
+        .reduce((sum: number, item: any) => sum + Number(item.quantite ?? 0), 0)
+      const loadUnits = thermal ? requiredUnits : Math.min(requiredUnits, availableUnits)
+      if (loadUnits <= 0) return alert('Aucune munition compatible dans la réserve.')
+      // A normal reload tops up the current magazine. Changing type is handled
+      // by the selector below so the old magazine can be returned first.
+      let remainingUnits = loadUnits
+      let returnedUnits = changingType ? ammoCount : 0
       const inventoryConsommables = inventoryEntries
         .map((item: any) => {
-          if (id(object(item.consommable)) !== id(ammo) || remainingUnits <= 0) return item
-          const taken = Math.min(Number(item.quantite ?? 0), remainingUnits)
-          remainingUnits -= taken
-          return { ...item, quantite: Number(item.quantite ?? 0) - taken }
+          const itemId = id(object(item.consommable))
+          let quantity = Number(item.quantite ?? 0)
+          if (sameAmmo(item.consommable, ammo) && remainingUnits > 0) {
+            const taken = Math.min(quantity, remainingUnits)
+            quantity -= taken
+            remainingUnits -= taken
+          }
+          if (itemId === id(loaded) && returnedUnits > 0) {
+            quantity += returnedUnits
+            returnedUnits = 0
+          }
+          return { ...item, quantite: quantity }
         })
-        .filter((item: any) => item.quantite > 0)
+      if (returnedUnits > 0) inventoryConsommables.push({ consommable: loaded.id, quantite: returnedUnits })
+      const cleanedInventory = inventoryConsommables.filter((item: any) => item.quantite > 0)
       const data: any = {
-        munitionsActuelles: thermal ? 0 : ammoCount + requiredUnits,
+        munitionsActuelles: thermal ? 0 : (changingType ? 0 : ammoCount) + loadUnits,
         chargeurRelie: ammo.id,
         chauffeActuelle: 0,
       }
-      const serverData = { ...data, inventoryConsommables }
+      const serverData = { ...data, inventoryConsommables: cleanedInventory }
       const localData = { ...data, chargeurRelie: ammo }
       if (turretIndex >= 0) {
         const turrets = [...(ship.armesTourelles ?? [])]
         turrets[turretIndex] = { ...turrets[turretIndex], armes: [...turrets[turretIndex].armes] }
         turrets[turretIndex].armes[index] = { ...turrets[turretIndex].armes[index], ...localData }
-        setShip({ ...ship, armesTourelles: turrets, inventaireConsommables: inventoryConsommables })
+        setShip({ ...ship, armesTourelles: turrets, inventaireConsommables: cleanedInventory })
+        setDraft({ ...draft, armesTourelles: turrets, inventaireConsommables: cleanedInventory })
         await updateShipTurretWeaponState(ship.id, turretIndex, index, serverData)
       } else {
         const entries = [...(ship.armesPilote ?? [])]
         entries[index] = { ...entries[index], ...localData }
-        setShip({ ...ship, armesPilote: entries, inventaireConsommables: inventoryConsommables })
+        setShip({ ...ship, armesPilote: entries, inventaireConsommables: cleanedInventory })
+        setDraft({ ...draft, armesPilote: entries, inventaireConsommables: cleanedInventory })
         await updateShipWeaponState(ship.id, 'armesPilote', index, serverData)
       }
+      setAmmoSelector(null)
     }
     const weaponType = thermal ? 'thermal' : explosive ? 'explosive' : 'kinetic'
     const weaponLabel = thermal ? 'Thermique' : explosive ? 'Explosif' : 'Cinétique'
@@ -400,6 +454,7 @@ export function ShipClient({
           <span>Dégâts {weapon.degats ?? '—'}</span>
           {weapon.cooldown != null && <span>Cooldown {weapon.cooldown} t</span>}
           {weapon.ballesParSalve != null && <span>{weapon.ballesParSalve} balle(s)/salve</span>}
+          {kinetic && loaded && <span className="ship-ammo-effect">{loaded.nom} : {loaded.bonus || 'aucun bonus'}</span>}
         </div>
         {thermal ? (
           <>
@@ -455,8 +510,13 @@ export function ShipClient({
               ✦ Tirer
             </button>
             <button disabled={readOnly} onClick={reload}>
-              ↻ Recharger la réserve
+              ↻ Recharger
             </button>
+            {kinetic && (
+              <button disabled={readOnly} onClick={() => setAmmoSelector({ turretIndex, weaponIndex: index })}>
+                Changer de munition
+              </button>
+            )}
           </div>
         )}
       </article>
@@ -468,8 +528,57 @@ export function ShipClient({
     ) : (
       <p className="ship-muted">Aucune arme installée.</p>
     )
+  const selectAmmoSource = async (source: any) => {
+    if (readOnly || !ammoSelector) return
+    const { turretIndex, weaponIndex } = ammoSelector
+    const entries = turretIndex >= 0 ? ship.armesTourelles[turretIndex].armes : ship.armesPilote
+    const entry = entries[weaponIndex]
+    const weapon = object(entry?.arme)
+    const loaded = object(entry?.chargeurRelie)
+    if (!weapon || !source?.ammo) return
+    const capacity = Number(weapon.chargeur) || 0
+    const oldCount = Number(entry.munitionsActuelles ?? 0)
+    const changingType = loaded && id(loaded) !== id(source.ammo)
+    const needed = Math.max(0, capacity - (changingType ? 0 : oldCount))
+    const available = (ship.inventaireConsommables ?? [])
+      .filter((item: any) => sameAmmo(object(item.consommable), source.ammo))
+      .reduce((sum: number, item: any) => sum + Number(item.quantite ?? 0), 0)
+    const loadUnits = Math.min(needed, available)
+    if (loadUnits <= 0) return alert('Aucune munition compatible dans la réserve.')
+    let remaining = loadUnits
+    let returned = changingType ? oldCount : 0
+    const inventory = (ship.inventaireConsommables ?? []).map((item: any) => {
+      const itemId = id(item.consommable)
+      let quantity = Number(item.quantite ?? 0)
+      if (sameAmmo(object(item.consommable), source.ammo) && remaining > 0) {
+        const taken = Math.min(quantity, remaining)
+        quantity -= taken
+        remaining -= taken
+      }
+      if (sameAmmo(object(item.consommable), loaded) && returned > 0) { quantity += returned; returned = 0 }
+      return { ...item, quantite: quantity }
+    })
+    if (returned > 0) inventory.push({ consommable: loaded.id, quantite: returned })
+    const cleaned = inventory.filter((item: any) => item.quantite > 0)
+    const data = { munitionsActuelles: (changingType ? 0 : oldCount) + loadUnits, chargeurRelie: source.ammo.id, chauffeActuelle: 0, inventoryConsommables: cleaned }
+    if (turretIndex >= 0) {
+      const turrets = [...(ship.armesTourelles ?? [])]
+      turrets[turretIndex] = { ...turrets[turretIndex], armes: [...turrets[turretIndex].armes] }
+      turrets[turretIndex].armes[weaponIndex] = { ...entry, ...data, chargeurRelie: source.ammo }
+      setShip({ ...ship, armesTourelles: turrets, inventaireConsommables: cleaned })
+      setDraft({ ...draft, armesTourelles: turrets, inventaireConsommables: cleaned })
+      await updateShipTurretWeaponState(ship.id, turretIndex, weaponIndex, data)
+    } else {
+      const nextEntries = [...(ship.armesPilote ?? [])]
+      nextEntries[weaponIndex] = { ...entry, ...data, chargeurRelie: source.ammo }
+      setShip({ ...ship, armesPilote: nextEntries, inventaireConsommables: cleaned })
+      setDraft({ ...draft, armesPilote: nextEntries, inventaireConsommables: cleaned })
+      await updateShipWeaponState(ship.id, 'armesPilote', weaponIndex, data)
+    }
+    setAmmoSelector(null)
+  }
   const renderWeaponLocation = (title: string, entries: any[], turretIndex = -1, slots = 0) => (
-    <section className="ship-card">
+    <section className="ship-card" key={`${title}-${turretIndex}`}>
       <div className="ship-subtitle-line">
         <h2 className="ship-card-title">{title}</h2>
         <span className="ship-tag">{slots} emplacement(s)</span>
@@ -838,6 +947,39 @@ export function ShipClient({
           </div>
         </div>
       )}
+      {ammoSelector && (() => {
+        const targetEntries = ammoSelector.turretIndex >= 0
+          ? ship.armesTourelles[ammoSelector.turretIndex]?.armes
+          : ship.armesPilote
+        const targetWeapon = object(targetEntries?.[ammoSelector.weaponIndex]?.arme)
+        const ammoSources = (ship.inventaireConsommables ?? [])
+          .map((item: any) => ({ ammo: object(item.consommable), quantity: Number(item.quantite ?? 0) }))
+          .filter((source: any) => source.ammo && source.quantity > 0 && isKineticAmmunition(source.ammo))
+          .filter((source: any, index: number, all: any[]) => all.findIndex((item) => id(item.ammo) === id(source.ammo)) === index)
+        return (
+          <div className="ship-selector-overlay" onClick={() => setAmmoSelector(null)}>
+            <div className="ship-selector-modal" onClick={(event) => event.stopPropagation()}>
+              <div className="ship-selector-header">
+                <h3>Changer de munition</h3>
+                <button onClick={() => setAmmoSelector(null)}>×</button>
+              </div>
+              <p className="ship-muted">Choisissez le chargeur pour {targetWeapon?.nom ?? 'cette arme'}.</p>
+              <div className="ship-selector-list">
+                {ammoSources.map((source: any) => (
+                  <button className="ship-selector-item" key={id(source.ammo)} onClick={() => selectAmmoSource(source)}>
+                    <span className="ship-weapon-icon ship-weapon-icon-cinetique">✦</span>
+                    <span>
+                      <strong>{source.ammo.nom}</strong>
+                      <small>{source.quantity} disponible(s) · {source.ammo.bonus || 'Aucun bonus'}</small>
+                    </span>
+                  </button>
+                ))}
+                {!ammoSources.length && <p className="ship-muted">Aucune munition cinétique disponible.</p>}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       {hoveredStat && (
         <div
           className="char-inventory-tooltip ship-stat-tooltip-floating"

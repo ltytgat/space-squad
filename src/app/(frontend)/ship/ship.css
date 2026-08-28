@@ -129,6 +129,7 @@
 .ship-change-weapon { color: var(--ss-text-muted); background: transparent; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .35rem .5rem; cursor: pointer; font-size: .72rem; }
 .ship-weapon-icon { color: var(--ss-cyan); font-size: 1.2rem; }
 .ship-weapon-summary, .ship-weapon small { color: var(--ss-text-muted); font-size: .75rem; }
+.ship-ammo-effect { color: var(--ss-yellow); font-style: italic; }
 .ship-weapon-controls b { margin-right: auto; color: var(--ss-text); font-size: .8rem; }
 .ship-weapon-controls button, .ship-equipment-row button { color: var(--ss-text-muted); background: transparent; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .4rem .55rem; cursor: pointer; font-size: .72rem; }
 .ship-weapon-controls button:hover, .ship-equipment-row button:hover { color: var(--ss-cyan); border-color: var(--ss-cyan); }

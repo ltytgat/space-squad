@@ -248,3 +248,24 @@ export async function updateShipTurretWeaponState(
   revalidatePath('/ship')
   return { success: true }
 }
+
+export async function logShipAmmoState(shipId: number, weaponName?: string, loadedAmmoName?: string) {
+  const { payload, user } = await context()
+  await authorize(payload, user, shipId)
+  const ship = (await payload.findByID({
+    collection: 'ships',
+    id: shipId,
+    depth: 2,
+    overrideAccess: true,
+  })) as any
+  console.warn('[ship-ammo] état réserve', {
+    shipId,
+    weaponName,
+    loadedAmmoName,
+    inventory: (ship?.inventaireConsommables ?? []).map((item: any) => ({
+      name: typeof item.consommable === 'object' ? item.consommable?.nom : item.consommable,
+      quantity: item.quantite,
+    })),
+  })
+  return { success: true }
+}
