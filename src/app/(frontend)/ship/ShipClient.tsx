@@ -30,6 +30,19 @@ const isKineticAmmunition = (item: any) =>
   isAmmunition(item) && !/cartouche/i.test(`${item?.nom ?? ''} ${item?.typeMunition ?? ''}`)
 const ammoName = (item: any) => String(item?.nom ?? '').normalize('NFKC').replace(/\s+/gu, ' ').trim()
 const sameAmmo = (left: any, right: any) => ammoName(left) === ammoName(right) && Boolean(ammoName(left))
+const isExplosiveAmmoFor = (weapon: any, ammo: any) => {
+  const weaponCategory = String(weapon?.categorie ?? '').toLowerCase()
+  const weaponName = String(weapon?.nom ?? '').toLowerCase()
+  const ammoNameValue = String(ammo?.nom ?? '').toLowerCase()
+  if (weaponCategory === 'mine' || weaponName.includes('mine')) return /mine/.test(ammoNameValue)
+  if (weaponCategory === 'lance-missile' || weaponName.includes('missile')) return /roquette|missile/.test(ammoNameValue)
+  return false
+}
+const isAmmoCompatibleWith = (weapon: any, ammo: any) => {
+  if (weapon?.type === 'thermique') return /cartouche/i.test(`${ammo?.typeMunition ?? ''} ${ammo?.nom ?? ''}`)
+  if (weapon?.type === 'explosif') return isExplosiveAmmoFor(weapon, ammo)
+  return isKineticAmmunition(ammo)
+}
 
 export function ShipClient({
   ship: initialShip,
@@ -327,11 +340,7 @@ export function ShipClient({
     const loaded = object(entry.chargeurRelie)
     const compatibleEntries = inventoryEntries.filter((item: any) => {
       const ammo = object(item.consommable)
-      const isTypeCompatible = thermal
-        ? /cartouche/i.test(`${ammo?.typeMunition ?? ''} ${ammo?.nom ?? ''}`)
-        : kinetic
-          ? isKineticAmmunition(ammo)
-          : /cinetique|balle|munition/i.test(`${ammo?.nom} ${ammo?.categorie ?? ''}`)
+      const isTypeCompatible = isAmmoCompatibleWith(weapon, ammo)
       return isTypeCompatible && Number(item.quantite ?? 0) > 0
     })
     const compatible = compatibleEntries
@@ -341,6 +350,7 @@ export function ShipClient({
     const cooling = thermal ? coolingFrom(loaded) : 0
     const heat = Number(entry.chauffeActuelle ?? 0)
     const ammoCount = Number(entry.munitionsActuelles ?? 0)
+    const capacity = explosive ? 1 : Number(weapon.chargeur) || 0
     const fire = (key: string, value: number) =>
       updateWeapon(
         turretIndex >= 0 ? 'armesTourelles' : 'armesPilote',
@@ -350,7 +360,6 @@ export function ShipClient({
         turretIndex,
       )
     const reload = async () => {
-      const capacity = Number(weapon.chargeur) || 0
       if (!thermal && capacity > 0 && ammoCount >= capacity) {
         console.info('[ship-ammo] chargeur plein', { weapon: weapon.nom, ammoCount, capacity, loaded: loaded?.nom })
         return alert('Chargeur plein')
@@ -454,6 +463,7 @@ export function ShipClient({
           <span>Dégâts {weapon.degats ?? '—'}</span>
           {weapon.cooldown != null && <span>Cooldown {weapon.cooldown} t</span>}
           {weapon.ballesParSalve != null && <span>{weapon.ballesParSalve} balle(s)/salve</span>}
+          {explosive && weapon.distance != null && <span>Portée {weapon.distance}</span>}
           {kinetic && loaded && <span className="ship-ammo-effect">{loaded.nom} : {loaded.bonus || 'aucun bonus'}</span>}
         </div>
         {thermal ? (
@@ -496,7 +506,7 @@ export function ShipClient({
         ) : (
           <div className="ship-weapon-controls">
             <b>
-              {explosive ? 'Charge' : 'Munitions'} {ammoCount} / {Number(weapon.chargeur) || '—'}
+              {explosive ? 'Charge' : 'Munitions'} {ammoCount} / {capacity || '—'}
             </b>
             <button
               disabled={readOnly || ammoCount <= 0}
@@ -512,7 +522,7 @@ export function ShipClient({
             <button disabled={readOnly} onClick={reload}>
               ↻ Recharger
             </button>
-            {kinetic && (
+            {(kinetic || explosive) && (
               <button disabled={readOnly} onClick={() => setAmmoSelector({ turretIndex, weaponIndex: index })}>
                 Changer de munition
               </button>
@@ -536,9 +546,9 @@ export function ShipClient({
     const weapon = object(entry?.arme)
     const loaded = object(entry?.chargeurRelie)
     if (!weapon || !source?.ammo) return
-    const capacity = Number(weapon.chargeur) || 0
+    const capacity = weapon.type === 'explosif' ? 1 : Number(weapon.chargeur) || 0
     const oldCount = Number(entry.munitionsActuelles ?? 0)
-    const changingType = loaded && id(loaded) !== id(source.ammo)
+    const changingType = loaded && !sameAmmo(loaded, source.ammo)
     const needed = Math.max(0, capacity - (changingType ? 0 : oldCount))
     const available = (ship.inventaireConsommables ?? [])
       .filter((item: any) => sameAmmo(object(item.consommable), source.ammo))
@@ -954,7 +964,7 @@ export function ShipClient({
         const targetWeapon = object(targetEntries?.[ammoSelector.weaponIndex]?.arme)
         const ammoSources = (ship.inventaireConsommables ?? [])
           .map((item: any) => ({ ammo: object(item.consommable), quantity: Number(item.quantite ?? 0) }))
-          .filter((source: any) => source.ammo && source.quantity > 0 && isKineticAmmunition(source.ammo))
+          .filter((source: any) => source.ammo && source.quantity > 0 && isAmmoCompatibleWith(targetWeapon, source.ammo))
           .filter((source: any, index: number, all: any[]) => all.findIndex((item) => id(item.ammo) === id(source.ammo)) === index)
         return (
           <div className="ship-selector-overlay" onClick={() => setAmmoSelector(null)}>
