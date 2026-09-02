@@ -110,13 +110,6 @@
 .ship-stat-generator-hot span, .ship-stat-generator-hot strong, .ship-stat-generator-hot small { color: #fff2f2; }
 .ship-stat small { color: var(--ss-text-muted); font-size: .7rem; }
 .ship-warning { margin: 0; padding: .7rem .8rem; border: 1px solid rgba(255, 174, 0, .35); border-radius: var(--ss-radius); background: rgba(255, 174, 0, .08); font-size: .8rem; }
-.ship-crew-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
-.ship-crew-group { padding: .75rem; border: 1px solid rgba(255,255,255,.07); border-radius: var(--ss-radius); background: rgba(255,255,255,.025); }
-.ship-crew-group h3 { margin: 0 0 .65rem; color: var(--ss-cyan); font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; }
-.ship-crew-group .ship-muted { margin: 0; }
-.ship-crew-item { display: flex; flex-direction: column; gap: .4rem; padding: .55rem 0; border-top: 1px solid rgba(255,255,255,.06); }
-.ship-crew-item:first-of-type { border-top: 0; }
-.ship-crew-item select { width: 100%; color: var(--ss-text-muted); background: var(--ss-bg-alt); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .35rem; font-size: .72rem; }
 .ship-weapon { display: flex; flex-direction: column; gap: .65rem; padding: .9rem; border: 1px solid rgba(255,255,255,.08); border-left: 3px solid #3d9cff; border-radius: var(--ss-radius); background: rgba(255,255,255,.025); }
 .ship-weapon-thermal { border-left-color: #ff5c5c; }
 .ship-weapon-kinetic { border-left-color: #3d9cff; }
@@ -194,12 +187,12 @@
 
 @media (max-width: 700px) {
   .ship-stats-grid, .ship-state-grid, .ship-form-grid { grid-template-columns: repeat(2, 1fr); }
-  .ship-main-grid, .ship-crew-grid { grid-template-columns: 1fr; }
+  .ship-main-grid, .ship-crew-seats { grid-template-columns: 1fr; }
   .ship-equipment-row { align-items: flex-start; flex-wrap: wrap; }
 }
 
 @media (min-width: 701px) and (max-width: 980px) {
-  .ship-crew-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ship-crew-seats { grid-template-columns: 1fr; }
   .ship-main-grid { grid-template-columns: 1fr; }
 }
 
@@ -250,11 +243,52 @@
 
 /* ── Équipage ── */
 
-.ship-crew-list {
-  display: flex;
-  flex-direction: column;
+.ship-crew-seats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
+
+.ship-crew-passengers-title {
+  margin: 1.25rem 0 0.65rem;
+  color: var(--ss-cyan);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.ship-crew-seat-label {
+  color: var(--ss-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ship-crew-seat-empty { border-style: dashed; }
+
+.ship-crew-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ship-crew-action {
+  color: var(--ss-text-muted);
+  background: var(--ss-bg-alt);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { color: var(--ss-cyan); border-color: var(--ss-cyan); }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+/* Les actions d'équipage restent utilisables même en fiche non modifiable :
+   un passager doit pouvoir rejoindre un autre vaisseau de son groupe. */
+.ship-read-only .ship-crew-action:not(:disabled) { pointer-events: auto; opacity: 1; }
 
 .ship-crew-item {
   display: flex;

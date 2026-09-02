@@ -2,9 +2,19 @@
 
 import { useMemo, useState } from 'react'
 import { getChassis, getShipLimits, getShipStats } from '@/lib/shipStats'
+import {
+  applySeatChange,
+  listSeats,
+  roleForSeat,
+  seatOf,
+  withSeatChange,
+  type Seat,
+} from '@/lib/shipCrew'
 import { StatTooltip, type StatTooltipData } from '@/components/StatTooltip'
 import {
-  updateCrewRole,
+  assignCrewSeat,
+  disembarkCrewMember,
+  joinShip,
   updateShipConfiguration,
   updateShipState,
   updateShipTurretWeaponState,
@@ -49,11 +59,19 @@ export function ShipClient({
   ship: initialShip,
   crew: initialCrew,
   readOnly = false,
+  viewerCharacterId = null,
+  canManageCrew = false,
+  canJoin = false,
 }: {
   ship: any
   crew: any[]
-  isAdmin?: boolean
   readOnly?: boolean
+  /** Personnage de l'utilisateur courant, s'il en a un. */
+  viewerCharacterId?: number | string | null
+  /** Propriétaire ou admin : peut réaffecter et débarquer librement. */
+  canManageCrew?: boolean
+  /** Vaisseau du groupe où l'utilisateur n'est pas embarqué. */
+  canJoin?: boolean
 }) {
   const [ship, setShip] = useState(initialShip)
   const [crew, setCrew] = useState(initialCrew)
@@ -135,54 +153,76 @@ export function ShipClient({
       alert('Impossible de mettre à jour le blindage.')
     }
   }
-  const changeRole = async (member: any, role: string) => {
-    if (readOnly) return
-    const [nextRole, turretValue] = role.split(':')
-    const turretNumber = turretValue ? Number(turretValue) : undefined
-    const currentRoleValue = (entry: any) =>
-      entry.roleVaisseau === 'canonnier'
-        ? `canonnier:${ship.canonniers?.find((slot: any) => String(id(slot.personnage)) === String(entry.id))?.tourelle ?? ''}`
-        : entry.roleVaisseau || 'passager'
-    const next = crew.map((entry) => {
-      const current = currentRoleValue(entry)
-      const displaced =
-        (nextRole === 'pilote' && current === 'pilote') ||
-        (nextRole === 'copilote' && current === 'copilote') ||
-        (nextRole === 'canonnier' && current === `canonnier:${turretNumber}`)
-      return entry.id === member.id
-        ? { ...entry, roleVaisseau: nextRole }
-        : displaced
-          ? { ...entry, roleVaisseau: 'passager' }
-          : entry
-    })
-    setCrew(next)
-    const nextCannoniers = (ship.canonniers ?? []).filter(
-      (slot: any) =>
-        String(id(slot.personnage)) !== String(member.id) && Number(slot.tourelle) !== turretNumber,
+  /**
+   * Déplace un membre vers une place, en optimiste, puis confirme côté serveur.
+   * Le serveur revalide les droits : cette fonction n'est qu'un raccourci d'UI.
+   */
+  const changeSeat = async (member: any, seat: string) => {
+    const previousShip = ship
+    const previousCrew = crew
+    const change = applySeatChange(ship, Number(member.id), seat)
+    setShip(withSeatChange(ship, change))
+    setCrew(
+      crew.map((entry) => {
+        const update = change.roleUpdates.find(
+          (item) => String(item.characterId) === String(entry.id),
+        )
+        return update ? { ...entry, roleVaisseau: update.role } : entry
+      }),
     )
-    if (nextRole === 'canonnier' && turretNumber)
-      nextCannoniers.push({ personnage: member.id, tourelle: turretNumber })
-    setShip({
-      ...ship,
-      pilote:
-        nextRole === 'pilote'
-          ? member.id
-          : String(id(ship.pilote)) === String(member.id)
-            ? null
-            : ship.pilote,
-      copilote:
-        nextRole === 'copilote'
-          ? member.id
-          : String(id(ship.copilote)) === String(member.id)
-            ? null
-            : ship.copilote,
-      canonniers: nextCannoniers,
-    })
     try {
-      await updateCrewRole(ship.id, member.id, nextRole as any, turretNumber)
-    } catch {
-      setCrew(crew)
-      alert('Impossible de modifier le poste.')
+      await assignCrewSeat(ship.id, Number(member.id), seat)
+    } catch (error) {
+      setShip(previousShip)
+      setCrew(previousCrew)
+      alert(error instanceof Error ? error.message : 'Impossible de modifier le poste.')
+    }
+  }
+  const takeSeat = (seat: Seat) => {
+    const self = crew.find((entry) => String(entry.id) === String(viewerCharacterId))
+    if (self) changeSeat(self, seat.key)
+  }
+  const leaveSeat = async () => {
+    const self = crew.find((entry) => String(entry.id) === String(viewerCharacterId))
+    if (!self) return
+    if (
+      !canManageCrew &&
+      !confirm(
+        'En rejoignant les passagers, vous perdrez vos droits de modification sur ce vaisseau. Continuer ?',
+      )
+    )
+      return
+    await changeSeat(self, 'passager')
+  }
+  const [crewBusy, setCrewBusy] = useState(false)
+  const disembark = async (member: any) => {
+    if (!canManageCrew || crewBusy) return
+    if (!confirm(`Débarquer ${member.nom || 'ce personnage'} du vaisseau ?`)) return
+    setCrewBusy(true)
+    const previousShip = ship
+    const previousCrew = crew
+    const change = applySeatChange(ship, Number(member.id), 'passager')
+    setShip(withSeatChange(ship, change))
+    setCrew(crew.filter((entry) => String(entry.id) !== String(member.id)))
+    try {
+      await disembarkCrewMember(ship.id, Number(member.id))
+    } catch (error) {
+      setShip(previousShip)
+      setCrew(previousCrew)
+      alert(error instanceof Error ? error.message : 'Impossible de débarquer ce personnage.')
+    } finally {
+      setCrewBusy(false)
+    }
+  }
+  const board = async () => {
+    if (crewBusy) return
+    setCrewBusy(true)
+    try {
+      await joinShip(ship.id)
+      window.location.reload()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Impossible de rejoindre ce vaisseau.')
+      setCrewBusy(false)
     }
   }
   const moduleField = (label: string, key: string) => {
@@ -630,29 +670,23 @@ export function ShipClient({
       {weaponList(entries, turretIndex)}
     </section>
   )
-  const turretNumbers = Array.from({ length: limits.turretCount }, (_, index) => index + 1)
-  const memberRoleValue = (member: any) => {
-    const memberId = String(member.id)
-    if (String(id(ship.pilote)) === memberId || member.roleVaisseau === 'pilote') return 'pilote'
-    if (String(id(ship.copilote)) === memberId || member.roleVaisseau === 'copilote')
-      return 'copilote'
-    if (member.roleVaisseau === 'canonnier') {
-      const turret = ship.canonniers?.find(
-        (slot: any) => String(id(slot.personnage)) === memberId,
-      )?.tourelle
-      if (turretNumbers.includes(Number(turret))) return `canonnier:${turret}`
-    }
-    return 'passager'
-  }
-  const groupedRoles = [
-    { value: 'pilote', label: 'Pilote' },
-    { value: 'copilote', label: 'Copilote' },
-    ...turretNumbers.map((number) => ({
-      value: `canonnier:${number}`,
-      label: `Canonnier · Tourelle ${number}`,
-    })),
-    { value: 'passager', label: 'Équipage' },
-  ]
+  // Places d'équipage : 1 pilote, 1 copilote, 1 canonnier par tourelle du châssis.
+  const seats = listSeats(ship)
+  const crewMember = (characterId: any) =>
+    crew.find((entry) => String(entry.id) === String(characterId)) ?? null
+  const viewerSeat = viewerCharacterId ? seatOf(ship, viewerCharacterId) : 'passager'
+  const viewerIsCrew = crew.some((entry) => String(entry.id) === String(viewerCharacterId))
+  // Un membre posté peut se déplacer lui-même, mais uniquement vers une place libre.
+  const canTakeFreeSeats =
+    !canManageCrew && viewerIsCrew && roleForSeat(viewerSeat) !== 'passager'
+  const passengers = crew.filter((member) => seatOf(ship, member.id) === 'passager')
+  const isViewer = (member: any) => String(member?.id) === String(viewerCharacterId)
+  const renderCrewName = (member: any) => (
+    <span className="ship-crew-name">
+      {member.nom || 'Sans nom'}
+      {isViewer(member) && <span className="ship-crew-you"> · vous</span>}
+    </span>
+  )
 
   return (
     <div className={`ship-content ss-container${readOnly ? ' ship-read-only' : ''}`}>
@@ -716,35 +750,114 @@ export function ShipClient({
         </div>
       </div>
       <section className="ship-card ship-crew-card">
-        <h2 className="ship-card-title">Équipage · {crew.length}</h2>
-        <div className="ship-crew-grid">
-          {groupedRoles.map((role) => (
-            <div className="ship-crew-group" key={role.value}>
-              <h3>{role.label}</h3>
-              {crew
-                .filter((member) => memberRoleValue(member) === role.value)
-                .map((member) => (
-                  <div className="ship-crew-item" key={member.id}>
-                    <span className="ship-crew-name">{member.nom || 'Sans nom'}</span>
+        <div className="ship-subtitle-line">
+          <h2 className="ship-card-title">Équipage · {crew.length}</h2>
+          {canJoin && (
+            <button className="ship-crew-action" disabled={crewBusy} onClick={board}>
+              Rejoindre ce vaisseau
+            </button>
+          )}
+        </div>
+        <div className="ship-crew-seats">
+          {seats.map((seat) => {
+            const occupant = crewMember(seat.occupantId)
+            return (
+              <div
+                className={`ship-crew-item${occupant ? '' : ' ship-crew-seat-empty'}${
+                  isViewer(occupant) ? ' ship-crew-item-self' : ''
+                }`}
+                key={seat.key}
+              >
+                <div className="ship-crew-info">
+                  <span className="ship-crew-seat-label">{seat.label}</span>
+                  {occupant ? (
+                    renderCrewName(occupant)
+                  ) : seat.occupantId ? (
+                    <span className="ship-crew-name">Personnage hors équipage</span>
+                  ) : (
+                    <span className="ship-muted">Libre</span>
+                  )}
+                </div>
+                <div className="ship-crew-controls">
+                  {canManageCrew ? (
                     <select
-                      disabled={readOnly}
-                      value={memberRoleValue(member)}
-                      onChange={(event) => changeRole(member, event.target.value)}
+                      className="ship-crew-action"
+                      disabled={crewBusy}
+                      value={occupant ? String(occupant.id) : ''}
+                      onChange={(event) => {
+                        const value = event.target.value
+                        if (!value) {
+                          if (occupant) changeSeat(occupant, 'passager')
+                          return
+                        }
+                        const next = crewMember(value)
+                        if (next) changeSeat(next, seat.key)
+                      }}
                     >
-                      {groupedRoles.map(({ value, label }) => (
-                        <option value={value} key={value}>
-                          {label}
+                      <option value="">Libre</option>
+                      {crew.map((member) => (
+                        <option key={member.id} value={String(member.id)}>
+                          {member.nom || 'Sans nom'}
                         </option>
                       ))}
                     </select>
-                  </div>
-                ))}
-              {!crew.some((member) => memberRoleValue(member) === role.value) && (
-                <p className="ship-muted">Aucun</p>
-              )}
-            </div>
-          ))}
+                  ) : (
+                    <>
+                      {!seat.occupantId && canTakeFreeSeats && (
+                        <button className="ship-crew-action" onClick={() => takeSeat(seat)}>
+                          Prendre ce poste
+                        </button>
+                      )}
+                      {isViewer(occupant) && canTakeFreeSeats && (
+                        <button className="ship-crew-action" onClick={leaveSeat}>
+                          Devenir passager
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {canManageCrew && occupant && (
+                    <button
+                      className="ship-crew-action"
+                      disabled={crewBusy}
+                      onClick={() => disembark(occupant)}
+                    >
+                      Débarquer
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
+        <h3 className="ship-crew-passengers-title">Passagers · {passengers.length}</h3>
+        {passengers.length === 0 ? (
+          <p className="ship-muted">Aucun passager</p>
+        ) : (
+          <div className="ship-crew-seats">
+            {passengers.map((member) => (
+              <div
+                className={`ship-crew-item${isViewer(member) ? ' ship-crew-item-self' : ''}`}
+                key={member.id}
+              >
+                <div className="ship-crew-info">
+                  {renderCrewName(member)}
+                  <span className="ship-crew-role ship-crew-role-passager">Passager</span>
+                </div>
+                <div className="ship-crew-controls">
+                  {canManageCrew && (
+                    <button
+                      className="ship-crew-action"
+                      disabled={crewBusy}
+                      onClick={() => disembark(member)}
+                    >
+                      Débarquer
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
       <div className="ship-main-grid">
         <div className="ship-column">

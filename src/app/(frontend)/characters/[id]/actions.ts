@@ -53,6 +53,9 @@ export async function updateCharacter(characterId: number, data: any) {
       /^bonusPointsDeBlessures$/,
       /^pointsDeRang$/,
       /^pointsDeCompetence$/,
+      // L'embarquement et les postes passent par joinShip / assignCrewSeat.
+      /^vaisseau$/,
+      /^roleVaisseau$/,
     ]
 
     Object.keys(updateData).forEach((key) => {

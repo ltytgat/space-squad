@@ -307,7 +307,7 @@ export interface Ship {
   pilote?: (number | null) | Character;
   copilote?: (number | null) | Character;
   /**
-   * Un canonnier par tourelle disponible.
+   * Une place par tourelle du châssis : un seul canonnier par tourelle, et un personnage ne peut occuper qu’une place.
    */
   canonniers?:
     | {

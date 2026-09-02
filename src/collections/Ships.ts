@@ -190,7 +190,28 @@ export const Ships: CollectionConfig = {
           type: 'array',
           label: 'Canonniers (tourelles)',
           admin: {
-            description: 'Un canonnier par tourelle disponible.',
+            description:
+              'Une place par tourelle du châssis : un seul canonnier par tourelle, et un personnage ne peut occuper qu’une place.',
+          },
+          validate: (value: unknown) => {
+            const entries = (value ?? []) as { personnage?: unknown; tourelle?: unknown }[]
+            const turrets = new Set<string>()
+            const characters = new Set<string>()
+            for (const entry of entries) {
+              const turret = String(entry?.tourelle ?? '')
+              const character = String(
+                (typeof entry?.personnage === 'object' && entry.personnage
+                  ? (entry.personnage as { id?: unknown }).id
+                  : entry?.personnage) ?? '',
+              )
+              if (turret && turrets.has(turret))
+                return `La tourelle ${turret} est affectée à plusieurs canonniers.`
+              if (character && characters.has(character))
+                return 'Un personnage ne peut occuper qu’une seule tourelle.'
+              turrets.add(turret)
+              characters.add(character)
+            }
+            return true
           },
           fields: [
             {

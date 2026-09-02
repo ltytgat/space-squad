@@ -5,6 +5,7 @@ import Link from 'next/link'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { findShipCrew, getShipAccess } from '@/lib/shipAccess'
 import { ShipClient } from '../../ship/ShipClient'
 import '../../ship/ship.css'
 
@@ -16,23 +17,14 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
 
-  if (!user || user.role !== 'admin') redirect('/')
-  if (Number.isNaN(shipId)) redirect('/ships')
+  if (!user) redirect('/login')
+  if (Number.isNaN(shipId)) redirect('/')
 
-  let ship: any
-  try {
-    ship = await payload.findByID({ collection: 'ships', id: shipId, depth: 4 })
-  } catch {
-    redirect('/ships')
-  }
-  if (!ship) redirect('/ships')
+  const access = await getShipAccess(payload, user, shipId)
+  if (!access.ship || !access.canRead) redirect(access.isAdmin ? '/ships' : '/')
+  const ship = access.ship
 
-  const { docs: crew } = await payload.find({
-    collection: 'characters',
-    where: { vaisseau: { equals: shipId } },
-    depth: 1,
-    limit: 50,
-  })
+  const crew = await findShipCrew(payload, shipId)
 
   return <div className="ss-root ship-root">
     <SiteHeader activePage="ships" />
@@ -42,15 +34,24 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
             <nav className="ship-breadcrumb" aria-label="Fil d'Ariane">
             <Link href="/">Accueil</Link>
             <span aria-hidden="true">›</span>
-            <Link href="/ships">Vaisseaux</Link>
-            <span aria-hidden="true">›</span>
+            {access.isAdmin && <>
+              <Link href="/ships">Vaisseaux</Link>
+              <span aria-hidden="true">›</span>
+            </>}
             <span>{ship.nom}</span>
           </nav>
           <h1 className="ship-name">{ship.nom}</h1>
           <div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div>
         </div>
       </div>
-      <ShipClient ship={JSON.parse(JSON.stringify(ship))} crew={JSON.parse(JSON.stringify(crew))} isAdmin />
+      <ShipClient
+        ship={JSON.parse(JSON.stringify(ship))}
+        crew={JSON.parse(JSON.stringify(crew))}
+        readOnly={!access.canEdit}
+        viewerCharacterId={access.character?.id ?? null}
+        canManageCrew={access.canManageCrew}
+        canJoin={access.canJoin}
+      />
     </main>
     <SiteFooter />
   </div>

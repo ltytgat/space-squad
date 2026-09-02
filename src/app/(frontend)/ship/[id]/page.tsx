@@ -5,6 +5,7 @@ import Link from 'next/link'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { findShipCrew, getShipAccess } from '@/lib/shipAccess'
 import { ShipClient } from '../ShipClient'
 import '../ship.css'
 
@@ -19,37 +20,23 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
 
-  const { docs: characters } = await payload.find({
-    collection: 'characters', where: { user: { equals: user.id } }, depth: 1, limit: 1, overrideAccess: true,
-  })
-  const character = characters[0] as any
-  if (!character && user.role !== 'admin') redirect('/')
+  const access = await getShipAccess(payload, user, shipId)
+  if (!access.ship || !access.canRead) redirect('/')
+  const ship = access.ship
 
-  let ship: any
-  try { ship = await payload.findByID({ collection: 'ships', id: shipId, depth: 4 }) } catch { redirect('/') }
-  if (!ship) redirect('/')
-
-  let canEdit = user.role === 'admin'
-  const assignedShipId = typeof character?.vaisseau === 'object' ? character.vaisseau?.id : character?.vaisseau
-  if (assignedShipId === shipId) canEdit = true
-
-  if (!canEdit && character?.groupe) {
-    const groupId = typeof character.groupe === 'object' ? character.groupe.id : character.groupe
-    const ownerId = typeof ship.proprietaire === 'object' ? ship.proprietaire?.id : ship.proprietaire
-    if (ownerId) {
-      const owner = await payload.findByID({ collection: 'characters', id: ownerId, depth: 0, overrideAccess: true }) as any
-      const ownerGroupId = typeof owner?.groupe === 'object' ? owner.groupe?.id : owner?.groupe
-      canEdit = Boolean(owner && String(ownerGroupId) === String(groupId))
-    }
-  }
-  if (!canEdit && user.role !== 'admin') redirect('/')
-
-  const { docs: crew } = await payload.find({ collection: 'characters', where: { vaisseau: { equals: shipId } }, depth: 1, limit: 50 })
+  const crew = await findShipCrew(payload, shipId)
   return <div className="ss-root ship-root">
     <SiteHeader activePage="ship" />
     <main className="ship-layout">
       <div className="ship-page-header"><div className="ss-container"><nav className="ship-breadcrumb" aria-label="Fil d'Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><Link href="/character">Personnage</Link><span aria-hidden="true">›</span><span>{ship.nom}</span></nav><h1 className="ship-name">{ship.nom}</h1><div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div></div></div>
-      <ShipClient ship={JSON.parse(JSON.stringify(ship))} crew={JSON.parse(JSON.stringify(crew))} readOnly={!canEdit} />
+      <ShipClient
+        ship={JSON.parse(JSON.stringify(ship))}
+        crew={JSON.parse(JSON.stringify(crew))}
+        readOnly={!access.canEdit}
+        viewerCharacterId={access.character?.id ?? null}
+        canManageCrew={access.canManageCrew}
+        canJoin={access.canJoin}
+      />
     </main>
     <SiteFooter />
   </div>

@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { redirect } from 'next/navigation'
 
 import config from '@/payload.config'
+import { findGroupShipIds } from '@/lib/shipAccess'
 import '../../character/character.css'
 
 // ── Types locaux pour les relations populées (depth: 1) ──────────────────────
@@ -178,27 +179,14 @@ export default async function CharacterDetailPage({
 
   if (!isAdmin && !isOwner) redirect('/')
 
-  const assignedShipId = typeof character.vaisseau === 'object' ? character.vaisseau?.id : character.vaisseau
-  const groupId = typeof character.groupe === 'object' ? character.groupe?.id : character.groupe
+  // Vaisseaux accessibles : ceux du groupe, plus celui où le personnage est embarqué.
+  const groupShipIds = await findGroupShipIds(payload, character)
   let relatedShips: any[] = []
-  if (groupId) {
-    const { docs: groupCharacters } = await payload.find({
-      collection: 'characters', where: { groupe: { equals: groupId } }, depth: 0, limit: 500, overrideAccess: true,
+  if (groupShipIds.length > 0) {
+    const { docs } = await payload.find({
+      collection: 'ships', where: { id: { in: groupShipIds } }, depth: 4, limit: 200, sort: 'nom', overrideAccess: true,
     })
-    const ownerIds = groupCharacters.map((member: any) => member.id)
-    if (ownerIds.length > 0) {
-      const { docs: groupShips } = await payload.find({
-        collection: 'ships', where: { proprietaire: { in: ownerIds } }, depth: 4, limit: 200, sort: 'nom',
-      })
-      relatedShips = groupShips as any[]
-    }
-  }
-  if (assignedShipId && !relatedShips.some((ship: any) => ship.id === assignedShipId)) {
-    try {
-      relatedShips.unshift(await payload.findByID({ collection: 'ships', id: assignedShipId, depth: 4 }))
-    } catch {
-      // Référence conservée vers un vaisseau supprimé.
-    }
+    relatedShips = docs as any[]
   }
 
   // Récupérer la liste des compétences de base via le schéma (ou une constante partagée)

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { listSeats, seatOf } from '@/lib/shipCrew'
 import './ships.css'
 
 export const metadata = {
@@ -12,8 +13,15 @@ export const metadata = {
 }
 
 type ShipModel = { id: number; nom: string; classe?: string; categorie?: string }
-type Ship = { id: number; nom: string; modele?: ShipModel | number | null }
-type CrewMember = { id: number; nom?: string; roleVaisseau?: string }
+type Ship = {
+  id: number
+  nom: string
+  modele?: ShipModel | number | null
+  pilote?: unknown
+  copilote?: unknown
+  canonniers?: unknown[]
+}
+type CrewMember = { id: number; nom?: string }
 
 const CATEGORIE_LABEL: Record<string, string> = {
   polyvalent: 'Polyvalent',
@@ -46,7 +54,8 @@ export default async function ShipsPage() {
   if ((user as { role?: string }).role !== 'admin') redirect('/')
 
   const [{ docs: ships }, { docs: characters }] = await Promise.all([
-    payload.find({ collection: 'ships', depth: 1, limit: 200, sort: 'nom' }),
+    // depth 2 : le châssis du modèle porte le nombre de tourelles (donc de places).
+    payload.find({ collection: 'ships', depth: 2, limit: 200, sort: 'nom' }),
     payload.find({
       collection: 'characters',
       depth: 0,
@@ -94,10 +103,18 @@ export default async function ShipsPage() {
             <div className="ships-grid">
               {(ships as Ship[]).map((ship) => {
                 const crew = crewByShip.get(ship.id) ?? []
-                const pilots = crew.filter((c) => c.roleVaisseau === 'pilote')
-                const copilots = crew.filter((c) => c.roleVaisseau === 'copilote')
-                const gunners = crew.filter((c) => c.roleVaisseau === 'canonnier')
-                const passengers = crew.filter((c) => c.roleVaisseau === 'passager')
+                // Les places du vaisseau font foi ; le reste de l'équipage est passager.
+                const byId = new Map(crew.map((member) => [String(member.id), member]))
+                const crewGroups = [
+                  ...listSeats(ship).map((seat) => ({
+                    label: seat.label,
+                    members: [byId.get(String(seat.occupantId))].filter(Boolean) as CrewMember[],
+                  })),
+                  {
+                    label: 'Passagers',
+                    members: crew.filter((member) => seatOf(ship, member.id) === 'passager'),
+                  },
+                ]
                 const model = (ship.modele && typeof ship.modele !== 'number') ? ship.modele : null
 
                 return (
@@ -124,7 +141,7 @@ export default async function ShipsPage() {
                         <p className="ships-crew-empty">Aucun équipage assigné</p>
                       ) : (
                         <>
-                          {[{ label: 'Pilotes', members: pilots }, { label: 'Copilotes', members: copilots }, { label: 'Canonniers', members: gunners }, { label: 'Passagers', members: passengers }].filter(g => g.members.length > 0).map(g => (
+                          {crewGroups.filter(g => g.members.length > 0).map(g => (
                             <div key={g.label} className="ships-crew-group">
                               <span className="ships-crew-group-label">{g.label}</span>
                               <ul className="ships-crew-list">

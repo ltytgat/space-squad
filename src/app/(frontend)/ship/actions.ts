@@ -5,6 +5,8 @@ import { getPayload } from 'payload'
 import { revalidatePath } from 'next/cache'
 import config from '@/payload.config'
 import { validateShipConfiguration } from '@/lib/shipStats'
+import { checkSeatChange, findShipCrew, getShipAccess, type ShipAccess } from '@/lib/shipAccess'
+import { applySeatChange, roleForSeat, withSeatChange, seatOf, type SeatKey } from '@/lib/shipCrew'
 
 const idOf = (value: any) => (typeof value === 'object' && value ? value.id : value)
 
@@ -15,162 +17,170 @@ async function context() {
   return { payload, user }
 }
 
-async function authorize(payload: any, user: any, shipId: number) {
-  if (user.role === 'admin') return
-  const crew = await payload.find({
-    collection: 'characters',
-    where: { and: [{ user: { equals: user.id } }, { vaisseau: { equals: shipId } }] },
-    limit: 1,
+function revalidateShip(shipId: number | string) {
+  revalidatePath('/ship')
+  revalidatePath(`/ship/${shipId}`)
+  revalidatePath('/ships')
+  revalidatePath(`/ships/${shipId}`)
+}
+
+/** Charge les droits sur le vaisseau ; lève une erreur si la lecture est refusée. */
+async function access(payload: any, user: any, shipId: number, depth = 2) {
+  const result = await getShipAccess(payload, user, shipId, { depth })
+  if (!result.ship) throw new Error('Vaisseau introuvable')
+  if (!result.canRead) throw new Error("Ce vaisseau n'est pas accessible")
+  return result as ShipAccess & { ship: any; character: any }
+}
+
+/** Droits d'écriture sur la fiche : propriétaire, admin, ou membre posté. */
+async function authorizeEdit(payload: any, user: any, shipId: number, depth = 2) {
+  const result = await access(payload, user, shipId, depth)
+  if (!result.canEdit)
+    throw new Error("Vous devez occuper un poste sur ce vaisseau pour le modifier")
+  return result
+}
+
+/** Retire un personnage de la place qu'il occupe sur un vaisseau donné. */
+async function releaseSeat(payload: any, user: any, shipId: number, characterId: number) {
+  let ship: any = null
+  try {
+    ship = await payload.findByID({ collection: 'ships', id: shipId, depth: 2, overrideAccess: true })
+  } catch {
+    return
+  }
+  if (!ship) return
+  if (seatOf(ship, characterId) === 'passager') return
+  const change = applySeatChange(ship, characterId, 'passager')
+  await payload.update({
+    collection: 'ships',
+    id: shipId,
+    data: { pilote: change.pilote, copilote: change.copilote, canonniers: change.canonniers },
+    user,
     overrideAccess: true,
   })
-  if (!crew.docs.length) throw new Error('Vous ne faites pas partie de cet équipage')
 }
 
 export async function updateShipConfiguration(shipId: number, data: Record<string, unknown>) {
   const { payload, user } = await context()
-  await authorize(payload, user, shipId)
-  const current = await payload.findByID({
-    collection: 'ships',
-    id: shipId,
-    depth: 3,
-    overrideAccess: true,
-  })
-  if (!current) throw new Error('Vaisseau introuvable')
+  const { ship: current } = await authorizeEdit(payload, user, shipId, 3)
   const next = { ...current, ...data }
   validateShipConfiguration(next)
   await payload.update({ collection: 'ships', id: shipId, data, user, overrideAccess: true })
-  revalidatePath('/ship')
-  revalidatePath('/ships')
+  revalidateShip(shipId)
   return { success: true }
 }
 
 export async function updateShipState(shipId: number, data: { blindageActuel?: number }) {
   const { payload, user } = await context()
-  await authorize(payload, user, shipId)
+  await authorizeEdit(payload, user, shipId, 0)
   await payload.update({ collection: 'ships', id: shipId, data, user, overrideAccess: true })
   revalidatePath('/ship')
+  revalidatePath(`/ships/${shipId}`)
   return { success: true }
 }
 
-export async function updateCrewRole(
-  shipId: number,
-  characterId: number,
-  role: 'pilote' | 'copilote' | 'canonnier' | 'passager',
-  turretNumber?: number,
-) {
+/**
+ * Affecte un personnage embarqué à une place du vaisseau.
+ *
+ * Le propriétaire (et l'admin) affecte librement n'importe qui : si la place
+ * visée est occupée, les deux personnages échangent leurs places. Un membre
+ * simplement posté ne peut déplacer que lui-même, et uniquement vers une place
+ * libre — ou revenir chez les passagers, ce qui lui fait perdre l'édition.
+ */
+export async function assignCrewSeat(shipId: number, characterId: number, seat: string) {
   const { payload, user } = await context()
-  await authorize(payload, user, shipId)
-  const ship = (await payload.findByID({
-    collection: 'ships',
-    id: shipId,
-    depth: 2,
-    overrideAccess: true,
-  })) as any
-  const crewResult = await payload.find({
-    collection: 'characters',
-    where: { vaisseau: { equals: shipId } },
-    depth: 0,
-    limit: 100,
-    overrideAccess: true,
-  })
-  const crew = crewResult.docs as any[]
-  if (!crew.some((member) => String(member.id) === String(characterId)))
+  const rights = await access(payload, user, shipId)
+  const ship = rights.ship
+
+  const member = (await payload
+    .findByID({ collection: 'characters', id: characterId, depth: 0, overrideAccess: true })
+    .catch(() => null)) as any
+  if (!member || String(idOf(member.vaisseau)) !== String(shipId))
     throw new Error('Personnage absent de cet équipage')
 
-  const previous = crew.find((member) => String(member.id) === String(characterId))
-  const existingPilotId =
-    idOf(ship?.pilote) ?? crew.find((member) => member.roleVaisseau === 'pilote')?.id
-  const existingCopilotId =
-    idOf(ship?.copilote) ?? crew.find((member) => member.roleVaisseau === 'copilote')?.id
-  const turretCount = Number(
-    typeof ship?.modele === 'object' && typeof ship.modele?.chassis === 'object'
-      ? ship.modele.chassis.tourelles
-      : 0,
-  )
-  if (role === 'canonnier' && (!turretNumber || turretNumber < 1 || turretNumber > turretCount))
-    throw new Error('Tourelle invalide')
-  const existingCannoniers = (ship?.canonniers ?? []).filter(
-    (entry: any) => Number(entry.tourelle) <= turretCount,
-  )
-  const assignedTurret = existingCannoniers.find(
-    (entry: any) => String(entry.personnage?.id ?? entry.personnage) === String(characterId),
-  )?.tourelle
-  let canonniers = existingCannoniers.filter(
-    (entry: any) => String(entry.personnage?.id ?? entry.personnage) !== String(characterId),
-  )
-  const displacedIds = new Set<number>()
-  if (role === 'canonnier') {
-    const displacedTurret = canonniers.find((entry: any) => Number(entry.tourelle) === turretNumber)
-    if (displacedTurret) displacedIds.add(Number(idOf(displacedTurret.personnage)))
-    canonniers = canonniers.filter((entry: any) => Number(entry.tourelle) !== turretNumber)
-    canonniers.push({ personnage: characterId, tourelle: turretNumber })
-  }
-  if (role === 'pilote' && existingPilotId && String(existingPilotId) !== String(characterId))
-    displacedIds.add(Number(existingPilotId))
-  if (role === 'copilote' && existingCopilotId && String(existingCopilotId) !== String(characterId))
-    displacedIds.add(Number(existingCopilotId))
-  if (role !== 'pilote' && String(existingPilotId) === String(characterId))
-    displacedIds.add(characterId)
-  if (role !== 'copilote' && String(existingCopilotId) === String(characterId))
-    displacedIds.add(characterId)
-  if (role !== 'canonnier' && assignedTurret)
-    canonniers = canonniers.filter(
-      (entry: any) => Number(entry.tourelle) !== Number(assignedTurret),
-    )
-  const canonniersById = new Set(canonniers.map((entry: any) => Number(idOf(entry.personnage))))
-  const finalRoles = crew.map((member) => ({
-    ...member,
-    roleVaisseau:
-      String(member.id) === String(characterId)
-        ? role
-        : displacedIds.has(Number(member.id))
-          ? 'passager'
-          : canonniersById.has(Number(member.id))
-            ? 'canonnier'
-            : member.roleVaisseau === 'pilote' && role !== 'pilote'
-              ? 'pilote'
-              : member.roleVaisseau === 'copilote' && role !== 'copilote'
-                ? 'copilote'
-                : member.roleVaisseau || 'passager',
-  }))
-  for (const member of finalRoles) {
-    const original = crew.find((entry) => entry.id === member.id)
-    if (member.roleVaisseau !== original?.roleVaisseau)
+  const refusal = checkSeatChange(rights, ship, rights.character, characterId, seat)
+  if (refusal) throw new Error(refusal)
+
+  const change = applySeatChange(ship, characterId, seat)
+  await payload.update({
+    collection: 'ships',
+    id: shipId,
+    data: { pilote: change.pilote, copilote: change.copilote, canonniers: change.canonniers },
+    user,
+    overrideAccess: true,
+  })
+
+  // Resynchronise le miroir `roleVaisseau` sur tout l'équipage.
+  const nextShip = withSeatChange(ship, change)
+  const crew = await findShipCrew(payload, shipId)
+  for (const crewMember of crew) {
+    const role = roleForSeat(seatOf(nextShip, crewMember.id))
+    if (crewMember.roleVaisseau !== role)
       await payload.update({
         collection: 'characters',
-        id: member.id,
-        data: { roleVaisseau: member.roleVaisseau },
+        id: crewMember.id,
+        data: { roleVaisseau: role },
         user,
         overrideAccess: true,
       })
   }
-  const finalPilot =
-    role === 'pilote'
-      ? characterId
-      : displacedIds.has(Number(existingPilotId))
-        ? null
-        : (existingPilotId ?? null)
-  const finalCopilot =
-    role === 'copilote'
-      ? characterId
-      : displacedIds.has(Number(existingCopilotId))
-        ? null
-        : (existingCopilotId ?? null)
+
+  revalidateShip(shipId)
+  return { success: true, seat: seat as SeatKey, roleUpdates: change.roleUpdates }
+}
+
+/** Embarque le personnage de l'utilisateur sur un vaisseau de son groupe, en passager. */
+export async function joinShip(shipId: number) {
+  const { payload, user } = await context()
+  const rights = await access(payload, user, shipId, 0)
+  if (!rights.character) throw new Error('Aucun personnage associé à votre compte')
+  if (rights.isAboard) return { success: true }
+  if (!rights.canJoin) throw new Error("Ce vaisseau n'est pas accessible à votre groupe")
+
+  const characterId = Number(idOf(rights.character))
+  const previousShipId = idOf(rights.character.vaisseau)
+  if (previousShipId && String(previousShipId) !== String(shipId))
+    await releaseSeat(payload, user, Number(previousShipId), characterId)
+
   await payload.update({
-    collection: 'ships',
-    id: shipId,
-    data: { pilote: finalPilot, copilote: finalCopilot, canonniers },
+    collection: 'characters',
+    id: characterId,
+    data: { vaisseau: shipId, roleVaisseau: 'passager' },
     user,
     overrideAccess: true,
   })
-  revalidatePath(`/ships/${shipId}`)
-  revalidatePath(`/ship/${shipId}`)
-  return {
-    success: true,
-    previousRole: previous?.roleVaisseau ?? 'passager',
-    pilote: finalPilot,
-    copilote: finalCopilot,
-  }
+
+  if (previousShipId) revalidateShip(previousShipId)
+  revalidateShip(shipId)
+  revalidatePath(`/characters/${characterId}`)
+  return { success: true }
+}
+
+/** Débarque un membre d'équipage : réservé au propriétaire et à l'admin. */
+export async function disembarkCrewMember(shipId: number, characterId: number) {
+  const { payload, user } = await context()
+  const rights = await access(payload, user, shipId, 0)
+  if (!rights.canManageCrew)
+    throw new Error('Seul le propriétaire peut débarquer un membre d’équipage')
+
+  const member = (await payload
+    .findByID({ collection: 'characters', id: characterId, depth: 0, overrideAccess: true })
+    .catch(() => null)) as any
+  if (!member || String(idOf(member.vaisseau)) !== String(shipId))
+    throw new Error('Personnage absent de cet équipage')
+
+  await releaseSeat(payload, user, shipId, characterId)
+  await payload.update({
+    collection: 'characters',
+    id: characterId,
+    data: { vaisseau: null, roleVaisseau: null },
+    user,
+    overrideAccess: true,
+  })
+
+  revalidateShip(shipId)
+  revalidatePath(`/characters/${characterId}`)
+  return { success: true }
 }
 
 export async function updateShipWeaponState(
@@ -185,7 +195,7 @@ export async function updateShipWeaponState(
   },
 ) {
   const { payload, user } = await context()
-  await authorize(payload, user, shipId)
+  await authorizeEdit(payload, user, shipId, 0)
   const ship = (await payload.findByID({
     collection: 'ships',
     id: shipId,
@@ -206,6 +216,7 @@ export async function updateShipWeaponState(
     overrideAccess: true,
   })
   revalidatePath('/ship')
+  revalidatePath(`/ships/${shipId}`)
   return { success: true }
 }
 
@@ -221,7 +232,7 @@ export async function updateShipTurretWeaponState(
   },
 ) {
   const { payload, user } = await context()
-  await authorize(payload, user, shipId)
+  await authorizeEdit(payload, user, shipId, 0)
   const ship = (await payload.findByID({
     collection: 'ships',
     id: shipId,
@@ -246,12 +257,13 @@ export async function updateShipTurretWeaponState(
     overrideAccess: true,
   })
   revalidatePath('/ship')
+  revalidatePath(`/ships/${shipId}`)
   return { success: true }
 }
 
 export async function logShipAmmoState(shipId: number, weaponName?: string, loadedAmmoName?: string) {
   const { payload, user } = await context()
-  await authorize(payload, user, shipId)
+  await access(payload, user, shipId, 0)
   const ship = (await payload.findByID({
     collection: 'ships',
     id: shipId,
