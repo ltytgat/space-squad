@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+import { syncShipCrew, validateCrewAssignments } from '@/lib/shipCrewSync'
 
 const shipWeaponStateFields = () => [
   {
@@ -32,7 +33,9 @@ export const Ships: CollectionConfig = {
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   hooks: {
+    afterChange: [syncShipCrew],
     beforeChange: [
+      validateCrewAssignments,
       async ({ data, operation, req }) => {
         if (operation !== 'create' || !data?.modele) return data
 

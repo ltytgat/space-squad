@@ -685,6 +685,9 @@ export interface Character {
   puceMk2?: (number | null) | Chip;
   puceMk3?: (number | null) | Chip;
   vaisseau?: (number | null) | Ship;
+  /**
+   * Calculé depuis les postes de la fiche du vaisseau. Sans poste : passager.
+   */
   roleVaisseau?: ('pilote' | 'copilote' | 'canonnier' | 'passager') | null;
   inventaireArmes?:
     | {

@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+import { syncCharacterShip } from '@/lib/shipCrewSync'
 
 const COMPETENCES_BASE = [
   'Chasseur',
@@ -43,6 +44,7 @@ export const Characters: CollectionConfig = {
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
+  hooks: { beforeChange: [syncCharacterShip] },
   fields: [
     // ── Identité ──────────────────────────────────────
     {
@@ -800,6 +802,7 @@ export const Characters: CollectionConfig = {
           name: 'roleVaisseau',
           type: 'select',
           label: 'Rôle à bord',
+          admin: { readOnly: true, description: 'Calculé depuis les postes de la fiche du vaisseau. Sans poste : passager.' },
           options: [
             { label: 'Pilote', value: 'pilote' },
             { label: 'Copilote', value: 'copilote' },

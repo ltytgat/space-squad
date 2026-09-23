@@ -96,7 +96,7 @@ export async function findShipCrew(payload: any, shipId: number | string) {
     collection: 'characters',
     where: { vaisseau: { equals: shipId } },
     depth: 0,
-    limit: 50,
+    pagination: false,
     sort: 'nom',
     select: { nom: true, roleVaisseau: true, habilite: true, malusHabilite: true },
     overrideAccess: true,
