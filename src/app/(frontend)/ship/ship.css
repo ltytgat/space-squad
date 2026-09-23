@@ -290,6 +290,21 @@
    un passager doit pouvoir rejoindre un autre vaisseau de son groupe. */
 .ship-read-only .ship-crew-action:not(:disabled) { pointer-events: auto; opacity: 1; }
 
+.ship-heat-open { margin-top: .5rem; color: #fff; }
+.ship-heat-dialog { margin: auto; color: var(--ss-text); }
+.ship-heat-dialog::backdrop { background: rgba(0, 0, 0, .72); }
+.ship-heat-dialog p { margin: .75rem 0; }
+.ship-heat-targets { display: grid; gap: .75rem; margin: 1rem 0; }
+.ship-heat-target { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); }
+.ship-heat-target label { display: flex; align-items: center; gap: .5rem; }
+.ship-heat-slider { display: flex; align-items: center; gap: .5rem; }
+.ship-heat-slider input[type="range"] { flex: 1; min-width: 0; accent-color: var(--ss-cyan); }
+.ship-heat-slider input[type="number"] { width: 6rem; color: var(--ss-text); background: var(--ss-bg-alt); border: 1px solid var(--ss-border); padding: .35rem; }
+.ship-heat-actions { display: flex; justify-content: flex-end; gap: .75rem; }
+.ship-heat-warning { color: #ffb29f; }
+.ship-read-only .ship-local-heat:not(:disabled) { pointer-events: auto; opacity: 1; }
+.ship-read-only .ship-heat-dialog input:not(:disabled), .ship-read-only .ship-heat-dialog button:not(:disabled) { pointer-events: auto; opacity: 1; }
+
 .ship-crew-item {
   display: flex;
   align-items: center;

@@ -11,6 +11,7 @@ import {
   type Seat,
 } from '@/lib/shipCrew'
 import { StatTooltip, type StatTooltipData } from '@/components/StatTooltip'
+import { HeatRedistribution, roundHeat, type HeatTarget } from './HeatRedistribution'
 import {
   assignCrewSeat,
   disembarkCrewMember,
@@ -25,6 +26,7 @@ import {
 const object = (value: any) => (typeof value === 'object' && value ? value : null)
 const isTurretModule = (value: any) => object(value)?.typeModule === 'tourelle'
 const id = (value: any) => object(value)?.id ?? value
+const heatKey = (entry: any, index: number, turretIndex: number) => `${turretIndex}:${index}:${id(entry.arme)}`
 const numberFrom = (value: unknown) => {
   const match = String(value ?? '')
     .replace(',', '.')
@@ -100,6 +102,29 @@ export function ShipClient({
   const chassis = getChassis(ship)
   const limits = getShipLimits(ship)
   const stats = useMemo(() => getShipStats({ ...ship, crew }), [ship, crew])
+  const [heatDialogOpen, setHeatDialogOpen] = useState(false)
+  // Isolated from ship/draft: these values must never enter a server action payload.
+  const [heatAllocation, setHeatAllocation] = useState<{ signature: string; values: Record<string, number> }>({ signature: '', values: {} })
+  const [localHeat, setLocalHeat] = useState<Record<string, number>>({})
+  const clearLocalHeat = (key: string) => setLocalHeat((current) => {
+    const next = { ...current }
+    delete next[key]
+    return next
+  })
+  const excessMJ = roundHeat(Math.max(0, stats.consumption - stats.power) * 100)
+  const heatTargets: HeatTarget[] = []
+  const addHeatTargets = (entries: any[], turretIndex: number, location: string) => {
+    entries.forEach((entry, index) => {
+      const weapon = object(entry.arme)
+      if (weapon?.type !== 'thermique') return
+      heatTargets.push({ key: heatKey(entry, index, turretIndex), label: `${location} · ${weapon.nom ?? 'Arme thermique'} (${index + 1})`,
+        heat: localHeat[heatKey(entry, index, turretIndex)] ?? Number(entry.chauffeActuelle ?? 0), maxHeat: numberFrom(object(entry.chargeurRelie)?.calibre) })
+    })
+  }
+  addHeatTargets(ship.armesPilote ?? [], -1, 'Pilote')
+  ;(ship.armesTourelles ?? []).forEach((turret: any, index: number) => addHeatTargets(turret.armes ?? [], index, `Tourelle ${turret.tourelle ?? index + 1}`))
+  const heatSignature = JSON.stringify([ship.id, excessMJ, heatTargets.map((target) => target.key)])
+  const redirectedHeat = heatAllocation.signature === heatSignature ? heatAllocation.values : {}
   const additionalModules = (draft.modulesSupplementaires ?? [])
     .map((module: any, index: number) => ({ module, index }))
     .filter(({ module }: any) => !isTurretModule(module))
@@ -392,17 +417,24 @@ export function ShipClient({
       .filter(Boolean)
     const maxHeat = thermal ? numberFrom(loaded?.calibre) : 0
     const cooling = thermal ? coolingFrom(loaded) : 0
-    const heat = Number(entry.chauffeActuelle ?? 0)
+    const thermalKey = heatKey(entry, index, turretIndex)
+    const hasLocalHeat = Object.hasOwn(localHeat, thermalKey)
+    const heat = localHeat[thermalKey] ?? Number(entry.chauffeActuelle ?? 0)
     const ammoCount = Number(entry.munitionsActuelles ?? 0)
     const capacity = explosive ? 1 : Number(weapon.chargeur) || 0
-    const fire = (key: string, value: number) =>
-      updateWeapon(
+    const fire = (key: string, value: number) => {
+      if (key === 'chauffeActuelle' && hasLocalHeat) {
+        setLocalHeat((current) => ({ ...current, [thermalKey]: roundHeat(Math.max(0, value)) }))
+        return
+      }
+      return updateWeapon(
         turretIndex >= 0 ? 'armesTourelles' : 'armesPilote',
         index,
         key,
         value,
         turretIndex,
       )
+    }
     const reload = async () => {
       if (!thermal && capacity > 0 && ammoCount >= capacity) {
         console.info('[ship-ammo] chargeur plein', { weapon: weapon.nom, ammoCount, capacity, loaded: loaded?.nom })
@@ -485,6 +517,7 @@ export function ShipClient({
         setDraft({ ...draft, armesPilote: entries, inventaireConsommables: cleanedInventory })
         await updateShipWeaponState(ship.id, 'armesPilote', index, serverData)
       }
+      clearLocalHeat(thermalKey)
       setAmmoSelector(null)
     }
     const weaponType = thermal ? 'thermal' : explosive ? 'explosive' : 'kinetic'
@@ -520,13 +553,15 @@ export function ShipClient({
                 Chauffe {heat} / {maxHeat || '—'} MJ
               </b>
               <button
-                disabled={readOnly || heat <= 0}
+                className={hasLocalHeat ? 'ship-local-heat' : undefined}
+                disabled={(readOnly && !hasLocalHeat) || heat <= 0}
                 onClick={() => fire('chauffeActuelle', Math.max(0, heat - cooling))}
               >
                 ❄ Refroidir
               </button>
               <button
-                disabled={readOnly || (maxHeat > 0 && heat >= maxHeat)}
+                className={hasLocalHeat ? 'ship-local-heat' : undefined}
+                disabled={(readOnly && !hasLocalHeat) || (maxHeat > 0 && heat >= maxHeat)}
                 onClick={() =>
                   fire(
                     'chauffeActuelle',
@@ -663,6 +698,7 @@ export function ShipClient({
       setDraft({ ...draft, armesPilote: nextEntries, inventaireConsommables: cleaned })
       await updateShipWeaponState(ship.id, 'armesPilote', weaponIndex, data)
     }
+    clearLocalHeat(heatKey(entry, weaponIndex, turretIndex))
     setAmmoSelector(null)
   }
   const renderWeaponLocation = (title: string, entries: any[], turretIndex = -1, slots = 0, turretModule?: any) => (
@@ -723,7 +759,10 @@ export function ShipClient({
           <strong>
             {stats.consumption} / {stats.power}
           </strong>
-          {stats.overConsumption && <small>Capacité dépassée</small>}
+          {stats.overConsumption && <>
+            <small>Surchauffe : +{excessMJ / 100} de consommation · {excessMJ} MJ</small>
+            <button type="button" className="ship-crew-action ship-heat-open" onClick={() => { setHoveredStat(null); setHeatDialogOpen(true) }}>Rediriger la chaleur</button>
+          </>}
         </div>
         <div
           className="ship-stat"
@@ -1067,6 +1106,21 @@ export function ShipClient({
           </button>
         </div>
       )}
+      {heatDialogOpen && stats.overConsumption && <HeatRedistribution key={heatSignature}
+        targets={heatTargets} budget={excessMJ} initial={redirectedHeat}
+        onClose={() => setHeatDialogOpen(false)}
+        onApply={(values) => {
+          setLocalHeat((current) => {
+            const next = { ...current }
+            for (const target of heatTargets) {
+              const amount = values[target.key] ?? 0
+              if (amount > 0) next[target.key] = roundHeat((current[target.key] ?? target.heat) + amount)
+            }
+            return next
+          })
+          setHeatAllocation({ signature: heatSignature, values })
+          setHeatDialogOpen(false)
+        }} />}
       {weaponSelector && (
         <div className="ship-selector-overlay" onClick={() => setWeaponSelector(null)}>
           <div className="ship-selector-modal" onClick={(event) => event.stopPropagation()}>
