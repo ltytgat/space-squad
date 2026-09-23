@@ -585,14 +585,19 @@ export function ShipClient({
   const renderTurretModule = (moduleValue: any) => {
     const module = object(moduleValue)
     if (!module) return null
+    // Les champs masqués dans l’admin peuvent conserver des valeurs en base.
+    // Appliquer les mêmes conditions de famille que la collection ShipModules.
+    const hasRange = ['bombardement', 'shotgun', 'dispersion'].includes(module.famille)
+    const hasDamageBonus = ['bombardement', 'shotgun'].includes(module.famille)
+    const isFocusedFire = module.famille === 'tir-concentre'
     const effects = [
       module.modificateurs && `Modificateurs : ${module.modificateurs}`,
-      module.consommationSupplementaire != null && `Consommation supplémentaire : +${module.consommationSupplementaire}%`,
-      module.portee && `Portée : ${module.portee}`,
-      module.bonusDegatsPourcentage != null && `Bonus de dégâts : +${module.bonusDegatsPourcentage}%`,
-      module.bonusDegatsPar100MJ != null && `Bonus de dégâts / 100 MJ : +${module.bonusDegatsPar100MJ}%`,
-      module.mjMaxUtilisable != null && `MJ maximum utilisables : ${module.mjMaxUtilisable}`,
-      module.angleTir && `Angle de tir : ${module.angleTir}`,
+      hasRange && module.consommationSupplementaire != null && `Consommation supplémentaire : +${module.consommationSupplementaire}%`,
+      hasRange && module.portee && `Portée : ${module.portee}`,
+      hasDamageBonus && module.bonusDegatsPourcentage != null && `Bonus de dégâts : +${module.bonusDegatsPourcentage}%`,
+      isFocusedFire && module.bonusDegatsPar100MJ != null && `Bonus de dégâts / 100 MJ : +${module.bonusDegatsPar100MJ}%`,
+      isFocusedFire && module.mjMaxUtilisable != null && `MJ maximum utilisables : ${module.mjMaxUtilisable}`,
+      module.famille === 'dispersion' && module.angleTir && `Angle de tir : ${module.angleTir}`,
     ].filter(Boolean)
     return (
       <div className="ship-turret-module">
