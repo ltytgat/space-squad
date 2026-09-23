@@ -9,6 +9,8 @@ import {buildConfig} from 'payload'
 import {fileURLToPath} from 'url'
 import sharp from 'sharp'
 import {s3Storage} from '@payloadcms/storage-s3'
+import {searchPlugin} from '@payloadcms/plugin-search'
+import {extractLorePlainText} from './lib/loreSearch'
 
 import {Users} from './collections/Users'
 import {Media} from './collections/Media'
@@ -64,6 +66,24 @@ export default buildConfig({
     }),
     sharp,
     plugins: [
+        searchPlugin({
+            collections: ['lore-articles'],
+            searchOverrides: {
+                fields: ({ defaultFields }) => [
+                    ...defaultFields,
+                    {
+                        name: 'excerpt',
+                        type: 'textarea',
+                    },
+                ],
+            },
+            beforeSync: ({ originalDoc, searchDoc }) => ({
+                ...searchDoc,
+                excerpt: [originalDoc.excerpt, extractLorePlainText(originalDoc.content)]
+                    .filter(Boolean)
+                    .join('\n\n'),
+            }),
+        }),
         s3Storage({
             collections: {
                 media: true,
