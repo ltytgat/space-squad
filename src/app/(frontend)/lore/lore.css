@@ -666,7 +666,7 @@
   margin: 2rem 0;
   border: 1px solid var(--ss-border, rgba(255, 255, 255, 0.1));
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
   background: var(--ss-card-bg, rgba(255, 255, 255, 0.03));
 }
 
@@ -686,7 +686,8 @@
 }
 
 .lore-kv-key {
-  width: 30%;
+  width: 1%;
+  white-space: nowrap;
   font-weight: 600;
   color: var(--ss-text-dim, rgba(255, 255, 255, 0.6));
   background: rgba(255, 255, 255, 0.02);
@@ -695,12 +696,7 @@
 
 .lore-kv-value {
   color: var(--ss-text, #fff);
-}
-
-@media (max-width: 600px) {
-  .lore-kv-key {
-    width: 40%;
-  }
+  word-break: break-word;
 }
 
 /* ── Image Zoom ── */
