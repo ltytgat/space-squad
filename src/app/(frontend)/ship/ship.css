@@ -373,3 +373,16 @@
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
 }
+.ship-consumables .ship-card-title { margin: 0; }
+.ship-consumable-list { display: grid; gap: .55rem; margin-bottom: .65rem; }
+.ship-consumable-slot { padding: .7rem; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); background: rgba(255,255,255,.025); }
+.ship-consumable-heading { display: flex; align-items: center; gap: .55rem; }
+.ship-consumable-heading strong { flex: 1; font-size: .85rem; }
+.ship-consumable-heading b { color: var(--ss-cyan); white-space: nowrap; font-size: .8rem; }
+.ship-consumable-number { color: var(--ss-text-muted); font-size: .75rem; }
+.ship-consumable-slot p { margin: .4rem 0; font-size: .75rem; }
+.ship-consumable-slot .ship-weapon-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .5rem; }
+.ship-consumable-slot .ship-weapon-controls small { margin-right: auto; }
+.ship-consumable-empty { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .65rem; border: 1px dashed var(--ss-border); border-radius: var(--ss-radius); background: transparent; color: var(--ss-text-muted); cursor: pointer; font-size: .75rem; }
+.ship-consumable-empty strong { color: var(--ss-cyan); }
+.ship-consumables button:disabled { opacity: .4; cursor: default; }

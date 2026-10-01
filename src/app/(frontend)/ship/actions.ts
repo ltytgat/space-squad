@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 import { revalidatePath } from 'next/cache'
 import config from '@/payload.config'
 import { validateShipConfiguration } from '@/lib/shipStats'
+import { changeShipConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
 import { checkSeatChange, findShipCrew, getShipAccess, type ShipAccess } from '@/lib/shipAccess'
 import { applySeatChange, roleForSeat, withSeatChange, seatOf, type SeatKey } from '@/lib/shipCrew'
 
@@ -77,6 +78,17 @@ export async function updateShipState(shipId: number, data: { blindageActuel?: n
   revalidatePath('/ship')
   revalidatePath(`/ships/${shipId}`)
   return { success: true }
+}
+
+export async function manageShipConsumable(shipId: number, operation: ConsumableOperation, index: number, consumableId?: number | string) {
+  const { payload, user } = await context()
+  const { ship } = await authorizeEdit(payload, user, shipId, 3)
+  const next = changeShipConsumable(ship, operation, index, consumableId)
+  const serialize = (entries: any[]) => entries.map((entry) => ({ ...entry, consommable: idOf(entry.consommable) }))
+  await payload.update({ collection: 'ships', id: shipId, user, overrideAccess: true,
+    data: { consommablesVaisseau: serialize(next.consommablesVaisseau), inventaireConsommables: serialize(next.inventaireConsommables) } })
+  revalidateShip(shipId)
+  return next
 }
 
 /**

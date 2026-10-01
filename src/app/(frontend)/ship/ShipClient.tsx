@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { canEquipConsumable, consumableCapacity, isShipAmmunition, sameConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
 import { getChassis, getShipLimits, getShipStats } from '@/lib/shipStats'
 import {
   applySeatChange,
@@ -13,6 +14,7 @@ import {
 import { StatTooltip, type StatTooltipData } from '@/components/StatTooltip'
 import { HeatRedistribution, roundHeat, type HeatTarget } from './HeatRedistribution'
 import {
+  manageShipConsumable,
   assignCrewSeat,
   disembarkCrewMember,
   joinShip,
@@ -37,8 +39,7 @@ const coolingFrom = (ammo: any) => {
   const match = String(ammo?.bonus ?? '').match(/refroidissement\s*:\s*([+-]?\d+)/i)
   return match ? Number(match[1]) : 0
 }
-const isAmmunition = (item: any) =>
-  /cartouche|chargeur|munition|balle|obus|cinetique/i.test(`${item?.nom ?? ''} ${item?.categorie ?? ''}`)
+const isAmmunition = isShipAmmunition
 const isKineticAmmunition = (item: any) =>
   isAmmunition(item) && !/cartouche/i.test(`${item?.nom ?? ''} ${item?.typeMunition ?? ''}`)
 const ammoName = (item: any) => String(item?.nom ?? '').normalize('NFKC').replace(/\s+/gu, ' ').trim()
@@ -99,6 +100,28 @@ export function ShipClient({
     turretIndex: number
     weaponIndex: number
   } | null>(null)
+  const [consumableSelector, setConsumableSelector] = useState<number | null>(null)
+  const [consumableBusy, setConsumableBusy] = useState(false)
+  const consumableLock = useRef(false)
+  const consumableSources = (ship.inventaireConsommables ?? [])
+    .filter((entry: any) => entry.quantite > 0 && canEquipConsumable(ship, object(entry.consommable)))
+    .filter((entry: any, index: number, all: any[]) => all.findIndex((row: any) => sameConsumable(row.consommable, entry.consommable)) === index)
+  const manageConsumable = async (operation: ConsumableOperation, index: number, sourceId?: number | string) => {
+    if (readOnly || saving || consumableLock.current) return
+    consumableLock.current = true
+    setConsumableBusy(true)
+    try {
+      const next = await manageShipConsumable(ship.id, operation, index, sourceId)
+      setShip((current: any) => ({ ...current, ...next }))
+      setDraft((current: any) => ({ ...current, ...next }))
+      setConsumableSelector(null)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Impossible de modifier le consommable.')
+    } finally {
+      consumableLock.current = false
+      setConsumableBusy(false)
+    }
+  }
   const chassis = getChassis(ship)
   const limits = getShipLimits(ship)
   const stats = useMemo(() => getShipStats({ ...ship, crew }), [ship, crew])
@@ -139,7 +162,7 @@ export function ShipClient({
     }
   }
   const save = async () => {
-    if (readOnly || !modified) return
+    if (readOnly || !modified || consumableLock.current) return
     setSaving(true)
     try {
       const fields = [
@@ -1014,6 +1037,40 @@ export function ShipClient({
               </div>
             ))}
           </section>
+          <section className="ship-card ship-consumables">
+            <div className="ship-subtitle-line">
+              <h2 className="ship-card-title">Consommables actifs</h2>
+              <span className="ship-tag">{(ship.consommablesVaisseau ?? []).length} / {limits.consumableSlots}</span>
+            </div>
+            <div className="ship-consumable-list">
+              {(ship.consommablesVaisseau ?? []).map((entry: any, index: number) => {
+                const item = object(entry.consommable)
+                const capacity = consumableCapacity(item)
+                const reserve = (ship.inventaireConsommables ?? []).filter((row: any) => sameConsumable(row.consommable, item)).reduce((sum: number, row: any) => sum + Number(row.quantite), 0)
+                return <article className="ship-consumable-slot" key={entry.id ?? index}>
+                  <div className="ship-consumable-heading">
+                    <span className="ship-consumable-number">{index + 1}</span>
+                    <strong>{item?.nom ?? 'Consommable'}</strong>
+                    <b>{entry.quantite} / {capacity}</b>
+                  </div>
+                  {(item?.calibre || item?.bonus || item?.effet) && <p className="ship-muted">{[item.calibre && `Calibre : ${item.calibre}`, item.bonus || item.effet].filter(Boolean).join(' · ')}</p>}
+                  <div className="ship-weapon-controls">
+                    <small className="ship-muted">Soute : {reserve}</small>
+                    <button disabled={readOnly || saving || consumableBusy || entry.quantite <= 0} onClick={() => manageConsumable('use', index)}>Utiliser 1</button>
+                    <button disabled={readOnly || saving || consumableBusy || reserve <= 0 || entry.quantite >= capacity} onClick={() => manageConsumable('reload', index)}>Recharger</button>
+                    <button disabled={readOnly || saving || consumableBusy} onClick={() => setConsumableSelector(index)}>Changer</button>
+                    <button disabled={readOnly || saving || consumableBusy} onClick={() => manageConsumable('remove', index)}>Retirer</button>
+                  </div>
+                </article>
+              })}
+              {Array.from({ length: Math.max(0, limits.consumableSlots - (ship.consommablesVaisseau ?? []).length) }, (_, index) => (
+                <button className="ship-consumable-empty" key={index} disabled={readOnly || saving || consumableBusy || !consumableSources.length} onClick={() => setConsumableSelector((ship.consommablesVaisseau ?? []).length)}>
+                  <span>Emplacement {(ship.consommablesVaisseau ?? []).length + index + 1}</span><strong>＋ Équiper</strong>
+                </button>
+              ))}
+            </div>
+            {!limits.consumableSlots && <p className="ship-muted">Ce modèle ne dispose d’aucun emplacement de consommable.</p>}
+           </section>
         </div>
         <div className="ship-column">
           {renderWeaponLocation('Pilote', ship.armesPilote ?? [], -1, limits.pilotWeaponPoints)}
@@ -1040,25 +1097,6 @@ export function ShipClient({
                 isAmmunition(object(entry.consommable)),
               ) && <p className="ship-muted">Aucune munition en réserve.</p>}
             </div>
-          </section>
-          <section className="ship-card">
-            <h2 className="ship-card-title">Consommables</h2>
-            <div className="ship-inventory-grid">
-              {(ship.consommablesVaisseau ?? [])
-                .filter((entry: any) => !isAmmunition(object(entry.consommable)))
-                .map((entry: any, index: number) => (
-                  <span className="ship-tag" key={entry.id ?? index}>
-                    {object(entry.consommable)?.nom ?? 'Consommable'} · {entry.quantite ?? 0} /{' '}
-                    {object(entry.consommable)?.quantiteEquipable ?? '—'} équipables
-                  </span>
-                ))}
-              {!(ship.consommablesVaisseau ?? []).length && (
-                <p className="ship-muted">Aucun consommable équipé.</p>
-              )}
-            </div>
-            <small className="ship-muted">
-              La quantité équipable est la limite embarquée ; le surplus reste en soute.
-            </small>
           </section>
           <section className="ship-card">
             <h2 className="ship-card-title">Soute</h2>
@@ -1101,7 +1139,7 @@ export function ShipClient({
           >
             Annuler
           </button>
-          <button className="ss-button primary" onClick={save} disabled={saving}>
+          <button className="ss-button primary" onClick={save} disabled={saving || consumableBusy}>
             {saving ? 'Enregistrement…' : 'Valider la configuration'}
           </button>
         </div>
@@ -1121,6 +1159,27 @@ export function ShipClient({
           setHeatAllocation({ signature: heatSignature, values })
           setHeatDialogOpen(false)
         }} />}
+      {consumableSelector !== null && (
+        <div className="ship-selector-overlay" onClick={() => !consumableBusy && setConsumableSelector(null)}>
+          <div className="ship-selector-modal" role="dialog" aria-modal="true" aria-labelledby="consumable-selector-title" onClick={(event) => event.stopPropagation()}>
+            <div className="ship-selector-header">
+              <h3 id="consumable-selector-title">Équiper un consommable</h3>
+              <button aria-label="Fermer" disabled={consumableBusy} onClick={() => setConsumableSelector(null)}>×</button>
+            </div>
+            <div className="ship-selector-list">
+              {consumableSources.map((entry: any) => {
+                const item = object(entry.consommable)
+                const reserve = (ship.inventaireConsommables ?? []).filter((row: any) => sameConsumable(row.consommable, item)).reduce((sum: number, row: any) => sum + Number(row.quantite), 0)
+                return <button className="ship-selector-item" key={id(item)} disabled={consumableBusy || saving} onClick={() => manageConsumable('equip', consumableSelector, id(item))}>
+                  <span className="ship-weapon-icon">◆</span>
+                  <span><strong>{item.nom}</strong><small>{reserve} en soute · Capacité {consumableCapacity(item)}{item.calibre && ` · Calibre : ${item.calibre}`} · {item.bonus || item.effet || 'Aucun bonus'}</small></span>
+                </button>
+              })}
+              {!consumableSources.length && <p className="ship-muted">Aucun consommable compatible en soute.</p>}
+            </div>
+          </div>
+        </div>
+      )}
       {weaponSelector && (
         <div className="ship-selector-overlay" onClick={() => setWeaponSelector(null)}>
           <div className="ship-selector-modal" onClick={(event) => event.stopPropagation()}>

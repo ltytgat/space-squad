@@ -404,7 +404,7 @@ export const Ships: CollectionConfig = {
                   label: 'Quantité',
                   required: true,
                   defaultValue: 1,
-                  min: 1,
+                  min: 0,
                   admin: { width: '30%' },
                 },
               ],
