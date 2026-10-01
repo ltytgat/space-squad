@@ -1,3 +1,4 @@
+import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import React from 'react'
 
@@ -7,8 +8,21 @@ import { SiteFooter } from '@/components/SiteFooter'
 import './home.css'
 
 export default async function HomePage() {
+  const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
+  const { user } = await payload.auth({ headers })
+
+  let characterId: string | number | null = null
+  if (user) {
+    const { docs } = await payload.find({
+      collection: 'characters',
+      where: { user: { equals: user.id } },
+      depth: 0,
+      limit: 1,
+    })
+    if (docs[0]) characterId = docs[0].id
+  }
 
   return (
     <div className="ss-root">
@@ -129,11 +143,15 @@ export default async function HomePage() {
                 <div className="ss-card-icon" aria-hidden="true">🧑‍🚀</div>
                 <h3>Fiches de Personnage</h3>
                 <p>
-                  Créez et gérez vos personnages directement en ligne.
-                  Connexion requise.
+                  {user
+                    ? 'Consultez et gérez votre fiche de personnage directement en ligne.'
+                    : 'Créez et gérez vos personnages directement en ligne. Connexion requise.'}
                 </p>
-                <a href="/login" className="ss-btn ss-btn-outline">
-                  Se connecter
+                <a
+                  href={user ? (characterId ? `/characters/${characterId}` : '/character') : '/login'}
+                  className="ss-btn ss-btn-outline"
+                >
+                  {user ? 'Accéder à ma fiche' : 'Se connecter'}
                 </a>
               </article>
 
