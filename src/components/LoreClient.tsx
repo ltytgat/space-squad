@@ -27,6 +27,8 @@ const CATEGORY_ORDER: string[] = [
   'stardash',
 ]
 
+const ENTRY_ARTICLE_SLUG = 'chronologie-humaine'
+
 type ArticlePreview = {
   id: number | string
   title: string
@@ -46,10 +48,12 @@ export function LoreClient({
     initialCategory ?? null,
   )
   const [search, setSearch] = useState('')
+  const entryArticle = articles.find((article) => article.slug === ENTRY_ARTICLE_SLUG)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return articles.filter((article) => {
+      if (article.slug === ENTRY_ARTICLE_SLUG) return false
       if (category && article.category !== category) return false
       if (q) {
         const inTitle = article.title.toLowerCase().includes(q)
@@ -59,6 +63,12 @@ export function LoreClient({
       return true
     })
   }, [articles, category, search])
+
+  const entryMatches = entryArticle
+    && (!category || entryArticle.category === category)
+    && (!search.trim()
+      || entryArticle.title.toLowerCase().includes(search.trim().toLowerCase())
+      || (entryArticle.excerpt ?? '').toLowerCase().includes(search.trim().toLowerCase()))
 
   return (
     <>
@@ -126,7 +136,7 @@ export function LoreClient({
       {/* ── Grille d'articles ── */}
       <main className="lore-main">
         <div className="ss-container">
-          {filtered.length === 0 ? (
+          {filtered.length === 0 && !entryMatches ? (
             <div className="lore-empty">
               <span aria-hidden="true">🔭</span>
               <p>
@@ -149,6 +159,25 @@ export function LoreClient({
             </div>
           ) : (
             <div className="lore-grid">
+              {entryArticle && entryMatches && (
+                <a
+                  href={`/lore/${entryArticle.slug ?? entryArticle.id}`}
+                  className="lore-card lore-card-featured"
+                >
+                  <div className="lore-card-top">
+                    <span className="lore-card-category">
+                      <span aria-hidden="true">{(CATEGORY_META[entryArticle.category] || DEFAULT_CATEGORY).icon}</span>
+                      {(CATEGORY_META[entryArticle.category] || DEFAULT_CATEGORY).label}
+                    </span>
+                    <span className="lore-entry-label">Porte d&apos;entrée · À lire en premier</span>
+                  </div>
+                  <h2 className="lore-card-title">{entryArticle.title}</h2>
+                  {entryArticle.excerpt && (
+                    <p className="lore-card-excerpt">{entryArticle.excerpt}</p>
+                  )}
+                  <span className="lore-card-cta">Commencer la lecture →</span>
+                </a>
+              )}
               {filtered.map((article) => {
                 const cat = CATEGORY_META[article.category] || DEFAULT_CATEGORY
                 return (

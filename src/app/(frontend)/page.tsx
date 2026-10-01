@@ -43,7 +43,7 @@ export default async function HomePage() {
             Lore, jeu de rôle, jeux de plateau.
           </p>
           <div className="ss-hero-actions">
-            <a href="/lore" className="ss-btn ss-btn-primary ss-btn-lg">
+            <a href="/lore/chronologie-humaine" className="ss-btn ss-btn-primary ss-btn-lg">
               Découvrir l&apos;univers
             </a>
             <a href="/#jdr" className="ss-btn ss-btn-ghost ss-btn-lg">

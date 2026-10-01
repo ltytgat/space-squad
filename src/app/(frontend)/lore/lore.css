@@ -218,6 +218,39 @@
   }
 }
 
+.lore-card-featured {
+  grid-column: 1 / -1;
+  min-height: 220px;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: linear-gradient(120deg, rgba(0, 212, 255, 0.12) 0%, var(--ss-bg-card) 72%);
+  border-color: var(--ss-border-h);
+  box-shadow: 0 0 36px rgba(0, 212, 255, 0.09);
+
+  .lore-card-title {
+    font-size: clamp(1.35rem, 3vw, 2rem);
+  }
+
+  .lore-card-excerpt {
+    max-width: 760px;
+    -webkit-line-clamp: 4;
+  }
+
+  .lore-card-cta {
+    font-size: 0.9rem;
+  }
+}
+
+.lore-entry-label {
+  color: var(--ss-text);
+  border: 1px solid var(--ss-border-h);
+  border-radius: 100px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .lore-card-top {
   display: flex;
   align-items: center;
