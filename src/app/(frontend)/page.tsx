@@ -120,8 +120,8 @@ export default async function HomePage() {
                   Le système de jeu complet, adapté à l&apos;univers Hard-SF
                   de Space Squad.
                 </p>
-                <a href="#" className="ss-btn ss-btn-primary">
-                  Accéder au livre →
+                <a href="/docs/R%C3%A8gles.pdf" target="_blank" rel="noreferrer" className="ss-btn ss-btn-primary">
+                  Lire le livre (PDF) →
                 </a>
               </article>
 
@@ -147,6 +147,12 @@ export default async function HomePage() {
                   Bientôt disponible
                 </span>
               </article>
+            </div>
+
+            <div className="ss-section-cta">
+              <a href="/docs/Tableaux.zip" download="Tableaux.zip" className="ss-btn ss-btn-outline">
+                Télécharger les documents complémentaires (.zip)
+              </a>
             </div>
           </div>
         </section>
