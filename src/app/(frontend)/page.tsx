@@ -177,7 +177,7 @@ export default async function HomePage() {
                 <div className="ss-progress">
                   <div className="ss-progress-label">
                     <span>Avancement</span>
-                    <span>40%</span>
+                    <span>99%</span>
                   </div>
                   <div className="ss-progress-track">
                     <div className="ss-progress-fill" style={{ width: '40%' }} />
