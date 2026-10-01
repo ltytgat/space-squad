@@ -1101,16 +1101,21 @@ export function ShipClient({
           <section className="ship-card">
             <h2 className="ship-card-title">Soute</h2>
             <div className="ship-inventory-grid">
+              {!!(ship.inventaireModules ?? []).length && <div className="ship-inventory-group">
               {(ship.inventaireModules ?? []).map((entry: any, index: number) => (
                 <span className="ship-tag" key={`module-${entry.id ?? index}`}>
                   Module · {object(entry.module)?.nom ?? '—'} × {entry.quantite ?? 0}
                 </span>
               ))}
+              </div>}
+              {!!(ship.inventaireArmes ?? []).length && <div className="ship-inventory-group">
               {(ship.inventaireArmes ?? []).map((entry: any, index: number) => (
                 <span className="ship-tag" key={`arme-${entry.id ?? index}`}>
                   Arme · {object(entry.arme)?.nom ?? '—'} × {entry.quantite ?? 0}
                 </span>
               ))}
+              </div>}
+              {(ship.inventaireConsommables ?? []).some((entry: any) => !isAmmunition(object(entry.consommable))) && <div className="ship-inventory-group">
               {(ship.inventaireConsommables ?? [])
                 .filter((entry: any) => !isAmmunition(object(entry.consommable)))
                 .map((entry: any, index: number) => (
@@ -1118,6 +1123,7 @@ export function ShipClient({
                     Consommable · {object(entry.consommable)?.nom ?? '—'} × {entry.quantite ?? 0}
                   </span>
                 ))}
+              </div>}
               {!(ship.inventaireModules ?? []).length &&
                 !(ship.inventaireArmes ?? []).length &&
                 !(ship.inventaireConsommables ?? []).some(

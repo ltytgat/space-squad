@@ -158,6 +158,7 @@
 .ship-turret-module-description { margin: 0; color: var(--ss-text-muted); font-size: .75rem; }
 .ship-turret + .ship-turret { margin-top: 1rem; }
 .ship-inventory-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ship-inventory-group { display: flex; flex-wrap: wrap; gap: .5rem; flex-basis: 100%; min-width: 0; }
 .ship-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-bottom: 2rem; }
 .ship-stat-tooltip-floating { position: fixed; z-index: 1000; pointer-events: none; }
 .ship-stat-tooltip-floating { padding: 0; background: transparent; opacity: 1; }
