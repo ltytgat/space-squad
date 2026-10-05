@@ -1,0 +1,51 @@
+export const shopScopes = {
+  tout: { title: 'Toute la boutique', description: 'Consultez le catalogue complet, gérez vos réserves et effectuez vos transactions.' },
+  'sol-armes': { title: 'Armes personnelles', description: 'Armes destinées à votre personnage.' },
+  'sol-armures': { title: 'Armures personnelles', description: 'Équipements de protection destinés à votre personnage.' },
+  'sol-consommables': { title: 'Consommables personnels', description: 'Consommables à ajouter à la réserve de votre personnage.' },
+  'espace-armes': { title: 'Armes spatiales', description: 'Armes à ajouter à la réserve d’un vaisseau dont vous pouvez gérer les équipements.' },
+  'espace-modules': { title: 'Modules spatiaux', description: 'Modules à ajouter à la réserve d’un vaisseau dont vous pouvez gérer les équipements.' },
+  'espace-consommables': { title: 'Consommables spatiaux', description: 'Consommables à ajouter à la réserve d’un vaisseau dont vous pouvez gérer les équipements.' },
+  'mods-armes': { title: 'Mods d’armes', description: 'Choisissez une arme personnelle compatible, puis appliquez un Mod.' },
+  'mods-armures': { title: 'Mods d’armures', description: 'Achetez des Mods d’armure et gérez ceux déjà présents dans votre réserve.' },
+} as const
+
+export type ShopScope = keyof typeof shopScopes
+
+export const shopNavigation = [
+  {
+    title: 'Sol',
+    links: [
+      { href: '/shop/sol/armes', label: 'Armes' },
+      { href: '/shop/sol/armures', label: 'Armures' },
+      { href: '/shop/sol/consommables', label: 'Consommables' },
+    ],
+  },
+  {
+    title: 'Espace',
+    links: [
+      { href: '/shop/espace/armes', label: 'Armes' },
+      { href: '/shop/espace/modules', label: 'Modules' },
+      { href: '/shop/espace/consommables', label: 'Consommables' },
+    ],
+  },
+  {
+    title: 'Mods',
+    links: [
+      { href: '/shop/mods/armes', label: 'Armes' },
+      { href: '/shop/mods/armures', label: 'Armures' },
+    ],
+  },
+] as const
+
+export const shopScopeByPath: Record<string, ShopScope> = {
+  tout: 'tout',
+  'sol/armes': 'sol-armes',
+  'sol/armures': 'sol-armures',
+  'sol/consommables': 'sol-consommables',
+  'espace/armes': 'espace-armes',
+  'espace/modules': 'espace-modules',
+  'espace/consommables': 'espace-consommables',
+  'mods/armes': 'mods-armes',
+  'mods/armures': 'mods-armures',
+}
