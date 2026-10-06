@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import { canEquipConsumable, consumableCapacity, isShipAmmunition, sameConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
 import { getChassis, getShipLimits, getShipStats } from '@/lib/shipStats'
@@ -1100,6 +1101,9 @@ export function ShipClient({
           </section>
           <section className="ship-card">
             <h2 className="ship-card-title">Soute</h2>
+            {!readOnly && <Link className="ship-transfer-link" href={`/shop/chantier-naval?tab=transfer&sourceShipId=${ship.id}`}>
+              Transférer du matériel vers un autre vaisseau
+            </Link>}
             <div className="ship-inventory-grid">
               {!!(ship.inventaireModules ?? []).length && <div className="ship-inventory-group">
               {(ship.inventaireModules ?? []).map((entry: any, index: number) => (

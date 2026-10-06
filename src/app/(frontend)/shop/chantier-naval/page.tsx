@@ -64,7 +64,10 @@ function shipSummary(ship: any) {
   }
 }
 
-export default async function ShipyardPage() {
+export default async function ShipyardPage({ searchParams }: {
+  searchParams: Promise<{ tab?: string; sourceShipId?: string }>
+}) {
+  const { tab, sourceShipId } = await searchParams
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
@@ -78,9 +81,14 @@ export default async function ShipyardPage() {
   ])
   const activeShipId = idOf(character.vaisseau)
   const shipsById = new Map<number, any>((ownedResult.docs as any[]).map((ship) => [Number(ship.id), ship]))
-  if (activeShipId && !shipsById.has(activeShipId)) {
-    const activeShip = await payload.findByID({ collection: 'ships', id: activeShipId, depth: 4, overrideAccess: true }).catch(() => null)
-    if (activeShip) shipsById.set(activeShipId, activeShip)
+  const requestedSourceId = Number.parseInt(sourceShipId ?? '', 10)
+  const additionalShipIds = new Set([activeShipId, requestedSourceId].filter(
+    (id): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0,
+  ))
+  for (const additionalShipId of additionalShipIds) {
+    if (shipsById.has(additionalShipId)) continue
+    const ship = await payload.findByID({ collection: 'ships', id: additionalShipId, depth: 4, overrideAccess: true }).catch(() => null)
+    if (ship) shipsById.set(additionalShipId, ship)
   }
   const writableShips = [...shipsById.values()]
     .filter((ship) => computeShipAccess({ ship, character, isAdmin: user.role === 'admin' }).canEdit)
@@ -93,6 +101,7 @@ export default async function ShipyardPage() {
     writableShips,
     activeShipId,
   }
+  const initialSourceShipId = sourceShipId ? Number.parseInt(sourceShipId, 10) : null
   return <div className="ss-root shop-root">
     <SiteHeader activePage="shop" />
     <div className="shop-layout">
@@ -100,7 +109,7 @@ export default async function ShipyardPage() {
         <nav className="shop-breadcrumb" aria-label="Fil d’Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><Link href="/shop">Boutique</Link><span aria-hidden="true">›</span><span>Chantier naval</span></nav>
         <h1>Chantier naval</h1><p>Achetez un modèle de vaisseau, vendez un appareil ou transférez son matériel.</p>
       </div></section>
-      <main className="ss-container shop-content"><ShipyardClient {...data} /></main>
+      <main className="ss-container shop-content"><ShipyardClient {...data} initialTab={tab === 'transfer' ? 'transfer' : 'buy'} initialSourceShipId={Number.isFinite(initialSourceShipId) ? initialSourceShipId : null} /></main>
     </div>
     <SiteFooter />
   </div>

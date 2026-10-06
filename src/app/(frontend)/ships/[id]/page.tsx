@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { findShipCrew, getShipAccess } from '@/lib/shipAccess'
 import { ShipClient } from '../../ship/ShipClient'
+import { ShipNameEditor } from '../../ship/ShipNameEditor'
 import '../../ship/ship.css'
 
 export const metadata = { title: 'Fiche vaisseau — Space Squad' }
@@ -40,7 +41,7 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
             </>}
             <span>{ship.nom}</span>
           </nav>
-          <h1 className="ship-name">{ship.nom}</h1>
+          <ShipNameEditor shipId={ship.id} initialName={ship.nom} readOnly={!access.canEdit} />
           <div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div>
         </div>
       </div>

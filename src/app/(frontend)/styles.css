@@ -156,6 +156,35 @@ button {
   background: var(--ss-cyan-dim) !important;
 }
 
+.ss-nav-ships { position: relative; }
+.ss-nav-ships > summary { cursor: pointer; list-style: none; }
+.ss-nav-ships > summary::-webkit-details-marker { display: none; }
+.ss-nav-ship-menu {
+  position: absolute;
+  top: calc(100% + .45rem);
+  left: 0;
+  z-index: 210;
+  display: flex;
+  flex-direction: column;
+  min-width: 13rem;
+  max-width: min(20rem, 80vw);
+  padding: .35rem;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: var(--ss-bg-alt);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .4);
+}
+.ss-nav-ship-option {
+  overflow: hidden;
+  padding: .55rem .65rem;
+  border-radius: var(--ss-radius);
+  color: var(--ss-text-dim);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ss-nav-ship-option:hover { color: var(--ss-cyan); background: var(--ss-cyan-dim); }
+
 .ss-header-cta {
   flex-shrink: 0;
 }

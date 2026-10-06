@@ -48,6 +48,29 @@
   margin-bottom: 0.75rem;
 }
 
+.ship-name-heading { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.ship-name-heading .ship-name { margin-bottom: .75rem; }
+.ship-rename-button, .ship-rename-cancel, .ship-transfer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  padding: .5rem .7rem;
+  color: var(--ss-text);
+  background: var(--ss-bg-alt);
+  font: inherit;
+  font-size: .8rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ship-rename-button:hover, .ship-rename-cancel:hover, .ship-transfer-link:hover { color: var(--ss-cyan); border-color: var(--ss-cyan); }
+.ship-rename-form { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.ship-rename-form label { color: var(--ss-text-muted); font-size: .8rem; }
+.ship-rename-form input { min-width: min(20rem, 100%); padding: .5rem .65rem; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); color: var(--ss-text); background: var(--ss-bg-alt); }
+.ship-rename-error { flex-basis: 100%; margin: 0; color: #ff7777; font-size: .8rem; }
+.ship-transfer-link { margin: 0 0 .85rem; }
+
 .ship-name-empty {
   color: var(--ss-text-muted);
   font-size: clamp(1rem, 3vw, 1.4rem);

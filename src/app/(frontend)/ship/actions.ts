@@ -80,6 +80,24 @@ export async function updateShipState(shipId: number, data: { blindageActuel?: n
   return { success: true }
 }
 
+export async function renameShip(shipId: number, submittedName: string) {
+  const { payload, user } = await context()
+  const { ship } = await authorizeEdit(payload, user, shipId, 0)
+  const nom = typeof submittedName === 'string' ? submittedName.trim() : ''
+  if (!nom) throw new Error('Le nom du vaisseau ne peut pas être vide')
+  if (nom === ship.nom) return { success: true, nom }
+
+  await payload.update({
+    collection: 'ships',
+    id: shipId,
+    data: { nom },
+    user,
+    overrideAccess: true,
+  })
+  revalidateShip(shipId)
+  return { success: true, nom }
+}
+
 export async function manageShipConsumable(shipId: number, operation: ConsumableOperation, index: number, consumableId?: number | string) {
   const { payload, user } = await context()
   const { ship } = await authorizeEdit(payload, user, shipId, 3)

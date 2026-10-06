@@ -47,20 +47,27 @@ export function ShipyardClient({
   ownedShips,
   writableShips,
   activeShipId,
+  initialTab = 'buy',
+  initialSourceShipId = null,
 }: {
   character: { id: number; nom: string; konis: number }
   models: ShipModel[]
   ownedShips: ShipSummary[]
   writableShips: ShipSummary[]
   activeShipId: number | null
+  initialTab?: 'buy' | 'sell' | 'transfer'
+  initialSourceShipId?: number | null
 }) {
   const router = useRouter()
-  const [tab, setTab] = useState<'buy' | 'sell' | 'transfer'>('buy')
+  const resolvedInitialSourceId = writableShips.some((ship) => ship.id === initialSourceShipId)
+    ? initialSourceShipId!
+    : writableShips[0]?.id ?? 0
+  const [tab, setTab] = useState<'buy' | 'sell' | 'transfer'>(initialTab)
   const [shipNames, setShipNames] = useState<Record<number, string>>({})
   const [sellShipId, setSellShipId] = useState(ownedShips[0]?.id ?? 0)
   const [selectedComponents, setSelectedComponents] = useState<string[]>([])
-  const [sourceShipId, setSourceShipId] = useState(writableShips[0]?.id ?? 0)
-  const [destinationShipId, setDestinationShipId] = useState(writableShips.find((ship) => ship.id !== writableShips[0]?.id)?.id ?? 0)
+  const [sourceShipId, setSourceShipId] = useState(resolvedInitialSourceId)
+  const [destinationShipId, setDestinationShipId] = useState(writableShips.find((ship) => ship.id !== resolvedInitialSourceId)?.id ?? 0)
   const [sourceKey, setSourceKey] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [pending, setPending] = useState(false)

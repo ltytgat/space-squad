@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { findShipCrew, getShipAccess } from '@/lib/shipAccess'
 import { ShipClient } from '../ShipClient'
+import { ShipNameEditor } from '../ShipNameEditor'
 import '../ship.css'
 
 export const metadata = { title: 'Vaisseau — Space Squad' }
@@ -28,7 +29,7 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
   return <div className="ss-root ship-root">
     <SiteHeader activePage="ship" />
     <main className="ship-layout">
-      <div className="ship-page-header"><div className="ss-container"><nav className="ship-breadcrumb" aria-label="Fil d'Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><Link href="/character">Personnage</Link><span aria-hidden="true">›</span><span>{ship.nom}</span></nav><h1 className="ship-name">{ship.nom}</h1><div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div></div></div>
+      <div className="ship-page-header"><div className="ss-container"><nav className="ship-breadcrumb" aria-label="Fil d'Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><Link href="/ship">Mes vaisseaux</Link><span aria-hidden="true">›</span><span>{ship.nom}</span></nav><ShipNameEditor shipId={ship.id} initialName={ship.nom} readOnly={!access.canEdit} /><div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div></div></div>
       <ShipClient
         ship={JSON.parse(JSON.stringify(ship))}
         crew={JSON.parse(JSON.stringify(crew))}

@@ -7,9 +7,10 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { findShipCrew, getShipAccess, getViewerCharacter } from '@/lib/shipAccess'
 import { ShipClient } from './ShipClient'
+import { ShipNameEditor } from './ShipNameEditor'
 import './ship.css'
 
-export const metadata = { title: 'Mon vaisseau — Space Squad' }
+export const metadata = { title: 'Mes vaisseaux — Space Squad' }
 
 export default async function ShipPage() {
   const payload = await getPayload({ config: await config })
@@ -26,5 +27,5 @@ export default async function ShipPage() {
   const ship = access.ship
   const model = typeof ship.modele === 'object' ? ship.modele : null
   const modelChassis = typeof model?.chassis === 'object' ? model.chassis : null
-  return <div className="ss-root ship-root"><SiteHeader activePage="ship" /><main className="ship-layout"><div className="ship-page-header"><div className="ss-container"><nav className="ship-breadcrumb" aria-label="Fil d'Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><span>Mon vaisseau</span></nav><h1 className="ship-name">{ship.nom}</h1><div className="ship-tags"><span className="ship-tag">{model?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {modelChassis?.classe ?? '—'}</span></div></div></div><ShipClient ship={JSON.parse(JSON.stringify(ship))} crew={JSON.parse(JSON.stringify(crew))} readOnly={!access.canEdit} viewerCharacterId={access.character?.id ?? null} canManageCrew={access.canManageCrew} canJoin={access.canJoin} /></main><SiteFooter /></div>
+  return <div className="ss-root ship-root"><SiteHeader activePage="ship" /><main className="ship-layout"><div className="ship-page-header"><div className="ss-container"><nav className="ship-breadcrumb" aria-label="Fil d'Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><span>Mes vaisseaux</span></nav><ShipNameEditor shipId={ship.id} initialName={ship.nom} readOnly={!access.canEdit} /><div className="ship-tags"><span className="ship-tag">{model?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {modelChassis?.classe ?? '—'}</span></div></div></div><ShipClient ship={JSON.parse(JSON.stringify(ship))} crew={JSON.parse(JSON.stringify(crew))} readOnly={!access.canEdit} viewerCharacterId={access.character?.id ?? null} canManageCrew={access.canManageCrew} canJoin={access.canJoin} /></main><SiteFooter /></div>
 }
