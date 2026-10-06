@@ -65,6 +65,59 @@
 .shop-confirm > div { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.4rem; }
 .shop-confirm button { padding: .6rem .9rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); cursor: pointer; }
 .shop-confirm .shop-cancel-button { border-color: var(--ss-border); background: transparent; color: var(--ss-text-muted); }
+.shipyard-purchase-catalog > div:first-child, .shipyard-purchase-catalog > .shop-empty { width: 100%; }
+.shipyard-class-section { display: flex; flex-direction: column; gap: 1.1rem; padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: rgba(255, 255, 255, .015); }
+.shipyard-class-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: .7rem; border-bottom: 1px solid var(--ss-border); }
+.shipyard-class-heading h2 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.2rem; letter-spacing: .04em; }
+.shipyard-class-heading > span { color: var(--ss-text-muted); font-size: .85rem; }
+.shipyard-category-section { display: flex; flex-direction: column; gap: .75rem; }
+.shipyard-category-section > h3 { margin: 0; }
+.shipyard-category-label { display: inline-flex; align-items: center; min-height: 28px; padding: .25rem .65rem; border: 1px solid currentColor; border-radius: 999px; font-size: .78rem; font-weight: 700; letter-spacing: .04em; }
+.shipyard-category-polyvalent { color: #72cfff; }
+.shipyard-category-combat { color: #ff737b; }
+.shipyard-category-transport { color: #ffad59; }
+.shipyard-category-exploration { color: #76d99b; }
+.shipyard-model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)); align-items: stretch; gap: 1rem; }
+.shipyard-model-card { display: flex; flex-direction: column; gap: .9rem; min-width: 0; padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); }
+.shipyard-model-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.shipyard-model-heading h3 { margin-top: .2rem; color: var(--ss-text); font-family: var(--ss-font-display); }
+.shipyard-model-heading > strong, .shipyard-sale-total strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); text-align: right; }
+.shipyard-model-meta { color: var(--ss-text-muted); font-size: .85rem; }
+.shipyard-model-card > p { color: var(--ss-text-muted); font-size: .88rem; line-height: 1.45; }
+.shipyard-model-components { border-top: 1px solid var(--ss-border); border-bottom: 1px solid var(--ss-border); padding-block: .7rem; }
+.shipyard-model-components summary { color: var(--ss-cyan); cursor: pointer; font-size: .85rem; }
+.shipyard-model-components ul { display: grid; gap: .35rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+.shipyard-model-components li { display: flex; justify-content: space-between; gap: 1rem; color: var(--ss-text-muted); font-size: .78rem; }
+.shipyard-model-components li strong { color: var(--ss-text); font-weight: 550; text-align: right; }
+.shipyard-name-field, .shipyard-transfer-selects label, .shipyard-select { display: grid; gap: .4rem; color: var(--ss-text-muted); font-size: .85rem; }
+.shipyard-name-field input, .shipyard-transfer-selects select, .shipyard-select select { min-height: 40px; padding: .5rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
+.shipyard-model-actions { display: grid; gap: .55rem; margin-top: auto; }
+.shipyard-model-actions button, .shipyard-operation > button { padding: .65rem .9rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); font-weight: 650; cursor: pointer; }
+.shipyard-model-actions button:hover:not(:disabled), .shipyard-operation > button:hover:not(:disabled) { background: var(--ss-cyan); color: var(--ss-bg); }
+.shipyard-model-actions button:disabled, .shipyard-operation > button:disabled { opacity: .45; cursor: not-allowed; }
+.shipyard-model-actions .shipyard-secondary-action { border-color: var(--ss-border); background: transparent; color: var(--ss-text-muted); }
+.shipyard-operation { align-items: start; }
+.shipyard-operation > div:first-child, .shipyard-operation > .shop-empty { grid-column: 1 / -1; }
+.shipyard-select { max-width: 620px; }
+.shipyard-select select { width: 100%; }
+.shipyard-destination-note strong { color: var(--ss-cyan); }
+.shipyard-sale-components { display: grid; gap: .55rem; }
+.shipyard-sale-components h3 { margin: .3rem 0; color: var(--ss-text); font-size: 1rem; }
+.shipyard-component-row { margin: 0; }
+.shipyard-component-row > strong { flex: 0 0 auto; color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .8rem; text-align: right; }
+.shipyard-chassis-row { border-color: var(--ss-cyan); }
+.shipyard-component-check { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+.shipyard-component-check input { width: 18px; height: 18px; accent-color: var(--ss-cyan); }
+.shipyard-component-check > span { display: flex; flex-direction: column; gap: .2rem; }
+.shipyard-component-check small { color: var(--ss-text-muted); font-size: .75rem; }
+.shipyard-component-row:has(input:disabled) { opacity: .7; }
+.shipyard-sale-total { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--ss-border); border-radius: 9px; background: var(--ss-bg-alt); }
+.shipyard-danger-action { border-color: #b1745b !important; background: rgba(177, 116, 91, .12) !important; color: #e8aa8b !important; }
+.shipyard-danger-action:hover:not(:disabled) { background: #b1745b !important; color: var(--ss-bg) !important; }
+.shipyard-transfer-selects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.shipyard-transfer-detail { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; }
+.shipyard-transfer-detail > span { color: var(--ss-text-muted); font-size: .85rem; }
+.shipyard-transfer-detail .shop-quantity { margin-top: .4rem; }
 @media (max-width: 640px) {
   .shop-heading { padding-block: 1.75rem 1.4rem; }
   .shop-item, .shop-inventory-item { align-items: flex-start; }
@@ -72,4 +125,7 @@
   .shop-item-action button { white-space: normal; }
   .shop-filters { align-items: stretch; }
   .shop-filters label, .shop-filters input, .shop-filters select { width: 100%; }
+  .shipyard-transfer-selects { grid-template-columns: 1fr; }
+  .shipyard-component-row { align-items: flex-start; }
+  .shipyard-model-heading { flex-direction: column; }
 }

@@ -36,6 +36,12 @@ export const shopNavigation = [
       { href: '/shop/mods/armures', label: 'Armures' },
     ],
   },
+  {
+    title: 'Chantier naval',
+    links: [
+      { href: '/shop/chantier-naval', label: 'Acheter, vendre et transfert de soutes' },
+    ],
+  },
 ] as const
 
 export const shopScopeByPath: Record<string, ShopScope> = {
