@@ -87,6 +87,7 @@ export interface Config {
     chips: Chip;
     factions: Faction;
     'session-rewards': SessionReward;
+    'shop-transactions': ShopTransaction;
     search: Search;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -119,6 +120,7 @@ export interface Config {
     chips: ChipsSelect<false> | ChipsSelect<true>;
     factions: FactionsSelect<false> | FactionsSelect<true>;
     'session-rewards': SessionRewardsSelect<false> | SessionRewardsSelect<true>;
+    'shop-transactions': ShopTransactionsSelect<false> | ShopTransactionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1114,6 +1116,31 @@ export interface SessionReward {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-transactions".
+ */
+export interface ShopTransaction {
+  id: number;
+  transactionId: string;
+  fingerprint: string;
+  operation: string;
+  actor: number | User;
+  character: number | Character;
+  ship?: (number | null) | Ship;
+  amount: number;
+  details:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This is a collection of automatically created search results. These results are used by the global site search and will be updated automatically as documents in the CMS are created or updated.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1234,6 +1261,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'session-rewards';
         value: number | SessionReward;
+      } | null)
+    | ({
+        relationTo: 'shop-transactions';
+        value: number | ShopTransaction;
       } | null)
     | ({
         relationTo: 'search';
@@ -1894,6 +1925,22 @@ export interface SessionRewardsSelect<T extends boolean = true> {
   reverted?: T;
   revertedAt?: T;
   revertedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-transactions_select".
+ */
+export interface ShopTransactionsSelect<T extends boolean = true> {
+  transactionId?: T;
+  fingerprint?: T;
+  operation?: T;
+  actor?: T;
+  character?: T;
+  ship?: T;
+  amount?: T;
+  details?: T;
   updatedAt?: T;
   createdAt?: T;
 }
