@@ -204,7 +204,7 @@ export default async function HomePage() {
                     <span>99%</span>
                   </div>
                   <div className="ss-progress-track">
-                    <div className="ss-progress-fill" style={{ width: '40%' }} />
+                    <div className="ss-progress-fill" style={{ width: '99%' }} />
                   </div>
                 </div>
                 <a href="/lore?categorie=stardash" className="ss-card-cta">Contexte univers →</a>
