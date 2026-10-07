@@ -28,6 +28,7 @@ function summaries(docs: any[]): ShopItem[] {
     famille: doc.famille ?? null,
     typeModule: doc.typeModule ?? null,
     type: Array.isArray(doc.type) ? doc.type.join(', ') : doc.type ?? null,
+    types: Array.isArray(doc.type) ? doc.type : doc.type ? [doc.type] : [],
     modele: doc.modele ?? null,
     taille: doc.taille ?? null,
     degats: doc.degats ?? doc.valeurDegats ?? null,
