@@ -3,6 +3,7 @@ export const shopScopes = {
   'sol-armes': { title: 'Armes personnelles', description: 'Armes destinées à votre personnage.' },
   'sol-armures': { title: 'Armures personnelles', description: 'Équipements de protection destinés à votre personnage.' },
   'sol-consommables': { title: 'Consommables personnels', description: 'Consommables à ajouter à la réserve de votre personnage.' },
+  'sol-puces': { title: 'Puces', description: 'Achetez des puces, tentez un tirage aléatoire ou recyclez celles de votre réserve.' },
   'espace-armes': { title: 'Armes spatiales', description: 'Armes à ajouter à la réserve d’un vaisseau dont vous pouvez gérer les équipements.' },
   'espace-modules': { title: 'Modules spatiaux', description: 'Modules à ajouter à la réserve d’un vaisseau dont vous pouvez gérer les équipements.' },
   'espace-consommables': { title: 'Consommables spatiaux', description: 'Consommables à ajouter à la réserve d’un vaisseau dont vous pouvez gérer les équipements.' },
@@ -19,6 +20,7 @@ export const shopNavigation = [
       { href: '/shop/sol/armes', label: 'Armes' },
       { href: '/shop/sol/armures', label: 'Armures' },
       { href: '/shop/sol/consommables', label: 'Consommables' },
+      { href: '/shop/sol/puces', label: 'Puces' },
     ],
   },
   {
@@ -55,6 +57,7 @@ export const shopScopeByPath: Record<string, ShopScope> = {
   'sol/armes': 'sol-armes',
   'sol/armures': 'sol-armures',
   'sol/consommables': 'sol-consommables',
+  'sol/puces': 'sol-puces',
   'espace/armes': 'espace-armes',
   'espace/modules': 'espace-modules',
   'espace/consommables': 'espace-consommables',

@@ -65,6 +65,18 @@
 .shop-confirm > div { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.4rem; }
 .shop-confirm button { padding: .6rem .9rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); cursor: pointer; }
 .shop-confirm .shop-cancel-button { border-color: var(--ss-border); background: transparent; color: var(--ss-text-muted); }
+.chip-draw-panel { display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; padding: 1.2rem; border: 1px solid var(--ss-cyan); border-radius: 12px; background: var(--ss-cyan-dim); }
+.chip-draw-panel h2, .chip-draw-result h2 { color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.1rem; }
+.chip-draw-panel p, .chip-draw-result p { margin-top: .45rem; color: var(--ss-text-muted); font-size: .88rem; }
+.chip-draw-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem; }
+.chip-draw-actions button { padding: .65rem .85rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-bg-alt); color: var(--ss-cyan); font-weight: 650; cursor: pointer; }
+.chip-draw-actions button:hover:not(:disabled) { background: var(--ss-cyan); color: var(--ss-bg); }
+.chip-draw-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.chip-draw-result { padding: 1.1rem 1.2rem; border: 1px solid #307b60; border-radius: 10px; background: rgba(35, 126, 89, .13); }
+.chip-draw-result .shop-item-type { color: #a4f0cc; }
+.chip-catalog .shop-grid { align-items: stretch; }
+.chip-owned { padding-top: 1.4rem; border-top: 1px solid var(--ss-border); }
+.chip-owned > h2 { margin-bottom: .25rem; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; }
 .shipyard-purchase-catalog > div:first-child, .shipyard-purchase-catalog > .shop-empty { width: 100%; }
 .shipyard-class-section { display: flex; flex-direction: column; gap: 1.1rem; padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: rgba(255, 255, 255, .015); }
 .shipyard-class-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: .7rem; border-bottom: 1px solid var(--ss-border); }
@@ -131,4 +143,7 @@
   .shipyard-transfer-selects { grid-template-columns: 1fr; }
   .shipyard-component-row { align-items: flex-start; }
   .shipyard-model-heading { flex-direction: column; }
+  .chip-draw-panel { align-items: stretch; flex-direction: column; }
+  .chip-draw-actions { justify-content: stretch; }
+  .chip-draw-actions button { flex: 1 1 100%; }
 }

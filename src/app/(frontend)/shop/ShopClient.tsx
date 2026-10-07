@@ -59,6 +59,7 @@ const shipClassLabel: Record<string, string> = { '1': 'Alpha', '2': 'Beta', '3':
 
 const sectionForScope: Record<Exclude<ShopScope, 'tout'>, 'personal' | 'spatial' | 'mods'> = {
   'sol-armes': 'personal', 'sol-armures': 'personal', 'sol-consommables': 'personal',
+  'sol-puces': 'personal',
   'espace-armes': 'spatial', 'espace-modules': 'spatial', 'espace-consommables': 'spatial',
   'mods-armes': 'mods', 'mods-armures': 'mods',
 }
