@@ -22,7 +22,11 @@ export default async function ShopPage() {
     <div className="shop-layout">
       <section className="shop-heading"><div className="ss-container">
         <nav className="shop-breadcrumb" aria-label="Fil d’Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><span>Boutique</span></nav>
-        <h1>Boutique</h1><p>Choisissez une section pour consulter le matériel et gérer vos transactions.</p>
+        <div className="shop-heading-title-row">
+          <h1>Boutique</h1>
+          <Link className="shop-all-link shop-heading-all-link" href="/shop/tout">Tout le catalogue <span aria-hidden="true">→</span></Link>
+        </div>
+        <p>Choisissez une section pour consulter le matériel et gérer vos transactions.</p>
       </div></section>
       <main className="ss-container shop-content shop-navigation">
         {shopNavigation.map((group) => <section className="shop-navigation-group" key={group.title}>
@@ -33,7 +37,6 @@ export default async function ShopPage() {
             </Link>)}
           </div>
         </section>)}
-        <Link className="shop-all-link" href="/shop/tout">Tout le catalogue <span aria-hidden="true">→</span></Link>
       </main>
     </div>
     <SiteFooter />

@@ -6,6 +6,8 @@
 .shop-breadcrumb a { color: inherit; text-decoration: none; }
 .shop-breadcrumb a:hover { color: var(--ss-cyan); }
 .shop-heading h1 { color: var(--ss-text); font-family: var(--ss-font-display); font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: .05em; }
+.shop-heading-title-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.5rem; }
+.shop-heading-title-row .shop-heading-all-link { grid-column: auto; flex: 0 0 auto; padding: .65rem .9rem; }
 .shop-heading p { margin-top: .55rem; color: var(--ss-text-muted); }
 .shop-content { max-width: 1280px; flex: 1; padding-block: 1.75rem 4rem; }
 .shop-navigation { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-content: start; gap: 1.4rem; }
