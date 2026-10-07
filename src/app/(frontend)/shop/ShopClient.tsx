@@ -140,7 +140,11 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   function couponsFor(kind: string, item: ShopItem) {
     if (kind !== 'weapon' && kind !== 'ship-weapon' && kind !== 'ship-module') return []
     const target: DiscountTarget = { kind, categorie: item.categorie, taille: item.taille } as DiscountTarget
-    return character.inventaireRecompensesFaction.flatMap((coupon) => coupon.id && isFactionDiscountCouponApplicable(coupon, character.factionName, target) ? [{ coupon }] : [])
+    return character.inventaireRecompensesFaction.flatMap((coupon) => {
+      const id = coupon.id
+      if (!id || !isFactionDiscountCouponApplicable(coupon, character.factionName, target)) return []
+      return [{ coupon: { ...coupon, id } }]
+    })
   }
 
   const couponShelfUsages: FactionRewardUsage[] = activeSection === 'personal'
@@ -273,15 +277,15 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
 
     {activeSection === 'personal' && <div className="shop-catalog-groups">
       {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{availableWeapons.filter((item) => matches(item, true)).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
-      {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{catalogs.armors.filter(matches).map((item) => card(item, 'armor', 'personal'))}</div></section>}
-      {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2><div className="shop-grid">{catalogs.consumables.filter(matches).map((item) => card(item, 'consumable', 'personal'))}</div></section>}
+      {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{catalogs.armors.filter((item) => matches(item)).map((item) => card(item, 'armor', 'personal'))}</div></section>}
+      {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2><div className="shop-grid">{catalogs.consumables.filter((item) => matches(item)).map((item) => card(item, 'consumable', 'personal'))}</div></section>}
     </div>}
 
     {activeSection === 'spatial' && <div className="shop-catalog-groups">
       {!ship && <p className="shop-empty">Aucun vaisseau modifiable n’est disponible pour votre personnage.</p>}
       {(isAll || scope === 'espace-armes') && <section><h2>Armes de vaisseau</h2><div className="shop-grid">{catalogs.shipWeapons.filter((item) => matches(item, true)).map((item) => card(item, 'ship-weapon', 'ship'))}</div></section>}
-      {(isAll || scope === 'espace-modules') && <section><h2>Modules de vaisseau</h2><div className="shop-grid">{catalogs.shipModules.filter(matches).map((item) => card(item, 'ship-module', 'ship'))}</div></section>}
-      {(isAll || scope === 'espace-consommables') && <section><h2>Consommables de vaisseau</h2><div className="shop-grid">{catalogs.shipConsumables.filter(matches).map((item) => card(item, 'ship-consumable', 'ship'))}</div></section>}
+      {(isAll || scope === 'espace-modules') && <section><h2>Modules de vaisseau</h2><div className="shop-grid">{catalogs.shipModules.filter((item) => matches(item)).map((item) => card(item, 'ship-module', 'ship'))}</div></section>}
+      {(isAll || scope === 'espace-consommables') && <section><h2>Consommables de vaisseau</h2><div className="shop-grid">{catalogs.shipConsumables.filter((item) => matches(item)).map((item) => card(item, 'ship-consumable', 'ship'))}</div></section>}
     </div>}
 
     {activeSection === 'mods' && <div className="shop-catalog-groups">

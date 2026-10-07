@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Validate } from 'payload'
 import type { User } from '@/payload-types'
 
 const rewardTypes = [
@@ -11,6 +11,20 @@ const applications = [
   { label: 'Espace', value: 'espace' },
   { label: 'Module', value: 'module' },
 ] as const
+
+const validateDiscountPercentage: Validate<unknown> = (value, { data }) =>
+  data?.typeRecompense !== 'bon-reduction' || (typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 100) || 'Indiquez un pourcentage entre 0 et 100.'
+const validateFactionCost: Validate<unknown> = (value) =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 || 'Le coût doit être un nombre entier positif ou nul.'
+const validateRequiredGrade: Validate<unknown> = (value) =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 || 'Le grade requis doit être un ID entier supérieur ou égal à 1.'
+const validateUniqueFactions: Validate<unknown> = (value) => {
+  if (!Array.isArray(value)) return true
+  const factionIds = value.map((entry: any) => String(typeof entry.faction === 'object' ? entry.faction?.id ?? '' : entry.faction ?? ''))
+  return new Set(factionIds).size === factionIds.length || 'Une seule ligne par faction est autorisée pour une récompense.'
+}
+const validateFactionApplication: Validate<unknown> = (value, { data }) =>
+  data?.typeRecompense !== 'bon-reduction' || ['sol', 'espace', 'module'].includes(String(value)) || 'Sélectionnez une application pour ce bon.'
 
 export const FactionRewardTiers: CollectionConfig = {
   slug: 'faction-reward-tiers',
@@ -35,7 +49,7 @@ export const FactionRewardTiers: CollectionConfig = {
       required: true,
       defaultValue: 'bon-reduction',
       label: 'Type de récompense',
-      options: rewardTypes,
+      options: [...rewardTypes],
     },
     {
       name: 'pourcentageReduction',
@@ -43,7 +57,7 @@ export const FactionRewardTiers: CollectionConfig = {
       label: 'Valeur de la réduction (%)',
       min: 0.01,
       max: 100,
-      validate: (value, { data }) => data?.typeRecompense !== 'bon-reduction' || (typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 100) || 'Indiquez un pourcentage entre 0 et 100.',
+      validate: validateDiscountPercentage,
       admin: { condition: (data) => data?.typeRecompense === 'bon-reduction' },
     },
     {
@@ -53,7 +67,7 @@ export const FactionRewardTiers: CollectionConfig = {
       label: 'Coût en points de faction',
       min: 0,
       defaultValue: 0,
-      validate: (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 || 'Le coût doit être un nombre entier positif ou nul.',
+      validate: validateFactionCost,
     },
     {
       name: 'gradeRequis',
@@ -61,7 +75,7 @@ export const FactionRewardTiers: CollectionConfig = {
       required: true,
       label: 'Grade requis (ID du grade)',
       min: 1,
-      validate: (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 || 'Le grade requis doit être un ID entier supérieur ou égal à 1.',
+      validate: validateRequiredGrade,
     },
     {
       name: 'factions',
@@ -70,11 +84,7 @@ export const FactionRewardTiers: CollectionConfig = {
       label: 'Description et application par faction',
       admin: { description: 'Ajoutez une seule ligne par faction avec son texte et, pour un bon, son application.' },
       minRows: 1,
-      validate: (value) => {
-        if (!Array.isArray(value)) return true
-        const factionIds = value.map((entry: any) => String(typeof entry.faction === 'object' ? entry.faction?.id ?? '' : entry.faction ?? ''))
-        return new Set(factionIds).size === factionIds.length || 'Une seule ligne par faction est autorisée pour une récompense.'
-      },
+      validate: validateUniqueFactions,
       fields: [
         { name: 'faction', type: 'relationship', relationTo: 'factions', required: true, label: 'Faction' },
         { name: 'description', type: 'textarea', required: true, label: 'Description pour cette faction' },
@@ -82,8 +92,8 @@ export const FactionRewardTiers: CollectionConfig = {
           name: 'application',
           type: 'select',
           label: 'Application du bon',
-          options: applications,
-          validate: (value, { data }) => data?.typeRecompense !== 'bon-reduction' || ['sol', 'espace', 'module'].includes(String(value)) || 'Sélectionnez une application pour ce bon.',
+          options: [...applications],
+          validate: validateFactionApplication,
           admin: { condition: (data) => data?.typeRecompense === 'bon-reduction' },
         },
       ],
