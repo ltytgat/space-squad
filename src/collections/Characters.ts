@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 import { syncCharacterShip } from '@/lib/shipCrewSync'
 
-const COMPETENCES_BASE = [
+export const COMPETENCES_BASE = [
   'Chasseur',
   'Bombardier',
   'Poids Lourds',

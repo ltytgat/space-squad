@@ -82,6 +82,7 @@ export interface Config {
     armors: Armor;
     'armor-sets': ArmorSet;
     characters: Character;
+    formations: Formation;
     mods: Mod;
     consumables: Consumable;
     chips: Chip;
@@ -115,6 +116,7 @@ export interface Config {
     armors: ArmorsSelect<false> | ArmorsSelect<true>;
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
     characters: CharactersSelect<false> | CharactersSelect<true>;
+    formations: FormationsSelect<false> | FormationsSelect<true>;
     mods: ModsSelect<false> | ModsSelect<true>;
     consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
     chips: ChipsSelect<false> | ChipsSelect<true>;
@@ -1059,6 +1061,38 @@ export interface ShipConsumable {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "formations".
+ */
+export interface Formation {
+  id: number;
+  competence:
+    | 'Chasseur'
+    | 'Bombardier'
+    | 'Poids Lourds'
+    | 'Transport de Troupes'
+    | 'Canonnier'
+    | 'Médecine de terrain'
+    | 'Concentration'
+    | 'Mécanicien'
+    | 'Stabilisation'
+    | 'Assaut'
+    | 'Sniper'
+    | 'Shotgun'
+    | 'Combat rapproché'
+    | 'Analyse'
+    | 'Réactivité'
+    | 'Furtivité'
+    | 'Diplomate'
+    | 'Culture';
+  organisationFormation: number | Faction;
+  coutKonis: number;
+  coutPointsDeRang: number;
+  coutRenommee: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Historique des scripts de fin de mission appliqués aux escouades / sélections de personnages.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1241,6 +1275,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'characters';
         value: number | Character;
+      } | null)
+    | ({
+        relationTo: 'formations';
+        value: number | Formation;
       } | null)
     | ({
         relationTo: 'mods';
@@ -1832,6 +1870,19 @@ export interface CharactersSelect<T extends boolean = true> {
         valeur?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "formations_select".
+ */
+export interface FormationsSelect<T extends boolean = true> {
+  competence?: T;
+  organisationFormation?: T;
+  coutKonis?: T;
+  coutPointsDeRang?: T;
+  coutRenommee?: T;
   updatedAt?: T;
   createdAt?: T;
 }
