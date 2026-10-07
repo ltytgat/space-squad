@@ -6,6 +6,7 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
+import { factionCanBuyExWeapon, isExWeaponName, isFactionDiscountCouponApplicable, type DiscountTarget, type OwnedFactionReward } from '@/lib/factionRewards'
 import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, relationId, resalePrice, shopRequestFingerprint, weaponModPrice } from '@/lib/shop'
 
 type ItemKind = 'weapon' | 'armor' | 'consumable' | 'ship-weapon' | 'ship-module' | 'ship-consumable' | 'weapon-mod' | 'armor-mod'
@@ -17,6 +18,7 @@ type ShopInput = {
   quantity?: number
   shipId?: number
   ownedIndex?: number
+  discountRewardId?: string
   weaponTarget?: { location: 'inventory' | 'equipped'; index?: number; slot?: 'armePrincipale' | 'armeSecondaire' | 'armeLourde' | 'armeDeMelee' }
 }
 
@@ -123,6 +125,7 @@ export async function executeShopTransaction(raw: ShopInput) {
   if (!Number.isSafeInteger(raw.itemId) || raw.itemId <= 0) fail('Objet invalide.')
   if (raw.shipId !== undefined && (!Number.isSafeInteger(raw.shipId) || raw.shipId <= 0)) fail('Vaisseau invalide.')
   if (raw.ownedIndex !== undefined && (!Number.isSafeInteger(raw.ownedIndex) || raw.ownedIndex < 0)) fail('Position d’inventaire invalide.')
+  if (raw.discountRewardId !== undefined && (typeof raw.discountRewardId !== 'string' || raw.discountRewardId.length === 0 || raw.discountRewardId.length > 100 || raw.action !== 'buy')) fail('Bon de réduction invalide.')
   assertKind(raw)
   const input: ShopInput = { ...raw, quantity: raw.action === 'apply-weapon-mod' ? 1 : quantityOf(raw.quantity ?? 1) }
   if (['weapon', 'armor', 'weapon-mod', 'armor-mod'].includes(input.kind) && input.quantity !== 1) fail('Cet objet ne se traite pas en quantité multiple.')
@@ -158,6 +161,11 @@ export async function executeShopTransaction(raw: ShopInput) {
     } else {
       const item = await payload.findByID({ collection: catalogs[input.kind] as any, id: input.itemId, depth: 1, overrideAccess: true, req }).catch(() => null) as any
       if (!item) fail('Objet introuvable dans le catalogue.')
+      const faction = character.affiliation && typeof character.affiliation === 'object'
+        ? character.affiliation
+        : numericId(character.affiliation) ? await payload.findByID({ collection: 'factions', id: numericId(character.affiliation)!, depth: 0, overrideAccess: true, req }).catch(() => null) : null
+      const factionName = String(faction?.nom ?? '')
+      const rewards: OwnedFactionReward[] = Array.isArray(character.inventaireRecompensesFaction) ? character.inventaireRecompensesFaction : []
       const catalogPrice = readShopPrice(item.prix)
       const characterUpdate: Record<string, any> = {}
       const shipUpdate: Record<string, any> = {}
@@ -167,9 +175,24 @@ export async function executeShopTransaction(raw: ShopInput) {
         amount = exactMultiply(catalogPrice, input.quantity!)
       }
       const credit = (base: number) => { amount = exactMultiply(resalePrice(base), input.quantity!) }
+      let discountUsed = false
+      const applyDiscount = (target: DiscountTarget) => {
+        if (input.discountRewardId === undefined) return
+        const couponIndex = rewards.findIndex((reward) => reward.id === input.discountRewardId)
+        const coupon = rewards[couponIndex]
+        if (couponIndex < 0 || !coupon || !isFactionDiscountCouponApplicable(coupon, factionName, target)) fail('Ce bon de réduction ne peut pas être utilisé pour cet achat.')
+        const percentage = Number(coupon.pourcentageReduction)
+        const discount = exactMultiply(amount, percentage / 100)
+        amount = exactSubtract(amount, discount)
+        characterUpdate.inventaireRecompensesFaction = rewards.filter((_, index) => index !== couponIndex)
+        detail = { ...detail, reduction: { nom: coupon.nom, pourcentage: percentage, montant: discount } }
+        discountUsed = true
+      }
 
       if (input.action === 'buy' && input.kind === 'weapon') {
+        if (isExWeaponName(item.nom) && !factionCanBuyExWeapon(item.nom, item.categorie, item.type, rewards, factionName)) fail('Cette arme eX nécessite le droit d’accès de votre faction.')
         debit()
+        applyDiscount({ kind: 'weapon', categorie: item.categorie })
         characterUpdate.inventaireArmes = normalizePersonalWeapons(character.inventaireArmes ?? []).concat([{ item: item.id, mods: [], munitionsActuelles: 0, chargeurRelie: null, chauffeActuelle: 0 }])
       } else if (input.action === 'buy' && input.kind === 'armor') {
         debit()
@@ -184,6 +207,9 @@ export async function executeShopTransaction(raw: ShopInput) {
         characterUpdate.inventaireMods = getInventoryIds(character.inventaireMods).map(Number).concat([item.id])
       } else if (input.action === 'buy' && input.kind.startsWith('ship-')) {
         debit()
+        if (input.kind === 'ship-weapon' || input.kind === 'ship-module') {
+          applyDiscount({ kind: input.kind, categorie: item.categorie, taille: item.taille })
+        }
         const key = input.kind === 'ship-weapon' ? 'inventaireArmes' : input.kind === 'ship-module' ? 'inventaireModules' : 'inventaireConsommables'
         const itemKey = input.kind === 'ship-weapon' ? 'arme' : input.kind === 'ship-module' ? 'module' : 'consommable'
         shipUpdate[key] = addQuantity(ship[key] ?? [], itemKey, item.id, input.quantity!)
@@ -271,6 +297,7 @@ export async function executeShopTransaction(raw: ShopInput) {
       } else {
         fail('Cette combinaison d’opération et d’objet n’est pas autorisée.')
       }
+      if (input.discountRewardId !== undefined && !discountUsed) fail('Ce bon de réduction ne peut pas être utilisé pour cet achat.')
 
       const balance = Number(character.konis ?? 0)
       if (!Number.isFinite(balance) || balance < 0) fail('Le solde du personnage est incohérent.')

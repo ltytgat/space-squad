@@ -7,11 +7,12 @@ export function shopRequestFingerprint(input: {
   quantity: number
   shipId?: number
   ownedIndex?: number
+  discountRewardId?: string
   weaponTarget?: { location?: string; index?: number; slot?: string }
 }): string {
   return JSON.stringify([
     input.action, input.kind, input.itemId, input.quantity, input.shipId ?? null,
-    input.ownedIndex ?? null, input.weaponTarget?.location ?? null,
+    input.ownedIndex ?? null, input.discountRewardId ?? null, input.weaponTarget?.location ?? null,
     input.weaponTarget?.index ?? null, input.weaponTarget?.slot ?? null,
   ])
 }

@@ -4,7 +4,8 @@ import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { executeShopTransaction } from './actions'
 import type { ShopScope } from './shop-sections'
-import { exactAdd, exactMultiply, isWeaponModCompatible, readShopPrice, resalePrice, weaponModPrice } from '@/lib/shop'
+import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, resalePrice, weaponModPrice } from '@/lib/shop'
+import { factionCanBuyExWeapon, factionKey, isFactionDiscountCouponApplicable, type DiscountTarget, type FactionRewardUsage, type OwnedFactionReward } from '@/lib/factionRewards'
 
 export type ShopItem = {
   id: number
@@ -28,6 +29,8 @@ export type ShopCharacter = {
   id: number
   nom: string
   konis: number
+  factionName: string
+  inventaireRecompensesFaction: OwnedFactionReward[]
   inventaireArmes: Owned[]
   inventaireArmures: Owned[]
   inventaireMods: ShopItem[]
@@ -79,6 +82,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const [shipId, setShipId] = useState(ships[0]?.id ?? 0)
   const [targetKey, setTargetKey] = useState('')
   const [quantities, setQuantities] = useState<Record<string, number>>({})
+  const [couponSelections, setCouponSelections] = useState<Record<string, string | null>>({})
   const [pending, setPending] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [retryRequest, setRetryRequest] = useState<Confirmation | null>(null)
@@ -94,7 +98,8 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const ownedModIds = new Set(character.inventaireMods.map((mod) => String(mod.id)))
   const isAll = scope === 'tout'
   const activeSection = isAll ? section : sectionForScope[scope]
-  const categories = useMemo(() => [...new Set([...catalogs.weapons, ...catalogs.armors, ...catalogs.consumables, ...catalogs.shipWeapons, ...catalogs.shipModules, ...catalogs.shipConsumables].map((item) => item.categorie ?? item.famille).filter(Boolean) as string[])].sort(), [catalogs])
+  const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => factionCanBuyExWeapon(item.nom, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.inventaireRecompensesFaction, character.factionName])
+  const categories = useMemo(() => [...new Set([...availableWeapons, ...catalogs.armors, ...catalogs.consumables, ...catalogs.shipWeapons, ...catalogs.shipModules, ...catalogs.shipConsumables].map((item) => item.categorie ?? item.famille).filter(Boolean) as string[])].sort(), [availableWeapons, catalogs])
   const facetField: 'categorie' | 'sousCategorieArme' | 'sousCategorieArmure' | 'typeModule' | null = scope === 'sol-armes' || scope === 'sol-armures' ? 'categorie' : scope === 'mods-armes' ? 'sousCategorieArme' : scope === 'mods-armures' ? 'sousCategorieArmure' : scope === 'espace-modules' ? 'typeModule' : null
   const facetChoices: [string, string][] = scope === 'sol-armes'
     ? [['fusil-assaut', 'Fusil d’assaut'], ['shotgun', 'Shotgun'], ['sniper', 'Sniper'], ['pistolet', 'Pistolet'], ['melee', 'Mêlée'], ['lourde', 'Arme lourde']]
@@ -117,6 +122,20 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   }
   const matchingOwned = (entries: Owned[]) => entries.flatMap((entry, index) => entry.item && matches(entry.item) ? [{ entry, index }] : [])
 
+  function couponsFor(kind: string, item: ShopItem) {
+    if (kind !== 'weapon' && kind !== 'ship-weapon' && kind !== 'ship-module') return []
+    const target: DiscountTarget = { kind, categorie: item.categorie, taille: item.taille } as DiscountTarget
+    return character.inventaireRecompensesFaction.flatMap((coupon) => coupon.id && isFactionDiscountCouponApplicable(coupon, character.factionName, target) ? [{ coupon }] : [])
+  }
+
+  const couponShelfUsages: FactionRewardUsage[] = activeSection === 'personal'
+    ? (isAll || scope === 'sol-armes') ? ['arme-sol'] : []
+    : activeSection === 'spatial'
+      ? scope === 'espace-armes' ? ['arme-espace'] : scope === 'espace-modules' ? ['module-espace']
+        : isAll ? ['arme-espace', 'module-espace'] : []
+      : []
+  const shelfCoupons = character.inventaireRecompensesFaction.filter((coupon) => coupon.typeRecompense === 'bon-reduction' && coupon.usage && couponShelfUsages.includes(coupon.usage) && factionKey(coupon.faction) === factionKey(character.factionName) && Number(coupon.pourcentageReduction) > 0 && Number(coupon.pourcentageReduction) <= 100)
+
   const quantityFor = (key: string) => quantities[key] ?? 1
   const changeQuantity = (key: string, value: number) => setQuantities((current) => ({ ...current, [key]: Number.isSafeInteger(value) && value > 0 ? value : 1 }))
   function transact(args: Omit<TransactionArgs, 'transactionId'>, successText: string, text: string) {
@@ -132,6 +151,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       await executeShopTransaction({ ...current.args, transactionId: current.transactionId })
       setMessage({ kind: 'success', text: current.successText })
       setRetryRequest(null)
+      if (current.args.discountRewardId !== undefined) setCouponSelections({})
       router.refresh()
     } catch (error) {
       setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'La transaction a échoué.' })
@@ -168,14 +188,22 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     const price = readShopPrice(item.prix)
     const key = `${kind}:${item.id}`
     const hasQuantity = ['consumable', 'ship-weapon', 'ship-module', 'ship-consumable'].includes(kind)
+    const coupons = couponsFor(kind, item)
+    const selectedCouponId = couponSelections[key] ?? null
+    const selectedCoupon = coupons.find(({ coupon }) => coupon.id === selectedCouponId)?.coupon
+    const quantity = hasQuantity ? quantityFor(key) : 1
+    const originalTotal = price === null ? null : exactMultiply(price, quantity)
+    const discountAmount = originalTotal !== null && selectedCoupon ? exactMultiply(originalTotal, Number(selectedCoupon.pourcentageReduction) / 100) : 0
+    const finalTotal = originalTotal === null ? null : exactSubtract(originalTotal, discountAmount)
     return <article className="shop-item" key={key}>
       <div className="shop-item-main"><div className="shop-item-type">{labelFor(kind)}</div><h3>{item.nom}</h3>
         {itemDescription(item) && <div className="shop-item-meta">{itemDescription(item)}</div>}
         {item.effet && <p>{item.effet}</p>}
       </div>
-      <div className="shop-item-action"><strong>{priceText(item)}</strong>
+      <div className="shop-item-action"><strong>{finalTotal === null ? priceText(item) : selectedCoupon ? `${currency(finalTotal)} (au lieu de ${currency(originalTotal!)})` : currency(finalTotal)}</strong>
         {hasQuantity && quantityControl(key)}
-        <button type="button" disabled={pending || price === null || (owner === 'ship' && !ship)} onClick={() => transact({ action: 'buy', kind, itemId: item.id, quantity: hasQuantity ? quantityFor(key) : 1, ...(owner === 'ship' ? { shipId } : {}) }, `${item.nom} ajouté${quantityFor(key) > 1 ? ` (${quantityFor(key)})` : ''} à la réserve.`, `Acheter ${item.nom} pour ${currency(exactMultiply(price!, hasQuantity ? quantityFor(key) : 1))} ?`)}>Acheter</button>
+        {coupons.length > 0 && <label>Bon de réduction <select value={selectedCouponId ?? ''} onChange={(event) => setCouponSelections((current) => ({ ...current, [key]: event.target.value || null }))}><option value="">Sans réduction</option>{coupons.map(({ coupon }) => <option key={coupon.id} value={coupon.id}>{coupon.nom} · {coupon.pourcentageReduction} %</option>)}</select></label>}
+        <button type="button" disabled={pending || price === null || (owner === 'ship' && !ship)} onClick={() => transact({ action: 'buy', kind, itemId: item.id, quantity, ...(selectedCoupon?.id ? { discountRewardId: selectedCoupon.id } : {}), ...(owner === 'ship' ? { shipId } : {}) }, `${item.nom} ajouté${quantity > 1 ? ` (${quantity})` : ''} à la réserve${selectedCoupon ? ` avec ${selectedCoupon.nom}` : ''}.`, `Acheter ${item.nom} pour ${currency(finalTotal!)}${selectedCoupon ? ` avec le bon ${selectedCoupon.nom} (${selectedCoupon.pourcentageReduction} %)` : ''} ?`)}>Acheter</button>
       </div>
     </article>
   }
@@ -219,8 +247,15 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       {activeSection === 'spatial' && <label>Vaisseau <select value={shipId} onChange={(event) => setShipId(Number(event.target.value))}>{ships.map((value) => <option key={value.id} value={value.id}>{value.nom}</option>)}</select></label>}
     </div>}
 
+    {!!shelfCoupons.length && <section className="shop-catalog-groups shop-coupon-shelf">
+      <h2>Bons de réduction utilisables dans cette section</h2>
+      <div className="shop-grid">{shelfCoupons.map((coupon, index) => <article className="shop-item" key={`${coupon.nom}-${index}`}>
+        <div className="shop-item-main"><h3>{coupon.nom}</h3><p>{coupon.effet}</p><div className="shop-item-meta">{coupon.pourcentageReduction} % · {coupon.usage === 'arme-sol' ? 'Armes Sol hors armes lourdes' : coupon.usage === 'arme-espace' ? 'Armes Espace hors armes lourdes' : 'Modules Espace'}</div></div>
+      </article>)}</div>
+    </section>}
+
     {activeSection === 'personal' && <div className="shop-catalog-groups">
-      {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{catalogs.weapons.filter(matches).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
+      {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{availableWeapons.filter(matches).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
       {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{catalogs.armors.filter(matches).map((item) => card(item, 'armor', 'personal'))}</div></section>}
       {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2><div className="shop-grid">{catalogs.consumables.filter(matches).map((item) => card(item, 'consumable', 'personal'))}</div></section>}
     </div>}

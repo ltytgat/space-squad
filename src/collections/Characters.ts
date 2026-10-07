@@ -942,6 +942,28 @@ export const Characters: CollectionConfig = {
             },
           ],
         },
+        {
+          name: 'inventaireRecompensesFaction',
+          type: 'array',
+          label: 'Récompenses de faction',
+          admin: { description: 'Objets achetés dans la boutique de la faction.' },
+          fields: [
+            { name: 'nom', type: 'text', required: true, label: 'Objet' },
+            { name: 'effet', type: 'textarea', required: true, label: 'Effet' },
+            { name: 'faction', type: 'text', required: true, label: 'Faction' },
+            { name: 'grade', type: 'text', required: true, label: 'Grade au moment de l’achat' },
+            { name: 'typeRecompense', type: 'select', label: 'Type de récompense', options: [
+              { label: 'Droit d’accès aux armes eX', value: 'acces-armes-ex' },
+              { label: 'Bon de réduction', value: 'bon-reduction' },
+            ] },
+            { name: 'pourcentageReduction', type: 'number', label: 'Pourcentage de réduction', min: 0.01, max: 100 },
+            { name: 'usage', type: 'select', label: 'Usage du bon', options: [
+              { label: 'Arme Sol (hors armes lourdes)', value: 'arme-sol' },
+              { label: 'Arme Espace (hors armes lourdes)', value: 'arme-espace' },
+              { label: 'Module Espace', value: 'module-espace' },
+            ] },
+          ],
+        },
       ],
     },
 

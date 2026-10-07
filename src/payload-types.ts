@@ -87,6 +87,7 @@ export interface Config {
     consumables: Consumable;
     chips: Chip;
     factions: Faction;
+    'faction-reward-tiers': FactionRewardTier;
     'session-rewards': SessionReward;
     'shop-transactions': ShopTransaction;
     search: Search;
@@ -121,6 +122,7 @@ export interface Config {
     consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
     chips: ChipsSelect<false> | ChipsSelect<true>;
     factions: FactionsSelect<false> | FactionsSelect<true>;
+    'faction-reward-tiers': FactionRewardTiersSelect<false> | FactionRewardTiersSelect<true>;
     'session-rewards': SessionRewardsSelect<false> | SessionRewardsSelect<true>;
     'shop-transactions': ShopTransactionsSelect<false> | ShopTransactionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
@@ -725,6 +727,21 @@ export interface Character {
       }[]
     | null;
   /**
+   * Objets achetés dans la boutique de la faction.
+   */
+  inventaireRecompensesFaction?:
+    | {
+        nom: string;
+        effet: string;
+        faction: string;
+        grade: string;
+        typeRecompense?: ('acces-armes-ex' | 'bon-reduction') | null;
+        pourcentageReduction?: number | null;
+        usage?: ('arme-sol' | 'arme-espace' | 'module-espace') | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Compétences de la liste standard et leur niveau.
    */
   competences?:
@@ -1093,6 +1110,31 @@ export interface Formation {
   createdAt: string;
 }
 /**
+ * Un document par récompense. Plusieurs récompenses peuvent partager le même grade requis.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faction-reward-tiers".
+ */
+export interface FactionRewardTier {
+  id: number;
+  nom: string;
+  typeRecompense: 'acces-armes-ex' | 'bon-reduction';
+  pourcentageReduction?: number | null;
+  coutPointsFaction: number;
+  gradeRequis: number;
+  /**
+   * Ajoutez une seule ligne par faction avec son texte et, pour un bon, son application.
+   */
+  factions: {
+    faction: number | Faction;
+    description: string;
+    application?: ('sol' | 'espace' | 'module') | null;
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Historique des scripts de fin de mission appliqués aux escouades / sélections de personnages.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1295,6 +1337,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'factions';
         value: number | Faction;
+      } | null)
+    | ({
+        relationTo: 'faction-reward-tiers';
+        value: number | FactionRewardTier;
       } | null)
     | ({
         relationTo: 'session-rewards';
@@ -1856,6 +1902,18 @@ export interface CharactersSelect<T extends boolean = true> {
         quantite?: T;
         id?: T;
       };
+  inventaireRecompensesFaction?:
+    | T
+    | {
+        nom?: T;
+        effet?: T;
+        faction?: T;
+        grade?: T;
+        typeRecompense?: T;
+        pourcentageReduction?: T;
+        usage?: T;
+        id?: T;
+      };
   competences?:
     | T
     | {
@@ -1956,6 +2014,27 @@ export interface FactionsSelect<T extends boolean = true> {
     | {
         nom?: T;
         pointsRequis?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faction-reward-tiers_select".
+ */
+export interface FactionRewardTiersSelect<T extends boolean = true> {
+  nom?: T;
+  typeRecompense?: T;
+  pourcentageReduction?: T;
+  coutPointsFaction?: T;
+  gradeRequis?: T;
+  factions?:
+    | T
+    | {
+        faction?: T;
+        description?: T;
+        application?: T;
         id?: T;
       };
   updatedAt?: T;

@@ -6,6 +6,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { computeShipAccess } from '@/lib/shipAccess'
+import type { OwnedFactionReward } from '@/lib/factionRewards'
 import { ShopClient, type ShopItem, type ShopCharacter, type ShopShip } from './ShopClient'
 import { shopScopes, type ShopScope } from './shop-sections'
 import './shop.css'
@@ -51,6 +52,16 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 2, limit: 1, overrideAccess: true })
   const character: any = characters[0]
   if (!character) redirect('/character')
+  const faction = character.affiliation && typeof character.affiliation === 'object'
+    ? character.affiliation
+    : idOf(character.affiliation) ? await payload.findByID({ collection: 'factions', id: idOf(character.affiliation)!, depth: 0, overrideAccess: true }).catch(() => null) : null
+  const factionRewards: OwnedFactionReward[] = (character.inventaireRecompensesFaction ?? []).map((item: any) => ({
+    nom: String(item.nom ?? ''), effet: String(item.effet ?? ''), faction: String(item.faction ?? ''), grade: String(item.grade ?? ''),
+    id: item.id == null ? undefined : String(item.id),
+    typeRecompense: item.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : item.typeRecompense === 'bon-reduction' ? 'bon-reduction' : null,
+    pourcentageReduction: item.pourcentageReduction == null ? null : Number(item.pourcentageReduction),
+    usage: ['arme-sol', 'arme-espace', 'module-espace'].includes(item.usage) ? item.usage : null,
+  }))
 
   const [weapons, armors, consumables, mods, shipWeapons, shipModules, shipConsumables] = await Promise.all([
     payload.find({ collection: 'weapons', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
@@ -73,6 +84,7 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   const modList = (values: any[]) => (values ?? []).map((value) => modById.get(String(idOf(value)))).filter(Boolean) as ShopItem[]
   const characterData: ShopCharacter = {
     id: character.id, nom: character.nom ?? 'Personnage', konis: character.konis ?? 0,
+    factionName: String(faction?.nom ?? ''), inventaireRecompensesFaction: factionRewards,
     inventaireArmes: (character.inventaireArmes ?? []).map((row: any) => ({ item: weaponById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods), munitions: row.munitionsActuelles ?? 0 })),
     inventaireArmures: (character.inventaireArmures ?? []).map((row: any) => ({ item: armorById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods) })),
     inventaireMods: modList(character.inventaireMods),
