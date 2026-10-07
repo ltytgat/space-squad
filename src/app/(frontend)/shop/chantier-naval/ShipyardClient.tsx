@@ -8,6 +8,7 @@ import { executeShipyardTransaction } from '../shipyard-actions'
 
 type ShipModel = ShipCatalogEntry & {
   description: string | null
+  image: { url: string; alt: string } | null
   chassis: string | null
   tourelles: number
   components: [string, string][]
@@ -197,6 +198,7 @@ export function ShipyardClient({
             const full = fullPrice(model)
             const hull = chassisOnly(model)
             return <article className="shipyard-model-card" key={model.id}>
+              {model.image && <img className="shipyard-model-image" src={model.image.url} alt={model.image.alt} loading="lazy" decoding="async" />}
               <div className="shipyard-model-heading"><h3>{model.nom}</h3><strong>{priceLabel(model.prix)}</strong></div>
               <div className="shipyard-model-meta">{[model.chassis, model.tourelles ? `${model.tourelles} tourelle(s)` : null].filter(Boolean).join(' · ')}</div>
               {model.description && <p>{model.description}</p>}

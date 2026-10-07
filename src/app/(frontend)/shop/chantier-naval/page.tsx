@@ -26,6 +26,9 @@ function modelSummary(model: any) {
     nom: model.nom ?? 'Modèle de vente',
     prix: model.prix ?? null,
     description: model.description ?? null,
+    image: model.image && typeof model.image === 'object' && typeof model.image.url === 'string'
+      ? { url: model.image.url, alt: model.image.alt ?? model.nom ?? 'Image du vaisseau' }
+      : null,
     chassis: itemName(model.chassis),
     classe: model.chassis?.classe ?? null,
     categorie: model.chassis?.categorie ?? null,

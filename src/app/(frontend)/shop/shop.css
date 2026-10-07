@@ -79,6 +79,7 @@
 .shipyard-category-exploration { color: #76d99b; }
 .shipyard-model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)); align-items: stretch; gap: 1rem; }
 .shipyard-model-card { display: flex; flex-direction: column; gap: .9rem; min-width: 0; padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); }
+.shipyard-model-image { display: block; width: 100%; height: 180px; border-radius: 8px; background: rgba(0, 0, 0, .18); object-fit: contain; }
 .shipyard-model-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .shipyard-model-heading h3 { margin-top: .2rem; color: var(--ss-text); font-family: var(--ss-font-display); }
 .shipyard-model-heading > strong, .shipyard-sale-total strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); text-align: right; }
