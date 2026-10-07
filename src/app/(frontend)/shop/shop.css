@@ -63,6 +63,13 @@
 .shop-item-main h3 { margin: .2rem 0 .35rem; color: var(--ss-text); font-size: 1rem; }
 .shop-item-type { color: var(--ss-cyan); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .shop-item-meta, .shop-inventory-item span { display: block; color: var(--ss-text-muted); font-size: .8rem; }
+.shop-damage-badges { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .55rem; }
+.shop-damage-badges .shop-damage-badge { display: inline-flex; align-items: center; padding: .2rem .5rem; border: 1px solid; border-radius: 999px; font-size: .7rem; font-weight: 700; line-height: 1.2; }
+.shop-damage-badges .shop-damage-badge-cinetique { border-color: #4b91e2; background: rgba(45, 117, 203, .18); color: #a9d0ff; }
+.shop-damage-badges .shop-damage-badge-thermique { border-color: #d75d5d; background: rgba(190, 54, 54, .18); color: #ffb1b1; }
+.shop-damage-badges .shop-damage-badge-explosif { border-color: #c9a43e; background: rgba(198, 155, 35, .18); color: #ffe398; }
+.shop-damage-badges .shop-damage-badge-plasma { border-color: #3ca875; background: rgba(36, 151, 94, .18); color: #9ae3bd; }
+.shop-discount-select { min-height: 34px; max-width: 190px; padding: .35rem .45rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
 .shop-item-main p { margin-top: .5rem; color: var(--ss-text-muted); font-size: .85rem; line-height: 1.45; }
 .shop-item-action { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: .45rem; }
 .shop-item-action strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .85rem; text-align: right; }

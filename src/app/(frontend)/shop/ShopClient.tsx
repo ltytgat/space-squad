@@ -61,6 +61,7 @@ const armorModCategoryLabel: Record<string, string> = { toutes: 'Toutes les armu
 const shipTypeLabel: Record<string, string> = { thermique: 'Thermique', cinetique: 'Cinétique', explosif: 'Explosif', blindage: 'Autre' }
 const shipClassLabel: Record<string, string> = { '1': 'Alpha', '2': 'Beta', '3': 'Gamma', '4': 'Delta' }
 const damageTypeChoices: [string, string][] = [['thermique', 'Thermique'], ['cinetique', 'Cinétique'], ['plasma', 'Plasma'], ['explosif', 'Explosif']]
+const damageTypeLabels: Record<string, string> = { cinetique: 'Cinétique', thermique: 'Thermique', explosif: 'Explosif', plasma: 'Plasma' }
 
 const sectionForScope: Record<Exclude<ShopScope, 'tout'>, 'personal' | 'spatial' | 'mods'> = {
   'sol-armes': 'personal', 'sol-armures': 'personal', 'sol-consommables': 'personal',
@@ -71,6 +72,15 @@ const sectionForScope: Record<Exclude<ShopScope, 'tout'>, 'personal' | 'spatial'
 
 function itemDescription(item: ShopItem) {
   return [item.categorie ? categoryLabel[item.categorie] ?? item.categorie : null, item.famille, item.type, item.modele ? `Modèle ${item.modele}` : null, item.taille ? `Taille ${item.taille}` : null, item.degats ? `Dégâts ${item.degats}` : null, item.calibre].filter(Boolean).join(' · ')
+}
+
+function weaponDamageBadges(item: ShopItem) {
+  const types = [...new Set(item.types ?? (item.type ? item.type.split(',').map((type) => type.trim()) : []))]
+    .filter((type) => type in damageTypeLabels)
+  if (!types.length) return null
+  return <div className="shop-damage-badges" aria-label="Types de dégâts">
+    {types.map((type) => <span className={`shop-damage-badge shop-damage-badge-${type}`} key={type}>{damageTypeLabels[type]}</span>)}
+  </div>
 }
 
 export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { character: ShopCharacter; ships: ShopShip[]; catalogs: Catalogs; scope?: ShopScope }) {
@@ -203,11 +213,12 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     return <article className="shop-item" key={key}>
       <div className="shop-item-main"><div className="shop-item-type">{labelFor(kind)}</div><h3>{item.nom}</h3>
         {itemDescription(item) && <div className="shop-item-meta">{itemDescription(item)}</div>}
+        {(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}
         {item.effet && <p>{item.effet}</p>}
       </div>
       <div className="shop-item-action"><strong>{finalTotal === null ? priceText(item) : selectedCoupon ? `${currency(finalTotal)} (au lieu de ${currency(originalTotal!)})` : currency(finalTotal)}</strong>
         {hasQuantity && quantityControl(key)}
-        {coupons.length > 0 && <label>Bon de réduction <select value={selectedCouponId ?? ''} onChange={(event) => setCouponSelections((current) => ({ ...current, [key]: event.target.value || null }))}><option value="">Sans réduction</option>{coupons.map(({ coupon }) => <option key={coupon.id} value={coupon.id}>{coupon.nom} · {coupon.pourcentageReduction} %</option>)}</select></label>}
+        {coupons.length > 0 && <label><select className="shop-discount-select" aria-label={`Réduction pour ${item.nom}`} value={selectedCouponId ?? ''} onChange={(event) => setCouponSelections((current) => ({ ...current, [key]: event.target.value || null }))}><option value="">Sans réduction</option>{coupons.map(({ coupon }) => <option key={coupon.id} value={coupon.id}>{coupon.nom} · {coupon.pourcentageReduction} %</option>)}</select></label>}
         <button type="button" disabled={pending || price === null || (owner === 'ship' && !ship)} onClick={() => transact({ action: 'buy', kind, itemId: item.id, quantity, ...(selectedCoupon?.id ? { discountRewardId: selectedCoupon.id } : {}), ...(owner === 'ship' ? { shipId } : {}) }, `${item.nom} ajouté${quantity > 1 ? ` (${quantity})` : ''} à la réserve${selectedCoupon ? ` avec ${selectedCoupon.nom}` : ''}.`, `Acheter ${item.nom} pour ${currency(finalTotal!)}${selectedCoupon ? ` avec le bon ${selectedCoupon.nom} (${selectedCoupon.pourcentageReduction} %)` : ''} ?`)}>Acheter</button>
       </div>
     </article>
@@ -228,7 +239,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     }
     const saleAmount = kind === 'weapon' && (mods.length > 1 || resaleTotal === null) ? null : kind === 'weapon' ? resalePrice(resaleTotal!) : resale
     return <article className="shop-inventory-item" key={key}>
-      <div><strong>{item.nom}</strong><span>{labelFor(kind)}{stack ? ` · ${entry.quantite ?? 0} possédé(s)` : ''}{mods.length ? ` · Mod : ${mods.map((mod) => mod.nom).join(', ')}` : ''}</span></div>
+      <div><strong>{item.nom}</strong><span>{labelFor(kind)}{stack ? ` · ${entry.quantite ?? 0} possédé(s)` : ''}{mods.length ? ` · Mod : ${mods.map((mod) => mod.nom).join(', ')}` : ''}</span>{(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}</div>
       <div className="shop-item-action">{stack && quantityControl(key)}<strong>{saleAmount === null ? 'Non vendable' : `Revente : ${currency(saleAmount)}`}</strong>
         <button type="button" className="shop-sell-button" disabled={pending || saleAmount === null || (stack && quantityFor(key) > (entry.quantite ?? 0))} onClick={() => transact({ action: 'sell', kind, itemId: item.id, quantity: stack ? quantityFor(key) : 1, ...(owner === 'ship' ? { shipId, ownedIndex: undefined } : { ownedIndex: index }) }, `${item.nom} vendu${stack ? ` (${quantityFor(key)})` : ''}.`, `Vendre ${item.nom} pour ${currency(saleAmount!)} ?${kind === 'armor' && mods.length ? ' Les Mods retourneront dans votre réserve.' : ''}`)}>Vendre</button>
       </div>
