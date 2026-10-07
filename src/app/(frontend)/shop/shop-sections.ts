@@ -42,6 +42,12 @@ export const shopNavigation = [
       { href: '/shop/chantier-naval', label: 'Acheter, vendre et transfert de soutes' },
     ],
   },
+  {
+    title: 'Escouade',
+    links: [
+      { href: '/shop/transfert-personnages', label: 'Transférer du matériel ou des Konis' },
+    ],
+  },
 ] as const
 
 export const shopScopeByPath: Record<string, ShopScope> = {

@@ -119,6 +119,8 @@
 .shipyard-transfer-detail { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; }
 .shipyard-transfer-detail > span { color: var(--ss-text-muted); font-size: .85rem; }
 .shipyard-transfer-detail .shop-quantity { margin-top: .4rem; }
+.shop-app .shipyard-operation > label input { min-height: 40px; padding: .5rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
+.shop-app .shipyard-operation > button { justify-self: start; }
 @media (max-width: 640px) {
   .shop-heading { padding-block: 1.75rem 1.4rem; }
   .shop-item, .shop-inventory-item { align-items: flex-start; }

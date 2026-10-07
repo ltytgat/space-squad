@@ -1471,6 +1471,23 @@
 
 
 /* ── Inventaire ── */
+.char-inventory-transfer-link {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--ss-border);
+  border-radius: 7px;
+  color: var(--ss-cyan);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.char-inventory-transfer-link:hover {
+  border-color: var(--ss-cyan);
+  background: var(--ss-cyan-dim);
+}
+
 .char-inventory-categories {
   display: flex;
   flex-direction: column;

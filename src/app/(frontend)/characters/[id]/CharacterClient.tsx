@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier } from '@/lib/characterStats'
 import { updateCharacter, updateWeaponStatus, reloadWeapon } from './actions'
@@ -1665,6 +1666,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           {/* ── Section Inventaire ── */}
           <div className="char-card">
             <h2 className="char-card-title">Inventaire (Possessions)</h2>
+            {isOwner && <Link className="char-inventory-transfer-link" href="/shop/transfert-personnages">
+              Transférer du matériel ou des Konis à un membre de l’escouade
+            </Link>}
             {inventoryData.length === 0 ? (
               <p className="char-empty-hint">L'inventaire est vide.</p>
             ) : (
