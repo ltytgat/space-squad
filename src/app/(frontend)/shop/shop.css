@@ -22,6 +22,14 @@
 .shop-wallet { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.2rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); }
 .shop-wallet span { color: var(--ss-text-muted); }
 .shop-wallet strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); }
+.formation-wallet { align-items: flex-start; }
+.formation-wallet-balances { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem 1.2rem; }
+.formation-wallet-balances strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .9rem; }
+.formation-faction-groups { gap: 2rem; }
+.formation-cost-list { display: flex; flex-wrap: wrap; gap: .35rem .75rem; margin-top: .65rem; color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .8rem; }
+.formation-cost-list small { flex-basis: 100%; color: var(--ss-text-muted); font-family: var(--ss-font-body); font-size: .75rem; }
+.formation-item-action { max-width: 210px; }
+.formation-item-action small { color: var(--ss-text-muted); font-size: .75rem; text-align: right; }
 .shop-tabs { display: flex; gap: .55rem; overflow-x: auto; padding-bottom: .2rem; }
 .shop-tabs button { flex: 0 0 auto; padding: .65rem 1rem; border: 1px solid var(--ss-border); border-radius: 999px; background: transparent; color: var(--ss-text-muted); cursor: pointer; }
 .shop-tabs button:hover, .shop-tabs button.active { color: var(--ss-cyan); border-color: var(--ss-cyan); background: var(--ss-cyan-dim); }

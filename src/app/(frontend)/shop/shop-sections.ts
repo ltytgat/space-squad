@@ -50,6 +50,12 @@ export const shopNavigation = [
       { href: '/shop/transfert-personnages', label: 'Transférer du matériel ou des Konis' },
     ],
   },
+  {
+    title: 'Formations',
+    links: [
+      { href: '/shop/formations', label: 'Acheter une formation' },
+    ],
+  },
 ] as const
 
 export const shopScopeByPath: Record<string, ShopScope> = {

@@ -39,7 +39,7 @@ export const Formations: CollectionConfig = {
       defaultValue: 0,
       min: 0,
       admin: { step: 1 },
-      validate: (value) =>
+      validate: (value: unknown) =>
         (typeof value === 'number' && Number.isInteger(value) && value >= 0) ||
         'Le coût en konis doit être un nombre entier positif ou nul.',
     },
