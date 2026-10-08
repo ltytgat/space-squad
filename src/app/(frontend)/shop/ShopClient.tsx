@@ -7,6 +7,7 @@ import type { ShopScope } from './shop-sections'
 import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, resalePrice, weaponModPrice } from '@/lib/shop'
 import { factionCanBuyExWeapon, factionKey, isFactionDiscountCouponApplicable, type DiscountTarget, type FactionRewardUsage, type OwnedFactionReward } from '@/lib/factionRewards'
 
+type ShopImage = { url: string; alt: string }
 export type ShopItem = {
   id: number
   nom: string
@@ -24,6 +25,7 @@ export type ShopItem = {
   degats?: string | null
   calibre?: string | null
   effet?: string | null
+  image?: ShopImage | null
 }
 type Owned = { item: ShopItem | null; quantite?: number; mods?: ShopItem[] }
 export type ShopCharacter = {
@@ -214,7 +216,11 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     const originalTotal = price === null ? null : exactMultiply(price, quantity)
     const discountAmount = originalTotal !== null && selectedCoupon ? exactMultiply(originalTotal, Number(selectedCoupon.pourcentageReduction) / 100) : 0
     const finalTotal = originalTotal === null ? null : exactSubtract(originalTotal, discountAmount)
-    return <article className="shop-item" key={key}>
+    const illustrated = owner === 'personal' && ['weapon', 'armor', 'consumable'].includes(kind)
+    return <article className={`shop-item${illustrated ? ' shop-item-illustrated' : ''}`} key={key}>
+      {illustrated && <div className="shop-item-visual">{item.image
+        ? <img src={item.image.url} alt={item.image.alt || item.nom} loading="lazy" decoding="async" />
+        : <span aria-hidden="true">Visuel à ajouter</span>}</div>}
       <div className="shop-item-main"><div className="shop-item-type">{labelFor(kind)}</div><h3>{item.nom}</h3>
         {itemDescription(item) && <div className="shop-item-meta">{itemDescription(item)}</div>}
         {(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}
@@ -242,8 +248,12 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       resaleTotal = factor === null ? null : exactAdd(resaleTotal, weaponModPrice(resaleTotal, factor))
     }
     const saleAmount = kind === 'weapon' && (mods.length > 1 || resaleTotal === null) ? null : kind === 'weapon' ? resalePrice(resaleTotal!) : resale
-    return <article className="shop-inventory-item" key={key}>
-      <div><strong>{item.nom}</strong><span>{labelFor(kind)}{stack ? ` · ${entry.quantite ?? 0} possédé(s)` : ''}{mods.length ? ` · Mod : ${mods.map((mod) => mod.nom).join(', ')}` : ''}</span>{(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}</div>
+    const illustrated = owner === 'personal' && ['weapon', 'armor', 'consumable'].includes(kind)
+    return <article className={`shop-inventory-item${illustrated ? ' shop-item-illustrated' : ''}`} key={key}>
+      {illustrated && <div className="shop-item-visual">{item.image
+        ? <img src={item.image.url} alt={item.image.alt || item.nom} loading="lazy" decoding="async" />
+        : <span aria-hidden="true">Visuel à ajouter</span>}</div>}
+      <div className="shop-item-main"><strong>{item.nom}</strong><span>{labelFor(kind)}{stack ? ` · ${entry.quantite ?? 0} possédé(s)` : ''}{mods.length ? ` · Mod : ${mods.map((mod) => mod.nom).join(', ')}` : ''}</span>{(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}</div>
       <div className="shop-item-action">{stack && quantityControl(key)}<strong>{saleAmount === null ? 'Non vendable' : `Revente : ${currency(saleAmount)}`}</strong>
         <button type="button" className="shop-sell-button" disabled={pending || saleAmount === null || (stack && quantityFor(key) > (entry.quantite ?? 0))} onClick={() => transact({ action: 'sell', kind, itemId: item.id, quantity: stack ? quantityFor(key) : 1, ...(owner === 'ship' ? { shipId, ownedIndex: undefined } : { ownedIndex: index }) }, `${item.nom} vendu${stack ? ` (${quantityFor(key)})` : ''}.`, `Vendre ${item.nom} pour ${currency(saleAmount!)} ?${kind === 'armor' && mods.length ? ' Les Mods retourneront dans votre réserve.' : ''}`)}>Vendre</button>
       </div>

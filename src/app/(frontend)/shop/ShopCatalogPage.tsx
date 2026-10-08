@@ -34,6 +34,9 @@ function summaries(docs: any[]): ShopItem[] {
     degats: doc.degats ?? doc.valeurDegats ?? null,
     calibre: doc.calibre ?? null,
     effet: doc.effet ?? doc.description ?? null,
+    image: doc.image && typeof doc.image === 'object' && typeof doc.image.url === 'string'
+      ? { url: doc.image.url, alt: doc.image.alt ?? doc.nom ?? 'Illustration du matériel' }
+      : null,
   }))
 }
 
@@ -65,13 +68,13 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   }))
 
   const [weapons, armors, consumables, mods, shipWeapons, shipModules, shipConsumables] = await Promise.all([
-    payload.find({ collection: 'weapons', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
-    payload.find({ collection: 'armors', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
-    payload.find({ collection: 'consumables', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
-    payload.find({ collection: 'mods', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
-    payload.find({ collection: 'ship-weapons', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
-    payload.find({ collection: 'ship-modules', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
-    payload.find({ collection: 'ship-consumables', depth: 0, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'weapons', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'armors', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'consumables', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'mods', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'ship-weapons', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'ship-modules', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'ship-consumables', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
   ])
   const catalogs = {
     weapons: summaries(weapons.docs as any[]), armors: summaries(armors.docs as any[]),

@@ -1050,6 +1050,7 @@ export interface Chip {
   effet: string;
   restriction?: string | null;
   cooldown?: number | null;
+  image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -2000,6 +2001,7 @@ export interface ChipsSelect<T extends boolean = true> {
   effet?: T;
   restriction?: T;
   cooldown?: T;
+  image?: T;
   updatedAt?: T;
   createdAt?: T;
 }

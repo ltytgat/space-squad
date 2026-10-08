@@ -46,5 +46,14 @@ export const Chips: CollectionConfig = {
         condition: (data) => data?.categorie === 'active',
       },
     },
+    {
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Image',
+      admin: {
+        position: 'sidebar',
+      },
+    },
   ],
 }

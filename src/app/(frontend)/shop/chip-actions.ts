@@ -12,7 +12,7 @@ const CHIP_PRICES = { active: 75_000, passive: 100_000 } as const
 const DRAW_PRICES = { active: 30_000, passive: 50_000 } as const
 const RECYCLE_PRICE = 10_000
 type ChipCategory = keyof typeof CHIP_PRICES
-type ChipSummary = { id: number; nom: string; categorie: ChipCategory; effet: string; restriction: string | null; cooldown: number | null }
+type ChipSummary = { id: number; nom: string; categorie: ChipCategory; effet: string; restriction: string | null; cooldown: number | null; image: { url: string; alt: string } | null }
 type ChipInput = {
   transactionId: string
   action: 'buy' | 'draw' | 'recycle'
@@ -36,6 +36,9 @@ function summary(chip: any): ChipSummary {
     effet: String(chip.effet ?? ''),
     restriction: chip.restriction ?? null,
     cooldown: chip.cooldown ?? null,
+    image: chip.image && typeof chip.image === 'object' && typeof chip.image.url === 'string'
+      ? { url: chip.image.url, alt: chip.image.alt ?? chip.nom ?? 'Illustration de la puce' }
+      : null,
   }
 }
 
@@ -57,7 +60,7 @@ function ledgerChip(details: unknown): ChipSummary | null {
   try {
     const parsed = typeof details === 'string' ? JSON.parse(details) : details
     const chip = parsed && typeof parsed === 'object' ? (parsed as any).chip : null
-    return chip && Number.isSafeInteger(Number(chip.id)) && validCategory(chip.categorie) ? chip as ChipSummary : null
+    return chip && Number.isSafeInteger(Number(chip.id)) && validCategory(chip.categorie) ? { ...chip, image: chip.image ?? null } as ChipSummary : null
   } catch {
     return null
   }
@@ -111,7 +114,7 @@ export async function executeChipTransaction(raw: ChipInput) {
         while (true) {
           const result = await payload.find({
             collection: 'chips', where: { categorie: { equals: raw.category } },
-            depth: 0, limit: 500, page, overrideAccess: true, req,
+            depth: 1, limit: 500, page, overrideAccess: true, req,
           })
           available.push(...result.docs)
           if (!result.hasNextPage || !result.nextPage) break
@@ -121,7 +124,7 @@ export async function executeChipTransaction(raw: ChipInput) {
         chip = available[randomInt(available.length)]
         amount = DRAW_PRICES[raw.category!]
       } else {
-        chip = await payload.findByID({ collection: 'chips', id: raw.chipId!, depth: 0, overrideAccess: true, req }).catch(() => null)
+        chip = await payload.findByID({ collection: 'chips', id: raw.chipId!, depth: 1, overrideAccess: true, req }).catch(() => null)
         if (!chip) fail('Puce introuvable dans le catalogue.')
         if (!validCategory(chip.categorie)) fail('La catégorie de cette puce est invalide.')
         if (raw.action === 'buy') amount = CHIP_PRICES[chip.categorie as ChipCategory]

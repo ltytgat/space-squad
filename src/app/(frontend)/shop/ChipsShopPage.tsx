@@ -26,7 +26,7 @@ export default async function ChipsShopPage() {
   const chipDocs: any[] = []
   let page = 1
   while (true) {
-    const result = await payload.find({ collection: 'chips', depth: 0, limit: 500, page, overrideAccess: true })
+    const result = await payload.find({ collection: 'chips', depth: 1, limit: 500, page, overrideAccess: true })
     chipDocs.push(...result.docs)
     if (!result.hasNextPage || !result.nextPage) break
     page = result.nextPage
@@ -38,6 +38,9 @@ export default async function ChipsShopPage() {
     restriction: chip.restriction ?? null,
     effet: chip.effet ?? '',
     cooldown: chip.cooldown ?? null,
+    image: chip.image && typeof chip.image === 'object' && typeof chip.image.url === 'string'
+      ? { url: chip.image.url, alt: chip.image.alt ?? chip.nom ?? 'Illustration de la puce' }
+      : null,
   })).sort((left, right) =>
     (categoryOrder[left.categorie] ?? 99) - (categoryOrder[right.categorie] ?? 99)
     || compareFrench(left.restriction ?? '', right.restriction ?? '')

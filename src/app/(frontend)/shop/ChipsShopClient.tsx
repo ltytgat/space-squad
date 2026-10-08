@@ -11,6 +11,7 @@ export type ShopChip = {
   restriction: string | null
   effet: string
   cooldown: number | null
+  image: { url: string; alt: string } | null
 }
 
 type ChipAction = 'buy' | 'draw' | 'recycle'
@@ -75,7 +76,10 @@ export default function ChipsShopClient({
   const passiveChips = chips.filter((chip) => chip.categorie === 'passive')
 
   function chipCard(chip: ShopChip) {
-    return <article className="shop-item" key={chip.id}>
+    return <article className="shop-item shop-item-illustrated" key={chip.id}>
+      <div className="shop-item-visual">{chip.image
+        ? <img src={chip.image.url} alt={chip.image.alt || chip.nom} loading="lazy" decoding="async" />
+        : <span aria-hidden="true">Visuel à ajouter</span>}</div>
       <div className="shop-item-main">
         <div className="shop-item-type">{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</div>
         <h3>{chip.nom}</h3>
@@ -114,6 +118,7 @@ export default function ChipsShopClient({
     </section>
 
     {drawnChip && <section className="chip-draw-result" aria-live="polite">
+      {drawnChip.image && <img className="chip-draw-image" src={drawnChip.image.url} alt={drawnChip.image.alt || drawnChip.nom} loading="lazy" decoding="async" />}
       <div className="shop-item-type">Puce obtenue · {categoryLabel(drawnChip.categorie)}</div>
       <h2>{drawnChip.nom}</h2>
       {drawnChip.restriction && <p className="shop-item-meta">Restriction : {drawnChip.restriction}</p>}
@@ -129,8 +134,11 @@ export default function ChipsShopClient({
     <section className="shop-catalog-groups shop-owned chip-owned">
       <h2>Mes puces · recyclage à {money(RECYCLE_PRICE)} chacune</h2>
       {!owned.length && <p className="shop-empty">Votre réserve ne contient aucune puce.</p>}
-      {owned.map(({ chip, index }) => <article className="shop-inventory-item" key={`${chip.id}-${index}`}>
-        <div><strong>{chip.nom}</strong><span>{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</span></div>
+      {owned.map(({ chip, index }) => <article className="shop-inventory-item shop-item-illustrated" key={`${chip.id}-${index}`}>
+        <div className="shop-item-visual">{chip.image
+          ? <img src={chip.image.url} alt={chip.image.alt || chip.nom} loading="lazy" decoding="async" />
+          : <span aria-hidden="true">Visuel à ajouter</span>}</div>
+        <div className="shop-item-main"><strong>{chip.nom}</strong><span>{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</span></div>
         <div className="shop-item-action"><strong>Recyclage : {money(RECYCLE_PRICE)}</strong><button type="button" className="shop-sell-button" disabled={pending} onClick={() => ask(
           { action: 'recycle', chipId: chip.id, ownedIndex: index },
           `Recycler ${chip.nom} contre ${money(RECYCLE_PRICE)} ? Cette puce sera retirée de votre réserve.`,
