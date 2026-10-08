@@ -318,7 +318,7 @@ export function SessionRewardsDrawer({
                   checked={applyRep}
                   onChange={(e) => setApplyRep(e.target.checked)}
                 />
-                <span>Réputation de faction</span>
+                <span>Renommée de faction</span>
               </label>
               <div className="sr-field-row">
                 <label className="sr-inline">
@@ -442,7 +442,7 @@ export function SessionRewardsDrawer({
                     <th>Konis</th>
                     <th>PR</th>
                     <th>Pts compétence</th>
-                    <th>Réputation</th>
+                    <th>Renommée</th>
                     <th>Pts faction</th>
                   </tr>
                 </thead>

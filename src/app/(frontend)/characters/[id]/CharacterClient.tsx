@@ -1736,12 +1736,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
           {/* ── Réputation et Faction ── */}
           <div className="char-card">
-            <h2 className="char-card-title">Réputation et Faction</h2>
+            <h2 className="char-card-title">Renommée et Faction</h2>
             <div className="char-reputation-layout">
               <div className="char-reputation-section">
-                <h3 className="char-reputation-subtitle">Réputation</h3>
+                <h3 className="char-reputation-subtitle">Renommée</h3>
                 {(!character.reputation || character.reputation.length === 0) ? (
-                  <p className="char-empty-hint">Aucune réputation enregistrée.</p>
+                  <p className="char-empty-hint">Aucune renommée enregistrée.</p>
                 ) : (
                   <div className="char-reputation-list">
                     {character.reputation.map((rep: any, idx: number) => (
