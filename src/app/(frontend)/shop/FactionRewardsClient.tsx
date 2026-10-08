@@ -11,6 +11,14 @@ const formatNumber = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 20 
 const money = (value: number) => `${formatNumber.format(value)} Konis`
 const usageLabel = { 'arme-sol': 'Arme Sol (hors armes lourdes)', 'arme-espace': 'Arme Espace (hors armes lourdes)', 'module-espace': 'Module Espace' } as const
 const applicationLabel = { sol: 'Sol', espace: 'Espace', module: 'Module' } as const
+const compareNames = (a: { nom: string }, b: { nom: string }) => a.nom.localeCompare(b.nom, 'fr', { numeric: true, sensitivity: 'base' })
+
+function groupRewardsByType<T extends { nom: string; typeRecompense?: string | null }>(rewards: T[]) {
+  return {
+    coupons: rewards.filter((reward) => reward.typeRecompense === 'bon-reduction').sort(compareNames),
+    others: rewards.filter((reward) => reward.typeRecompense !== 'bon-reduction').sort(compareNames),
+  }
+}
 
 export function FactionRewardsClient({ character, offers }: { character: FactionRewardCharacter; offers: FactionRewardOffer[] }) {
   const router = useRouter()
@@ -21,6 +29,8 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
   const submitting = useRef(false)
   const quote = factionPromotionQuote(character)
   const currentGradeName = character.affiliation.rangs[quote.grade - 1]?.nom ?? 'Aucun grade'
+  const offerGroups = groupRewardsByType(offers)
+  const inventoryGroups = groupRewardsByType(character.inventaireRecompensesFaction)
 
   async function send(operation: Operation) {
     if (submitting.current) return
@@ -62,6 +72,34 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
     offer.coutPointsFaction > 0 ? `${formatNumber.format(offer.coutPointsFaction)} points de faction` : null,
   ].filter(Boolean)
 
+  const renderOffer = (offer: FactionRewardOffer) => {
+    const quoteForOffer = factionRewardQuote(offer, character)
+    const costs = costsFor(offer)
+    const unlocked = quote.grade >= offer.gradeRequis
+    return <article className="shop-item" key={offer.id}>
+      <div className="shop-item-main">
+        <div className="shop-item-type">{offer.gradeName}</div>
+        <h3>{offer.nom}</h3>
+        <p>{offer.description}</p>
+        {offer.typeRecompense === 'acces-armes-ex' && <div className="shop-item-meta">Droit d'accès aux armes eX de cette faction</div>}
+        {offer.typeRecompense === 'bon-reduction' && offer.pourcentageReduction !== null && <div className="shop-item-meta">Réduction de {formatNumber.format(offer.pourcentageReduction)} % · {offer.application ? applicationLabel[offer.application] : 'Application à configurer'}</div>}
+        {!unlocked && <div className="shop-item-meta">Grade {offer.gradeName} requis</div>}
+      </div>
+      <div className="shop-item-action">
+        <strong>{costs.length ? costs.join(' · ') : 'Gratuit'}</strong>
+        <button type="button" disabled={pending || !quoteForOffer.canBuy} onClick={() => requestPurchase(offer)}>Acheter</button>
+        {unlocked && !quoteForOffer.canBuy && <small>Solde insuffisant.</small>}
+      </div>
+    </article>
+  }
+
+  const renderInventoryItem = (item: (typeof character.inventaireRecompensesFaction)[number], index: number) => <article className="shop-item" key={item.id ?? `${item.nom}-${index}`}>
+    <div className="shop-item-main"><div className="shop-item-type">{item.faction} · {item.grade}</div><h3>{item.nom}</h3><p>{item.effet}</p>
+      {item.typeRecompense === 'acces-armes-ex' && <div className="shop-item-meta">Droit d'accès aux armes eX</div>}
+      {item.typeRecompense === 'bon-reduction' && item.pourcentageReduction != null && <div className="shop-item-meta">Bon de réduction : {formatNumber.format(item.pourcentageReduction)} % · {item.usage ? usageLabel[item.usage] : 'Usage à configurer'}</div>}
+    </div>
+  </article>
+
   return <div className="shop-app faction-rewards-app">
     <div className="shop-wallet formation-wallet">
       <span>{character.nom} · {currentGradeName}</span>
@@ -92,42 +130,28 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
 
     <section className="shop-catalog-groups faction-reward-catalog">
       <h2>Objets de la faction</h2>
-      {!offers.length && <p className="shop-empty">Aucune récompense n’est encore configurée pour cette faction.</p>}
-      {offers.length > 0 && <div className="shop-grid">
-        {offers.map((offer) => {
-          const quoteForOffer = factionRewardQuote(offer, character)
-          const costs = costsFor(offer)
-          const unlocked = quote.grade >= offer.gradeRequis
-          return <article className="shop-item" key={offer.id}>
-            <div className="shop-item-main">
-              <div className="shop-item-type">{offer.gradeName}</div>
-              <h3>{offer.nom}</h3>
-              <p>{offer.description}</p>
-              {offer.typeRecompense === 'acces-armes-ex' && <div className="shop-item-meta">Droit d’accès aux armes eX de cette faction</div>}
-              {offer.typeRecompense === 'bon-reduction' && offer.pourcentageReduction !== null && <div className="shop-item-meta">Réduction de {formatNumber.format(offer.pourcentageReduction)} % · {offer.application ? applicationLabel[offer.application] : 'Application à configurer'}</div>}
-              {!unlocked && <div className="shop-item-meta">Grade {offer.gradeName} requis</div>}
-            </div>
-            <div className="shop-item-action">
-              <strong>{costs.length ? costs.join(' · ') : 'Gratuit'}</strong>
-              <button type="button" disabled={pending || !quoteForOffer.canBuy} onClick={() => requestPurchase(offer)}>Acheter</button>
-              {unlocked && !quoteForOffer.canBuy && <small>Solde insuffisant.</small>}
-            </div>
-          </article>
-        })}
-      </div>}
+      {!offers.length && <p className="shop-empty">Aucune récompense n'est encore configurée pour cette faction.</p>}
+      {!!offerGroups.coupons.length && <section className="faction-reward-category">
+        <h3>Bons de réduction</h3>
+        <div className="shop-grid">{offerGroups.coupons.map(renderOffer)}</div>
+      </section>}
+      {!!offerGroups.others.length && <section className="faction-reward-category">
+        <h3>Autres récompenses</h3>
+        <div className="shop-grid">{offerGroups.others.map(renderOffer)}</div>
+      </section>}
     </section>
 
     <section className="shop-catalog-groups faction-owned-rewards">
       <h2>Vos récompenses</h2>
-      {!character.inventaireRecompensesFaction.length && <p className="shop-empty">Vous n’avez pas encore acheté de récompense de faction.</p>}
-      {!!character.inventaireRecompensesFaction.length && <div className="shop-grid">
-        {character.inventaireRecompensesFaction.map((item, index) => <article className="shop-item" key={`${item.nom}-${index}`}>
-          <div className="shop-item-main"><div className="shop-item-type">{item.faction} · {item.grade}</div><h3>{item.nom}</h3><p>{item.effet}</p>
-            {item.typeRecompense === 'acces-armes-ex' && <div className="shop-item-meta">Droit d’accès aux armes eX</div>}
-            {item.typeRecompense === 'bon-reduction' && item.pourcentageReduction != null && <div className="shop-item-meta">Bon de réduction : {formatNumber.format(item.pourcentageReduction)} % · {item.usage ? usageLabel[item.usage] : 'Usage à configurer'}</div>}
-          </div>
-        </article>)}
-      </div>}
+      {!character.inventaireRecompensesFaction.length && <p className="shop-empty">Vous n'avez pas encore acheté de récompense de faction.</p>}
+      {!!inventoryGroups.coupons.length && <section className="faction-reward-category">
+        <h3>Bons de réduction</h3>
+        <div className="shop-grid">{inventoryGroups.coupons.map(renderInventoryItem)}</div>
+      </section>}
+      {!!inventoryGroups.others.length && <section className="faction-reward-category">
+        <h3>Autres récompenses</h3>
+        <div className="shop-grid">{inventoryGroups.others.map(renderInventoryItem)}</div>
+      </section>}
     </section>
 
     {confirmation && <div className="shop-confirm-overlay" role="presentation" onClick={() => !pending && setConfirmation(null)}>

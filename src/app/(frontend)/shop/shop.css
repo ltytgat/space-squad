@@ -35,6 +35,10 @@
 .faction-promotion { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); }
 .faction-promotion h2 { margin: .2rem 0 .35rem; color: var(--ss-text); font-size: 1rem; }
 .faction-reward-catalog > h2, .faction-owned-rewards > h2 { margin-bottom: -.9rem; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; letter-spacing: .04em; }
+.faction-owned-rewards { padding-top: 1rem; border-top: 1px solid var(--ss-border); }
+.faction-reward-category { display: flex; flex-direction: column; gap: .75rem; }
+.faction-reward-category + .faction-reward-category { padding-top: 1rem; border-top: 1px solid var(--ss-border); }
+.faction-reward-category > h3 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: .95rem; letter-spacing: .03em; }
 .shop-confirm-overlay { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(3, 8, 16, .76); }
 .shop-confirm-dialog { width: min(100%, 480px); padding: 1.4rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); box-shadow: 0 20px 70px rgba(0, 0, 0, .55); }
 .shop-confirm-dialog h2 { margin-bottom: .75rem; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; }
