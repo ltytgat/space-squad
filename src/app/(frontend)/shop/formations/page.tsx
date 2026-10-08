@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { FormationsClient } from '../FormationsClient'
 import type { FormationCharacterState, FormationOffer } from '../formation-pricing'
+import type { SpecialRoleOffer } from '../special-role-pricing'
 import '../shop.css'
 
 export const metadata = { title: 'Formations — Space Squad' }
@@ -16,7 +17,7 @@ export default async function FormationsShopPage() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
 
-  const [{ docs: characters }, { docs: formationDocs }] = await Promise.all([
+  const [{ docs: characters }, { docs: formationDocs }, { docs: roleDocs }] = await Promise.all([
     payload.find({
       collection: 'characters',
       where: { user: { equals: user.id } },
@@ -25,6 +26,7 @@ export default async function FormationsShopPage() {
       overrideAccess: true,
     }),
     payload.find({ collection: 'formations', depth: 1, pagination: false, sort: 'competence', overrideAccess: true }),
+    payload.find({ collection: 'special-roles', depth: 0, pagination: false, sort: 'nom', overrideAccess: true }),
   ])
   const character: any = characters[0]
   if (!character) redirect('/character')
@@ -42,6 +44,10 @@ export default async function FormationsShopPage() {
       categorie: entry.categorie,
       valeur: entry.valeur,
     })),
+    rolesSpeciaux: (character.rolesSpeciaux ?? []).map((entry: any) => ({
+      id: Number(typeof entry === 'object' ? entry.id : entry),
+      nom: String(typeof entry === 'object' ? entry.nom ?? '' : ''),
+    })),
   }
   const formations: FormationOffer[] = (formationDocs as any[]).flatMap((formation) => {
     const faction = formation.organisationFormation
@@ -55,16 +61,22 @@ export default async function FormationsShopPage() {
       coutRenommee: formation.coutRenommee ?? null,
     }]
   })
+  const specialRoles: SpecialRoleOffer[] = (roleDocs as any[]).map((role) => ({
+    id: Number(role.id),
+    nom: String(role.nom ?? ''),
+    description: String(role.description ?? ''),
+    prix: role.prix ?? null,
+  }))
 
   return <div className="ss-root shop-root">
     <SiteHeader activePage="shop" />
     <div className="shop-layout">
       <section className="shop-heading"><div className="ss-container">
         <nav className="shop-breadcrumb" aria-label="Fil d’Ariane"><Link href="/">Accueil</Link><span aria-hidden="true">›</span><Link href="/shop">Boutique</Link><span aria-hidden="true">›</span><span>Formations</span></nav>
-        <h1>Formations</h1><p>Développez les compétences de votre personnage auprès des différentes factions.</p>
+        <h1>Formations</h1><p>Développez les compétences de votre personnage auprès des différentes factions et acquérez des rôles spéciaux.</p>
       </div></section>
       <main className="ss-container shop-content">
-        <FormationsClient character={characterState} formations={formations} />
+        <FormationsClient character={characterState} formations={formations} specialRoles={specialRoles} />
       </main>
     </div>
     <SiteFooter />

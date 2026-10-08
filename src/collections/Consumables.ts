@@ -65,6 +65,16 @@ export const Consumables: CollectionConfig = {
             condition: (data) => data.categorie === 'munitions',
           },
         },
+        {
+          name: 'roleSpecialRequis',
+          type: 'relationship',
+          relationTo: 'special-roles',
+          label: 'Rôle spécial requis pour équiper',
+          admin: {
+            width: '50%',
+            description: 'Le consommable peut toujours être acheté et transféré, mais seul un personnage possédant ce rôle peut l’équiper.',
+          },
+        },
       ],
     },
     {

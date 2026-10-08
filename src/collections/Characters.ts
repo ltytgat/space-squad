@@ -91,6 +91,17 @@ export const Characters: CollectionConfig = {
       label: 'Affiliation',
     },
     {
+      name: 'rolesSpeciaux',
+      type: 'relationship',
+      relationTo: 'special-roles',
+      hasMany: true,
+      label: 'Rôles spéciaux acquis',
+      admin: {
+        position: 'sidebar',
+        description: 'Rôles achetés par le personnage dans la boutique.',
+      },
+    },
+    {
       name: 'groupe',
       type: 'relationship',
       relationTo: 'groups',

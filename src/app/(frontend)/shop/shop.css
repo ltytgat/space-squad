@@ -28,6 +28,8 @@
 .formation-wallet-balances { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem 1.2rem; }
 .formation-wallet-balances strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .9rem; }
 .formation-faction-groups { gap: 2rem; }
+.special-role-shop-section { display: flex; flex-direction: column; gap: .8rem; margin-top: 2rem; padding-top: 1.3rem; border-top: 1px solid var(--ss-border); }
+.special-role-shop-section > h2 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.1rem; letter-spacing: .04em; }
 .formation-cost-list { display: flex; flex-wrap: wrap; gap: .35rem .75rem; margin-top: .65rem; color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .8rem; }
 .formation-item-action { max-width: 210px; }
 .formation-item-action small { color: var(--ss-text-muted); font-size: .75rem; text-align: right; }

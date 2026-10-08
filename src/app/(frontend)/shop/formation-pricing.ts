@@ -13,6 +13,7 @@ export type FormationOffer = {
 export type FormationCharacterState = {
   konis?: number | null
   pointsDeRang?: number | null
+  rolesSpeciaux?: { id: number; nom?: string }[] | null
   competences?: { competence: string; valeur?: number | null }[] | null
   reputation?: { categorie: string; valeur?: number | null }[] | null
 }

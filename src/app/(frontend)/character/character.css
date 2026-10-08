@@ -67,6 +67,13 @@
   gap: 0.5rem;
 }
 
+.char-special-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
 /* Affiliation colors */
 .char-tag-affil-alliance {
   color: #60a5fa;

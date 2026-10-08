@@ -6,6 +6,33 @@ import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character } from '@/payload-types'
 
+const relationNumericId = (value: any): number | null => {
+  const raw = value && typeof value === 'object' ? value.id : value
+  const id = Number(raw)
+  return Number.isSafeInteger(id) && id > 0 ? id : null
+}
+
+async function assertConsumablesCanBeEquipped(payload: any, character: any, values: any[]) {
+  const consumableIds = [...new Set<number>(values.map(relationNumericId).filter((id: number | null): id is number => id !== null))]
+  if (!consumableIds.length) return
+  const ownedRoleIds = new Set<number>((Array.isArray(character.rolesSpeciaux) ? character.rolesSpeciaux : [])
+    .map(relationNumericId).filter((id: number | null): id is number => id !== null))
+  const { docs } = await payload.find({
+    collection: 'consumables',
+    where: { id: { in: consumableIds } },
+    depth: 0,
+    limit: consumableIds.length,
+    overrideAccess: true,
+  })
+  for (const consumable of docs as any[]) {
+    const requiredRoleId = relationNumericId(consumable.roleSpecialRequis)
+    if (requiredRoleId && !ownedRoleIds.has(requiredRoleId)) {
+      const role: any = await payload.findByID({ collection: 'special-roles', id: requiredRoleId, depth: 0, overrideAccess: true }).catch(() => null)
+      throw new Error(`Le rôle spécial « ${role?.nom ?? 'requis'} » est nécessaire pour équiper ${consumable.nom}.`)
+    }
+  }
+}
+
 /**
  * Helper pour récupérer l'instance Payload et l'utilisateur courant.
  */
@@ -53,9 +80,11 @@ export async function updateCharacter(characterId: number, data: any) {
       /^bonusPointsDeBlessures$/,
       /^pointsDeRang$/,
       /^pointsDeCompetence$/,
+      /^konis$/,
       // L'embarquement et les postes passent par joinShip / assignCrewSeat.
       /^vaisseau$/,
       /^roleVaisseau$/,
+      /^rolesSpeciaux$/,
     ]
 
     Object.keys(updateData).forEach((key) => {
@@ -64,6 +93,17 @@ export async function updateCharacter(characterId: number, data: any) {
       }
     })
   }
+
+  const consumablesToEquip: any[] = []
+  if (Array.isArray(updateData.consommablesEquipes)) consumablesToEquip.push(...updateData.consommablesEquipes)
+  for (const field of ['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3']) {
+    if (updateData[field]) consumablesToEquip.push(updateData[field])
+  }
+  for (const field of ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']) {
+    const linkedMagazine = updateData[field]?.chargeurRelie
+    if (linkedMagazine) consumablesToEquip.push(linkedMagazine)
+  }
+  if (consumablesToEquip.length) await assertConsumablesCanBeEquipped(payload, character, consumablesToEquip)
 
   // Mise à jour du personnage
   await payload.update({
@@ -97,6 +137,7 @@ export async function updateWeaponStatus(
   // Vérifier que l'utilisateur est admin ou propriétaire
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
+  if (data.chargeurRelie != null) await assertConsumablesCanBeEquipped(payload, character, [data.chargeurRelie])
 
   const updatedWeaponGroup = {
     ...(character[slot as keyof typeof character] as any),
@@ -138,6 +179,10 @@ export async function reloadWeapon(
   // Vérifier que l'utilisateur est admin ou propriétaire
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
+
+  const magazine: any = await payload.findByID({ collection: 'consumables', id: consumableId, depth: 0, overrideAccess: true }).catch(() => null)
+  if (!magazine) throw new Error('Consommable introuvable')
+  await assertConsumablesCanBeEquipped(payload, character, [consumableId])
 
   // Mettre à jour le slot d'arme
   const currentWeaponGroup = character[slot as keyof typeof character] as any

@@ -5,18 +5,23 @@ import { useRouter } from 'next/navigation'
 import { computeRank } from '@/lib/rankSystem'
 import { purchaseFormation } from './formation-actions'
 import { formationQuote, type FormationCharacterState, type FormationOffer } from './formation-pricing'
+import { purchaseSpecialRole } from './special-role-actions'
+import { specialRoleQuote, type SpecialRoleOffer } from './special-role-pricing'
 
 type Character = FormationCharacterState & { id: number; nom: string }
 type Confirmation = { formation: FormationOffer; transactionId: string }
+type RoleConfirmation = { role: SpecialRoleOffer; transactionId: string }
 
 const numberFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 20 })
 const money = (value: number) => `${new Intl.NumberFormat('fr-FR').format(value)} Konis`
 
-export function FormationsClient({ character, formations }: { character: Character; formations: FormationOffer[] }) {
+export function FormationsClient({ character, formations, specialRoles }: { character: Character; formations: FormationOffer[]; specialRoles: SpecialRoleOffer[] }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [retryRequest, setRetryRequest] = useState<Confirmation | null>(null)
+  const [roleConfirmation, setRoleConfirmation] = useState<RoleConfirmation | null>(null)
+  const [roleRetryRequest, setRoleRetryRequest] = useState<RoleConfirmation | null>(null)
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
   const submitting = useRef(false)
 
@@ -40,6 +45,7 @@ export function FormationsClient({ character, formations }: { character: Charact
     submitting.current = true
     setPending(true)
     setMessage(null)
+    setRoleRetryRequest(null)
     try {
       await purchaseFormation({ transactionId: current.transactionId, formationId: current.formation.id })
       setMessage({ kind: 'success', text: `Formation achetée. ${current.formation.competence} a gagné un niveau.` })
@@ -61,6 +67,33 @@ export function FormationsClient({ character, formations }: { character: Charact
     await send(current)
   }
 
+  async function sendRolePurchase(current: RoleConfirmation) {
+    if (submitting.current) return
+    submitting.current = true
+    setPending(true)
+    setMessage(null)
+    setRetryRequest(null)
+    try {
+      await purchaseSpecialRole({ transactionId: current.transactionId, roleId: current.role.id })
+      setMessage({ kind: 'success', text: `Rôle spécial « ${current.role.nom} » acquis.` })
+      setRoleRetryRequest(null)
+      router.refresh()
+    } catch (error) {
+      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'L’achat du rôle spécial a échoué.' })
+      setRoleRetryRequest(current)
+    } finally {
+      setPending(false)
+      submitting.current = false
+    }
+  }
+
+  async function confirmRolePurchase() {
+    if (!roleConfirmation) return
+    const current = roleConfirmation
+    setRoleConfirmation(null)
+    await sendRolePurchase(current)
+  }
+
   return <div className="shop-app formation-shop">
     <div className="shop-wallet formation-wallet">
       <span>{character.nom}</span>
@@ -73,9 +106,10 @@ export function FormationsClient({ character, formations }: { character: Charact
     {message && <div className={`shop-message ${message.kind}`} role="status">
       {message.text}
       {message.kind === 'error' && retryRequest && <button type="button" disabled={pending} onClick={() => void send(retryRequest)}>Réessayer la même transaction</button>}
+      {message.kind === 'error' && roleRetryRequest && <button type="button" disabled={pending} onClick={() => void sendRolePurchase(roleRetryRequest)}>Réessayer la même transaction</button>}
     </div>}
 
-    {!formations.length && <p className="shop-empty">Aucune formation n’est disponible.</p>}
+    {!formations.length && !specialRoles.length && <p className="shop-empty">Aucune formation ni aucun rôle spécial n’est disponible.</p>}
     <div className="shop-catalog-groups formation-faction-groups">
       {[...groups.entries()].map(([factionId, group]) => <section key={factionId}>
         <h2>{group.faction}{group.offers.some((formation) => Number(formation.coutRenommee) > 0) && ` - Renommée: ${numberFormat.format(group.reputation)}`}</h2>
@@ -101,6 +135,7 @@ export function FormationsClient({ character, formations }: { character: Charact
               <div className="shop-item-action formation-item-action">
                 <button type="button" disabled={pending || !quote.canBuy} onClick={() => {
                   setRetryRequest(null)
+                  setRoleRetryRequest(null)
                   setConfirmation({ formation, transactionId: crypto.randomUUID() })
                 }}>Acheter</button>
                 {!quote.canBuy && <small>{quote.reasons.join(' ')}</small>}
@@ -110,6 +145,31 @@ export function FormationsClient({ character, formations }: { character: Charact
         </div>
       </section>)}
     </div>
+
+    <section className="special-role-shop-section">
+      <h2>Rôles spéciaux</h2>
+      {!specialRoles.length ? <p className="shop-empty">Aucun rôle spécial n’est disponible.</p> : <div className="shop-grid">
+        {specialRoles.map((role) => {
+          const quote = specialRoleQuote(role, character)
+          return <article className="shop-item" key={role.id}>
+            <div className="shop-item-main">
+              <div className="shop-item-type">Rôle spécial</div>
+              <h3>{role.nom}</h3>
+              {role.description && <p>{role.description}</p>}
+            </div>
+            <div className="shop-item-action">
+              <strong>{Number.isFinite(quote.price) ? money(quote.price) : 'Prix invalide'}</strong>
+              {quote.owned ? <span>Déjà acquis</span> : <button type="button" disabled={pending || !quote.canBuy} onClick={() => {
+                setRoleRetryRequest(null)
+                setRetryRequest(null)
+                setRoleConfirmation({ role, transactionId: crypto.randomUUID() })
+              }}>Acheter</button>}
+              {!quote.canBuy && !quote.owned && <small>{quote.reasons.join(' ')}</small>}
+            </div>
+          </article>
+        })}
+      </div>}
+    </section>
 
     {confirmation && (() => {
       const quote = formationQuote(confirmation.formation, character)
@@ -125,6 +185,19 @@ export function FormationsClient({ character, formations }: { character: Charact
           <div>
             <button type="button" className="shop-cancel-button" onClick={() => setConfirmation(null)}>Annuler</button>
             <button type="button" disabled={pending || !quote.canBuy} onClick={() => void confirmPurchase()}>Confirmer l’achat</button>
+          </div>
+        </section>
+      </div>
+    })()}
+    {roleConfirmation && (() => {
+      const quote = specialRoleQuote(roleConfirmation.role, character)
+      return <div className="shop-confirm-backdrop" role="presentation">
+        <section className="shop-confirm" role="dialog" aria-modal="true" aria-labelledby="role-confirm-title">
+          <h2 id="role-confirm-title">Confirmer le rôle spécial</h2>
+          <p>Acquérir « {roleConfirmation.role.nom} » pour {money(quote.price)} ?</p>
+          <div>
+            <button type="button" className="shop-cancel-button" onClick={() => setRoleConfirmation(null)}>Annuler</button>
+            <button type="button" disabled={pending || !quote.canBuy} onClick={() => void confirmRolePurchase()}>Confirmer l’achat</button>
           </div>
         </section>
       </div>

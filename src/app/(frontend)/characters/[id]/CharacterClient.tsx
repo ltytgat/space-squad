@@ -78,6 +78,16 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     return typeof character.affiliation === 'object' ? character.affiliation.nom : character.affiliation
   }, [character.affiliation])
 
+  const ownsRoleRequiredBy = (item: any) => {
+    const required = item?.roleSpecialRequis
+    const requiredId = typeof required === 'object' ? required?.id : required
+    if (requiredId == null || requiredId === '') return true
+    return (character.rolesSpeciaux || []).some((role: any) => {
+      const id = typeof role === 'object' ? role?.id : role
+      return String(id) === String(requiredId)
+    })
+  }
+
   // Empêcher de quitter sans sauvegarder
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -387,7 +397,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       else if (isPlasma) ammoType = 'conteneur'
 
       const checkCompatibility = (item: any) => {
-        if (!item || typeof item === 'string') return false
+        if (!item || typeof item === 'string' || !ownsRoleRequiredBy(item)) return false
         if (item.typeMunition === ammoType) return true
         const nom = item.nom?.toLowerCase() || ""
         if (ammoType === 'chargeur' && nom.includes('chargeur')) return true
@@ -751,6 +761,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           <span className="ss-tag">{item.categorie}</span>
         </div>
         {item.effet && <div className="char-equip-item-mod-base">{item.effet}</div>}
+        {item.roleSpecialRequis?.nom && <div className="char-equip-item-mod-base">Rôle requis : {item.roleSpecialRequis.nom}</div>}
         {item.epreuve && <div className="char-equip-item-mod-base">Épreuve: {item.epreuve} ({ (item.modificateurEpreuve ?? 0) >= 0 ? '+' : '' }{item.modificateurEpreuve ?? 0})</div>}
       </div>
     )
@@ -1043,7 +1054,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         .filter((c: any) => {
           const itemData = c.consommable || c
           const matchesCategory = !category || itemData.categorie === category
-          return (c.quantite || 0) > 0 && matchesCategory
+          return (c.quantite || 0) > 0 && matchesCategory && ownsRoleRequiredBy(itemData)
         })
     }
 
@@ -1335,6 +1346,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {character.sexe && <span className="ss-tag">{character.sexe}</span>}
               {affiliationName && <span className={`ss-tag char-tag-affil-${affiliationName.toLowerCase()}`}>{affiliationName}</span>}
             </div>
+            {!!character.rolesSpeciaux?.length && <div className="char-special-roles" aria-label="Rôles spéciaux acquis">
+              {character.rolesSpeciaux.map((role: any) => typeof role === 'object' && role?.id != null
+                ? <span className="ss-tag" key={role.id} title={role.description || undefined}>{role.nom}</span>
+                : null)}
+            </div>}
           </div>
         </div>
 

@@ -83,6 +83,7 @@ export interface Config {
     'armor-sets': ArmorSet;
     characters: Character;
     formations: Formation;
+    'special-roles': SpecialRole;
     mods: Mod;
     consumables: Consumable;
     chips: Chip;
@@ -118,6 +119,7 @@ export interface Config {
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
     characters: CharactersSelect<false> | CharactersSelect<true>;
     formations: FormationsSelect<false> | FormationsSelect<true>;
+    'special-roles': SpecialRolesSelect<false> | SpecialRolesSelect<true>;
     mods: ModsSelect<false> | ModsSelect<true>;
     consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
     chips: ChipsSelect<false> | ChipsSelect<true>;
@@ -581,6 +583,10 @@ export interface Character {
   sexe?: ('M' | 'F' | 'X') | null;
   origine?: ('Humain' | 'Strani' | 'Vada') | null;
   affiliation?: (number | null) | Faction;
+  /**
+   * Rôles achetés par le personnage dans la boutique.
+   */
+  rolesSpeciaux?: (number | SpecialRole)[] | null;
   groupe?: (number | null) | Group;
   pointsDeRang?: number | null;
   pointsDeCompetence?: number | null;
@@ -796,6 +802,18 @@ export interface Faction {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "special-roles".
+ */
+export interface SpecialRole {
+  id: number;
+  nom: string;
+  description: string;
+  prix: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -1022,6 +1040,10 @@ export interface Consumable {
    */
   taille: number;
   typeMunition?: ('chargeur' | 'cartouche' | 'conteneur') | null;
+  /**
+   * Le consommable peut toujours être acheté et transféré, mais seul un personnage possédant ce rôle peut l’équiper.
+   */
+  roleSpecialRequis?: (number | null) | SpecialRole;
   /**
    * Texte libre décrivant l'effet du consommable.
    */
@@ -1322,6 +1344,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'formations';
         value: number | Formation;
+      } | null)
+    | ({
+        relationTo: 'special-roles';
+        value: number | SpecialRole;
       } | null)
     | ({
         relationTo: 'mods';
@@ -1755,6 +1781,7 @@ export interface CharactersSelect<T extends boolean = true> {
   sexe?: T;
   origine?: T;
   affiliation?: T;
+  rolesSpeciaux?: T;
   groupe?: T;
   pointsDeRang?: T;
   pointsDeCompetence?: T;
@@ -1947,6 +1974,17 @@ export interface FormationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "special-roles_select".
+ */
+export interface SpecialRolesSelect<T extends boolean = true> {
+  nom?: T;
+  description?: T;
+  prix?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "mods_select".
  */
 export interface ModsSelect<T extends boolean = true> {
@@ -1983,6 +2021,7 @@ export interface ConsumablesSelect<T extends boolean = true> {
   categorie?: T;
   taille?: T;
   typeMunition?: T;
+  roleSpecialRequis?: T;
   effet?: T;
   epreuve?: T;
   modificateurEpreuve?: T;
