@@ -27,6 +27,8 @@ export const Users: CollectionConfig = {
   },
   auth: true,
   access: {
+    // L'accès au panneau Payload est réservé aux administrateurs.
+    admin: ({ req }) => (req.user as User | null)?.role === 'admin',
     // La liste des utilisateurs est réservée aux admins
     read: ({ req }) => (req.user as User | null)?.role === 'admin',
     // Pas d'inscription publique — création par un admin uniquement
