@@ -20,10 +20,15 @@ export function FormationsClient({ character, formations }: { character: Charact
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
   const submitting = useRef(false)
 
-  const groups = new Map<number, { faction: string; offers: FormationOffer[] }>()
+  const groups = new Map<number, { faction: string; reputation: number; offers: FormationOffer[] }>()
   for (const formation of formations) {
+    const faction = formation.organisationFormation.nom
+    const reputationRow = character.reputation?.find(
+      (entry) => String(entry.categorie ?? '').trim().toLocaleLowerCase('fr') === faction.trim().toLocaleLowerCase('fr'),
+    )
     const group = groups.get(formation.organisationFormation.id) ?? {
-      faction: formation.organisationFormation.nom,
+      faction,
+      reputation: typeof reputationRow?.valeur === 'number' && Number.isFinite(reputationRow.valeur) ? reputationRow.valeur : 0,
       offers: [],
     }
     group.offers.push(formation)
@@ -73,7 +78,7 @@ export function FormationsClient({ character, formations }: { character: Charact
     {!formations.length && <p className="shop-empty">Aucune formation n’est disponible.</p>}
     <div className="shop-catalog-groups formation-faction-groups">
       {[...groups.entries()].map(([factionId, group]) => <section key={factionId}>
-        <h2>{group.faction}</h2>
+        <h2>{group.faction}{group.offers.some((formation) => Number(formation.coutRenommee) > 0) && ` - Renommée: ${numberFormat.format(group.reputation)}`}</h2>
         <div className="shop-grid">
           {group.offers.map((formation) => {
             const quote = formationQuote(formation, character)
@@ -91,7 +96,6 @@ export function FormationsClient({ character, formations }: { character: Charact
                   {costs.length
                     ? costs.map((cost) => <span key={cost}>{cost}</span>)
                     : <span>Aucun coût de ressource</span>}
-                  {quote.costs.renommee > 0 && <small>Renommée actuelle auprès de {group.faction} : {numberFormat.format(quote.balances.reputation)}</small>}
                 </div>
               </div>
               <div className="shop-item-action formation-item-action">
