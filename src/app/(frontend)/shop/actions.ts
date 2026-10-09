@@ -6,7 +6,8 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
-import { factionCanBuyExWeapon, isExWeaponName, isFactionDiscountCouponApplicable, type DiscountTarget, type OwnedFactionReward } from '@/lib/factionRewards'
+import { factionCanBuyWeaponAtRank, isExWeaponName, isFactionDiscountCouponApplicable, weaponMinimumRank, type DiscountTarget, type OwnedFactionReward } from '@/lib/factionRewards'
+import { computeRank } from '@/lib/rankSystem'
 import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, relationId, resalePrice, shopRequestFingerprint, weaponModPrice } from '@/lib/shop'
 
 type ItemKind = 'weapon' | 'armor' | 'consumable' | 'ship-weapon' | 'ship-module' | 'ship-consumable' | 'weapon-mod' | 'armor-mod'
@@ -190,7 +191,13 @@ export async function executeShopTransaction(raw: ShopInput) {
       }
 
       if (input.action === 'buy' && input.kind === 'weapon') {
-        if (isExWeaponName(item.nom) && !factionCanBuyExWeapon(item.nom, item.categorie, item.type, rewards, factionName)) fail('Cette arme eX nécessite le droit d’accès de votre faction.')
+        const rank = computeRank(Number(character.pointsDeRang) || 0).level
+        const minimumRank = weaponMinimumRank(item.nom) ?? (isExWeaponName(item.nom) ? 11 : null)
+        if (minimumRank === null) fail('Le rang minimum de cette arme est introuvable dans son nom.')
+        if (!factionCanBuyWeaponAtRank(item.nom, rank, item.categorie, item.type, rewards, factionName)) {
+          if (minimumRank === rank + 1) fail('Cette arme de rang supérieur nécessite votre permis et doit appartenir à une catégorie autorisée.')
+          fail(`Cette arme nécessite le rang ${minimumRank} pour être achetée.`)
+        }
         debit()
         applyDiscount({ kind: 'weapon', categorie: item.categorie })
         characterUpdate.inventaireArmes = normalizePersonalWeapons(character.inventaireArmes ?? []).concat([{ item: item.id, mods: [], munitionsActuelles: 0, chargeurRelie: null, chauffeActuelle: 0 }])

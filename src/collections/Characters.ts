@@ -964,7 +964,7 @@ export const Characters: CollectionConfig = {
             { name: 'faction', type: 'text', required: true, label: 'Faction' },
             { name: 'grade', type: 'text', required: true, label: 'Grade au moment de l’achat' },
             { name: 'typeRecompense', type: 'select', label: 'Type de récompense', options: [
-              { label: 'Droit d’accès aux armes eX', value: 'acces-armes-ex' },
+              { label: 'Permis d’achat des armes de rang supérieur', value: 'acces-armes-ex' },
               { label: 'Bon de réduction', value: 'bon-reduction' },
             ] },
             { name: 'pourcentageReduction', type: 'number', label: 'Pourcentage de réduction', min: 0.01, max: 100 },

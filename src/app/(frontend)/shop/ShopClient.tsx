@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { executeShopTransaction } from './actions'
 import type { ShopScope } from './shop-sections'
 import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, resalePrice, weaponModPrice } from '@/lib/shop'
-import { factionCanBuyExWeapon, factionKey, isFactionDiscountCouponApplicable, type DiscountTarget, type FactionRewardUsage, type OwnedFactionReward } from '@/lib/factionRewards'
+import { factionCanBuyWeaponAtRank, factionKey, isFactionDiscountCouponApplicable, type DiscountTarget, type FactionRewardUsage, type OwnedFactionReward } from '@/lib/factionRewards'
 
 type ShopImage = { url: string; alt: string }
 export type ShopItem = {
@@ -32,6 +32,7 @@ export type ShopCharacter = {
   id: number
   nom: string
   konis: number
+  rang: number
   factionName: string
   inventaireRecompensesFaction: OwnedFactionReward[]
   inventaireArmes: Owned[]
@@ -114,7 +115,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const isAll = scope === 'tout'
   const activeSection = isAll ? section : sectionForScope[scope]
   const availableDamageTypeChoices = activeSection === 'spatial' ? damageTypeChoices.filter(([value]) => value !== 'plasma') : damageTypeChoices
-  const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => factionCanBuyExWeapon(item.nom, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.inventaireRecompensesFaction, character.factionName])
+  const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => factionCanBuyWeaponAtRank(item.nom, character.rang, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.rang, character.inventaireRecompensesFaction, character.factionName])
   const categories = useMemo(() => [...new Set([...availableWeapons, ...catalogs.armors, ...catalogs.consumables, ...catalogs.shipWeapons, ...catalogs.shipModules, ...catalogs.shipConsumables].map((item) => item.categorie ?? item.famille).filter(Boolean) as string[])].sort(), [availableWeapons, catalogs])
   const facetField: 'categorie' | 'sousCategorieArme' | 'sousCategorieArmure' | 'typeModule' | null = scope === 'sol-armes' || scope === 'sol-armures' ? 'categorie' : scope === 'mods-armes' ? 'sousCategorieArme' : scope === 'mods-armures' ? 'sousCategorieArmure' : scope === 'espace-modules' ? 'typeModule' : null
   const facetChoices: [string, string][] = scope === 'sol-armes'

@@ -1,5 +1,5 @@
 import { factionGrade, type FactionLite } from '@/app/(frontend)/characters/session-rewards-formula'
-import type { FactionRewardApplication, OwnedFactionReward } from '@/lib/factionRewards'
+import { ownsAnyFactionWeaponPermit, type FactionRewardApplication, type OwnedFactionReward } from '@/lib/factionRewards'
 
 export type FactionRewardOffer = {
   id: number
@@ -42,11 +42,13 @@ export function factionPromotionQuote(character: FactionRewardCharacter) {
 
 export function factionRewardQuote(offer: FactionRewardOffer, character: FactionRewardCharacter) {
   const promotion = factionPromotionQuote(character)
+  const permitAlreadyOwned = offer.typeRecompense === 'acces-armes-ex' && ownsAnyFactionWeaponPermit(character.inventaireRecompensesFaction)
   const costsValid = Number.isSafeInteger(offer.coutPointsFaction) && offer.coutPointsFaction >= 0 &&
     Number.isSafeInteger(offer.gradeRequis) && offer.gradeRequis >= 1
-  const canBuy = costsValid && promotion.grade >= offer.gradeRequis && Number(character.pointsDeFaction) >= offer.coutPointsFaction
+  const canBuy = costsValid && !permitAlreadyOwned && promotion.grade >= offer.gradeRequis && Number(character.pointsDeFaction) >= offer.coutPointsFaction
   return {
     canBuy,
+    permitAlreadyOwned,
     nextPointsDeFaction: costsValid ? Number(character.pointsDeFaction) - offer.coutPointsFaction : Number(character.pointsDeFaction),
   }
 }

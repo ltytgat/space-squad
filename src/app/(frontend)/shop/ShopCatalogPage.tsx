@@ -6,6 +6,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { computeShipAccess } from '@/lib/shipAccess'
+import { computeRank } from '@/lib/rankSystem'
 import type { OwnedFactionReward } from '@/lib/factionRewards'
 import { ShopClient, type ShopItem, type ShopCharacter, type ShopShip } from './ShopClient'
 import { shopScopes, type ShopScope } from './shop-sections'
@@ -88,6 +89,7 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   const modList = (values: any[]) => (values ?? []).map((value) => modById.get(String(idOf(value)))).filter(Boolean) as ShopItem[]
   const characterData: ShopCharacter = {
     id: character.id, nom: character.nom ?? 'Personnage', konis: character.konis ?? 0,
+    rang: computeRank(Number(character.pointsDeRang) || 0).level,
     factionName: String(faction?.nom ?? ''), inventaireRecompensesFaction: factionRewards,
     inventaireArmes: (character.inventaireArmes ?? []).map((row: any) => ({ item: weaponById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods), munitions: row.munitionsActuelles ?? 0 })),
     inventaireArmures: (character.inventaireArmures ?? []).map((row: any) => ({ item: armorById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods) })),

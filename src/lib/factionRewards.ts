@@ -47,7 +47,34 @@ export function factionRewardsTitle(name: unknown): string {
 }
 
 export function isExWeaponName(name: unknown): boolean {
-  return String(name ?? '').includes('eX')
+  const value = String(name ?? '').trim()
+  // Garder la détection des anciens noms pendant la transition du catalogue.
+  return /(?:^|[\s-])XI$/i.test(value) || value.includes('eX')
+}
+
+/** Rang minimum indiqué par le chiffre romain à la fin du nom de l'arme. */
+export function weaponMinimumRank(name: unknown): number | null {
+  const match = String(name ?? '').trim().match(/(?:^|[\s-])(XI|X|IX|VIII|VII|VI|V|IV|III|II|I)$/i)
+  if (!match) return null
+  const ranks: Record<string, number> = {
+    I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11,
+  }
+  return ranks[match[1].toUpperCase()] ?? null
+}
+
+export function factionCanBuyWeaponAtRank(
+  name: unknown,
+  rank: number,
+  category: unknown,
+  types: unknown,
+  rewards: OwnedFactionReward[] | null | undefined,
+  factionName: unknown,
+): boolean {
+  const minimumRank = weaponMinimumRank(name) ?? (isExWeaponName(name) ? 11 : null)
+  if (minimumRank === null) return false
+  if (minimumRank <= rank) return true
+  if (minimumRank !== rank + 1) return false
+  return factionPermitAllowsWeaponCategory(category, types, rewards, factionName)
 }
 
 export function ownsFactionExWeaponAccess(rewards: OwnedFactionReward[] | null | undefined, factionName: unknown): boolean {
@@ -63,6 +90,19 @@ export function factionCanBuyExWeapon(
   factionName: unknown,
 ): boolean {
   if (!isExWeaponName(name)) return true
+  return factionPermitAllowsWeaponCategory(category, types, rewards, factionName)
+}
+
+export function ownsAnyFactionWeaponPermit(rewards: OwnedFactionReward[] | null | undefined): boolean {
+  return !!rewards?.some((reward) => reward.typeRecompense === 'acces-armes-ex')
+}
+
+function factionPermitAllowsWeaponCategory(
+  category: unknown,
+  types: unknown,
+  rewards: OwnedFactionReward[] | null | undefined,
+  factionName: unknown,
+): boolean {
   const requiredType = factionExWeaponType(factionName)
   if (!requiredType || !ownsFactionExWeaponAccess(rewards, factionName)) return false
   if (requiredType === 'lourde') return category === 'lourde'

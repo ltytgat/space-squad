@@ -7,7 +7,7 @@ import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { exactSubtract, relationId } from '@/lib/shop'
 import { factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
-import { factionExWeaponType, rewardUsageForApplication } from '@/lib/factionRewards'
+import { factionExWeaponType, ownsAnyFactionWeaponPermit, rewardUsageForApplication } from '@/lib/factionRewards'
 
 type FactionRewardActionInput =
   | { transactionId: string; action: 'promote' }
@@ -83,6 +83,12 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
       if (!reward) fail('Cette récompense est introuvable.')
       const factionVariant = (reward.factions ?? []).find((entry: any) => numericId(entry.faction) === factionId)
       if (!factionVariant) fail('Cette récompense n’est pas disponible pour votre faction.')
+      const inventory: any[] = Array.isArray(lockedCharacter.inventaireRecompensesFaction) ? lockedCharacter.inventaireRecompensesFaction : []
+      const rewardType = reward.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : 'bon-reduction'
+      if (rewardType === 'acces-armes-ex') {
+        if (!factionExWeaponType(faction.nom)) fail('Le permis d’achat des armes de rang supérieur n’est pas défini pour cette faction.')
+        if (ownsAnyFactionWeaponPermit(inventory)) fail('Vous possédez déjà un permis d’achat d’armes de rang supérieur. Il ne peut être acheté qu’une seule fois.')
+      }
       const grade = factionGrade(lockedCharacter.rangDeFaction, faction)
       const requiredGrade = Number(reward.gradeRequis)
       const costPointsFaction = Number(reward.coutPointsFaction ?? 0)
@@ -91,13 +97,10 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
       const requiredGradeName = faction.rangs[requiredGrade - 1]?.nom ?? 'non configuré'
       if (grade < requiredGrade) fail(`Le grade ${requiredGradeName} est requis pour cette récompense.`)
       if (!Number.isFinite(currentPoints) || currentPoints < costPointsFaction) fail('Vous ne possédez pas assez de points de faction.')
-      const rewardType = reward.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : 'bon-reduction'
-      if (rewardType === 'acces-armes-ex' && !factionExWeaponType(faction.nom)) fail('Ce droit d’accès aux armes eX n’est pas défini pour cette faction.')
       if (rewardType === 'bon-reduction') {
         const percentage = Number(reward.pourcentageReduction)
         if (!Number.isFinite(percentage) || percentage <= 0 || percentage > 100 || !rewardUsageForApplication(factionVariant.application)) fail('La valeur de réduction ou l’application de ce bon est invalide.')
       }
-      const inventory: any[] = Array.isArray(lockedCharacter.inventaireRecompensesFaction) ? lockedCharacter.inventaireRecompensesFaction : []
       amount = costPointsFaction
       details = { rewardId: reward.id, rewardName: reward.nom, factionId, factionName: faction.nom, costs: { pointsFaction: costPointsFaction }, balancesBefore: { pointsFaction: currentPoints } }
       updateData = {
