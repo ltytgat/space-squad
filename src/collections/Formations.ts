@@ -6,7 +6,8 @@ export const Formations: CollectionConfig = {
   slug: 'formations',
   labels: { singular: 'Formation', plural: 'Formations' },
   admin: {
-    useAsTitle: 'competence',
+    useAsTitle: 'competenceLabel',
+    listSearchableFields: ['competenceLabel'],
     defaultColumns: ['competence', 'organisationFormation', 'coutKonis', 'coutPointsDeRang', 'coutRenommee'],
     group: 'Jeu de Rôle',
   },
@@ -16,6 +17,14 @@ export const Formations: CollectionConfig = {
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
+  hooks: {
+    beforeChange: [
+      ({ data, originalDoc }) => {
+        data.competenceLabel = data.competence ?? originalDoc?.competence ?? ''
+        return data
+      },
+    ],
+  },
   fields: [
     {
       name: 'competence',
@@ -23,6 +32,12 @@ export const Formations: CollectionConfig = {
       required: true,
       label: 'Compétence associée',
       options: COMPETENCES_BASE.map((competence) => ({ label: competence, value: competence })),
+    },
+    {
+      name: 'competenceLabel',
+      type: 'text',
+      required: true,
+      admin: { hidden: true },
     },
     {
       name: 'organisationFormation',

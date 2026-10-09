@@ -1125,6 +1125,7 @@ export interface Formation {
     | 'Furtivité'
     | 'Diplomate'
     | 'Culture';
+  competenceLabel: string;
   organisationFormation: number | Faction;
   coutKonis: number;
   coutPointsDeRang: number;
@@ -1965,6 +1966,7 @@ export interface CharactersSelect<T extends boolean = true> {
  */
 export interface FormationsSelect<T extends boolean = true> {
   competence?: T;
+  competenceLabel?: T;
   organisationFormation?: T;
   coutKonis?: T;
   coutPointsDeRang?: T;
