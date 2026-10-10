@@ -1,3 +1,5 @@
+import { calculateStats } from './characterStats'
+
 export type ShipRecord = any
 
 const idOf = (value: any) => typeof value === 'object' && value ? value.id : value
@@ -17,7 +19,8 @@ export function getModuleModifier(module: any, label: string) {
 
 export function getPilotAbilityBonus(pilot: any) {
   if (!pilot) return 0
-  return Math.floor(((Number(pilot.habilite) || 0) - (Number(pilot.malusHabilite) || 0) - 10) / 2)
+  if (typeof pilot.habiliteDieMod === 'number') return pilot.habiliteDieMod
+  return calculateStats(pilot).habiliteDieMod
 }
 
 export function getChassis(ship: ShipRecord) {
@@ -62,7 +65,11 @@ export function getShipStats(ship: ShipRecord) {
   const numeric = (key: string) => modules.reduce((sum, module) => sum + (Number(module?.[key]) || 0), 0)
   const generator = objectOf(ship?.moduleGenerateur)
   const thrusters = objectOf(ship?.modulePropulseurs)
-  const pilot = objectOf(ship?.pilote) ?? (ship?.crew ?? []).find((member: any) => member?.roleVaisseau === 'pilote')
+  const pilotId = idOf(ship?.pilote)
+  const pilot =
+    (ship?.crew ?? []).find((member: any) => pilotId != null && String(member?.id) === String(pilotId)) ??
+    objectOf(ship?.pilote) ??
+    (ship?.crew ?? []).find((member: any) => member?.roleVaisseau === 'pilote')
   const maxShield = numeric('bouclierMax')
   const maxArmor = (Number(chassis?.blindage) || 0) + numeric('blindageBonus')
   const consumption = numeric('consommation')

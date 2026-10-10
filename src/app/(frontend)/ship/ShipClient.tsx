@@ -793,10 +793,10 @@ export function ShipClient({
           onMouseEnter={(event) =>
             showStatTooltip(event, {
               label: 'Esquive',
-              formula: 'Base + bonus Habilité pilote + bonus propulseurs',
+              formula: 'Base + modificateur Habilité pilote + bonus propulseurs',
               components: [
                 { label: 'Base vaisseau', value: stats.evasionBase },
-                { label: 'Habilité pilote', value: stats.evasionPilot },
+                { label: 'Modificateur Habilité pilote (équipement inclus)', value: stats.evasionPilot },
                 { label: 'Propulseurs', value: stats.evasionThrusters },
               ],
             })

@@ -1,4 +1,5 @@
 import { idOf } from './shipStats'
+import { calculateStats } from './characterStats'
 import { isSeatFree, listSeats, roleForSeat, seatOf, type SeatKey } from './shipCrew'
 
 /**
@@ -95,13 +96,41 @@ export async function findShipCrew(payload: any, shipId: number | string) {
   const { docs } = await payload.find({
     collection: 'characters',
     where: { vaisseau: { equals: shipId } },
-    depth: 0,
+    depth: 3,
     pagination: false,
     sort: 'nom',
-    select: { nom: true, roleVaisseau: true, habilite: true, malusHabilite: true },
+    select: {
+      id: true,
+      nom: true,
+      roleVaisseau: true,
+      origine: true,
+      pointsDeRang: true,
+      force: true,
+      habilite: true,
+      connaissances: true,
+      culture: true,
+      anticipation: true,
+      perception: true,
+      malusForce: true,
+      malusHabilite: true,
+      malusConnaissances: true,
+      malusCulture: true,
+      malusAnticipation: true,
+      malusPerception: true,
+      armureTete: { item: true, mods: true },
+      armureTorse: { item: true, mods: true },
+      armureBras: { item: true, mods: true },
+      armureJambes: { item: true, mods: true },
+      armureBackpack: { item: true, mods: true },
+    },
     overrideAccess: true,
   })
-  return docs as any[]
+  return docs.map((character: any) => ({
+    id: character.id,
+    nom: character.nom,
+    roleVaisseau: character.roleVaisseau,
+    habiliteDieMod: calculateStats(character).habiliteDieMod,
+  }))
 }
 
 /** Personnage unique de l'utilisateur connecté. */
