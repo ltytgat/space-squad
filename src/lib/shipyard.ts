@@ -30,6 +30,18 @@ export const shipCatalogClasses = [
   { value: 'delta', label: 'Delta', size: 4 },
 ] as const
 
+const SHIP_CLASS_MINIMUM_RANK: Record<string, number> = {
+  alpha: 1,
+  beta: 3,
+  gamma: 5,
+  delta: 7,
+}
+
+/** Rang minimal requis pour acheter un vaisseau de cette classe. */
+export function minimumRankForShipClass(shipClass: string | null | undefined): number | null {
+  return shipClass ? SHIP_CLASS_MINIMUM_RANK[shipClass] ?? null : null
+}
+
 export const shipCatalogCategories = [
   { value: 'polyvalent', label: 'Polyvalent' },
   { value: 'combat', label: 'Combat' },

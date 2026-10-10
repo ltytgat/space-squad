@@ -6,6 +6,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { computeShipAccess } from '@/lib/shipAccess'
+import { computeRank } from '@/lib/rankSystem'
 import { listInstalledShipComponents, listShipTransferItems } from '@/lib/shipyard'
 import { ShipyardClient } from './ShipyardClient'
 import '../shop.css'
@@ -98,7 +99,7 @@ export default async function ShipyardPage({ searchParams }: {
     .map(shipSummary)
 
   const data = {
-    character: { id: character.id, nom: character.nom ?? 'Personnage', konis: Number(character.konis) || 0 },
+    character: { id: character.id, nom: character.nom ?? 'Personnage', konis: Number(character.konis) || 0, rang: computeRank(Number(character.pointsDeRang) || 0).level },
     models: (modelsResult.docs as any[]).map(modelSummary),
     ownedShips: (ownedResult.docs as any[]).map(shipSummary),
     writableShips,

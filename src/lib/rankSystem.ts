@@ -35,6 +35,17 @@ export const RANK_NAMES: readonly string[] = [
 
 export const RANK_MAX = RANK_THRESHOLDS.length // 10
 
+const CHIP_SLOT_MINIMUM_RANK: Record<string, number> = {
+  puceMk1: 2,
+  puceMk2: 6,
+  puceMk3: 8,
+}
+
+/** Rang minimal requis pour équiper chaque emplacement de puce. */
+export function minimumRankForChipSlot(slot: string): number | null {
+  return CHIP_SLOT_MINIMUM_RANK[slot] ?? null
+}
+
 // ── Type de retour ────────────────────────────────────────────────────────────
 
 export type RankInfo = {

@@ -132,6 +132,8 @@
 .shipyard-category-exploration { color: #76d99b; }
 .shipyard-model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)); align-items: stretch; gap: 1rem; }
 .shipyard-model-card { display: flex; flex-direction: column; gap: .9rem; min-width: 0; padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); }
+.shipyard-model-card--locked { border-color: rgba(255, 173, 89, .35); }
+.shipyard-rank-lock { padding: .55rem .7rem; border: 1px solid rgba(255, 173, 89, .4); border-radius: 7px; background: rgba(255, 173, 89, .08); color: #ffbd75 !important; }
 .shipyard-model-image { display: block; width: 100%; height: 180px; border-radius: 8px; background: rgba(0, 0, 0, .18); object-fit: contain; }
 .shipyard-model-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .shipyard-model-heading h3 { margin-top: .2rem; color: var(--ss-text); font-family: var(--ss-font-display); }
@@ -145,6 +147,7 @@
 .shipyard-model-components li strong { color: var(--ss-text); font-weight: 550; text-align: right; }
 .shipyard-name-field, .shipyard-transfer-selects label, .shipyard-select { display: grid; gap: .4rem; color: var(--ss-text-muted); font-size: .85rem; }
 .shipyard-name-field input, .shipyard-transfer-selects select, .shipyard-select select { min-height: 40px; padding: .5rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
+.shipyard-name-field input:disabled { opacity: .55; cursor: not-allowed; }
 .shipyard-model-actions { display: grid; gap: .55rem; margin-top: auto; }
 .shipyard-model-actions button, .shipyard-operation > button { padding: .65rem .9rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); font-weight: 650; cursor: pointer; }
 .shipyard-model-actions button:hover:not(:disabled), .shipyard-operation > button:hover:not(:disabled) { background: var(--ss-cyan); color: var(--ss-bg); }

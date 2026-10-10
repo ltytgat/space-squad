@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character } from '@/payload-types'
+import { computeRank, minimumRankForChipSlot } from '@/lib/rankSystem'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
@@ -80,7 +81,7 @@ export async function updateCharacter(characterId: number, data: any) {
   }
 
   // Filtrer les données si l'utilisateur n'est pas admin
-  let updateData = withoutTransientWeaponHeat(data)
+  const updateData = withoutTransientWeaponHeat(data)
   if (!isAdmin) {
     const forbiddenPatterns = [
       /^coaching.*(Label|Max)$/,
@@ -100,6 +101,21 @@ export async function updateCharacter(characterId: number, data: any) {
         delete updateData[key]
       }
     })
+  }
+
+  if (!isAdmin) {
+    const currentRank = computeRank(Number(character.pointsDeRang) || 0).level
+    for (const slot of ['puceMk1', 'puceMk2', 'puceMk3']) {
+      if (!Object.prototype.hasOwnProperty.call(updateData, slot) || updateData[slot] == null) continue
+      const minimumRank = minimumRankForChipSlot(slot)
+      if (minimumRank === null) continue
+      const currentChipId = relationNumericId((character as any)[slot])
+      const requestedChipId = relationNumericId(updateData[slot])
+      if (currentChipId && requestedChipId === currentChipId) continue
+      if (currentRank < minimumRank) {
+        throw new Error(`L’emplacement Mk${slot.replace('puceMk', '')} nécessite le rang ${minimumRank}.`)
+      }
+    }
   }
 
   const consumablesToEquip: any[] = []

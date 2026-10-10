@@ -1961,6 +1961,18 @@
   border-color: var(--ss-cyan);
 }
 
+.char-equip-change-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.char-rank-lock-note {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--ss-text-muted);
+  font-size: 0.7rem;
+}
+
 .char-equip-mods-edit {
   display: flex;
   flex-direction: column;

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier } from '@/lib/characterStats'
+import { minimumRankForChipSlot } from '@/lib/rankSystem'
 import { updateCharacter, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
@@ -888,6 +889,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   const renderChipSlot = (label: string, chip: any, slotKey: string) => {
     const isEquipped = !!chip && typeof chip !== 'string'
+    const minimumRank = minimumRankForChipSlot(slotKey) ?? 1
+    const locked = !isAdmin && stats.rankInfo.level < minimumRank
     
     return (
       <div 
@@ -897,7 +900,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           <span className="char-equip-slot-label">{label}</span>
           <button 
             className="char-equip-change-btn" 
-            title="Changer de puce"
+            title={locked ? `Débloqué au rang ${minimumRank}` : 'Changer de puce'}
+            disabled={locked}
             onClick={() => handleOpenSelector({ slot: slotKey, label, type: 'chip' })}
           >
             🔄
@@ -909,6 +913,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             <span className="char-equip-empty-text">Non équipée</span>
           </div>
         )}
+        {locked && <small className="char-rank-lock-note">Emplacement verrouillé · rang {minimumRank} requis</small>}
       </div>
     )
   }
@@ -1112,6 +1117,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   const handleEquip = (newItem: any, currentSlot: string, type: string) => {
+    const minimumRank = type === 'chip' ? minimumRankForChipSlot(currentSlot) : null
+    if (!isAdmin && minimumRank !== null && stats.rankInfo.level < minimumRank) {
+      alert(`Cet emplacement se débloque au rang ${minimumRank}.`)
+      setSelectorConfig(null)
+      return
+    }
     const newCharacter = { ...character }
 
     if (type === 'consumable' && (currentSlot === 'consommablesEquipes' || currentSlot.startsWith('equipped['))) {

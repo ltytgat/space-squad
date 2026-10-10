@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { readShopPrice, resalePrice } from '@/lib/shop'
-import { groupShipCatalog, listShipTransferItems, shipPurchasePrice, shipSalePrice, type ShipCatalogEntry, type ShipSaleComponent, type ShipTransferItem } from '@/lib/shipyard'
+import { groupShipCatalog, listShipTransferItems, minimumRankForShipClass, shipPurchasePrice, shipSalePrice, type ShipCatalogEntry, type ShipSaleComponent, type ShipTransferItem } from '@/lib/shipyard'
 import { executeShipyardTransaction } from '../shipyard-actions'
 
 type ShipModel = ShipCatalogEntry & {
@@ -51,7 +51,7 @@ export function ShipyardClient({
   initialTab = 'buy',
   initialSourceShipId = null,
 }: {
-  character: { id: number; nom: string; konis: number }
+  character: { id: number; nom: string; konis: number; rang: number }
   models: ShipModel[]
   ownedShips: ShipSummary[]
   writableShips: ShipSummary[]
@@ -178,7 +178,7 @@ export function ShipyardClient({
   }
 
   return <div className="shop-app shipyard-app">
-    <div className="shop-wallet"><span>{character.nom}</span><strong>{money(character.konis)}</strong></div>
+    <div className="shop-wallet"><span>{character.nom} · Rang {character.rang}</span><strong>{money(character.konis)}</strong></div>
     <nav className="shop-tabs" aria-label="Opérations du chantier naval">
       <button type="button" className={tab === 'buy' ? 'active' : ''} onClick={() => setTab('buy')}>Acheter</button>
       <button type="button" className={tab === 'sell' ? 'active' : ''} onClick={() => setTab('sell')}>Vendre</button>
@@ -187,7 +187,7 @@ export function ShipyardClient({
     {message && <div className={`shop-message ${message.kind}`} role="status">{message.text}{message.kind === 'error' && retryRequest && <button type="button" disabled={pending} onClick={() => send(retryRequest)}>Réessayer la même opération</button>}</div>}
 
     {tab === 'buy' && <section className="shop-catalog-groups shipyard-purchase-catalog">
-      <div><h2>Modèles disponibles</h2><p>Le modèle complet reprend le châssis, les modules et les armes définis dans sa fiche. L’achat du châssis seul n’inclut aucun de ces équipements.</p></div>
+      <div><h2>Modèles disponibles</h2><p>Les classes supérieures se débloquent au rang 3 (Beta), 5 (Gamma) et 7 (Delta). Le modèle complet reprend le châssis, les modules et les armes définis dans sa fiche. L’achat du châssis seul n’inclut aucun de ces équipements.</p></div>
       {!models.length && <p className="shop-empty">Aucun modèle de vente n’est disponible.</p>}
       {catalogSections.map((shipClass) => <section className="shipyard-class-section" key={shipClass.value}>
         <header className="shipyard-class-heading"><h2>Classe {shipClass.label}</h2><span>Taille {shipClass.size}</span></header>
@@ -197,16 +197,19 @@ export function ShipyardClient({
           <div className="shipyard-model-grid">{category.models.map((model) => {
             const full = fullPrice(model)
             const hull = chassisOnly(model)
-            return <article className="shipyard-model-card" key={model.id}>
+            const minimumRank = minimumRankForShipClass(model.classe)
+            const locked = minimumRank !== null && character.rang < minimumRank
+            return <article className={`shipyard-model-card${locked ? ' shipyard-model-card--locked' : ''}`} key={model.id}>
               {model.image && <img className="shipyard-model-image" src={model.image.url} alt={model.image.alt} loading="lazy" decoding="async" />}
               <div className="shipyard-model-heading"><h3>{model.nom}</h3><strong>{priceLabel(model.prix)}</strong></div>
               <div className="shipyard-model-meta">{[model.chassis, model.tourelles ? `${model.tourelles} tourelle(s)` : null].filter(Boolean).join(' · ')}</div>
+              {locked && <p className="shipyard-rank-lock">Verrouillé · Rang {minimumRank} requis pour acheter ce vaisseau.</p>}
               {model.description && <p>{model.description}</p>}
               <details className="shipyard-model-components"><summary>Équipement inclus ({model.components.length})</summary><ul>{model.components.map(([kind, name], index) => <li key={`${kind}-${name}-${index}`}><span>{kind}</span><strong>{name}</strong></li>)}</ul></details>
-              <label className="shipyard-name-field">Nom du vaisseau<input maxLength={100} value={shipNames[model.id] ?? ''} onChange={(event) => setShipNames((current) => ({ ...current, [model.id]: event.target.value }))} placeholder={model.nom} /></label>
+              <label className="shipyard-name-field">Nom du vaisseau<input maxLength={100} disabled={locked} value={shipNames[model.id] ?? ''} onChange={(event) => setShipNames((current) => ({ ...current, [model.id]: event.target.value }))} placeholder={model.nom} /></label>
               <div className="shipyard-model-actions">
-                <button type="button" disabled={pending || full === null} onClick={() => buy(model, false)}>Acheter le modèle · {full === null ? 'Non commercialisable' : money(full)}</button>
-                <button type="button" className="shipyard-secondary-action" disabled={pending || hull === null} onClick={() => buy(model, true)}>Acheter le châssis seul · {hull === null ? 'Non commercialisable' : money(hull)}</button>
+                <button type="button" disabled={pending || locked || full === null} onClick={() => buy(model, false)}>Acheter le modèle · {full === null ? 'Non commercialisable' : money(full)}</button>
+                <button type="button" className="shipyard-secondary-action" disabled={pending || locked || hull === null} onClick={() => buy(model, true)}>Acheter le châssis seul · {hull === null ? 'Non commercialisable' : money(hull)}</button>
               </div>
             </article>
           })}</div>

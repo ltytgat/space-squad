@@ -6,8 +6,9 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
+import { computeRank } from '@/lib/rankSystem'
 import { exactAdd, exactSubtract, readShopPrice, relationId, resalePrice } from '@/lib/shop'
-import { detachShipTransferItem, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, shipPurchasePrice, shipSalePrice, shipyardFingerprint, type ShipTransferKind } from '@/lib/shipyard'
+import { detachShipTransferItem, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, minimumRankForShipClass, shipPurchasePrice, shipSalePrice, shipyardFingerprint, type ShipTransferKind } from '@/lib/shipyard'
 
 type ShipyardInput = {
   transactionId: string
@@ -181,6 +182,11 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
       const modelLock = await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM ship_sale_models WHERE id = ${raw.saleModelId} FOR SHARE` })
       if (!modelLock.rows[0]) fail('Modèle de vente introuvable.')
       const model = await payload.findByID({ collection: 'ship-sale-models', id: raw.saleModelId!, depth: 2, overrideAccess: true, req }) as any
+      const minimumRank = minimumRankForShipClass(model.chassis?.classe)
+      const currentRank = computeRank(Number(currentCharacter.pointsDeRang) || 0).level
+      if (minimumRank !== null && currentRank < minimumRank) {
+        fail(`L’achat d’un vaisseau ${model.chassis.classe} nécessite le rang ${minimumRank}.`)
+      }
       const price = shipPurchasePrice(model.prix, raw.chassisOnly === true)
       if (price === null) fail('Ce modèle n’a pas de prix commercialisable.')
       const currentBalance = Number(currentCharacter.konis ?? 0)
