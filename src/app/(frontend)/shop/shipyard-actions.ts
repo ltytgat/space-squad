@@ -26,6 +26,13 @@ class ShipyardError extends Error {}
 function fail(message: string): never {
   throw new ShipyardError(message)
 }
+function withoutTransientWeaponHeat(value: any): any {
+  if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== 'chauffeActuelle')
+    .map(([key, child]) => [key, withoutTransientWeaponHeat(child)]))
+}
 const numericId = (value: unknown) => {
   const id = relationId(value)
   return id && /^\d+$/.test(id) ? Number(id) : null
@@ -248,7 +255,7 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
       if (!item) fail('Cet élément n’est plus disponible sur le vaisseau source.')
       const quantity = raw.quantity ?? item.quantity
       const detached = detachShipTransferItem(source, item, quantity)
-      await payload.update({ collection: 'ships', id: source.id, data: detached.update, overrideAccess: true, user, req })
+      await payload.update({ collection: 'ships', id: source.id, data: withoutTransientWeaponHeat(detached.update), overrideAccess: true, user, req })
       const destinationUpdate: Record<string, any> = {}
       for (const moved of detached.moved) {
         const [field, relationField] = inventoryField(moved.kind)

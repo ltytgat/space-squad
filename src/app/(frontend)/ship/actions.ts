@@ -11,6 +11,14 @@ import { applySeatChange, roleForSeat, withSeatChange, seatOf, type SeatKey } fr
 
 const idOf = (value: any) => (typeof value === 'object' && value ? value.id : value)
 
+function withoutTransientWeaponHeat(value: any): any {
+  if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== 'chauffeActuelle')
+    .map(([key, child]) => [key, withoutTransientWeaponHeat(child)]))
+}
+
 async function context() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
@@ -66,7 +74,7 @@ export async function updateShipConfiguration(shipId: number, data: Record<strin
   const { ship: current } = await authorizeEdit(payload, user, shipId, 3)
   const next = { ...current, ...data }
   validateShipConfiguration(next)
-  await payload.update({ collection: 'ships', id: shipId, data, user, overrideAccess: true })
+  await payload.update({ collection: 'ships', id: shipId, data: withoutTransientWeaponHeat(data), user, overrideAccess: true })
   revalidateShip(shipId)
   return { success: true }
 }
@@ -219,7 +227,6 @@ export async function updateShipWeaponState(
   index: number,
   data: {
     munitionsActuelles?: number
-    chauffeActuelle?: number
     chargeurRelie?: number | null
     inventoryConsommables?: any[]
   },
@@ -235,7 +242,7 @@ export async function updateShipWeaponState(
   const entries = [...(ship?.[slot] ?? [])]
   if (!entries[index]) throw new Error('Arme introuvable')
   const { inventoryConsommables, ...weaponData } = data
-  entries[index] = { ...entries[index], ...weaponData }
+  entries[index] = withoutTransientWeaponHeat({ ...entries[index], ...weaponData })
   const updateData: any = { [slot]: entries }
   if (inventoryConsommables) updateData.inventaireConsommables = inventoryConsommables
   await payload.update({
@@ -256,7 +263,6 @@ export async function updateShipTurretWeaponState(
   weaponIndex: number,
   data: {
     munitionsActuelles?: number
-    chauffeActuelle?: number
     chargeurRelie?: number | null
     inventoryConsommables?: any[]
   },
@@ -273,10 +279,10 @@ export async function updateShipTurretWeaponState(
   if (!turrets[turretIndex]?.armes?.[weaponIndex]) throw new Error('Arme de tourelle introuvable')
   turrets[turretIndex] = { ...turrets[turretIndex], armes: [...turrets[turretIndex].armes] }
   const { inventoryConsommables, ...weaponData } = data
-  turrets[turretIndex].armes[weaponIndex] = {
+  turrets[turretIndex].armes[weaponIndex] = withoutTransientWeaponHeat({
     ...turrets[turretIndex].armes[weaponIndex],
     ...weaponData,
-  }
+  })
   const updateData: any = { armesTourelles: turrets }
   if (inventoryConsommables) updateData.inventaireConsommables = inventoryConsommables
   await payload.update({

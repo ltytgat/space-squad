@@ -15,7 +15,6 @@ const shipWeaponStateFields = () => [
     relationTo: 'ship-consumables' as const,
     label: 'Munition chargée',
   },
-  { name: 'chauffeActuelle', type: 'number' as const, label: 'Chauffe actuelle', defaultValue: 0 },
 ]
 
 export const Ships: CollectionConfig = {

@@ -34,6 +34,7 @@ function rankTier(level: number): string {
 export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, allBaseSkills, relatedShips }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
+  const [weaponHeat, setWeaponHeat] = useState<Record<string, number>>({})
   const [isModified, setIsModified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showLearnNewSkill, setShowLearnNewSkill] = useState(false)
@@ -350,7 +351,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     // Récupérer les stats de munitions/chauffe depuis le weaponGroup (équipé)
     const munitionsActuelles = weaponGroup?.munitionsActuelles ?? 0
-    const chauffeActuelle = weaponGroup?.chauffeActuelle ?? 0
+    const heatKey = slotKey ?? `preview:${weapon.id}`
+    const currentHeat = weaponHeat[heatKey] ?? 0
     
     const bonusChargeur = (structuredMods['chargeur'] || 0) + (magMods['chargeur'] || 0)
     const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
@@ -361,7 +363,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       let newData: any = {}
       if (isThermique) {
         const value = weapon.valeurChauffe ?? 10
-        newData = { chauffeActuelle: Math.min(400, chauffeActuelle + value) }
+        setWeaponHeat((current) => ({ ...current, [heatKey]: Math.min(400, (current[heatKey] ?? 0) + value) }))
+        return
       } else {
         const cost = totalProjectiles || 1
         newData = { munitionsActuelles: Math.max(0, munitionsActuelles - cost) }
@@ -379,15 +382,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const handleCool = async (e: React.MouseEvent) => {
       e.stopPropagation()
       const value = weapon.tempsRefroidissement ?? 10
-      const newData = { chauffeActuelle: Math.max(0, chauffeActuelle - value) }
-      
-      // Mise à jour optimiste
-      setCharacter((prev: any) => ({
-        ...prev,
-        [slotKey!]: { ...prev[slotKey!], ...newData }
-      }))
-      
-      await updateWeaponStatus(character.id, slotKey!, newData)
+      setWeaponHeat((current) => ({ ...current, [heatKey]: Math.max(0, (current[heatKey] ?? 0) - value) }))
     }
 
     const handleReload = async (e: React.MouseEvent) => {
@@ -465,11 +460,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           ...prev[slotKey!], 
           munitionsActuelles: newAmmoCount, 
           chargeurRelie: mag.consommable, 
-          chauffeActuelle: 0 
         },
         inventaire: newCharacter.inventaire,
         consommablesEquipes: newCharacter.consommablesEquipes || prev.consommablesEquipes
       }))
+      setWeaponHeat((current) => ({ ...current, [heatKey]: 0 }))
 
       // Note: reloadWeapon action needs adjustment if it strictly expects mag.fromSlot
       await reloadWeapon(character.id, slotKey!, magConsumableId, newAmmoCount, mag.fromEquippedIndex !== undefined ? `equipped[${mag.fromEquippedIndex}]` : undefined)
@@ -597,19 +592,19 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               <div className="weapon-heat-tracking">
                 <div className="weapon-heat-bar-container">
                   <div 
-                    className={`weapon-heat-bar level-${Math.floor((chauffeActuelle - 0.1) / 100) + 1}`} 
+                    className={`weapon-heat-bar level-${Math.floor((currentHeat - 0.1) / 100) + 1}`}
                     style={{ 
-                      width: `${(chauffeActuelle % 100) || (chauffeActuelle > 0 ? 100 : 0)}%`,
+                      width: `${(currentHeat % 100) || (currentHeat > 0 ? 100 : 0)}%`,
                     }}
                   />
                 </div>
                 <div className="weapon-heat-controls">
-                  <span className="heat-value">{chauffeActuelle}%</span>
+                  <span className="heat-value">{currentHeat}%</span>
                   <div className="heat-btn-group">
                     <button 
                       className="ammo-btn heat-btn cool" 
                       onClick={handleCool} 
-                      disabled={chauffeActuelle <= 0}
+                      disabled={currentHeat <= 0}
                       title="Refroidir"
                     >
                       ❄️
@@ -617,7 +612,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     <button 
                       className="ammo-btn heat-btn fire" 
                       onClick={handleFire} 
-                      disabled={chauffeActuelle >= 400}
+                      disabled={currentHeat >= 400}
                       title="Tirer (chauffe)"
                     >
                       🔥
@@ -1284,6 +1279,14 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
 
     setCharacter(newCharacter)
+    if (type === 'weapon') {
+      setWeaponHeat((current) => {
+        const next = { ...current }
+        delete next[currentSlot]
+        if (newItem.fromSlot) delete next[newItem.fromSlot]
+        return next
+      })
+    }
     setIsModified(true)
     setSelectorConfig(null)
     setHoveredItem(null)
@@ -1319,6 +1322,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
 
     setCharacter(newCharacter)
+    if (type === 'weapon') setWeaponHeat((current) => ({ ...current, [slot]: 0 }))
     setIsModified(true)
     setSelectorConfig(null)
     setHoveredItem(null)
@@ -1932,12 +1936,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                             ...prev[reloadSelectorConfig.slotKey], 
                             munitionsActuelles: newAmmoCount, 
                             chargeurRelie: mag.consommable,
-                            chauffeActuelle: 0 
                           },
                           inventaire: updatedInventory,
                           consommablesEquipes: updatedEquipped,
                           ...updatedSlots
                         }))
+                        setWeaponHeat((current) => ({ ...current, [reloadSelectorConfig.slotKey]: 0 }))
 
                         reloadWeapon(character.id, reloadSelectorConfig.slotKey, magConsumableId, newAmmoCount, fromSlotOrIndex)
                         setReloadSelectorConfig(null)

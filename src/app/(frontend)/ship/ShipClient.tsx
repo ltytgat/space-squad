@@ -27,6 +27,13 @@ import {
 } from './actions'
 
 const object = (value: any) => (typeof value === 'object' && value ? value : null)
+const withoutTransientWeaponHeat = (value: any): any => {
+  if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== 'chauffeActuelle')
+    .map(([key, child]) => [key, withoutTransientWeaponHeat(child)]))
+}
 const isTurretModule = (value: any) => object(value)?.typeModule === 'tourelle'
 const id = (value: any) => object(value)?.id ?? value
 const heatKey = (entry: any, index: number, turretIndex: number) => `${turretIndex}:${index}:${id(entry.arme)}`
@@ -77,9 +84,9 @@ export function ShipClient({
   /** Vaisseau du groupe où l'utilisateur n'est pas embarqué. */
   canJoin?: boolean
 }) {
-  const [ship, setShip] = useState(initialShip)
+  const [ship, setShip] = useState(() => withoutTransientWeaponHeat(initialShip))
   const [crew, setCrew] = useState(initialCrew)
-  const [draft, setDraft] = useState(initialShip)
+  const [draft, setDraft] = useState(() => withoutTransientWeaponHeat(initialShip))
   const [modified, setModified] = useState(false)
   const [saving, setSaving] = useState(false)
   const maxShield = getShipStats(initialShip).maxShield || 0
@@ -142,7 +149,7 @@ export function ShipClient({
       const weapon = object(entry.arme)
       if (weapon?.type !== 'thermique') return
       heatTargets.push({ key: heatKey(entry, index, turretIndex), label: `${location} · ${weapon.nom ?? 'Arme thermique'} (${index + 1})`,
-        heat: localHeat[heatKey(entry, index, turretIndex)] ?? Number(entry.chauffeActuelle ?? 0), maxHeat: numberFrom(object(entry.chargeurRelie)?.calibre) })
+        heat: localHeat[heatKey(entry, index, turretIndex)] ?? 0, maxHeat: numberFrom(object(entry.chargeurRelie)?.calibre) })
     })
   }
   addHeatTargets(ship.armesPilote ?? [], -1, 'Pilote')
@@ -397,7 +404,6 @@ export function ShipClient({
         ...target,
         arme: source.weapon,
         munitionsActuelles: 0,
-        chauffeActuelle: 0,
         chargeurRelie: null,
       })
     } else {
@@ -420,6 +426,8 @@ export function ShipClient({
     }
     setShip(next)
     setDraft(next)
+    clearLocalHeat(heatKey(target, targetIndex, targetTurret))
+    if (source.kind === 'equipped') clearLocalHeat(heatKey(source.entry, source.index, source.turretIndex))
     setModified(true)
     setWeaponSelector(null)
   }
@@ -442,23 +450,13 @@ export function ShipClient({
     const maxHeat = thermal ? numberFrom(loaded?.calibre) : 0
     const cooling = thermal ? coolingFrom(loaded) : 0
     const thermalKey = heatKey(entry, index, turretIndex)
-    const hasLocalHeat = Object.hasOwn(localHeat, thermalKey)
-    const heat = localHeat[thermalKey] ?? Number(entry.chauffeActuelle ?? 0)
+    const heat = localHeat[thermalKey] ?? 0
     const ammoCount = Number(entry.munitionsActuelles ?? 0)
     const capacity = explosive ? 1 : Number(weapon.chargeur) || 0
-    const fire = (key: string, value: number) => {
-      if (key === 'chauffeActuelle' && hasLocalHeat) {
-        setLocalHeat((current) => ({ ...current, [thermalKey]: roundHeat(Math.max(0, value)) }))
-        return
-      }
-      return updateWeapon(
-        turretIndex >= 0 ? 'armesTourelles' : 'armesPilote',
-        index,
-        key,
-        value,
-        turretIndex,
-      )
-    }
+    const setHeat = (value: number) => setLocalHeat((current) => ({
+      ...current,
+      [thermalKey]: roundHeat(Math.max(0, value)),
+    }))
     const reload = async () => {
       if (!thermal && capacity > 0 && ammoCount >= capacity) {
         console.info('[ship-ammo] chargeur plein', { weapon: weapon.nom, ammoCount, capacity, loaded: loaded?.nom })
@@ -523,7 +521,6 @@ export function ShipClient({
       const data: any = {
         munitionsActuelles: thermal ? 0 : (changingType ? 0 : ammoCount) + loadUnits,
         chargeurRelie: ammo.id,
-        chauffeActuelle: 0,
       }
       const serverData = { ...data, inventoryConsommables: cleanedInventory }
       const localData = { ...data, chargeurRelie: ammo }
@@ -577,20 +574,17 @@ export function ShipClient({
                 Chauffe {heat} / {maxHeat || '—'} MJ
               </b>
               <button
-                className={hasLocalHeat ? 'ship-local-heat' : undefined}
-                disabled={(readOnly && !hasLocalHeat) || heat <= 0}
-                onClick={() => fire('chauffeActuelle', Math.max(0, heat - cooling))}
+                className="ship-local-heat"
+                disabled={heat <= 0}
+                onClick={() => setHeat(heat - cooling)}
               >
                 ❄ Refroidir
               </button>
               <button
-                className={hasLocalHeat ? 'ship-local-heat' : undefined}
-                disabled={(readOnly && !hasLocalHeat) || (maxHeat > 0 && heat >= maxHeat)}
+                className="ship-local-heat"
+                disabled={maxHeat > 0 && heat >= maxHeat}
                 onClick={() =>
-                  fire(
-                    'chauffeActuelle',
-                    Math.min(maxHeat || heat + 10, heat + (Number(weapon.chauffe) || 10)),
-                  )
+                  setHeat(Math.min(maxHeat || heat + 10, heat + (Number(weapon.chauffe) || 10)))
                 }
               >
                 ♨ Tirer
@@ -614,9 +608,12 @@ export function ShipClient({
             <button
               disabled={readOnly || ammoCount <= 0}
               onClick={() =>
-                fire(
+                updateWeapon(
+                  turretIndex >= 0 ? 'armesTourelles' : 'armesPilote',
+                  index,
                   'munitionsActuelles',
                   Math.max(0, ammoCount - (Number(weapon.ballesParSalve) || 1)),
+                  turretIndex,
                 )
               }
             >
@@ -707,7 +704,7 @@ export function ShipClient({
     })
     if (returned > 0) inventory.push({ consommable: loaded.id, quantite: returned })
     const cleaned = inventory.filter((item: any) => item.quantite > 0)
-    const data = { munitionsActuelles: (changingType ? 0 : oldCount) + loadUnits, chargeurRelie: source.ammo.id, chauffeActuelle: 0, inventoryConsommables: cleaned }
+    const data = { munitionsActuelles: (changingType ? 0 : oldCount) + loadUnits, chargeurRelie: source.ammo.id, inventoryConsommables: cleaned }
     if (turretIndex >= 0) {
       const turrets = [...(ship.armesTourelles ?? [])]
       turrets[turretIndex] = { ...turrets[turretIndex], armes: [...turrets[turretIndex].armes] }

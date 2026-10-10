@@ -48,12 +48,12 @@ describe('redirection locale de la chaleur', () => {
 
   const ship = {
     id: 1, modele: { chassis: {} }, moduleGenerateur: { puissance: '2 GW' }, modulePropulseurs: { consommation: 3.5 },
-    armesPilote: [{ arme: { id: 1, nom: 'Laser', type: 'thermique' }, chauffeActuelle: 20,
+    armesPilote: [{ arme: { id: 1, nom: 'Laser', type: 'thermique' },
       chargeurRelie: { id: 3, nom: 'Cartouche', calibre: '500 MJ', bonus: 'Refroidissement : 50' } }],
     armesTourelles: [{ tourelle: 1, armes: [{ arme: { id: 2, nom: 'Canon', type: 'cinetique' } }] }],
   }
 
-  it('cumule les applications et fait évoluer la chauffe localement avec les actions', () => {
+  it('cumule les applications et conserve la chauffe uniquement en mémoire', () => {
     render(createElement(ShipClient, { ship, crew: [], readOnly: true }))
     expect(screen.getByText('Surchauffe : +1.5 de consommation · 150 MJ')).toBeTruthy()
     fireEvent.click(screen.getByText('Rediriger la chaleur'))
@@ -62,19 +62,19 @@ describe('redirection locale de la chaleur', () => {
     fireEvent.change(screen.getByLabelText('MJ pour Pilote · Laser (1)'), { target: { value: '150' } })
     fireEvent.click(screen.getByText('Appliquer'))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getByText('Chauffe 170 / 500 MJ')).toBeTruthy()
+    expect(screen.getByText('Chauffe 150 / 500 MJ')).toBeTruthy()
     expect(screen.queryByText(/Chaleur redirigée/)).toBeNull()
     fireEvent.click(screen.getByText('Rediriger la chaleur'))
     fireEvent.click(screen.getByText('Appliquer'))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getByText('Chauffe 320 / 500 MJ')).toBeTruthy()
+    expect(screen.getByText('Chauffe 300 / 500 MJ')).toBeTruthy()
     fireEvent.click(screen.getByText('❄ Refroidir'))
-    expect(screen.getByText('Chauffe 270 / 500 MJ')).toBeTruthy()
+    expect(screen.getByText('Chauffe 250 / 500 MJ')).toBeTruthy()
     fireEvent.click(screen.getByText('♨ Tirer'))
-    expect(screen.getByText('Chauffe 280 / 500 MJ')).toBeTruthy()
+    expect(screen.getByText('Chauffe 260 / 500 MJ')).toBeTruthy()
     for (let i = 0; i < 6; i++) fireEvent.click(screen.getByText('❄ Refroidir'))
     expect(screen.getByText('Chauffe 0 / 500 MJ')).toBeTruthy()
-    expect(ship.armesPilote[0].chauffeActuelle).toBe(20)
+    expect(ship.armesPilote[0]).not.toHaveProperty('chauffeActuelle')
     for (const action of Object.values(actions)) expect(action).not.toHaveBeenCalled()
   })
 

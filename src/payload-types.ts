@@ -342,7 +342,6 @@ export interface Ship {
         arme: number | ShipWeapon;
         munitionsActuelles?: number | null;
         chargeurRelie?: (number | null) | ShipConsumable;
-        chauffeActuelle?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -355,7 +354,6 @@ export interface Ship {
               arme: number | ShipWeapon;
               munitionsActuelles?: number | null;
               chargeurRelie?: (number | null) | ShipConsumable;
-              chauffeActuelle?: number | null;
               id?: string | null;
             }[]
           | null;
@@ -665,28 +663,24 @@ export interface Character {
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
-    chauffeActuelle?: number | null;
   };
   armeSecondaire?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
-    chauffeActuelle?: number | null;
   };
   armeLourde?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
-    chauffeActuelle?: number | null;
   };
   armeDeMelee?: {
     item?: (number | null) | Weapon;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
-    chauffeActuelle?: number | null;
   };
   /**
    * Consommables portés sur le backpack. L'espace total dépend du backpack équipé.
@@ -709,7 +703,6 @@ export interface Character {
         mods?: (number | Mod)[] | null;
         munitionsActuelles?: number | null;
         chargeurRelie?: (number | null) | Consumable;
-        chauffeActuelle?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -1531,7 +1524,6 @@ export interface ShipsSelect<T extends boolean = true> {
         arme?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
-        chauffeActuelle?: T;
         id?: T;
       };
   armesTourelles?:
@@ -1545,7 +1537,6 @@ export interface ShipsSelect<T extends boolean = true> {
               arme?: T;
               munitionsActuelles?: T;
               chargeurRelie?: T;
-              chauffeActuelle?: T;
               id?: T;
             };
         id?: T;
@@ -1867,7 +1858,6 @@ export interface CharactersSelect<T extends boolean = true> {
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
-        chauffeActuelle?: T;
       };
   armeSecondaire?:
     | T
@@ -1876,7 +1866,6 @@ export interface CharactersSelect<T extends boolean = true> {
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
-        chauffeActuelle?: T;
       };
   armeLourde?:
     | T
@@ -1885,7 +1874,6 @@ export interface CharactersSelect<T extends boolean = true> {
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
-        chauffeActuelle?: T;
       };
   armeDeMelee?:
     | T
@@ -1894,7 +1882,6 @@ export interface CharactersSelect<T extends boolean = true> {
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
-        chauffeActuelle?: T;
       };
   consommablesEquipes?: T;
   consommableEquipe1?: T;
@@ -1912,7 +1899,6 @@ export interface CharactersSelect<T extends boolean = true> {
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
-        chauffeActuelle?: T;
         id?: T;
       };
   inventaireArmures?:

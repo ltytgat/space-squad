@@ -87,7 +87,7 @@ function itemData(character: any, sourceKey: string, quantity: number | undefine
       const weaponId = numericId(row.item)
       const mods = (row.mods ?? []).map(numericId)
       if (!weaponId || mods.some((id: number | null) => !id)) fail('Une arme en réserve contient une référence invalide.')
-      return { item: weaponId, mods, munitionsActuelles: Number(row.munitionsActuelles) || 0, chargeurRelie: numericId(row.chargeurRelie), chauffeActuelle: Number(row.chauffeActuelle) || 0 }
+      return { item: weaponId, mods, munitionsActuelles: Number(row.munitionsActuelles) || 0, chargeurRelie: numericId(row.chargeurRelie) }
     }
     return { sourceUpdate: { [field]: sourceRows.map(normalize) }, destinationUpdate: { [field]: [...(destination[field] ?? []).map(normalize), normalize(original)] }, quantity: 1, itemId, field }
   }

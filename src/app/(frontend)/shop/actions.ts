@@ -31,6 +31,13 @@ const catalogs: Record<ItemKind, string> = {
 
 class ShopError extends Error {}
 function fail(message: string): never { throw new ShopError(message) }
+function withoutTransientWeaponHeat(value: any): any {
+  if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== 'chauffeActuelle')
+    .map(([key, child]) => [key, withoutTransientWeaponHeat(child)]))
+}
 const numericId = (value: unknown) => {
   const id = relationId(value)
   return id && /^\d+$/.test(id) ? Number(id) : null
@@ -88,7 +95,7 @@ function normalizePersonalWeapons(entries: any[]) {
   return entries.map((entry) => ({
     item: numericId(entry.item), mods: getInventoryIds(entry.mods).map(Number),
     munitionsActuelles: entry.munitionsActuelles ?? 0,
-    chargeurRelie: numericId(entry.chargeurRelie), chauffeActuelle: entry.chauffeActuelle ?? 0,
+    chargeurRelie: numericId(entry.chargeurRelie),
   }))
 }
 function normalizePersonalArmors(entries: any[]) {
@@ -200,7 +207,7 @@ export async function executeShopTransaction(raw: ShopInput) {
         }
         debit()
         applyDiscount({ kind: 'weapon', categorie: item.categorie })
-        characterUpdate.inventaireArmes = normalizePersonalWeapons(character.inventaireArmes ?? []).concat([{ item: item.id, mods: [], munitionsActuelles: 0, chargeurRelie: null, chauffeActuelle: 0 }])
+        characterUpdate.inventaireArmes = normalizePersonalWeapons(character.inventaireArmes ?? []).concat([{ item: item.id, mods: [], munitionsActuelles: 0, chargeurRelie: null }])
       } else if (input.action === 'buy' && input.kind === 'armor') {
         debit()
         characterUpdate.inventaireArmures = normalizePersonalArmors(character.inventaireArmures ?? []).concat([{ item: item.id, mods: [] }])
@@ -311,7 +318,7 @@ export async function executeShopTransaction(raw: ShopInput) {
       const nextBalance = input.action === 'sell' ? exactAdd(balance, amount) : exactSubtract(balance, amount)
       if (input.action !== 'sell' && nextBalance < 0) fail('Vous ne possédez pas assez de Konis.')
       if (!Number.isFinite(nextBalance)) fail('Le montant calculé est invalide.')
-      if (Object.keys(characterUpdate).length) character = await payload.update({ collection: 'characters', id: characterId, data: { ...characterUpdate, konis: nextBalance }, overrideAccess: true, user, req }) as any
+      if (Object.keys(characterUpdate).length) character = await payload.update({ collection: 'characters', id: characterId, data: withoutTransientWeaponHeat({ ...characterUpdate, konis: nextBalance }), overrideAccess: true, user, req }) as any
       else await payload.update({ collection: 'characters', id: characterId, data: { konis: nextBalance }, overrideAccess: true, user, req })
       if (Object.keys(shipUpdate).length) await payload.update({ collection: 'ships', id: input.shipId!, data: shipUpdate, overrideAccess: true, user, req })
 

@@ -12,6 +12,14 @@ const relationNumericId = (value: any): number | null => {
   return Number.isSafeInteger(id) && id > 0 ? id : null
 }
 
+function withoutTransientWeaponHeat(value: any): any {
+  if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== 'chauffeActuelle')
+    .map(([key, child]) => [key, withoutTransientWeaponHeat(child)]))
+}
+
 async function assertConsumablesCanBeEquipped(payload: any, character: any, values: any[]) {
   const consumableIds = [...new Set<number>(values.map(relationNumericId).filter((id: number | null): id is number => id !== null))]
   if (!consumableIds.length) return
@@ -72,7 +80,7 @@ export async function updateCharacter(characterId: number, data: any) {
   }
 
   // Filtrer les données si l'utilisateur n'est pas admin
-  let updateData = { ...data }
+  let updateData = withoutTransientWeaponHeat(data)
   if (!isAdmin) {
     const forbiddenPatterns = [
       /^coaching.*(Label|Max)$/,
@@ -121,7 +129,7 @@ export async function updateCharacter(characterId: number, data: any) {
 export async function updateWeaponStatus(
   characterId: number, 
   slot: string, 
-  data: { munitionsActuelles?: number; chauffeActuelle?: number; chargeurRelie?: any }
+  data: { munitionsActuelles?: number; chargeurRelie?: any }
 ) {
   const { payload, user } = await getAuthenticatedPayload()
   if (!user) throw new Error('Non autorisé')
@@ -147,9 +155,7 @@ export async function updateWeaponStatus(
   await payload.update({
     collection: 'characters',
     id: characterId,
-    data: {
-      [slot]: updatedWeaponGroup
-    },
+    data: { [slot]: withoutTransientWeaponHeat(updatedWeaponGroup) },
     user,
     overrideAccess: true,
   })
@@ -190,7 +196,6 @@ export async function reloadWeapon(
     ...currentWeaponGroup,
     munitionsActuelles: newAmmoCount,
     chargeurRelie: consumableId,
-    chauffeActuelle: 0
   }
 
   const updateData: any = {
@@ -224,7 +229,7 @@ export async function reloadWeapon(
   await payload.update({
     collection: 'characters',
     id: characterId,
-    data: updateData,
+    data: withoutTransientWeaponHeat(updateData),
     user,
     overrideAccess: true,
   })
