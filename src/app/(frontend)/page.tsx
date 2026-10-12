@@ -38,7 +38,7 @@ export default async function HomePage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.svg" alt="Space Squad" className="ss-hero-logo" />
           <p className="ss-hero-sub">
-            Un univers original de science-fiction dure.
+            Un univers original de Hard-SF.
             <br />
             Lore, jeu de rôle, jeux de plateau.
           </p>
@@ -156,16 +156,6 @@ export default async function HomePage() {
                 </a>
               </article>
 
-              <article className="ss-card">
-                <div className="ss-card-icon" aria-hidden="true">🗺️</div>
-                <h3>Scénarios &amp; Campagnes</h3>
-                <p>
-                  Des aventures prêtes à jouer dans l&apos;univers Space Squad.
-                </p>
-                <span className="ss-btn ss-btn-outline ss-btn-disabled">
-                  Bientôt disponible
-                </span>
-              </article>
             </div>
 
             <div className="ss-section-cta">

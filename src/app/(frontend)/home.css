@@ -204,9 +204,9 @@
 
 .ss-grid-jdr {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .ss-grid-proto {
