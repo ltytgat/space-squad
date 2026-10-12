@@ -145,13 +145,14 @@ export default async function HomePage() {
                 <p>
                   {user
                     ? 'Consultez et gérez votre fiche de personnage directement en ligne.'
-                    : 'Créez et gérez vos personnages directement en ligne. Connexion requise.'}
+                    : 'Créez et gérez vos personnages directement en ligne. Connexion requise, ou téléchargez la fiche originale (format .ods).'}
                 </p>
                 <a
-                  href={user ? (characterId ? `/characters/${characterId}` : '/character') : '/login'}
+                  href={user ? (characterId ? `/characters/${characterId}` : '/character') : '/docs/Fiche_de_Personnage.ods'}
+                  download={user ? undefined : 'Fiche_de_Personnage.ods'}
                   className="ss-btn ss-btn-outline"
                 >
-                  {user ? 'Accéder à ma fiche' : 'Se connecter'}
+                  {user ? 'Accéder à ma fiche' : 'Télécharger la fiche originale'}
                 </a>
               </article>
 
