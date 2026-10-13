@@ -88,7 +88,6 @@ export const Characters: CollectionConfig = {
       name: 'creationEtape',
       type: 'select',
       label: 'Étape de création',
-      defaultValue: 'caracteristiques',
       options: [
         { label: 'Caractéristiques', value: 'caracteristiques' },
         { label: 'Espèce', value: 'espece' },

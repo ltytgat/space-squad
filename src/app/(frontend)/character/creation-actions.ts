@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 type CreationStep = 'caracteristiques' | 'espece' | 'equipement' | 'identite' | 'termine'
 type AbilityRoll = { dice: number[]; kept: number[]; discarded: number; total: number }
@@ -83,7 +84,7 @@ async function withOwnedCharacter<T>(characterId: number, operation: (context: {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${characterId} FOR UPDATE` })
     const character = await payload.findByID({ collection: 'characters', id: characterId, depth: 1, overrideAccess: true, req }) as any
     if (numericId(character.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
-    if (character.creationEtape === 'termine' || !character.creationEtape) fail('La création de ce personnage est déjà terminée.')
+    if (isCharacterCreationComplete(character)) fail('La création de ce personnage est déjà terminée.')
 
     const result = await operation({ payload, user, character, req })
     await payload.db.commitTransaction?.(transactionID)

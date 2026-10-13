@@ -124,9 +124,6 @@ async function getContext() {
   const character = docs[0]
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’utiliser la boutique.')
-  if ((character as any).creationEtape && (character as any).creationEtape !== 'termine') {
-    fail('Terminez le parcours de création de votre personnage avant d’utiliser la boutique.')
-  }
   return { payload, user, characterId: character.id }
 }
 

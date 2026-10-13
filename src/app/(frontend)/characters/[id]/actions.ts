@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character } from '@/payload-types'
 import { computeRank, minimumRankForChipSlot } from '@/lib/rankSystem'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
@@ -79,7 +80,7 @@ export async function updateCharacter(characterId: number, data: any) {
   if (!isAdmin && !isOwner) {
     throw new Error('Non autorisé')
   }
-  if (!isAdmin && character.creationEtape && character.creationEtape !== 'termine') {
+  if (!isAdmin && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
 
@@ -164,7 +165,7 @@ export async function updateWeaponStatus(
   // Vérifier que l'utilisateur est admin ou propriétaire
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
-  if (user.role !== 'admin' && character.creationEtape && character.creationEtape !== 'termine') {
+  if (user.role !== 'admin' && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
   if (data.chargeurRelie != null) await assertConsumablesCanBeEquipped(payload, character, [data.chargeurRelie])
@@ -207,7 +208,7 @@ export async function reloadWeapon(
   // Vérifier que l'utilisateur est admin ou propriétaire
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
-  if (user.role !== 'admin' && character.creationEtape && character.creationEtape !== 'termine') {
+  if (user.role !== 'admin' && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
 

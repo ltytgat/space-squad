@@ -50,9 +50,6 @@ async function getContext() {
   const character = docs[0] as any
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser le chantier naval.')
-  if (character.creationEtape && character.creationEtape !== 'termine') {
-    fail('Terminez le parcours de création de votre personnage avant d’utiliser le chantier naval.')
-  }
   return { payload, user, character }
 }
 

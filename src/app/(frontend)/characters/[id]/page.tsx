@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import config from '@/payload.config'
 import { findGroupShipIds } from '@/lib/shipAccess'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import '../../character/character.css'
 
 // ── Types locaux pour les relations populées (depth: 1) ──────────────────────
@@ -178,7 +179,7 @@ export default async function CharacterDetailPage({
   const isOwner = String(ownerId) === String(user.id)
 
   if (!isAdmin && !isOwner) redirect('/')
-  if (isOwner && (character as any).creationEtape && (character as any).creationEtape !== 'termine') redirect('/character')
+  if (isOwner && !isCharacterCreationComplete(character as any)) redirect('/character')
 
   // Vaisseaux accessibles : ceux du groupe, plus celui où le personnage est embarqué.
   const groupShipIds = await findGroupShipIds(payload, character)

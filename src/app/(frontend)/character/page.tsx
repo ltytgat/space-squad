@@ -7,6 +7,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { CharacterCreationWizard } from './CreationWizard'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import './character.css'
 import './creation.css'
 import '../shop/shop.css'
@@ -31,8 +32,7 @@ export default async function CharacterPage() {
   })
 
   const character = docs[0] ?? null
-  const creationStep = (character as any)?.creationEtape
-  if (character && (!creationStep || creationStep === 'termine')) redirect(`/characters/${character.id}`)
+  if (character && isCharacterCreationComplete(character)) redirect(`/characters/${character.id}`)
 
   if (character) {
     const [modelsResult, weaponsResult] = await Promise.all([
