@@ -37,6 +37,23 @@ const withoutTransientWeaponHeat = (value: any): any => {
 const isTurretModule = (value: any) => object(value)?.typeModule === 'tourelle'
 const id = (value: any) => object(value)?.id ?? value
 const heatKey = (entry: any, index: number, turretIndex: number) => `${turretIndex}:${index}:${id(entry.arme)}`
+const focusedFireKey = (turretIndex: number, module: any) => `${turretIndex}:${id(module)}`
+const turretConsumptionFamilies = ['bombardement', 'shotgun', 'dispersion']
+const damageBonusFamilies = ['bombardement', 'shotgun']
+const formatMultiplier = (value: number) => String(Number(value.toPrecision(12)))
+const damageMultiplierFor = (module: any, focusedFireMJ: number) => {
+  if (damageBonusFamilies.includes(module?.famille)) {
+    return 1 + (Number(module.bonusDegatsPourcentage) || 0) / 100
+  }
+  if (module?.famille === 'tir-concentre') {
+    return 1 + ((Number(module.bonusDegatsPar100MJ) || 0) * focusedFireMJ) / 10000
+  }
+  return 1
+}
+const damageWithMultiplier = (damage: unknown, multiplier: number) => {
+  const baseDamage = String(damage ?? '—')
+  return multiplier === 1 || baseDamage === '—' ? baseDamage : `(${baseDamage})*${formatMultiplier(multiplier)}`
+}
 const numberFrom = (value: unknown) => {
   const match = String(value ?? '')
     .replace(',', '.')
@@ -137,6 +154,7 @@ export function ShipClient({
   // Isolated from ship/draft: these values must never enter a server action payload.
   const [heatAllocation, setHeatAllocation] = useState<{ signature: string; values: Record<string, number> }>({ signature: '', values: {} })
   const [localHeat, setLocalHeat] = useState<Record<string, number>>({})
+  const [focusedFireMJByTurret, setFocusedFireMJByTurret] = useState<Record<string, number>>({})
   const clearLocalHeat = (key: string) => setLocalHeat((current) => {
     const next = { ...current }
     delete next[key]
@@ -437,6 +455,18 @@ export function ShipClient({
     const thermal = weapon.type === 'thermique'
     const explosive = weapon.type === 'explosif'
     const kinetic = !thermal && !explosive
+    const turretModule = turretIndex >= 0 ? object(ship.armesTourelles?.[turretIndex]?.module) : null
+    const fireStateKey = turretModule ? focusedFireKey(turretIndex, turretModule) : ''
+    const focusedFireMaxMJ = Math.floor(Math.max(0, Number(turretModule?.mjMaxUtilisable) || 0) / 100) * 100
+    const focusedFireMJ = turretModule?.famille === 'tir-concentre'
+      ? Math.min(focusedFireMaxMJ, focusedFireMJByTurret[fireStateKey] ?? 0)
+      : 0
+    const consumptionMultiplier = turretModule && turretConsumptionFamilies.includes(turretModule.famille)
+      ? 1 + Math.max(0, Number(turretModule.consommationSupplementaire) || 0) / 100
+      : 1
+    const damageMultiplier = turretIndex >= 0 && (turretModule?.famille !== 'tir-concentre' || thermal)
+      ? damageMultiplierFor(turretModule, focusedFireMJ)
+      : 1
     const inventoryEntries = ship.inventaireConsommables ?? []
     const loaded = object(entry.chargeurRelie)
     const compatibleEntries = inventoryEntries.filter((item: any) => {
@@ -453,6 +483,15 @@ export function ShipClient({
     const heat = localHeat[thermalKey] ?? 0
     const ammoCount = Number(entry.munitionsActuelles ?? 0)
     const capacity = explosive ? 1 : Number(weapon.chargeur) || 0
+    const baseHeatCost = Number(weapon.chauffe) || 10
+    const heatCost = roundHeat(baseHeatCost * consumptionMultiplier + (thermal ? focusedFireMJ : 0))
+    const baseAmmoCost = Number(weapon.ballesParSalve) || 1
+    const hasTurretConsumptionModule = Boolean(turretModule && turretConsumptionFamilies.includes(turretModule.famille))
+    const ammoCost = turretIndex >= 0 ? Math.ceil(baseAmmoCost * consumptionMultiplier) : baseAmmoCost
+    const canFireAmmo = turretIndex >= 0 ? ammoCount >= ammoCost : ammoCount > 0
+    const canFireThermal = maxHeat <= 0 || heat + heatCost <= maxHeat
+    const hasModifiedThermalCost = turretIndex >= 0 && Boolean(turretModule) &&
+      (consumptionMultiplier !== 1 || focusedFireMJ > 0)
     const setHeat = (value: number) => setLocalHeat((current) => ({
       ...current,
       [thermalKey]: roundHeat(Math.max(0, value)),
@@ -558,7 +597,7 @@ export function ShipClient({
           <span className="ship-tag">{weaponLabel}</span>
         </div>
         <div className="ship-weapon-summary">
-          <span>Dégâts {weapon.degats ?? '—'}</span>
+          <span>{`Dégâts ${damageWithMultiplier(weapon.degats, damageMultiplier)}`}</span>
           {weapon.cooldown != null && <span>Cooldown {weapon.cooldown} t</span>}
           {weapon.ballesParSalve != null && <span>{weapon.ballesParSalve} balle(s)/salve</span>}
           {explosive && weapon.distance != null && <span>Portée {weapon.distance}</span>}
@@ -573,6 +612,7 @@ export function ShipClient({
               <b>
                 Chauffe {heat} / {maxHeat || '—'} MJ
               </b>
+              {hasModifiedThermalCost && <small>Coût par tir : {heatCost} MJ</small>}
               <button
                 className="ship-local-heat"
                 disabled={heat <= 0}
@@ -582,10 +622,8 @@ export function ShipClient({
               </button>
               <button
                 className="ship-local-heat"
-                disabled={maxHeat > 0 && heat >= maxHeat}
-                onClick={() =>
-                  setHeat(Math.min(maxHeat || heat + 10, heat + (Number(weapon.chauffe) || 10)))
-                }
+                disabled={!canFireThermal}
+                onClick={() => setHeat(heat + heatCost)}
               >
                 ♨ Tirer
               </button>
@@ -605,14 +643,17 @@ export function ShipClient({
             <b>
               {explosive ? 'Charge' : 'Munitions'} {ammoCount} / {capacity || '—'}
             </b>
+            {hasTurretConsumptionModule && (
+              <small>Coût par tir : {ammoCost}</small>
+            )}
             <button
-              disabled={readOnly || ammoCount <= 0}
+              disabled={readOnly || !canFireAmmo}
               onClick={() =>
                 updateWeapon(
                   turretIndex >= 0 ? 'armesTourelles' : 'armesPilote',
                   index,
                   'munitionsActuelles',
-                  Math.max(0, ammoCount - (Number(weapon.ballesParSalve) || 1)),
+                  Math.max(0, ammoCount - ammoCost),
                   turretIndex,
                 )
               }
@@ -638,14 +679,19 @@ export function ShipClient({
     ) : (
       <p className="ship-muted">Aucune arme installée.</p>
     )
-  const renderTurretModule = (moduleValue: any) => {
+  const renderTurretModule = (moduleValue: any, turretIndex: number, entries: any[]) => {
     const module = object(moduleValue)
     if (!module) return null
     // Les champs masqués dans l’admin peuvent conserver des valeurs en base.
     // Appliquer les mêmes conditions de famille que la collection ShipModules.
-    const hasRange = ['bombardement', 'shotgun', 'dispersion'].includes(module.famille)
-    const hasDamageBonus = ['bombardement', 'shotgun'].includes(module.famille)
+    const hasRange = turretConsumptionFamilies.includes(module.famille)
+    const hasDamageBonus = damageBonusFamilies.includes(module.famille)
     const isFocusedFire = module.famille === 'tir-concentre'
+    const fireStateKey = focusedFireKey(turretIndex, module)
+    const maxFocusedFireMJ = Math.floor(Math.max(0, Number(module.mjMaxUtilisable) || 0) / 100) * 100
+    const selectedFocusedFireMJ = Math.min(maxFocusedFireMJ, focusedFireMJByTurret[fireStateKey] ?? 0)
+    const hasThermalWeapon = entries.some((entry: any) => object(entry.arme)?.type === 'thermique')
+    const focusedMultiplier = damageMultiplierFor(module, selectedFocusedFireMJ)
     const effects = [
       module.modificateurs && `Modificateurs : ${module.modificateurs}`,
       hasRange && module.consommationSupplementaire != null && `Consommation supplémentaire : +${module.consommationSupplementaire}%`,
@@ -653,6 +699,7 @@ export function ShipClient({
       hasDamageBonus && module.bonusDegatsPourcentage != null && `Bonus de dégâts : +${module.bonusDegatsPourcentage}%`,
       isFocusedFire && module.bonusDegatsPar100MJ != null && `Bonus de dégâts / 100 MJ : +${module.bonusDegatsPar100MJ}%`,
       isFocusedFire && module.mjMaxUtilisable != null && `MJ maximum utilisables : ${module.mjMaxUtilisable}`,
+      isFocusedFire && `Multiplicateur actuel : ×${formatMultiplier(focusedMultiplier)}`,
       module.famille === 'dispersion' && module.angleTir && `Angle de tir : ${module.angleTir}`,
     ].filter(Boolean)
     return (
@@ -667,6 +714,27 @@ export function ShipClient({
           </div>
         ) : (
           <span className="ship-muted">Aucun effet renseigné.</span>
+        )}
+        {isFocusedFire && (
+          <label className="ship-focused-fire">
+            <span>
+              Tir concentré : <strong>+{selectedFocusedFireMJ} MJ</strong>
+              {!hasThermalWeapon && <small>Aucune arme thermique dans cette tourelle</small>}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={maxFocusedFireMJ}
+              step={100}
+              value={selectedFocusedFireMJ}
+              disabled={readOnly || !hasThermalWeapon || maxFocusedFireMJ === 0}
+              aria-label={`Chauffe supplémentaire de la tourelle ${turretIndex + 1}`}
+              onChange={(event) => setFocusedFireMJByTurret((current) => ({
+                ...current,
+                [fireStateKey]: Number(event.target.value),
+              }))}
+            />
+          </label>
         )}
         {module.description && <p className="ship-turret-module-description">{module.description}</p>}
       </div>
@@ -728,7 +796,7 @@ export function ShipClient({
         <h2 className="ship-card-title">{title}</h2>
         <span className="ship-tag">{slots} emplacement(s)</span>
       </div>
-      {turretModule && renderTurretModule(turretModule)}
+      {turretModule && renderTurretModule(turretModule, turretIndex, entries)}
       {weaponList(entries, turretIndex)}
     </section>
   )

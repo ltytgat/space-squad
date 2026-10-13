@@ -179,6 +179,11 @@
 .ship-turret-module-heading strong { color: #c8a6ff; font-size: .85rem; text-transform: none; letter-spacing: normal; }
 .ship-turret-module-effects { display: flex; flex-wrap: wrap; gap: .4rem .75rem; color: var(--ss-text); font-size: .78rem; }
 .ship-turret-module-description { margin: 0; color: var(--ss-text-muted); font-size: .75rem; }
+.ship-focused-fire { display: grid; grid-template-columns: minmax(0, 1fr) minmax(8rem, 1.5fr); align-items: center; gap: .5rem 1rem; color: var(--ss-text); font-size: .78rem; }
+.ship-focused-fire > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; }
+.ship-focused-fire strong { color: #c8a6ff; }
+.ship-focused-fire small { flex-basis: 100%; color: var(--ss-text-muted); }
+.ship-focused-fire input[type="range"] { width: 100%; accent-color: #c8a6ff; }
 .ship-turret + .ship-turret { margin-top: 1rem; }
 .ship-inventory-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
 .ship-inventory-group { display: flex; flex-wrap: wrap; gap: .5rem; flex-basis: 100%; min-width: 0; }
