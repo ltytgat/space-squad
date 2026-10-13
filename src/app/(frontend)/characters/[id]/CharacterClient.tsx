@@ -32,6 +32,19 @@ function rankTier(level: number): string {
   return 'master'
 }
 
+const ARMOR_SLOT_CATEGORIES: Record<string, string> = {
+  armureTete: 'tete',
+  armureTorse: 'torse',
+  armureBras: 'bras',
+  armureJambes: 'jambes',
+  armureBackpack: 'backpack',
+}
+
+function getArmorCategory(armorGroup: any): string | undefined {
+  const armor = armorGroup?.item || armorGroup
+  return typeof armor === 'object' && armor !== null ? armor.categorie : undefined
+}
+
 export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, allBaseSkills, relatedShips }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
@@ -1033,7 +1046,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
     
     if (type === 'armor') {
-      const inventory = (character.inventaireArmures || []).map((a: any, idx: number) => ({ ...a, fromInventory: true, inventoryIndex: idx }))
+      const inventory = (character.inventaireArmures || [])
+        .map((a: any, idx: number) => ({ ...a, fromInventory: true, inventoryIndex: idx }))
+        .filter((a: any) => getArmorCategory(a) === category)
       
       // Pour les armures, peu de chances de vouloir swap car elles sont par slot strict,
       // mais on respecte l'énoncé.
@@ -1041,7 +1056,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       const equipped = equippedSlots
         .filter(s => s !== slot)
         .map(s => character[s])
-        .filter(a => a && a.item && a.item.categorie === category)
+        .filter(a => getArmorCategory(a) === category)
         .map(a => ({ ...a, fromSlot: equippedSlots.find(s => character[s] === a) }))
 
       return [...equipped, ...inventory]
@@ -1117,6 +1132,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   const handleEquip = (newItem: any, currentSlot: string, type: string) => {
+    if (type === 'armor' && getArmorCategory(newItem) !== ARMOR_SLOT_CATEGORIES[currentSlot]) return
+
     const minimumRank = type === 'chip' ? minimumRankForChipSlot(currentSlot) : null
     if (!isAdmin && minimumRank !== null && stats.rankInfo.level < minimumRank) {
       alert(`Cet emplacement se débloque au rang ${minimumRank}.`)
