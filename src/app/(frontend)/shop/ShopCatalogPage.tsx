@@ -23,6 +23,7 @@ function summaries(docs: any[]): ShopItem[] {
     id: doc.id,
     nom: doc.nom ?? 'Objet sans nom',
     prix: doc.prix ?? null,
+    rang: doc.rang ?? null,
     categorie: doc.categorie ?? null,
     categoriePrincipale: doc.categoriePrincipale ?? null,
     sousCategorieArme: doc.sousCategorieArme ?? null,

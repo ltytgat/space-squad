@@ -12,6 +12,7 @@ export type ShopItem = {
   id: number
   nom: string
   prix: number | string | null
+  rang?: number | null
   categorie?: string | null
   famille?: string | null
   categoriePrincipale?: string | null
@@ -116,6 +117,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const activeSection = isAll ? section : sectionForScope[scope]
   const availableDamageTypeChoices = activeSection === 'spatial' ? damageTypeChoices.filter(([value]) => value !== 'plasma') : damageTypeChoices
   const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => factionCanBuyWeaponAtRank(item.nom, character.rang, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.rang, character.inventaireRecompensesFaction, character.factionName])
+  const availableArmors = useMemo(() => catalogs.armors.filter((item) => item.rang == null || item.rang <= character.rang), [catalogs.armors, character.rang])
   const categories = useMemo(() => [...new Set([...availableWeapons, ...catalogs.armors, ...catalogs.consumables, ...catalogs.shipWeapons, ...catalogs.shipModules, ...catalogs.shipConsumables].map((item) => item.categorie ?? item.famille).filter(Boolean) as string[])].sort(), [availableWeapons, catalogs])
   const facetField: 'categorie' | 'sousCategorieArme' | 'sousCategorieArmure' | 'typeModule' | null = scope === 'sol-armes' || scope === 'sol-armures' ? 'categorie' : scope === 'mods-armes' ? 'sousCategorieArme' : scope === 'mods-armures' ? 'sousCategorieArmure' : scope === 'espace-modules' ? 'typeModule' : null
   const facetChoices: [string, string][] = scope === 'sol-armes'
@@ -288,7 +290,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
 
     {activeSection === 'personal' && <div className="shop-catalog-groups">
       {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{availableWeapons.filter((item) => matches(item, true)).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
-      {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{catalogs.armors.filter((item) => matches(item)).map((item) => card(item, 'armor', 'personal'))}</div></section>}
+      {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{availableArmors.filter((item) => matches(item)).map((item) => card(item, 'armor', 'personal'))}</div></section>}
       {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2><div className="shop-grid">{catalogs.consumables.filter((item) => matches(item)).map((item) => card(item, 'consumable', 'personal'))}</div></section>}
     </div>}
 

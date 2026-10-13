@@ -6,7 +6,7 @@ export const Armors: CollectionConfig = {
   labels: { singular: 'Armure', plural: 'Armures' },
   admin: {
     useAsTitle: 'nom',
-    defaultColumns: ['nom', 'categorie', 'valeurArmurePhysique', 'valeurBouclier', 'valeurRupture', 'prix'],
+    defaultColumns: ['nom', 'categorie', 'rang', 'valeurArmurePhysique', 'valeurBouclier', 'valeurRupture', 'prix'],
     group: 'Équipement',
   },
   access: {
@@ -73,7 +73,7 @@ export const Armors: CollectionConfig = {
           type: 'number',
           label: 'Poids (kg)',
           admin: { 
-            width: '33%',
+            width: '50%',
             description: 'Si vide, égal à l\'armure physique.'
           },
         },
@@ -82,15 +82,30 @@ export const Armors: CollectionConfig = {
           type: 'text',
           label: 'Modificateur',
           admin: {
-            width: '33%',
+            width: '50%',
             description: 'Champ texte pour les modificateurs divers.',
+          },
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'rang',
+          type: 'number',
+          label: 'Rang requis',
+          min: 1,
+          admin: {
+            width: '50%',
+            description: 'Rang minimal pour acheter cette armure. Laisser vide pour la rendre disponible à tous les rangs.',
           },
         },
         {
           name: 'prix',
           type: 'number',
           label: 'Prix',
-          admin: { width: '33%' },
+          admin: { width: '50%' },
         },
       ],
     },

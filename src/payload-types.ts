@@ -839,6 +839,10 @@ export interface Armor {
    * Champ texte pour les modificateurs divers.
    */
   modificateur?: string | null;
+  /**
+   * Rang minimal pour acheter cette armure. Laisser vide pour la rendre disponible à tous les rangs.
+   */
+  rang?: number | null;
   prix?: number | null;
   /**
    * Capacité de stockage (uniquement pour les back-packs).
@@ -1753,6 +1757,7 @@ export interface ArmorsSelect<T extends boolean = true> {
   valeurRupture?: T;
   poids?: T;
   modificateur?: T;
+  rang?: T;
   prix?: T;
   stockage?: T;
   image?: T;

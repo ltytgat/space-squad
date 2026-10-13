@@ -214,6 +214,8 @@ export async function executeShopTransaction(raw: ShopInput) {
         applyDiscount({ kind: 'weapon', categorie: item.categorie })
         characterUpdate.inventaireArmes = normalizePersonalWeapons(character.inventaireArmes ?? []).concat([{ item: item.id, mods: [], munitionsActuelles: 0, chargeurRelie: null }])
       } else if (input.action === 'buy' && input.kind === 'armor') {
+        const rank = computeRank(Number(character.pointsDeRang) || 0).level
+        if (item.rang != null && rank < Number(item.rang)) fail(`Cette armure nécessite le rang ${item.rang} pour être achetée.`)
         debit()
         characterUpdate.inventaireArmures = normalizePersonalArmors(character.inventaireArmures ?? []).concat([{ item: item.id, mods: [] }])
       } else if (input.action === 'buy' && input.kind === 'consumable') {
