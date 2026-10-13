@@ -6,6 +6,7 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { relationId } from '@/lib/shop'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 type PurchaseInput = { transactionId: string; roleId: number }
 
@@ -34,6 +35,7 @@ export async function purchaseSpecialRole(raw: PurchaseInput) {
   })
   const character = docs[0]
   if (!character) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’acheter un rôle spécial.')
 
   const fingerprint = JSON.stringify(['special-role', raw.roleId])
   const transactionID = await payload.db.beginTransaction?.()
@@ -44,6 +46,9 @@ export async function purchaseSpecialRole(raw: PurchaseInput) {
     const transactionDb = (payload.db as any).sessions?.[transactionID]?.db
     if (!transactionDb) fail('Impossible d’ouvrir la transaction.')
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
+    const lockedCharacter: any = await payload.findByID({ collection: 'characters', id: character.id, depth: 0, overrideAccess: true, req })
+    if (numericId(lockedCharacter.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (!isCharacterCreationComplete(lockedCharacter)) fail('Terminez le parcours de création avant d’acheter un rôle spécial.')
 
     const previous = await payload.db.execute({
       db: transactionDb,

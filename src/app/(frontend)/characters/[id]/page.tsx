@@ -178,6 +178,7 @@ export default async function CharacterDetailPage({
   const isOwner = String(ownerId) === String(user.id)
 
   if (!isAdmin && !isOwner) redirect('/')
+  if (isOwner && (character as any).creationEtape && (character as any).creationEtape !== 'termine') redirect('/character')
 
   // Vaisseaux accessibles : ceux du groupe, plus celui où le personnage est embarqué.
   const groupShipIds = await findGroupShipIds(payload, character)

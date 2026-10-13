@@ -8,6 +8,7 @@ import config from '@/payload.config'
 import { exactSubtract, relationId } from '@/lib/shop'
 import { factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
 import { factionExWeaponType, ownsAnyFactionWeaponPermit, rewardUsageForApplication } from '@/lib/factionRewards'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 type FactionRewardActionInput =
   | { transactionId: string; action: 'promote' }
@@ -33,6 +34,7 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
   const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 2, limit: 1, overrideAccess: true })
   const character: any = docs[0]
   if (!character) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser les récompenses de faction.')
   const transactionID = await payload.db.beginTransaction?.()
   if (!transactionID) fail('Les transactions PostgreSQL sont indisponibles.')
   const req = { transactionID } as any
@@ -43,6 +45,7 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
     const lockedCharacter: any = await payload.findByID({ collection: 'characters', id: character.id, depth: 2, overrideAccess: true, req })
     if (numericId(lockedCharacter.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (!isCharacterCreationComplete(lockedCharacter)) fail('Terminez le parcours de création avant d’utiliser les récompenses de faction.')
     const factionId = numericId(lockedCharacter.affiliation)
     const faction: any = lockedCharacter.affiliation && typeof lockedCharacter.affiliation === 'object'
       ? lockedCharacter.affiliation

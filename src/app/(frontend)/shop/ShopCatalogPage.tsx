@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { computeShipAccess } from '@/lib/shipAccess'
 import { computeRank } from '@/lib/rankSystem'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import type { OwnedFactionReward } from '@/lib/factionRewards'
 import { ShopClient, type ShopItem, type ShopCharacter, type ShopShip } from './ShopClient'
 import { shopScopes, type ShopScope } from './shop-sections'
@@ -57,6 +58,7 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 2, limit: 1, overrideAccess: true })
   const character: any = characters[0]
   if (!character) redirect('/character')
+  if (!isCharacterCreationComplete(character)) redirect('/character')
   const faction = character.affiliation && typeof character.affiliation === 'object'
     ? character.affiliation
     : idOf(character.affiliation) ? await payload.findByID({ collection: 'factions', id: idOf(character.affiliation)!, depth: 0, overrideAccess: true }).catch(() => null) : null

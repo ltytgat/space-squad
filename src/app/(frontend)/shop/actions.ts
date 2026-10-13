@@ -9,6 +9,7 @@ import { computeShipAccess } from '@/lib/shipAccess'
 import { factionCanBuyWeaponAtRank, isExWeaponName, isFactionDiscountCouponApplicable, weaponMinimumRank, type DiscountTarget, type OwnedFactionReward } from '@/lib/factionRewards'
 import { computeRank } from '@/lib/rankSystem'
 import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, relationId, resalePrice, shopRequestFingerprint, weaponModPrice } from '@/lib/shop'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 type ItemKind = 'weapon' | 'armor' | 'consumable' | 'ship-weapon' | 'ship-module' | 'ship-consumable' | 'weapon-mod' | 'armor-mod'
 type ShopInput = {
@@ -122,6 +123,10 @@ async function getContext() {
   const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
   const character = docs[0]
   if (!character) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’utiliser la boutique.')
+  if ((character as any).creationEtape && (character as any).creationEtape !== 'termine') {
+    fail('Terminez le parcours de création de votre personnage avant d’utiliser la boutique.')
+  }
   return { payload, user, characterId: character.id }
 }
 

@@ -580,6 +580,16 @@ export interface Character {
   nom?: string | null;
   sexe?: ('M' | 'F' | 'X') | null;
   origine?: ('Humain' | 'Strani' | 'Vada') | null;
+  creationEtape?: ('caracteristiques' | 'espece' | 'equipement' | 'identite' | 'termine') | null;
+  creationJets?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   affiliation?: (number | null) | Faction;
   /**
    * Rôles achetés par le personnage dans la boutique.
@@ -1772,6 +1782,8 @@ export interface CharactersSelect<T extends boolean = true> {
   nom?: T;
   sexe?: T;
   origine?: T;
+  creationEtape?: T;
+  creationJets?: T;
   affiliation?: T;
   rolesSpeciaux?: T;
   groupe?: T;

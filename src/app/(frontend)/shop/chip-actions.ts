@@ -7,6 +7,7 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 const CHIP_PRICES = { active: 75_000, passive: 100_000 } as const
 const DRAW_PRICES = { active: 30_000, passive: 50_000 } as const
@@ -73,6 +74,7 @@ export async function executeChipTransaction(raw: ChipInput) {
   const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
   const characterRef: any = docs[0]
   if (!characterRef) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(characterRef)) fail('Terminez le parcours de création avant d’utiliser les puces.')
   const characterId = Number(characterRef.id)
 
   if (!raw || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw.transactionId ?? '')) fail('Identifiant de transaction invalide.')
@@ -98,6 +100,7 @@ export async function executeChipTransaction(raw: ChipInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${characterId} FOR UPDATE` })
     const character: any = await payload.findByID({ collection: 'characters', id: characterId, depth: 1, overrideAccess: true, req })
     if (relationId(character.user) !== String(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser les puces.')
 
     const previous = await payload.db.execute({ db: transactionDb, sql: sql`SELECT fingerprint, actor_id, amount, details FROM shop_transactions WHERE transaction_id = ${raw.transactionId} LIMIT 1` })
     if (previous.rows[0]) {

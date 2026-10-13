@@ -6,6 +6,7 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 type TransferInput = {
   transactionId: string
@@ -33,6 +34,7 @@ async function getContext() {
   if (!user) fail('Connexion requise.')
   const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
   if (!docs[0]) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(docs[0] as any)) fail('Terminez le parcours de création avant d’utiliser les transferts.')
   return { payload, user, character: docs[0] as any }
 }
 
@@ -137,6 +139,7 @@ export async function executeCharacterTransfer(raw: TransferInput) {
     }
     const source = await payload.findByID({ collection: 'characters', id: character.id, depth: 2, overrideAccess: true, req }) as any
     if (numericId(source.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (!isCharacterCreationComplete(source)) fail('Terminez le parcours de création avant d’utiliser les transferts.')
 
     const previous = await payload.db.execute({ db: transactionDb, sql: sql`SELECT fingerprint, actor_id, amount FROM shop_transactions WHERE transaction_id = ${raw.transactionId} LIMIT 1` })
     if (previous.rows[0]) {

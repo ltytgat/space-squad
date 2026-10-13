@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import ChipsShopClient, { type ShopChip } from './ChipsShopClient'
 import { shopScopes } from './shop-sections'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import './shop.css'
 
 const categoryOrder: Record<string, number> = { active: 0, passive: 1 }
@@ -22,6 +23,7 @@ export default async function ChipsShopPage() {
   const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 1, limit: 1, overrideAccess: true })
   const character: any = characters[0]
   if (!character) redirect('/character')
+  if (!isCharacterCreationComplete(character)) redirect('/character')
 
   const chipDocs: any[] = []
   let page = 1

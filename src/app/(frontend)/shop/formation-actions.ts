@@ -7,6 +7,7 @@ import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { exactMultiply, exactSubtract, relationId } from '@/lib/shop'
 import { computeRank } from '@/lib/rankSystem'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
 type FormationPurchaseInput = { transactionId: string; formationId: number }
 
@@ -32,6 +33,7 @@ async function getContext() {
   })
   const character = docs[0]
   if (!character) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’acheter une formation.')
   return { payload, user, characterId: character.id }
 }
 
@@ -60,6 +62,7 @@ export async function purchaseFormation(raw: FormationPurchaseInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${characterId} FOR UPDATE` })
     const character: any = await payload.findByID({ collection: 'characters', id: characterId, depth: 1, overrideAccess: true, req })
     if (numericId(character.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’acheter une formation.')
 
     const previous = await payload.db.execute({
       db: transactionDb,

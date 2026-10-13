@@ -8,6 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { computeShipAccess } from '@/lib/shipAccess'
 import { computeRank } from '@/lib/rankSystem'
 import { listInstalledShipComponents, listShipTransferItems } from '@/lib/shipyard'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { ShipyardClient } from './ShipyardClient'
 import '../shop.css'
 
@@ -78,6 +79,7 @@ export default async function ShipyardPage({ searchParams }: {
   const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 1, limit: 1, overrideAccess: true })
   const character: any = characters[0]
   if (!character) redirect('/character')
+  if (!isCharacterCreationComplete(character)) redirect('/character')
 
   const [modelsResult, ownedResult] = await Promise.all([
     payload.find({ collection: 'ship-sale-models', depth: 4, limit: 500, sort: 'nom', overrideAccess: true }),

@@ -79,6 +79,9 @@ export async function updateCharacter(characterId: number, data: any) {
   if (!isAdmin && !isOwner) {
     throw new Error('Non autorisé')
   }
+  if (!isAdmin && character.creationEtape && character.creationEtape !== 'termine') {
+    throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
+  }
 
   // Filtrer les données si l'utilisateur n'est pas admin
   const updateData = withoutTransientWeaponHeat(data)
@@ -161,6 +164,9 @@ export async function updateWeaponStatus(
   // Vérifier que l'utilisateur est admin ou propriétaire
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
+  if (user.role !== 'admin' && character.creationEtape && character.creationEtape !== 'termine') {
+    throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
+  }
   if (data.chargeurRelie != null) await assertConsumablesCanBeEquipped(payload, character, [data.chargeurRelie])
 
   const updatedWeaponGroup = {
@@ -201,6 +207,9 @@ export async function reloadWeapon(
   // Vérifier que l'utilisateur est admin ou propriétaire
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
+  if (user.role !== 'admin' && character.creationEtape && character.creationEtape !== 'termine') {
+    throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
+  }
 
   const magazine: any = await payload.findByID({ collection: 'consumables', id: consumableId, depth: 0, overrideAccess: true }).catch(() => null)
   if (!magazine) throw new Error('Consommable introuvable')

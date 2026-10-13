@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { shopNavigation } from './shop-sections'
 import { factionRewardsTitle } from '@/lib/factionRewards'
 import './shop.css'
@@ -17,6 +18,7 @@ export default async function ShopPage() {
   if (!user) redirect('/login')
   const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 1, limit: 1, overrideAccess: true })
   if (!characters[0]) redirect('/character')
+  if (!isCharacterCreationComplete(characters[0] as any)) redirect('/character')
   const affiliation = (characters[0] as any).affiliation
   const faction = affiliation && typeof affiliation === 'object' ? affiliation : null
   const factionName = String(faction?.nom ?? '').trim()

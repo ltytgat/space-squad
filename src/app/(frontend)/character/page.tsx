@@ -1,75 +1,19 @@
 import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { CharacterCreationWizard } from './CreationWizard'
 import './character.css'
+import './creation.css'
+import '../shop/shop.css'
 
 export const metadata = {
   title: 'Mon personnage — Space Squad',
 }
-
-// ── Types locaux pour les relations populées (depth: 1) ──────────────────────
-
-type Weapon = {
-  id: number
-  nom: string
-  poids?: number
-  tailleChargeur?: number
-  valeurDegats?: number
-  projectilesParTir?: number
-  valeurRechargement?: number
-}
-
-type Armor = {
-  id: number
-  nom: string
-  valeurArmurePhysique?: number
-  valeurBouclier?: number
-  modificateur?: number
-  valeurRupture?: number
-}
-
-type Ship = { id: number; nom: string; classe?: string; modele?: string }
-type Group = { id: number; nom: string }
-
-type Character = {
-  id: number
-  nom?: string
-  sexe?: string
-  origine?: string
-  affiliation?: string
-  pointsDeRang?: number
-  konis?: number
-  legende?: number
-  force?: number
-  habilite?: number
-  connaissances?: number
-  culture?: number
-  anticipation?: number
-  perception?: number
-  armureTete?: Armor | string | null
-  armureTorse?: Armor | string | null
-  armureBras?: Armor | string | null
-  armureJambes?: Armor | string | null
-  armePrincipale?: Weapon | string | null
-  armeSecondaire?: Weapon | string | null
-  armeLourde?: Weapon | string | null
-  armeDeMelee?: Weapon | string | null
-  consommableEquipe1?: any
-  consommableEquipe2?: any
-  consommableEquipe3?: any
-  backpack?: string | null
-  vaisseau?: Ship | string | null
-  roleVaisseau?: string | null
-  groupe?: Group | string | null
-  competences?: { competence: string; valeur: number; id?: string }[]
-  competencesSpeciales?: { nom: string; valeur: number; id?: string }[]
-}
-
-// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function CharacterPage() {
   const headers = await getHeaders()
@@ -87,7 +31,53 @@ export default async function CharacterPage() {
   })
 
   const character = docs[0] ?? null
-  if (character) redirect(`/characters/${character.id}`)
+  const creationStep = (character as any)?.creationEtape
+  if (character && (!creationStep || creationStep === 'termine')) redirect(`/characters/${character.id}`)
+
+  if (character) {
+    const [modelsResult, weaponsResult] = await Promise.all([
+      payload.find({ collection: 'ship-sale-models', where: { id: { in: [1, 2] } }, depth: 4, limit: 2, overrideAccess: true }),
+      payload.find({ collection: 'weapons', where: { id: { in: [1, 34, 53, 70] } }, depth: 0, limit: 4, overrideAccess: true }),
+    ])
+
+    const ships = (modelsResult.docs as any[]).map((model) => ({
+      id: model.id,
+      nom: model.nom,
+      prix: 'Vaisseau de départ',
+      description: model.description ?? null,
+      image: model.image && typeof model.image === 'object' && typeof model.image.url === 'string'
+        ? { url: model.image.url, alt: model.image.alt ?? model.nom }
+        : null,
+      chassis: typeof model.chassis === 'object' ? model.chassis?.nom ?? null : null,
+      classe: typeof model.chassis === 'object' ? model.chassis?.classe ?? null : null,
+      tourelles: typeof model.chassis === 'object' ? model.chassis?.tourelles ?? 0 : 0,
+      components: [
+        ['Générateur', model.generateur?.nom],
+        ['Propulseurs', model.propulseurs?.nom],
+        ['Boucliers', model.boucliers?.nom],
+        ['Système de survie', model.survie?.nom],
+        ...(model.modulesOptionnels ?? []).map((module: any) => ['Module optionnel', module.nom]),
+        ...(model.armes ?? []).map((entry: any) => [`Arme · ${entry.emplacement ?? 'pilote'}`, entry.arme?.nom]),
+      ].filter((entry: any[]) => entry[1]),
+    }))
+    const weapons = (weaponsResult.docs as any[]).map((weapon) => ({
+      id: weapon.id,
+      nom: weapon.nom,
+      categorie: weapon.categorie,
+    }))
+
+    return (
+      <div className="ss-root char-root creation-root">
+        <SiteHeader activePage="character" />
+        <CharacterCreationWizard
+          character={JSON.parse(JSON.stringify(character))}
+          ships={JSON.parse(JSON.stringify(ships))}
+          weapons={JSON.parse(JSON.stringify(weapons))}
+        />
+        <SiteFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="ss-root char-root">
@@ -97,14 +87,14 @@ export default async function CharacterPage() {
         <div className="char-page-header">
           <div className="ss-container">
             <nav className="char-breadcrumb" aria-label="Fil d'Ariane">
-              <a href="/">Accueil</a>
+              <Link href="/">Accueil</Link>
               <span aria-hidden="true">›</span>
               <span>Mon personnage</span>
             </nav>
 
-            <h1 className="char-name char-name-empty">Personnage en cours de création</h1>
+            <h1 className="char-name char-name-empty">Fiche de personnage introuvable</h1>
             <p className="char-empty-hint">
-              Un administrateur remplira votre fiche prochainement.
+              Aucune fiche n’est associée à votre compte. Contactez un administrateur pour commencer votre création.
             </p>
           </div>
         </div>

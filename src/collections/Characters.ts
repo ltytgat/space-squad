@@ -85,6 +85,26 @@ export const Characters: CollectionConfig = {
       ],
     },
     {
+      name: 'creationEtape',
+      type: 'select',
+      label: 'Étape de création',
+      defaultValue: 'caracteristiques',
+      options: [
+        { label: 'Caractéristiques', value: 'caracteristiques' },
+        { label: 'Espèce', value: 'espece' },
+        { label: 'Équipement', value: 'equipement' },
+        { label: 'Identité', value: 'identite' },
+        { label: 'Terminé', value: 'termine' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'creationJets',
+      type: 'json',
+      label: 'Jets du parcours de création',
+      admin: { hidden: true },
+    },
+    {
       name: 'affiliation',
       type: 'relationship',
       relationTo: 'factions',

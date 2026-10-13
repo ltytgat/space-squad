@@ -8,6 +8,7 @@ import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
 import { computeRank } from '@/lib/rankSystem'
 import { exactAdd, exactSubtract, readShopPrice, relationId, resalePrice } from '@/lib/shop'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { detachShipTransferItem, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, minimumRankForShipClass, shipPurchasePrice, shipSalePrice, shipyardFingerprint, type ShipTransferKind } from '@/lib/shipyard'
 
 type ShipyardInput = {
@@ -48,6 +49,10 @@ async function getContext() {
   const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
   const character = docs[0] as any
   if (!character) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser le chantier naval.')
+  if (character.creationEtape && character.creationEtape !== 'termine') {
+    fail('Terminez le parcours de création de votre personnage avant d’utiliser le chantier naval.')
+  }
   return { payload, user, character }
 }
 
@@ -166,6 +171,7 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
     const currentCharacter = await payload.findByID({ collection: 'characters', id: character.id, depth: 1, overrideAccess: true, req }) as any
     if (numericId(currentCharacter.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (!isCharacterCreationComplete(currentCharacter)) fail('Terminez le parcours de création avant d’utiliser le chantier naval.')
 
     await lockShips(payload, transactionDb, [raw.shipId, raw.destinationShipId].filter(validId))
     const previous = await payload.db.execute({ db: transactionDb, sql: sql`SELECT fingerprint, actor_id, amount, details FROM shop_transactions WHERE transaction_id = ${raw.transactionId} LIMIT 1` })

@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { relationId } from '@/lib/shop'
 import { factionRewardsTitle } from '@/lib/factionRewards'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { FactionRewardsClient } from '../FactionRewardsClient'
 import type { FactionRewardCharacter, FactionRewardOffer } from '../faction-reward-pricing'
 import '../shop.css'
@@ -24,6 +25,7 @@ export default async function FactionRewardsPage() {
   })
   const rawCharacter: any = docs[0]
   if (!rawCharacter) redirect('/shop')
+  if (!isCharacterCreationComplete(rawCharacter)) redirect('/character')
   const faction = rawCharacter.affiliation && typeof rawCharacter.affiliation === 'object'
     ? rawCharacter.affiliation
     : await payload.findByID({ collection: 'factions', id: Number(relationId(rawCharacter.affiliation)), depth: 1, overrideAccess: true })

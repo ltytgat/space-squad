@@ -8,6 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { FormationsClient } from '../FormationsClient'
 import type { FormationCharacterState, FormationOffer } from '../formation-pricing'
 import type { SpecialRoleOffer } from '../special-role-pricing'
+import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import '../shop.css'
 
 export const metadata = { title: 'Formations — Space Squad' }
@@ -30,6 +31,7 @@ export default async function FormationsShopPage() {
   ])
   const character: any = characters[0]
   if (!character) redirect('/character')
+  if (!isCharacterCreationComplete(character)) redirect('/character')
 
   const characterState: FormationCharacterState & { id: number; nom: string } = {
     id: character.id,
