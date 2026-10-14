@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { executeChipTransaction } from './chip-actions'
+import { ShopItemDetailsButton, type ShopItemDetail } from './ShopItemDetails'
 
 export type ShopChip = {
   id: number
@@ -12,6 +13,7 @@ export type ShopChip = {
   effet: string
   cooldown: number | null
   image: { url: string; alt: string } | null
+  details?: ShopItemDetail[]
 }
 
 type ChipAction = 'buy' | 'draw' | 'recycle'
@@ -54,7 +56,10 @@ export default function ChipsShopClient({
       const result = await executeChipTransaction({ ...action.request, transactionId: action.transactionId })
       setMessage({ kind: 'success', text: action.success })
       setRetryRequest(null)
-      if (action.request.action === 'draw' && result.chip) setDrawnChip(result.chip)
+      if (action.request.action === 'draw' && result.chip) {
+        const resultChip = result.chip
+        setDrawnChip(chips.find((chip) => String(chip.id) === String(resultChip.id)) ?? resultChip)
+      }
       router.refresh()
     } catch (error) {
       setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'La transaction a échoué.' })
@@ -81,8 +86,8 @@ export default function ChipsShopClient({
         ? <img src={chip.image.url} alt={chip.image.alt || chip.nom} loading="lazy" decoding="async" />
         : <span aria-hidden="true">Visuel à ajouter</span>}</div>
       <div className="shop-item-main">
-        <div className="shop-item-type">{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</div>
-        <h3>{chip.nom}</h3>
+        <div className="shop-item-title-line"><div><div className="shop-item-type">{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</div>
+        <h3>{chip.nom}</h3></div><ShopItemDetailsButton name={chip.nom} category={categoryLabel(chip.categorie)} image={chip.image} details={chip.details} /></div>
         {chip.effet && <p>{chip.effet}</p>}
         {chip.categorie === 'active' && chip.cooldown !== null && <div className="shop-item-meta">Cooldown : {chip.cooldown} tour{chip.cooldown === 1 ? '' : 's'}</div>}
       </div>
@@ -119,8 +124,8 @@ export default function ChipsShopClient({
 
     {drawnChip && <section className="chip-draw-result" aria-live="polite">
       {drawnChip.image && <img className="chip-draw-image" src={drawnChip.image.url} alt={drawnChip.image.alt || drawnChip.nom} loading="lazy" decoding="async" />}
-      <div className="shop-item-type">Puce obtenue · {categoryLabel(drawnChip.categorie)}</div>
-      <h2>{drawnChip.nom}</h2>
+      <div className="shop-item-title-line"><div><div className="shop-item-type">Puce obtenue · {categoryLabel(drawnChip.categorie)}</div>
+      <h2>{drawnChip.nom}</h2></div><ShopItemDetailsButton name={drawnChip.nom} category={categoryLabel(drawnChip.categorie)} image={drawnChip.image} details={drawnChip.details} /></div>
       {drawnChip.restriction && <p className="shop-item-meta">Restriction : {drawnChip.restriction}</p>}
       <p>{drawnChip.effet}</p>
       {drawnChip.categorie === 'active' && drawnChip.cooldown !== null && <p className="shop-item-meta">Cooldown : {drawnChip.cooldown} tour{drawnChip.cooldown === 1 ? '' : 's'}</p>}
@@ -138,7 +143,7 @@ export default function ChipsShopClient({
         <div className="shop-item-visual">{chip.image
           ? <img src={chip.image.url} alt={chip.image.alt || chip.nom} loading="lazy" decoding="async" />
           : <span aria-hidden="true">Visuel à ajouter</span>}</div>
-        <div className="shop-item-main"><strong>{chip.nom}</strong><span>{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</span></div>
+        <div className="shop-item-main"><div className="shop-item-title-line"><div><strong>{chip.nom}</strong><span>{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</span></div><ShopItemDetailsButton name={chip.nom} category={categoryLabel(chip.categorie)} image={chip.image} details={chip.details} /></div></div>
         <div className="shop-item-action"><strong>Recyclage : {money(RECYCLE_PRICE)}</strong><button type="button" className="shop-sell-button" disabled={pending} onClick={() => ask(
           { action: 'recycle', chipId: chip.id, ownedIndex: index },
           `Recycler ${chip.nom} contre ${money(RECYCLE_PRICE)} ? Cette puce sera retirée de votre réserve.`,

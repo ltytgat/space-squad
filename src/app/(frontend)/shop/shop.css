@@ -74,6 +74,20 @@
 .shop-item-illustrated .shop-item-action span, .shop-item-illustrated .shop-item-action small { max-width: none; }
 .chip-draw-image { display: block; width: min(100%, 360px); max-height: 220px; margin-bottom: .9rem; border-radius: 8px; object-fit: contain; }
 .shop-item-main { min-width: 0; }
+.shop-item-title-line { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; min-width: 0; }
+.shop-item-title-line > div { min-width: 0; }
+.shop-item-details-trigger { display: grid; flex: 0 0 32px; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--ss-border); border-radius: 50%; background: transparent; color: var(--ss-cyan); font-family: var(--ss-font-display); font-size: 1rem; font-weight: 700; cursor: pointer; }
+.shop-item-details-trigger:hover, .shop-item-details-trigger:focus-visible { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); outline: none; }
+.shop-details-backdrop { position: fixed; z-index: 130; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(3, 8, 16, .78); }
+.shop-details-dialog { position: relative; width: min(100%, 680px); max-height: min(86vh, 820px); overflow-y: auto; padding: 1.4rem; border: 1px solid var(--ss-cyan); border-radius: 12px; background: var(--ss-bg-alt); box-shadow: 0 20px 70px rgba(0, 0, 0, .55); }
+.shop-details-dialog h2 { margin: .25rem 2.6rem 1rem 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.2rem; }
+.shop-details-close { position: absolute; top: .75rem; right: .75rem; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--ss-border); border-radius: 8px; background: transparent; color: var(--ss-text); font-size: 1.4rem; cursor: pointer; }
+.shop-details-image { display: block; width: 100%; max-height: 220px; margin-bottom: 1rem; border-radius: 8px; background: rgba(0, 0, 0, .18); object-fit: contain; }
+.shop-details-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin: 0; }
+.shop-details-list > div { min-width: 0; padding: .7rem .8rem; border: 1px solid var(--ss-border); border-radius: 8px; background: rgba(255, 255, 255, .02); }
+.shop-details-list dt { margin-bottom: .25rem; color: var(--ss-text-muted); font-size: .75rem; }
+.shop-details-list dd { margin: 0; color: var(--ss-text); font-size: .88rem; line-height: 1.4; overflow-wrap: anywhere; }
+.shop-details-empty { color: var(--ss-text-muted); }
 .shop-item-main h3 { margin: .2rem 0 .35rem; color: var(--ss-text); font-size: 1rem; }
 .shop-item-type { color: var(--ss-cyan); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .shop-item-meta, .shop-inventory-item span { display: block; color: var(--ss-text-muted); font-size: .8rem; }
@@ -136,6 +150,8 @@
 .shipyard-rank-lock { padding: .55rem .7rem; border: 1px solid rgba(255, 173, 89, .4); border-radius: 7px; background: rgba(255, 173, 89, .08); color: #ffbd75 !important; }
 .shipyard-model-image { display: block; width: 100%; height: 180px; border-radius: 8px; background: rgba(0, 0, 0, .18); object-fit: contain; }
 .shipyard-model-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.shipyard-model-title { display: flex; align-items: flex-start; gap: .5rem; min-width: 0; }
+.shipyard-model-title h3 { margin: .2rem 0 0; }
 .shipyard-model-heading h3 { margin-top: .2rem; color: var(--ss-text); font-family: var(--ss-font-display); }
 .shipyard-model-heading > strong, .shipyard-sale-total strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); text-align: right; }
 .shipyard-model-meta { color: var(--ss-text-muted); font-size: .85rem; }
@@ -188,6 +204,7 @@
   .shipyard-component-row { align-items: flex-start; }
   .shipyard-model-heading { flex-direction: column; }
   .chip-draw-panel { align-items: stretch; flex-direction: column; }
+  .shop-details-list { grid-template-columns: 1fr; }
   .chip-draw-actions { justify-content: stretch; }
   .chip-draw-actions button { flex: 1 1 100%; }
 }

@@ -10,12 +10,54 @@ import { computeRank } from '@/lib/rankSystem'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import type { OwnedFactionReward } from '@/lib/factionRewards'
 import { ShopClient, type ShopItem, type ShopCharacter, type ShopShip } from './ShopClient'
+import type { ShopItemDetail } from './ShopItemDetails'
 import { shopScopes, type ShopScope } from './shop-sections'
 import './shop.css'
 
 const idOf = (value: any): number | null => {
   const id = value && typeof value === 'object' ? value.id : value
   return id === null || id === undefined ? null : Number(id)
+}
+
+const detailLabels: Record<string, string> = {
+  fabricant: 'Fabricant', categorie: 'Catégorie', famille: 'Famille', type: 'Type', types: 'Types',
+  categoriePrincipale: 'Catégorie principale', sousCategorieArme: 'Arme compatible', sousCategorieArmure: 'Armure compatible',
+  typeModule: 'Type de module', modele: 'Modèle', taille: 'Taille', rang: 'Rang requis',
+  valeurDegats: 'Dégâts', degats: 'Dégâts', poids: 'Poids', porteeFixe: 'Portée', projectilesParTir: 'Projectiles par tir',
+  valeurChauffe: 'Chauffe', courtePortee: 'Portée courte', modCourtePortee: 'Modificateur courte portée',
+  moyennePortee: 'Portée moyenne', modMoyennePortee: 'Modificateur moyenne portée', paliersSniper: 'Paliers de portée',
+  trancheMalusLonguePortee: 'Tranche de malus longue portée', malusParTranche: 'Malus par tranche',
+  tailleChargeur: 'Taille du chargeur', tempsRechargement: 'Temps de rechargement', zoneEffet: 'Zone d’effet', tempsRefroidissement: 'Refroidissement',
+  valeurArmurePhysique: 'Armure physique', valeurBouclier: 'Bouclier', valeurRupture: 'Rupture', stockage: 'Stockage',
+  modificateur: 'Modificateur', set: 'Set d’armure', tailleConsommable: 'Taille', tailleObjet: 'Taille',
+  typeMunition: 'Type de munition', roleSpecialRequis: 'Rôle spécial requis', effet: 'Effet', description: 'Description',
+  epreuve: 'Épreuve', modificateurEpreuve: 'Modificateur d’épreuve', cooldown: 'Cooldown', restriction: 'Restriction',
+  consommation: 'Consommation', puissance: 'Puissance', modificateurs: 'Modificateurs', bouclierMax: 'Boucliers max',
+  cooldownBouclier: 'Cooldown bouclier', rechargeBouclier: 'Recharge', reparations: 'Réparations', malusPoids: 'Malus de poids',
+  blindageBonus: 'Bonus de blindage', capacite: 'Capacité', consommationParPersonne: 'Consommation par personne',
+  nombrePlaces: 'Nombre de places', consommationSupplementaire: 'Consommation supplémentaire', portee: 'Portée',
+  bonusDegatsPourcentage: 'Bonus de dégâts', bonusDegatsPar100MJ: 'Bonus de dégâts par 100 MJ', mjMaxUtilisable: 'MJ maximum utilisables',
+  angleTir: 'Angle de tir', quantiteEquipable: 'Quantité équipable', calibre: 'Calibre', bonus: 'Bonus',
+  chauffe: 'Chauffe', ballesParSalve: 'Balles par salve', chargeur: 'Chargeur', distance: 'Distance / champ d’action',
+  bonusBlindage: 'Bonus de blindage en joute', pointsEmport: 'Points d’emport',
+}
+
+function labelForDetail(key: string) {
+  return detailLabels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toLocaleUpperCase('fr'))
+}
+
+function detailValue(value: any): string {
+  if (value === null || value === undefined || value === '') return ''
+  if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
+  if (Array.isArray(value)) return value.map(detailValue).filter(Boolean).join(' · ')
+  if (typeof value === 'object') {
+    if (typeof value.nom === 'string') return value.nom
+    return Object.entries(value)
+      .filter(([key, child]) => !['id', 'createdAt', 'updatedAt'].includes(key) && child !== null && child !== undefined && child !== '')
+      .map(([key, child]) => `${labelForDetail(key)} : ${detailValue(child)}`)
+      .join(' · ')
+  }
+  return String(value)
 }
 
 function summaries(docs: any[]): ShopItem[] {
@@ -40,6 +82,10 @@ function summaries(docs: any[]): ShopItem[] {
     image: doc.image && typeof doc.image === 'object' && typeof doc.image.url === 'string'
       ? { url: doc.image.url, alt: doc.image.alt ?? doc.nom ?? 'Illustration du matériel' }
       : null,
+    details: Object.entries(doc)
+      .filter(([key, value]) => !['id', 'nom', 'prix', 'image', 'createdAt', 'updatedAt', '_status'].includes(key) && value !== null && value !== undefined && value !== '')
+      .map(([key, value]): ShopItemDetail => ({ label: labelForDetail(key), value: detailValue(value) }))
+      .filter(({ value }) => value !== ''),
   }))
 }
 

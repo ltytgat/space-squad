@@ -43,6 +43,12 @@ export default async function ChipsShopPage() {
     image: chip.image && typeof chip.image === 'object' && typeof chip.image.url === 'string'
       ? { url: chip.image.url, alt: chip.image.alt ?? chip.nom ?? 'Illustration de la puce' }
       : null,
+    details: [
+      { label: 'Catégorie', value: chip.categorie === 'active' ? 'Active' : 'Passive' },
+      ...(chip.restriction ? [{ label: 'Restriction', value: String(chip.restriction) }] : []),
+      ...(chip.effet ? [{ label: 'Effet', value: String(chip.effet) }] : []),
+      ...(chip.categorie === 'active' && chip.cooldown != null ? [{ label: 'Cooldown', value: `${chip.cooldown} tour${chip.cooldown === 1 ? '' : 's'}` }] : []),
+    ],
   })).sort((left, right) =>
     (categoryOrder[left.categorie] ?? 99) - (categoryOrder[right.categorie] ?? 99)
     || compareFrench(left.restriction ?? '', right.restriction ?? '')

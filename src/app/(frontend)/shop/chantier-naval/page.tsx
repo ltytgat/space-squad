@@ -43,6 +43,20 @@ function modelSummary(model: any) {
       ...optionalModules.map((name: string) => ['Module optionnel', name]),
       ...weapons.map((weapon: any) => [`Arme · ${weapon.emplacement}`, weapon.nom]),
     ].filter((entry) => entry[1]),
+    details: [
+      ['Châssis', itemName(model.chassis)],
+      ['Classe', model.chassis?.classe],
+      ['Catégorie', model.chassis?.categorie],
+      ['Blindage', model.chassis?.blindage],
+      ['Esquive de base', model.chassis?.esquiveBase],
+      ['Tourelles', model.chassis?.tourelles],
+      ['Points d’emport pilote', model.chassis?.pointsEmportPilote],
+      ['Points d’emport tourelles', model.chassis?.pointsEmportTourelles],
+      ['Modules supplémentaires', model.chassis?.modulesSupplementaires],
+      ['Emplacements consommables', model.chassis?.consommables],
+      ['Équipements inclus', [['Générateur', itemName(model.generateur)], ['Propulseurs', itemName(model.propulseurs)], ['Boucliers', itemName(model.boucliers)], ['Système de survie', itemName(model.survie)], ...optionalModules.map((name: string) => ['Module optionnel', name]), ...weapons.map((weapon: any) => [weapon.emplacement, weapon.nom])].map(([kind, name]: [string, string]) => `${kind} : ${name}`).join(' · ')],
+      ['Description', model.description],
+    ].filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => ({ label: String(label), value: String(value) })),
   }
 }
 
