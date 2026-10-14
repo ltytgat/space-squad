@@ -17,6 +17,7 @@ import {Media} from './collections/Media'
 import {Pages} from './collections/Pages'
 import {LoreArticles} from './collections/LoreArticles'
 import {Characters} from './collections/Characters'
+import {CharacterWorkspaces} from './collections/CharacterWorkspaces'
 import {Formations} from './collections/Formations'
 import {SpecialRoles} from './collections/SpecialRoles'
 import {Ships} from './collections/Ships'
@@ -48,7 +49,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, Weapons, Armors, ArmorSets, Characters, Formations, SpecialRoles, Mods, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions],
+    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions],
     editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
             ...defaultFeatures,

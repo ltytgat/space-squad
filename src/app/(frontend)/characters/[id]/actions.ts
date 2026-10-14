@@ -7,6 +7,14 @@ import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character } from '@/payload-types'
 import { computeRank, minimumRankForChipSlot } from '@/lib/rankSystem'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import {
+  consumeWorkspaceRequest,
+  getWorkspaceFromCookie,
+  TEMP_WORKSPACE_MAX_ARRAY_ITEMS,
+  TEMP_WORKSPACE_MAX_CUSTOM_SKILLS,
+  TEMP_WORKSPACE_MAX_PAYLOAD_BYTES,
+} from '@/lib/temporaryCharacterWorkspace'
+import { validateTemporaryCharacterUpdate } from '@/lib/temporaryCharacterRules'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
@@ -54,37 +62,38 @@ async function getAuthenticatedPayload() {
   return { payload, user: user as User | null }
 }
 
-export async function updateCharacter(characterId: number, data: any) {
+async function getAuthorizedCharacter(characterId: number) {
+  if (!Number.isSafeInteger(characterId) || characterId <= 0) throw new Error('Personnage invalide')
   const { payload, user } = await getAuthenticatedPayload()
-
-  if (!user) {
-    throw new Error('Non autorisé')
-  }
-
-  // Vérifier que l'utilisateur est admin ou propriétaire
-  const character = await payload.findByID({
-    collection: 'characters',
-    id: characterId,
-    depth: 0,
-    overrideAccess: true,
-  })
-
-  if (!character) {
-    throw new Error('Personnage non trouvé')
-  }
+  const workspace = await getWorkspaceFromCookie(payload)
+  if (!user && !workspace) throw new Error('Non autorisé')
+  if (!user && workspace) await consumeWorkspaceRequest(payload, Number(workspace.id))
+  const character = await payload.findByID({ collection: 'characters', id: characterId, depth: 0, overrideAccess: true }).catch(() => null) as any
+  if (!character) throw new Error('Personnage non trouvé')
 
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
-  const isAdmin = user.role === 'admin'
-  const isOwner = String(ownerId) === String(user.id)
+  const isAdmin = user?.role === 'admin'
+  const isUserOwner = !!user && String(ownerId) === String(user.id)
+  if (isAdmin || isUserOwner) return { payload, user, character, isAdmin, isTemporary: false }
 
-  if (!isAdmin && !isOwner) {
-    throw new Error('Non autorisé')
-  }
+  const workspaceId = typeof character.workspace === 'object' ? character.workspace?.id : character.workspace
+  if (!workspace || character.user || String(workspaceId) !== String(workspace.id)) throw new Error('Non autorisé')
+  if (user) await consumeWorkspaceRequest(payload, Number(workspace.id))
+  return { payload, user, character, isAdmin: false, isTemporary: true }
+}
+
+export async function updateCharacter(characterId: number, data: any) {
+  const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
   if (!isAdmin && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
 
   // Filtrer les données si l'utilisateur n'est pas admin
+  if (isTemporary) validateTemporaryCharacterUpdate(data, character, {
+    maxArrayItems: TEMP_WORKSPACE_MAX_ARRAY_ITEMS,
+    maxCustomSkills: TEMP_WORKSPACE_MAX_CUSTOM_SKILLS,
+    maxPayloadBytes: TEMP_WORKSPACE_MAX_PAYLOAD_BYTES,
+  })
   const updateData = withoutTransientWeaponHeat(data)
   if (!isAdmin) {
     const forbiddenPatterns = [
@@ -94,6 +103,10 @@ export async function updateCharacter(characterId: number, data: any) {
       /^pointsDeRang$/,
       /^pointsDeCompetence$/,
       /^konis$/,
+      /^user$/,
+      /^workspace$/,
+      /^creationEtape$/,
+      /^creationJets$/,
       // L'embarquement et les postes passent par joinShip / assignCrewSeat.
       /^vaisseau$/,
       /^roleVaisseau$/,
@@ -138,11 +151,12 @@ export async function updateCharacter(characterId: number, data: any) {
     collection: 'characters',
     id: characterId,
     data: updateData,
-    user,
+    user: user ?? undefined,
     overrideAccess: true,
   })
 
   revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/temporary-character/${characterId}`)
   return { success: true }
 }
 
@@ -151,21 +165,10 @@ export async function updateWeaponStatus(
   slot: string, 
   data: { munitionsActuelles?: number; chargeurRelie?: any }
 ) {
-  const { payload, user } = await getAuthenticatedPayload()
-  if (!user) throw new Error('Non autorisé')
-
-  const character = await payload.findByID({
-    collection: 'characters',
-    id: characterId,
-    depth: 0,
-    overrideAccess: true,
-  })
-  if (!character) throw new Error('Personnage non trouvé')
-
-  // Vérifier que l'utilisateur est admin ou propriétaire
-  const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
-  if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
-  if (user.role !== 'admin' && !isCharacterCreationComplete(character)) {
+  const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
+  if (isTemporary && !['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(slot)) throw new Error('Emplacement d’arme invalide.')
+  if (isTemporary && data.munitionsActuelles !== undefined && (!Number.isSafeInteger(data.munitionsActuelles) || data.munitionsActuelles < 0 || data.munitionsActuelles > 100_000)) throw new Error('Valeur de munitions invalide.')
+  if (!isAdmin && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
   if (data.chargeurRelie != null) await assertConsumablesCanBeEquipped(payload, character, [data.chargeurRelie])
@@ -179,11 +182,12 @@ export async function updateWeaponStatus(
     collection: 'characters',
     id: characterId,
     data: { [slot]: withoutTransientWeaponHeat(updatedWeaponGroup) },
-    user,
+    user: user ?? undefined,
     overrideAccess: true,
   })
 
   revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/temporary-character/${characterId}`)
   return { success: true }
 }
 
@@ -194,21 +198,10 @@ export async function reloadWeapon(
   newAmmoCount: number,
   fromSlot?: string
 ) {
-  const { payload, user } = await getAuthenticatedPayload()
-  if (!user) throw new Error('Non autorisé')
-
-  const character = await payload.findByID({
-    collection: 'characters',
-    id: characterId,
-    depth: 0,
-    overrideAccess: true,
-  })
-  if (!character) throw new Error('Personnage non trouvé')
-
-  // Vérifier que l'utilisateur est admin ou propriétaire
-  const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
-  if (user.role !== 'admin' && String(ownerId) !== String(user.id)) throw new Error('Non autorisé')
-  if (user.role !== 'admin' && !isCharacterCreationComplete(character)) {
+  const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
+  if (isTemporary && !['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(slot)) throw new Error('Emplacement d’arme invalide.')
+  if (isTemporary && (!Number.isSafeInteger(newAmmoCount) || newAmmoCount < 0 || newAmmoCount > 100_000)) throw new Error('Valeur de munitions invalide.')
+  if (!isAdmin && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
 
@@ -232,11 +225,13 @@ export async function reloadWeapon(
     if (fromSlot.startsWith('equipped[')) {
       const match = fromSlot.match(/\[(\d+)\]/)
       const idx = match ? parseInt(match[1]) : -1
+      if (isTemporary && (idx < 0 || idx >= ((character as any).consommablesEquipes || []).length)) throw new Error('Emplacement de consommable invalide.')
       if (idx > -1) {
         const currentEquipped = (character as any).consommablesEquipes || []
         updateData.consommablesEquipes = currentEquipped.filter((_: any, i: number) => i !== idx)
       }
     } else {
+      if (isTemporary && !['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3'].includes(fromSlot)) throw new Error('Emplacement de consommable invalide.')
       // Si ça vient d'un slot équipé classique (ancien système ou autres slots)
       updateData[fromSlot] = null
     }
@@ -256,11 +251,12 @@ export async function reloadWeapon(
     collection: 'characters',
     id: characterId,
     data: withoutTransientWeaponHeat(updateData),
-    user,
+    user: user ?? undefined,
     overrideAccess: true,
   })
 
   revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/temporary-character/${characterId}`)
   return { success: true }
 }
 export async function updateCharacterSkills(characterId: number, data: {
@@ -286,10 +282,11 @@ export async function updateMalus(characterId: number, field: string, value: num
     data: {
       [field]: value,
     },
-    user,
+    user: user ?? undefined,
     overrideAccess: true,
   })
 
   revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/temporary-character/${characterId}`)
   return { success: true }
 }

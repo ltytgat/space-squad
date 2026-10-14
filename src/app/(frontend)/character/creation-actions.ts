@@ -7,6 +7,7 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { consumeWorkspaceRequest, getWorkspaceFromCookie } from '@/lib/temporaryCharacterWorkspace'
 
 type CreationStep = 'caracteristiques' | 'espece' | 'equipement' | 'identite' | 'termine'
 type AbilityRoll = { dice: number[]; kept: number[]; discarded: number; total: number }
@@ -65,15 +66,16 @@ function parseRolls(value: unknown): CharacterRolls {
 async function getSession() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
-  if (!user) fail('Connexion requise.')
-  return { payload, user }
+  const workspace = await getWorkspaceFromCookie(payload)
+  if (!user && !workspace) fail('Connexion requise ou session temporaire expirée.')
+  return { payload, user, workspace }
 }
 
 async function withOwnedCharacter<T>(characterId: number, operation: (context: {
-  payload: any; user: any; character: any; req: any
+  payload: any; user: any; workspace: any; character: any; req: any
 }) => Promise<T>): Promise<T> {
   if (!Number.isSafeInteger(characterId) || characterId <= 0) fail('Personnage invalide.')
-  const { payload, user } = await getSession()
+  const { payload, user, workspace } = await getSession()
   const transactionID = await payload.db.beginTransaction?.()
   if (!transactionID) fail('Les transactions de la base sont indisponibles.')
   const req = { transactionID } as any
@@ -81,15 +83,24 @@ async function withOwnedCharacter<T>(characterId: number, operation: (context: {
   try {
     const transactionDb = (payload.db as any).sessions?.[transactionID]?.db
     if (!transactionDb) fail('Impossible d’ouvrir la transaction.')
+    // Le nettoyage verrouille workspace puis personnage; garder le même ordre évite les interblocages.
+    if (workspace) {
+      await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM character_workspaces WHERE id = ${workspace.id} FOR UPDATE` })
+    }
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${characterId} FOR UPDATE` })
     const character = await payload.findByID({ collection: 'characters', id: characterId, depth: 1, overrideAccess: true, req }) as any
-    if (numericId(character.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    const isAdmin = user?.role === 'admin'
+    const isUserOwner = !!user && numericId(character.user) === Number(user.id)
+    const isWorkspaceOwner = !!workspace && !character.user && numericId(character.workspace) === Number(workspace.id)
+    if (!isAdmin && !isUserOwner && !isWorkspaceOwner) fail('Ce personnage ne vous appartient pas.')
+    if (isWorkspaceOwner) await consumeWorkspaceRequest(payload, Number(workspace.id), req)
     if (isCharacterCreationComplete(character)) fail('La création de ce personnage est déjà terminée.')
 
-    const result = await operation({ payload, user, character, req })
+    const result = await operation({ payload, user, workspace, character, req })
     await payload.db.commitTransaction?.(transactionID)
     revalidatePath('/character')
     revalidatePath(`/characters/${characterId}`)
+    revalidatePath(`/temporary-character/${characterId}`)
     revalidatePath('/shop')
     return result
   } catch (error) {
@@ -117,7 +128,7 @@ async function ensureCurrentRolls({ payload, character, user, req }: { payload: 
     changed = true
   }
   if (changed) {
-    await payload.update({ collection: 'characters', id: character.id, data: { creationJets: rolls }, overrideAccess: true, user, req })
+    await payload.update({ collection: 'characters', id: character.id, data: { creationJets: rolls }, overrideAccess: true, user: user ?? undefined, req })
   }
   return rolls
 }
@@ -145,7 +156,7 @@ export async function saveCharacteristicAssignment(characterId: number, assigned
     await payload.update({
       collection: 'characters', id: character.id,
       data: { ...values, creationEtape: 'espece' },
-      overrideAccess: true, user, req,
+      overrideAccess: true, user: user ?? undefined, req,
     })
     return { success: true }
   })
@@ -158,7 +169,7 @@ export async function saveCharacterSpecies(characterId: number, species: unknown
     await payload.update({
       collection: 'characters', id: character.id,
       data: { origine: species as string, creationEtape: 'equipement' },
-      overrideAccess: true, user, req,
+      overrideAccess: true, user: user ?? undefined, req,
     })
     return { success: true }
   })
@@ -193,7 +204,7 @@ export async function saveStartingEquipment(characterId: number, input: {
     const ship = await payload.create({
       collection: 'ships',
       data: { nom: shipName, modele: saleModelId, proprietaire: character.id },
-      overrideAccess: true, user, req,
+      overrideAccess: true, user: user ?? undefined, req,
     }) as any
 
     await payload.update({
@@ -210,7 +221,7 @@ export async function saveStartingEquipment(characterId: number, input: {
         konis: rolls.konis.total,
         creationEtape: 'identite',
       },
-      overrideAccess: true, user, req,
+      overrideAccess: true, user: user ?? undefined, req,
     })
     return { success: true }
   })
@@ -226,7 +237,7 @@ export async function saveCharacterIdentity(characterId: number, input: { nom?: 
     await payload.update({
       collection: 'characters', id: character.id,
       data: { nom, sexe: sexe as string, creationEtape: 'termine' },
-      overrideAccess: true, user, req,
+      overrideAccess: true, user: user ?? undefined, req,
     })
     return { success: true }
   })

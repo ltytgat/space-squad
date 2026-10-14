@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 import { syncCharacterShip } from '@/lib/shipCrewSync'
 
@@ -23,6 +23,15 @@ export const COMPETENCES_BASE = [
   'Culture',
 ] as const
 
+const validateCharacterOwner: CollectionBeforeChangeHook = ({ data, originalDoc }) => {
+  const user = Object.prototype.hasOwnProperty.call(data, 'user') ? data.user : originalDoc?.user
+  const workspace = Object.prototype.hasOwnProperty.call(data, 'workspace') ? data.workspace : originalDoc?.workspace
+  const hasUser = user !== null && user !== undefined && user !== ''
+  const hasWorkspace = workspace !== null && workspace !== undefined && workspace !== ''
+  if (hasUser === hasWorkspace) throw new Error('Une fiche doit appartenir à un compte ou à un workspace temporaire, jamais aux deux.')
+  return data
+}
+
 export const Characters: CollectionConfig = {
   slug: 'characters',
   labels: { singular: 'Personnage', plural: 'Personnages' },
@@ -44,14 +53,14 @@ export const Characters: CollectionConfig = {
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
-  hooks: { beforeChange: [syncCharacterShip] },
+  hooks: { beforeChange: [validateCharacterOwner, syncCharacterShip] },
   fields: [
     // ── Identité ──────────────────────────────────────
     {
       name: 'user',
       type: 'relationship',
       relationTo: 'users',
-      required: true,
+      required: false,
       unique: true,
       label: 'Utilisateur',
       admin: {
@@ -118,6 +127,18 @@ export const Characters: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Rôles achetés par le personnage dans la boutique.',
+      },
+    },
+    {
+      name: 'workspace',
+      type: 'relationship',
+      relationTo: 'character-workspaces',
+      required: false,
+      unique: true,
+      label: 'Workspace temporaire',
+      admin: {
+        position: 'sidebar',
+        description: 'Session temporaire propriétaire de cette fiche, le cas échéant.',
       },
     },
     {

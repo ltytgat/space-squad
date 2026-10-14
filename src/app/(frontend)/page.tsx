@@ -1,8 +1,10 @@
 import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import React from 'react'
+import Link from 'next/link'
 
 import config from '@/payload.config'
+import { startTemporaryCharacterWorkspace } from './temporary-character/actions'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import './home.css'
@@ -43,12 +45,12 @@ export default async function HomePage() {
             Lore, jeu de rôle, jeux de plateau.
           </p>
           <div className="ss-hero-actions">
-            <a href="/lore/chronologie-humaine" className="ss-btn ss-btn-primary ss-btn-lg">
+            <Link href="/lore/chronologie-humaine" className="ss-btn ss-btn-primary ss-btn-lg">
               Découvrir l&apos;univers
-            </a>
-            <a href="/#jdr" className="ss-btn ss-btn-ghost ss-btn-lg">
+            </Link>
+            <Link href="/#jdr" className="ss-btn ss-btn-ghost ss-btn-lg">
               Jeu de Rôle
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -81,7 +83,7 @@ export default async function HomePage() {
                   Le point d&apos;entrée pour les nouveaux lecteurs.
                   L&apos;histoire de l&apos;univers Space Squad de ses origines à aujourd&apos;hui.
                 </p>
-                <a href="/lore?categorie=chronologies" className="ss-card-cta">Explorer →</a>
+                <Link href="/lore?categorie=chronologies" className="ss-card-cta">Explorer →</Link>
               </article>
 
               <article className="ss-card">
@@ -91,7 +93,7 @@ export default async function HomePage() {
                   Les grandes puissances, alliances et conflits qui façonnent
                   le futur de l&apos;humanité.
                 </p>
-                <a href="/lore?categorie=politique" className="ss-card-cta">Découvrir →</a>
+                <Link href="/lore?categorie=politique" className="ss-card-cta">Découvrir →</Link>
               </article>
 
               <article className="ss-card">
@@ -101,14 +103,14 @@ export default async function HomePage() {
                   Des technologies ancrées dans la physique et la
                   science contemporaine.
                 </p>
-                <a href="/lore?categorie=technologie" className="ss-card-cta">Lire →</a>
+                <Link href="/lore?categorie=technologie" className="ss-card-cta">Lire →</Link>
               </article>
             </div>
 
             <div className="ss-section-cta">
-              <a href="/lore" className="ss-btn ss-btn-outline">
+              <Link href="/lore" className="ss-btn ss-btn-outline">
                 Toutes les catégories →
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -145,15 +147,22 @@ export default async function HomePage() {
                 <p>
                   {user
                     ? 'Consultez et gérez votre fiche de personnage directement en ligne.'
-                    : 'Créez et gérez vos personnages directement en ligne. Connexion requise, ou téléchargez la fiche originale (format .ods).'}
+                    : 'Créez une fiche temporaire sans compte et reprenez-la depuis ce navigateur pendant 24 heures d’inactivité.'}
                 </p>
-                <a
-                  href={user ? (characterId ? `/characters/${characterId}` : '/character') : '/docs/Fiche_de_Personnage.ods'}
-                  download={user ? undefined : 'Fiche_de_Personnage.ods'}
-                  className="ss-btn ss-btn-outline"
-                >
-                  {user ? 'Accéder à ma fiche' : 'Télécharger la fiche originale'}
-                </a>
+                {user ? (
+                  <Link href={characterId ? `/characters/${characterId}` : '/character'} className="ss-btn ss-btn-outline">
+                    Accéder à ma fiche
+                  </Link>
+                ) : (
+                  <>
+                    <form action={startTemporaryCharacterWorkspace}>
+                      <button type="submit" className="ss-btn ss-btn-outline">Créer ma fiche temporaire</button>
+                    </form>
+                    <a href="/docs/Fiche_de_Personnage.ods" download="Fiche_de_Personnage.ods" className="ss-card-cta">
+                      Télécharger la fiche originale (.ods)
+                    </a>
+                  </>
+                )}
               </article>
 
             </div>
@@ -198,7 +207,7 @@ export default async function HomePage() {
                     <div className="ss-progress-fill" style={{ width: '99%' }} />
                   </div>
                 </div>
-                <a href="/lore?categorie=stardash" className="ss-card-cta">Contexte univers →</a>
+                <Link href="/lore?categorie=stardash" className="ss-card-cta">Contexte univers →</Link>
               </article>
 
               <div className="ss-proto-card ss-proto-coming">

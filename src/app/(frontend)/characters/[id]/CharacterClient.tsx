@@ -14,6 +14,7 @@ type CharacterProps = {
   character: any
   isAdmin: boolean
   isOwner: boolean
+  isTemporary?: boolean
   allBaseSkills: string[]
   relatedShips: any[]
 }
@@ -45,7 +46,7 @@ function getArmorCategory(armorGroup: any): string | undefined {
   return typeof armor === 'object' && armor !== null ? armor.categorie : undefined
 }
 
-export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, allBaseSkills, relatedShips }: CharacterProps) {
+export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, isTemporary = false, allBaseSkills, relatedShips }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
   const [weaponHeat, setWeaponHeat] = useState<Record<string, number>>({})
@@ -485,10 +486,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
 
     const getFinalDamageData = () => {
-      let baseDamage = weapon.valeurDegats
+      const baseDamage = weapon.valeurDegats
       if (!baseDamage) return null
       let bonus = 0
-      let multiplier = baseDamage.endsWith('*') ? 2 : 1
+      const multiplier = baseDamage.endsWith('*') ? 2 : 1
       const cleanDamage = baseDamage.replace('*', '').replace('!', '')
 
       if (isMelee) bonus = stats.forceDieMod * multiplier
@@ -1146,7 +1147,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       const itemData = newItem.consommable || newItem
       
       const checkCapacity = (itemToAdd: any, replacingIdx: number = -1) => {
-        let simEquipped = [...(newCharacter.consommablesEquipes || [])]
+        const simEquipped = [...(newCharacter.consommablesEquipes || [])]
         if (replacingIdx > -1) {
           simEquipped[replacingIdx] = itemToAdd
         } else {
@@ -1363,10 +1364,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         <div className="char-page-header">
           <div className="ss-container">
             <nav className="char-breadcrumb" aria-label="Fil d'Ariane">
-              <a href="/">Accueil</a>
+              <Link href="/">Accueil</Link>
               <span aria-hidden="true">›</span>
-              {isAdmin && <><a href="/characters">Personnages</a><span aria-hidden="true">›</span></>}
-              <span>{isOwner ? 'Mon personnage' : (character.nom ?? 'Personnage')}</span>
+              {isAdmin && <><Link href="/characters">Personnages</Link><span aria-hidden="true">›</span></>}
+              <span>{isTemporary ? 'Fiche temporaire' : isOwner ? 'Mon personnage' : (character.nom ?? 'Personnage')}</span>
             </nav>
 
             <div className="char-name-container">
@@ -1700,12 +1701,13 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   const model = typeof ship.modele === 'object' ? ship.modele : null
                   const chassis = typeof model?.chassis === 'object' ? model.chassis : null
                   const shipClass = chassis?.classe ? (SHIP_CLASS_LABEL[chassis.classe] ?? chassis.classe) : null
-                  return (
-                    <a className={`char-ship-link${assigned ? ' char-ship-link-assigned' : ''}`} href={`/ship/${ship.id}`} key={ship.id}>
+                  const card = <>
                       <span className="char-ship-link-main"><strong>{ship.nom}</strong><span>{shipClass || 'Classe inconnue'}{model?.nom ? ` · ${model.nom}` : ''}</span></span>
-                      <span className="char-ship-link-meta">{assigned ? 'Affecté' : owner?.nom ? `Propriété de ${owner.nom}` : 'Groupe'}<span aria-hidden="true">→</span></span>
-                    </a>
-                  )
+                      <span className="char-ship-link-meta">{assigned ? 'Affecté' : owner?.nom ? `Propriété de ${owner.nom}` : 'Groupe'}{!isTemporary && <span aria-hidden="true">→</span>}</span>
+                  </>
+                  return isTemporary
+                    ? <div className={`char-ship-link${assigned ? ' char-ship-link-assigned' : ''}`} key={ship.id}>{card}</div>
+                    : <a className={`char-ship-link${assigned ? ' char-ship-link-assigned' : ''}`} href={`/ship/${ship.id}`} key={ship.id}>{card}</a>
                 })}
               </div>
             )}
@@ -1714,11 +1716,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           {/* ── Section Inventaire ── */}
           <div className="char-card">
             <h2 className="char-card-title">Inventaire (Possessions)</h2>
-            {isOwner && <Link className="char-inventory-transfer-link" href="/shop/transfert-personnages">
+            {isOwner && !isTemporary && <Link className="char-inventory-transfer-link" href="/shop/transfert-personnages">
               Transférer du matériel ou des Konis à un membre de l’escouade
             </Link>}
             {inventoryData.length === 0 ? (
-              <p className="char-empty-hint">L'inventaire est vide.</p>
+              <p className="char-empty-hint">L&apos;inventaire est vide.</p>
             ) : (
               <div className="char-inventory-categories">
                 {inventoryData.map(cat => (
@@ -1852,12 +1854,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                 className="char-selector-item char-selector-unequip"
                 onClick={() => handleUnequip(selectorConfig.slot, selectorConfig.type)}
               >
-                Retirer l'objet / Vider l'emplacement
+                Retirer l&apos;objet / Vider l&apos;emplacement
               </button>
               
               <div className="char-selector-list">
                 {getCompatibleItems().length === 0 ? (
-                  <p className="char-selector-empty">Aucun objet compatible dans l'inventaire.</p>
+                  <p className="char-selector-empty">Aucun objet compatible dans l&apos;inventaire.</p>
                 ) : (
                   getCompatibleItems().map((itemObj: any, idx: number) => {
                     const item = (selectorConfig.type === 'consumable') ? itemObj.consommable : (itemObj.item || itemObj)
@@ -1940,7 +1942,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
                         let updatedInventory = character.inventaire
                         let updatedEquipped = character.consommablesEquipes
-                        let updatedSlots: any = {}
+                        const updatedSlots: any = {}
                         let fromSlotOrIndex = mag.fromSlot
 
                         if (mag.fromEquippedIndex !== undefined) {

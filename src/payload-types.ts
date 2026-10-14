@@ -82,6 +82,7 @@ export interface Config {
     armors: Armor;
     'armor-sets': ArmorSet;
     characters: Character;
+    'character-workspaces': CharacterWorkspace;
     formations: Formation;
     'special-roles': SpecialRole;
     mods: Mod;
@@ -118,6 +119,7 @@ export interface Config {
     armors: ArmorsSelect<false> | ArmorsSelect<true>;
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
     characters: CharactersSelect<false> | CharactersSelect<true>;
+    'character-workspaces': CharacterWorkspacesSelect<false> | CharacterWorkspacesSelect<true>;
     formations: FormationsSelect<false> | FormationsSelect<true>;
     'special-roles': SpecialRolesSelect<false> | SpecialRolesSelect<true>;
     mods: ModsSelect<false> | ModsSelect<true>;
@@ -576,7 +578,7 @@ export interface Character {
   /**
    * Utilisateur propriétaire de ce personnage (1 personnage par compte).
    */
-  user: number | User;
+  user?: (number | null) | User;
   nom?: string | null;
   sexe?: ('M' | 'F' | 'X') | null;
   origine?: ('Humain' | 'Strani' | 'Vada') | null;
@@ -595,6 +597,10 @@ export interface Character {
    * Rôles achetés par le personnage dans la boutique.
    */
   rolesSpeciaux?: (number | SpecialRole)[] | null;
+  /**
+   * Session temporaire propriétaire de cette fiche, le cas échéant.
+   */
+  workspace?: (number | null) | CharacterWorkspace;
   groupe?: (number | null) | Group;
   pointsDeRang?: number | null;
   pointsDeCompetence?: number | null;
@@ -817,6 +823,21 @@ export interface SpecialRole {
   nom: string;
   description: string;
   prix: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "character-workspaces".
+ */
+export interface CharacterWorkspace {
+  id: number;
+  tokenHash: string;
+  createdFromHash?: string | null;
+  lastActivityAt: string;
+  expiresAt: string;
+  requestWindowStartedAt: string;
+  requestCount: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -1350,6 +1371,10 @@ export interface PayloadLockedDocument {
         value: number | Character;
       } | null)
     | ({
+        relationTo: 'character-workspaces';
+        value: number | CharacterWorkspace;
+      } | null)
+    | ({
         relationTo: 'formations';
         value: number | Formation;
       } | null)
@@ -1791,6 +1816,7 @@ export interface CharactersSelect<T extends boolean = true> {
   creationJets?: T;
   affiliation?: T;
   rolesSpeciaux?: T;
+  workspace?: T;
   groupe?: T;
   pointsDeRang?: T;
   pointsDeCompetence?: T;
@@ -1960,6 +1986,20 @@ export interface CharactersSelect<T extends boolean = true> {
         valeur?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "character-workspaces_select".
+ */
+export interface CharacterWorkspacesSelect<T extends boolean = true> {
+  tokenHash?: T;
+  createdFromHash?: T;
+  lastActivityAt?: T;
+  expiresAt?: T;
+  requestWindowStartedAt?: T;
+  requestCount?: T;
   updatedAt?: T;
   createdAt?: T;
 }

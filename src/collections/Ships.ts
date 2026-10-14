@@ -42,6 +42,8 @@ export const Ships: CollectionConfig = {
           collection: 'ship-sale-models',
           id: typeof data.modele === 'object' ? data.modele.id : data.modele,
           depth: 1,
+          overrideAccess: true,
+          req,
         })) as any
 
         if (!saleModel) return data
