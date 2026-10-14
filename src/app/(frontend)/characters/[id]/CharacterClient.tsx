@@ -52,6 +52,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const [weaponHeat, setWeaponHeat] = useState<Record<string, number>>({})
   const [isModified, setIsModified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [showLearnNewSkill, setShowLearnNewSkill] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
   const [hoveredItem, setHoveredItem] = useState<{item: any, type: string, mods?: any[], x: number, y: number} | null>(null)
@@ -184,7 +185,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
   }
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     setIsSaving(true)
     try {
       // Préparer les données à sauvegarder
@@ -212,11 +213,24 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       await updateCharacter(character.id, saveData)
       setIsModified(false)
       alert('Modifications enregistrées !')
+      return true
     } catch (err) {
       console.error(err)
       alert('Erreur lors de la sauvegarde.')
+      return false
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleExport = async () => {
+    if (isExporting || isSaving) return
+    setIsExporting(true)
+    try {
+      if (isModified && !(await handleSave())) return
+      window.location.assign(`/characters/${character.id}/export`)
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -1372,6 +1386,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
             <div className="char-name-container">
               <h1 className="char-name">{character.nom || 'Personnage en cours de création'}</h1>
+              <button className="ss-btn ss-btn-outline" type="button" onClick={handleExport} disabled={isSaving || isExporting}>
+                {isExporting ? 'Exportation…' : 'Exporter'}
+              </button>
             </div>
             
             <div className="char-tags">
