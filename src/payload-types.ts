@@ -1000,6 +1000,10 @@ export interface Weapon {
   categorie: 'fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'melee' | 'lourde';
   type: ('thermique' | 'cinetique' | 'plasma' | 'explosif' | 'melee')[];
   /**
+   * Force minimale requise pour équiper cette arme lourde.
+   */
+  forceMinimum?: number | null;
+  /**
    * Format: [nombre de dés]d[taille du dé]
    */
   valeurDegats?: string | null;
@@ -1741,6 +1745,7 @@ export interface WeaponsSelect<T extends boolean = true> {
   fabricant?: T;
   categorie?: T;
   type?: T;
+  forceMinimum?: T;
   valeurDegats?: T;
   poids?: T;
   prix?: T;

@@ -13,6 +13,7 @@ type Weapon = {
   id: number
   nom: string
   poids?: number
+  forceMinimum?: number
   tailleChargeur?: number
   valeurDegats?: string
   projectilesParTir?: number

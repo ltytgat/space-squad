@@ -23,7 +23,7 @@ const detailLabels: Record<string, string> = {
   fabricant: 'Fabricant', categorie: 'Catégorie', famille: 'Famille', type: 'Type', types: 'Types',
   categoriePrincipale: 'Catégorie principale', sousCategorieArme: 'Arme compatible', sousCategorieArmure: 'Armure compatible',
   typeModule: 'Type de module', modele: 'Modèle', taille: 'Taille', rang: 'Rang requis',
-  valeurDegats: 'Dégâts', degats: 'Dégâts', poids: 'Poids', porteeFixe: 'Portée', projectilesParTir: 'Projectiles par tir',
+  valeurDegats: 'Dégâts', degats: 'Dégâts', poids: 'Poids', forceMinimum: 'Fo minimum', porteeFixe: 'Portée', projectilesParTir: 'Projectiles par tir',
   valeurChauffe: 'Chauffe', courtePortee: 'Portée courte', modCourtePortee: 'Modificateur courte portée',
   moyennePortee: 'Portée moyenne', modMoyennePortee: 'Modificateur moyenne portée', paliersSniper: 'Paliers de portée',
   trancheMalusLonguePortee: 'Tranche de malus longue portée', malusParTranche: 'Malus par tranche',

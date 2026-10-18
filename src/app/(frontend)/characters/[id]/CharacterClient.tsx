@@ -216,7 +216,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       return true
     } catch (err) {
       console.error(err)
-      alert('Erreur lors de la sauvegarde.')
+      alert(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.')
       return false
     } finally {
       setIsSaving(false)
@@ -681,6 +681,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             {showProjectiles && <div className="weapon-util-item" title="Projectiles/tir"><span className="util-icon">✴️</span><span className="util-value">{totalProjectiles}</span></div>}
             {weapon.tempsRechargement != null && <div className="weapon-util-item" title="Rechargement"><span className="util-icon">🔄</span><span className="util-value">{weapon.tempsRechargement}t</span></div>}
             {weapon.poids != null && <div className="weapon-util-item" title="Poids"><span className="util-icon">⚖️</span><span className="util-value">{Math.max(0, weapon.poids + (structuredMods['poids'] || 0))}kg</span></div>}
+            {isHeavy && weapon.forceMinimum != null && <div className="weapon-util-item" title="Force minimale"><span className="util-icon">💪</span><span className="util-value">Fo {weapon.forceMinimum} min.</span></div>}
             {isThermique && weapon.valeurChauffe != null && <div className="weapon-util-item" title="Valeur de chauffe"><span className="util-icon">🔥</span><span className="util-value">{weapon.valeurChauffe}%</span></div>}
             {isThermique && <div className="weapon-util-item" title="Refroidissement (Valeur de chauffe)"><span className="util-icon">❄️</span><span className="util-value">{weapon.tempsRefroidissement}%</span></div>}
           </div>
@@ -1148,6 +1149,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   const handleEquip = (newItem: any, currentSlot: string, type: string) => {
     if (type === 'armor' && getArmorCategory(newItem) !== ARMOR_SLOT_CATEGORIES[currentSlot]) return
+
+    const candidateWeapon = newItem?.item ?? newItem
+    if (type === 'weapon' && candidateWeapon.categorie === 'lourde' && candidateWeapon.forceMinimum != null) {
+      const force = (Number(character.force) || 0) + (stats.totalArmorMods.force || 0) - (Number(character.malusForce) || 0)
+      if (force < candidateWeapon.forceMinimum) {
+        alert(`Force insuffisante pour équiper ${candidateWeapon.nom} : Fo ${candidateWeapon.forceMinimum} minimum requise (votre Force : ${force}).`)
+        return
+      }
+    }
 
     const minimumRank = type === 'chip' ? minimumRankForChipSlot(currentSlot) : null
     if (!isAdmin && minimumRank !== null && stats.rankInfo.level < minimumRank) {

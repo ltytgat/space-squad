@@ -70,6 +70,16 @@ export const Weapons: CollectionConfig = {
       ],
     },
     {
+      name: 'forceMinimum',
+      type: 'number',
+      label: 'Fo minimum',
+      min: 0,
+      admin: {
+        condition: (data) => data.categorie === 'lourde',
+        description: 'Force minimale requise pour équiper cette arme lourde.',
+      },
+    },
+    {
       type: 'row',
       fields: [
         {

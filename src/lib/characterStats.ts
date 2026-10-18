@@ -22,6 +22,7 @@ export type Weapon = {
   id: number
   nom: string
   poids?: number | null
+  forceMinimum?: number | null
   tailleChargeur?: number | null
   valeurDegats?: string | null
   projectilesParTir?: number | null

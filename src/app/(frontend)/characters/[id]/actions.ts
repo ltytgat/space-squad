@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character } from '@/payload-types'
 import { computeRank, minimumRankForChipSlot } from '@/lib/rankSystem'
+import { calculateStats } from '@/lib/characterStats'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import {
   consumeWorkspaceRequest,
@@ -47,6 +48,50 @@ async function assertConsumablesCanBeEquipped(payload: any, character: any, valu
     if (requiredRoleId && !ownedRoleIds.has(requiredRoleId)) {
       const role: any = await payload.findByID({ collection: 'special-roles', id: requiredRoleId, depth: 0, overrideAccess: true }).catch(() => null)
       throw new Error(`Le rôle spécial « ${role?.nom ?? 'requis'} » est nécessaire pour équiper ${consumable.nom}.`)
+    }
+  }
+}
+
+async function assertHeavyWeaponsMeetForce(payload: any, character: any, updateData: Record<string, any>) {
+  const weaponSlots = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
+  const changedWeaponIds = weaponSlots
+    .filter((slot) => Object.prototype.hasOwnProperty.call(updateData, slot))
+    .map((slot) => {
+      const item = updateData[slot]?.item ?? updateData[slot]
+      const currentItem = character[slot]?.item ?? character[slot]
+      const id = relationNumericId(item)
+      return id && id !== relationNumericId(currentItem) ? id : null
+    })
+    .filter((id): id is number => id !== null)
+
+  if (!changedWeaponIds.length) return
+
+  const { docs } = await payload.find({
+    collection: 'weapons',
+    where: { id: { in: [...new Set(changedWeaponIds)] } },
+    depth: 0,
+    limit: changedWeaponIds.length,
+    overrideAccess: true,
+  })
+  const restrictedWeapons = (docs as any[]).filter((weapon) =>
+    weapon.categorie === 'lourde' && weapon.forceMinimum != null,
+  )
+  if (!restrictedWeapons.length) return
+
+  const populatedCharacter = await payload.findByID({
+    collection: 'characters',
+    id: character.id,
+    depth: 4,
+    overrideAccess: true,
+  })
+  const stats = calculateStats({ ...populatedCharacter, ...updateData })
+  const force = (Number(updateData.force ?? populatedCharacter.force) || 0)
+    + (Number(stats.totalArmorMods.force) || 0)
+    - (Number(updateData.malusForce ?? populatedCharacter.malusForce) || 0)
+
+  for (const weapon of restrictedWeapons) {
+    if (force < weapon.forceMinimum) {
+      throw new Error(`Force insuffisante pour équiper ${weapon.nom} : Fo ${weapon.forceMinimum} minimum requise (votre Force : ${force}).`)
     }
   }
 }
@@ -145,6 +190,7 @@ export async function updateCharacter(characterId: number, data: any) {
     if (linkedMagazine) consumablesToEquip.push(linkedMagazine)
   }
   if (consumablesToEquip.length) await assertConsumablesCanBeEquipped(payload, character, consumablesToEquip)
+  await assertHeavyWeaponsMeetForce(payload, character, updateData)
 
   // Mise à jour du personnage
   await payload.update({
