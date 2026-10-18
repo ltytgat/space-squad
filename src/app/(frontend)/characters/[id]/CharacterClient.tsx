@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier } from '@/lib/characterStats'
+import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier, GRAVITY_OPTIONS } from '@/lib/characterStats'
+import type { GravityLevel } from '@/lib/characterStats'
 import { minimumRankForChipSlot } from '@/lib/rankSystem'
 import { updateCharacter, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
@@ -49,6 +50,7 @@ function getArmorCategory(armorGroup: any): string | undefined {
 export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, isTemporary = false, allBaseSkills, relatedShips }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
+  const [gravityLevel, setGravityLevel] = useState<GravityLevel>('normale')
   const [weaponHeat, setWeaponHeat] = useState<Record<string, number>>({})
   const [isModified, setIsModified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -72,7 +74,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   } | null>(null)
 
   // Statistiques calculées en temps réel
-  const stats = useMemo(() => calculateStats(character), [character])
+  const stats = useMemo(() => calculateStats({ ...character, facteurGravite: gravityLevel }), [character, gravityLevel])
 
   const factionRank = useMemo(() => {
     const val = character.rangDeFaction
@@ -537,42 +539,54 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const damageData = getFinalDamageData()
 
     const renderRangeTable = () => {
-      const rows: { label: string; mod: string }[] = []
+      const rows: { label: string; distance?: number; mod: number; optimalRange?: boolean }[] = []
       const bonusPC = structuredMods['mod_portee_courte'] || 0
       const bonusPM = structuredMods['mod_portee_moyenne'] || 0
       const addPC = (structuredMods['portee_courte'] || 0) + (magMods['portee_flat'] || 0)
       const addPM = (structuredMods['portee_moyenne'] || 0) + (magMods['portee_flat'] || 0)
 
-      if (isMelee) rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: '0' })
-      else if (isHeavy) rows.push({ label: `Max ${weapon.porteeFixe ?? 50}m`, mod: '0' })
+      if (isMelee) rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: 0 })
+      else if (isHeavy) rows.push({ label: `Max ${weapon.porteeFixe ?? 50}m`, mod: 0 })
       else if (isSniper) {
         const cpVal = (weapon.courtePortee ?? 0) + addPC
         const cpMod = (weapon.modCourtePortee ?? 0) + bonusPC
-        rows.push({ label: `< ${cpVal}m`, mod: cpMod >= 0 ? `+${cpMod}` : `${cpMod}` })
+        rows.push({ label: `< ${cpVal}m`, distance: cpVal, mod: cpMod, optimalRange: true })
         weapon.paliersSniper?.forEach((p: any) => {
           const pMod = (p.modificateur ?? 0) + bonusPC
-          rows.push({ label: `< ${p.distanceMax}m`, mod: pMod >= 0 ? `+${pMod}` : `${pMod}` })
+          rows.push({ label: `< ${p.distanceMax}m`, distance: p.distanceMax, mod: pMod, optimalRange: true })
         })
       } else {
         if (weapon.courtePortee != null) {
           const cpVal = weapon.courtePortee + addPC
           const cpMod = (weapon.modCourtePortee ?? 0) + bonusPC
-          rows.push({ label: `< ${cpVal}m`, mod: cpMod >= 0 ? `+${cpMod}` : `${cpMod}` })
+          rows.push({ label: `< ${cpVal}m`, distance: cpVal, mod: cpMod, optimalRange: true })
         }
         if (weapon.moyennePortee != null) {
           const mpVal = weapon.moyennePortee + addPM
           const mpMod = (weapon.modMoyennePortee ?? 0) + bonusPM
-          rows.push({ label: `< ${mpVal}m`, mod: mpMod >= 0 ? `+${mpMod}` : `${mpMod}` })
+          rows.push({ label: `< ${mpVal}m`, distance: mpVal, mod: mpMod, optimalRange: true })
         }
       }
+      const rangeRows = rows.filter((row) => row.optimalRange)
+      const bestRangeBonus = rangeRows.length ? Math.max(...rangeRows.map((row) => row.mod)) : null
+      const gravityRangeMultiplier = stats.gravity.optimalRangeMultiplier
+      const visibleRows = rows.map((row) => {
+        const isOptimal = row.optimalRange && row.mod === bestRangeBonus && gravityRangeMultiplier !== 1
+        const distance = isOptimal
+          ? (gravityRangeMultiplier === Infinity ? Infinity : (row.distance ?? 0) * gravityRangeMultiplier)
+          : row.distance
+        const rangeLabel = distance === undefined ? row.label : distance === Infinity ? '< ∞m' : `< ${distance}m`
+        return { label: rangeLabel, mod: row.mod >= 0 ? `+${row.mod}` : `${row.mod}` }
+      })
       if (!isMelee && !isHeavy && weapon.trancheMalusLonguePortee) {
-        rows.push({ label: `+${weapon.trancheMalusLonguePortee}m`, mod: (weapon.malusParTranche ?? -1) >= 0 ? `+${weapon.malusParTranche}` : `${weapon.malusParTranche}` })
+        const longRangeMod = weapon.malusParTranche ?? -1
+        visibleRows.push({ label: `+${weapon.trancheMalusLonguePortee}m`, mod: longRangeMod >= 0 ? `+${longRangeMod}` : `${longRangeMod}` })
       }
-      if (rows.length === 0) return null
+      if (visibleRows.length === 0) return null
       return (
         <table className="weapon-range-table">
-          <thead><tr>{rows.map((r, i) => <th key={i}>{r.label}</th>)}</tr></thead>
-          <tbody><tr>{rows.map((r, i) => <td key={i}>{r.mod}</td>)}</tr></tbody>
+          <thead><tr>{visibleRows.map((r, i) => <th key={i}>{r.label}</th>)}</tr></thead>
+          <tbody><tr>{visibleRows.map((r, i) => <td key={i}>{r.mod}</td>)}</tr></tbody>
         </table>
       )
     }
@@ -1411,6 +1425,22 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                 ? <span className="ss-tag" key={role.id} title={role.description || undefined}>{role.nom}</span>
                 : null)}
             </div>}
+            <div className="char-gravity-control">
+              <label className="char-gravity-label" htmlFor="character-gravity">Facteur de gravité</label>
+              <select
+                id="character-gravity"
+                className="char-gravity-select"
+                value={gravityLevel}
+                onChange={(event) => setGravityLevel(event.target.value as GravityLevel)}
+              >
+                {GRAVITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              {stats.gravity.notes.length > 0 && (
+                <ul className="char-gravity-notes">
+                  {stats.gravity.notes.map((note: string) => <li key={note}>{note}</li>)}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
 

@@ -55,6 +55,60 @@ export type Mod = {
   }[] | null
 }
 
+export type GravityLevel = 'zero-g' | 'tres-faible' | 'faible' | 'legere' | 'normale' | 'elevee' | 'forte' | 'tres-forte'
+
+export const GRAVITY_OPTIONS: { label: string; value: GravityLevel }[] = [
+  { label: 'Zéro G · 0g', value: 'zero-g' },
+  { label: 'Très faible · 0,1g à 0,4g (-3)', value: 'tres-faible' },
+  { label: 'Faible · 0,4g à 0,7g (-2)', value: 'faible' },
+  { label: 'Légère · 0,7g à 0,9g (-1)', value: 'legere' },
+  { label: 'Normale · 0,9g à 1,1g (0)', value: 'normale' },
+  { label: 'Élevée · 1,1g à 1,4g (+1)', value: 'elevee' },
+  { label: 'Forte · 1,4g à 1,8g (+2)', value: 'forte' },
+  { label: 'Très forte · 1,8g à 2,5g (+3)', value: 'tres-forte' },
+]
+
+const GRAVITY_RULES: Record<GravityLevel, {
+  weightMultiplier: number
+  shotPenalty: number
+  optimalRangeMultiplier: number
+  movementModifier: number
+  zeroGravityMovement: boolean
+  notes: string[]
+}> = {
+  'zero-g': {
+    weightMultiplier: 1, shotPenalty: -4, optimalRangeMultiplier: Infinity, movementModifier: 0,
+    zeroGravityMovement: true,
+    notes: ['Portée optimale des armes infinie', 'Propulsion à 1d10m au càc, 1d4 sur impact de tir et en tirant'],
+  },
+  'tres-faible': {
+    weightMultiplier: 0, shotPenalty: -2, optimalRangeMultiplier: Infinity, movementModifier: 0,
+    zeroGravityMovement: false,
+    notes: ['Portée optimale des armes infinie', 'Propulsion à 1d10m au càc, 1d4m sur impact tir'],
+  },
+  faible: {
+    weightMultiplier: 0.5, shotPenalty: -1, optimalRangeMultiplier: 2, movementModifier: 0,
+    zeroGravityMovement: false,
+    notes: ['Propulsion à 1d4m au càc, 1m sur impact de tir'],
+  },
+  legere: { weightMultiplier: 1, shotPenalty: 0, optimalRangeMultiplier: 1, movementModifier: 1, zeroGravityMovement: false, notes: [] },
+  normale: { weightMultiplier: 1, shotPenalty: 0, optimalRangeMultiplier: 1, movementModifier: 0, zeroGravityMovement: false, notes: [] },
+  elevee: { weightMultiplier: 1, shotPenalty: 0, optimalRangeMultiplier: 1, movementModifier: -1, zeroGravityMovement: false, notes: [] },
+  forte: { weightMultiplier: 1.5, shotPenalty: -2, optimalRangeMultiplier: 0.5, movementModifier: 0, zeroGravityMovement: false, notes: [] },
+  'tres-forte': {
+    weightMultiplier: 2, shotPenalty: -4, optimalRangeMultiplier: 0.25, movementModifier: 0,
+    zeroGravityMovement: false,
+    notes: [
+      'Sprint impossible',
+      'Chaque tour : Lancez 1d20, si le score est inférieur à votre Force, vous subissez un malus de FO -1 pour le reste de la mission (cumulable)',
+    ],
+  },
+}
+
+export function getGravityRules(level: string | null | undefined) {
+  return GRAVITY_RULES[level && Object.prototype.hasOwnProperty.call(GRAVITY_RULES, level) ? level as GravityLevel : 'normale']
+}
+
 // Types simplifiés pour les calculs
 
 export function parseModifier(modStr: string | null | undefined): Record<string, number> {
@@ -144,9 +198,9 @@ export function getBridgedArmorStats(armor: Armor, mods: Mod[]) {
   // Rappel: poids de base = valeur armure physique si non spécifié
   const basePoids = armor.poids ?? basePhys
 
-  let modArmor = totalMods['armure_physique'] || 0
-  let modShield = totalMods['armure_bouclier'] || 0
-  let modWeight = totalMods['poids_armure'] || 0
+  const modArmor = totalMods['armure_physique'] || 0
+  const modShield = totalMods['armure_bouclier'] || 0
+  const modWeight = totalMods['poids_armure'] || 0
 
   // Application des brides : le bonus ne peut excéder le double de la valeur de base
   const appliedBonusPhys = Math.min(modArmor, 2 * basePhys)
@@ -169,6 +223,7 @@ export function getBridgedArmorStats(armor: Armor, mods: Mod[]) {
 }
 
 export function calculateStats(character: any) {
+  const gravity = getGravityRules(character.facteurGravite)
   const rankInfo = computeRank(character.pointsDeRang ?? 0)
 
   const bonusSources: Record<string, { source: string; value: number }[]> = {}
@@ -361,15 +416,18 @@ export function calculateStats(character: any) {
     return attrBonus + 2 * compVal + bonusMod
   }
 
+  const getTirEpreuveMod = (attrBonus: number, competenceName: string | null, modCible: string) =>
+    getEpreuveMod(attrBonus, competenceName, modCible) + gravity.shotPenalty
+
   const epreuves = {
     vaisseau: [
       { label: 'Pilotage – Chasseur/Léger', value: getEpreuveMod(habiliteDieMod, 'Chasseur', 'epreuve_pilotage_leger') },
       { label: 'Pilotage – Bombardier/Intermédiaire', value: getEpreuveMod(habiliteDieMod, 'Bombardier', 'epreuve_pilotage_intermediaire') - 5 },
       { label: 'Pilotage – Corvette/Poids lourds', value: getEpreuveMod(habiliteDieMod, 'Poids Lourds', 'epreuve_pilotage_lourd') - 10 },
       { label: 'Pilotage – Frégate/Blindé', value: getEpreuveMod(habiliteDieMod, 'Transport de Troupes', 'epreuve_pilotage_blinde') - 15 },
-      { label: 'Tir – Pilote', value: getEpreuveMod(perceptionDieMod, null, 'epreuve_tir_pilote') },
-      { label: 'Tir – Tourelle', value: getEpreuveMod(perceptionDieMod, 'Canonnier', 'epreuve_tir_tourelle') },
-      { label: 'Tir - Véhicule', value: getEpreuveMod(perceptionDieMod, 'Stabilisation', 'epreuve_tir_vehicule') },
+      { label: 'Tir – Pilote', value: getTirEpreuveMod(perceptionDieMod, null, 'epreuve_tir_pilote') },
+      { label: 'Tir – Tourelle', value: getTirEpreuveMod(perceptionDieMod, 'Canonnier', 'epreuve_tir_tourelle') },
+      { label: 'Tir - Véhicule', value: getTirEpreuveMod(perceptionDieMod, 'Stabilisation', 'epreuve_tir_vehicule') },
     ],
     pacifiques: [
       { label: 'Réparation', value: getEpreuveMod(connaissancesDieMod, 'Mécanicien', 'epreuve_reparation') },
@@ -380,9 +438,9 @@ export function calculateStats(character: any) {
     ],
     combat: [
       { label: 'Initiative', value: getEpreuveMod(anticipationDieMod, 'Réactivité', 'epreuve_initiative') },
-      { label: 'Tir Fusil/Pistolet', value: getEpreuveMod(perceptionDieMod, 'Assaut', 'epreuve_tir_assaut') },
-      { label: 'Tir Sniper', value: getEpreuveMod(perceptionDieMod, 'Sniper', 'epreuve_tir_sniper') },
-      { label: 'Tir Shotgun', value: getEpreuveMod(perceptionDieMod, 'Shotgun', 'epreuve_tir_shotgun') },
+      { label: 'Tir Fusil/Pistolet', value: getTirEpreuveMod(perceptionDieMod, 'Assaut', 'epreuve_tir_assaut') },
+      { label: 'Tir Sniper', value: getTirEpreuveMod(perceptionDieMod, 'Sniper', 'epreuve_tir_sniper') },
+      { label: 'Tir Shotgun', value: getTirEpreuveMod(perceptionDieMod, 'Shotgun', 'epreuve_tir_shotgun') },
       { label: 'Frapper au CàC', value: getEpreuveMod(habiliteDieMod, 'Combat rapproché', 'epreuve_cac') },
       { label: 'Premiers soins', value: getEpreuveMod(connaissancesDieMod, 'Médecine de terrain', 'epreuve_soins') },
     ],
@@ -391,7 +449,9 @@ export function calculateStats(character: any) {
   const ba = anticipationDieMod
   const rank = rankInfo.level
   const bf = forceDieMod
-  const dodgeBase = 15 + (ba * rank / 2) - ((totalArmorWeight - bf) / 2)
+  const armorWeightForCalculations = totalArmorWeight * gravity.weightMultiplier
+  const weaponWeightForCalculations = totalWeaponWeightFinal * gravity.weightMultiplier
+  const dodgeBase = 15 + (ba * rank / 2) - ((armorWeightForCalculations - bf) / 2)
   const decouvert = Math.floor(dodgeBase)
 
   const dodge = {
@@ -417,7 +477,9 @@ export function calculateStats(character: any) {
   if (origin === 'Strani') xMouv = 14
   else if (origin === 'Vada') xMouv = 6
   const bonusMouv = totalArmorMods['mouvement'] || 0
-  const movement = xMouv - Math.floor((totalArmorWeight - bf + totalWeaponWeightFinal) / 2) + bonusMouv
+  const movement = gravity.zeroGravityMovement
+    ? 2 + forceDieMod
+    : xMouv - Math.floor((armorWeightForCalculations - bf + weaponWeightForCalculations) / 2) + bonusMouv + gravity.movementModifier
 
   // Construction du breakdown pour les infobulles
   const breakdown: Record<string, any> = {
@@ -434,23 +496,28 @@ export function calculateStats(character: any) {
     },
     movement: {
       label: "Mouvement",
-      formula: "Base_Origine - ⌊(Poids_Armures - BF + Poids_Armes) / 2⌋ + Bonus_Mouv",
+      formula: gravity.zeroGravityMovement
+        ? "2 + Mod.Fo"
+        : "Base_Origine - ⌊(Poids_Armures × Gravité - BF + Poids_Armes × Gravité) / 2⌋ + Bonus_Mouv + Modificateur_Gravité",
       components: [
-        { label: `Base (Origine: ${origin})`, value: xMouv },
-        { label: "Poids Armures", value: totalArmorWeight, sub: "Poids cumulé des armures bridées" },
+        { label: gravity.zeroGravityMovement ? '2' : `Base (Origine: ${origin})`, value: gravity.zeroGravityMovement ? 2 : xMouv },
+        ...(gravity.zeroGravityMovement ? [] : [{ label: "Poids Armures (calcul)", value: armorWeightForCalculations, sub: `Poids cumulé des armures bridées × ${gravity.weightMultiplier}` }]),
         { label: "BF (Force)", value: bf },
-        { label: "Poids Armes", value: totalWeaponWeightFinal, sub: "Poids total - Allègement" },
-        { label: "Bonus Mouvement", value: bonusMouv }
+        ...(gravity.zeroGravityMovement ? [] : [{ label: "Poids Armes (calcul)", value: weaponWeightForCalculations, sub: `Poids total - Allègement, × ${gravity.weightMultiplier}` }]),
+        ...(gravity.zeroGravityMovement ? [] : [
+          { label: "Bonus Mouvement", value: bonusMouv },
+          { label: "Modificateur de gravité", value: gravity.movementModifier },
+        ]),
       ]
     },
     dodge: {
       label: "Esquive (Découvert)",
-      formula: "15 + (BA * Rang / 2) - ((Poids_Armures - BF) / 2)",
+      formula: "15 + (BA * Rang / 2) - ((Poids_Armures × Gravité - BF) / 2)",
       components: [
         { label: "Base fixe", value: 15 },
         { label: "BA (Anticipation)", value: ba },
         { label: "Rang", value: rank },
-        { label: "Poids Armures", value: totalArmorWeight },
+        { label: "Poids Armures (calcul)", value: armorWeightForCalculations },
         { label: "BF (Force)", value: bf }
       ]
     }
@@ -493,6 +560,9 @@ export function calculateStats(character: any) {
     totalBouclier,
     totalArmorWeight,
     totalWeaponWeightFinal,
+    gravity,
+    armorWeightForCalculations,
+    weaponWeightForCalculations,
     completedSets,
     totalArmorMods,
     forceDieMod,
