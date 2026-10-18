@@ -68,6 +68,21 @@ export const GRAVITY_OPTIONS: { label: string; value: GravityLevel }[] = [
   { label: 'Très forte · 1,8g à 2,5g (+3)', value: 'tres-forte' },
 ]
 
+export const GRAVITY_CATEGORY_LABELS: Record<GravityLevel, string> = {
+  'zero-g': 'Zéro G',
+  'tres-faible': 'Très faible',
+  faible: 'Faible',
+  legere: 'Légère',
+  normale: 'Normale',
+  elevee: 'Élevée',
+  forte: 'Forte',
+  'tres-forte': 'Très forte',
+}
+
+const ORDINARY_GRAVITY_LEVELS: GravityLevel[] = [
+  'tres-faible', 'faible', 'legere', 'normale', 'elevee', 'forte', 'tres-forte',
+]
+
 const GRAVITY_RULES: Record<GravityLevel, {
   weightMultiplier: number
   shotPenalty: number
@@ -79,12 +94,12 @@ const GRAVITY_RULES: Record<GravityLevel, {
   'zero-g': {
     weightMultiplier: 1, shotPenalty: -4, optimalRangeMultiplier: Infinity, movementModifier: 0,
     zeroGravityMovement: true,
-    notes: ['Portée optimale des armes infinie', 'Propulsion à 1d10m au càc, 1d4 sur impact de tir et en tirant'],
+    notes: ['Propulsion à 1d10m au càc, 1d4 sur impact de tir et en tirant'],
   },
   'tres-faible': {
     weightMultiplier: 0, shotPenalty: -2, optimalRangeMultiplier: Infinity, movementModifier: 0,
     zeroGravityMovement: false,
-    notes: ['Portée optimale des armes infinie', 'Propulsion à 1d10m au càc, 1d4m sur impact tir'],
+    notes: ['Propulsion à 1d10m au càc, 1d4m sur impact tir'],
   },
   faible: {
     weightMultiplier: 0.5, shotPenalty: -1, optimalRangeMultiplier: 2, movementModifier: 0,
@@ -107,6 +122,16 @@ const GRAVITY_RULES: Record<GravityLevel, {
 
 export function getGravityRules(level: string | null | undefined) {
   return GRAVITY_RULES[level && Object.prototype.hasOwnProperty.call(GRAVITY_RULES, level) ? level as GravityLevel : 'normale']
+}
+
+export function getEffectiveGravityLevel(level: string | null | undefined, origin: string | null | undefined): GravityLevel {
+  const selectedLevel = level && Object.prototype.hasOwnProperty.call(GRAVITY_RULES, level) ? level as GravityLevel : 'normale'
+  if (selectedLevel === 'zero-g' || (origin !== 'Strani' && origin !== 'Vada')) return selectedLevel
+
+  const speciesShift = origin === 'Strani' ? 1 : -1
+  const selectedIndex = ORDINARY_GRAVITY_LEVELS.indexOf(selectedLevel)
+  const effectiveIndex = Math.max(0, Math.min(ORDINARY_GRAVITY_LEVELS.length - 1, selectedIndex + speciesShift))
+  return ORDINARY_GRAVITY_LEVELS[effectiveIndex]
 }
 
 // Types simplifiés pour les calculs
@@ -223,7 +248,7 @@ export function getBridgedArmorStats(armor: Armor, mods: Mod[]) {
 }
 
 export function calculateStats(character: any) {
-  const gravity = getGravityRules(character.facteurGravite)
+  const weaponGravity = getGravityRules(character.facteurGravite)
   const rankInfo = computeRank(character.pointsDeRang ?? 0)
 
   const bonusSources: Record<string, { source: string; value: number }[]> = {}
@@ -327,6 +352,8 @@ export function calculateStats(character: any) {
   // Ils passent par les mêmes sources que les mods d'armure afin d'apparaître
   // dans les breakdowns des bulles d'information.
   const origin = character.origine || 'Humain'
+  const effectiveGravityLevel = getEffectiveGravityLevel(character.facteurGravite, origin)
+  const gravity = getGravityRules(effectiveGravityLevel)
   if (origin === 'Strani') {
     addBonus('perception', 2, 'Origine : Strani')
     addBonus('force', -2, 'Origine : Strani')
@@ -561,6 +588,8 @@ export function calculateStats(character: any) {
     totalArmorWeight,
     totalWeaponWeightFinal,
     gravity,
+    weaponGravity,
+    effectiveGravityLevel,
     armorWeightForCalculations,
     weaponWeightForCalculations,
     completedSets,

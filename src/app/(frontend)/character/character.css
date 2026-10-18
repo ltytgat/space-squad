@@ -108,6 +108,21 @@
   background-color: #07566b;
 }
 
+.char-gravity-species-effect {
+  grid-column: 1 / -1;
+  color: var(--ss-text-dim);
+  font-size: 0.8rem;
+}
+
+.char-gravity-species-effect strong {
+  margin-inline: 0.25rem;
+  color: var(--ss-cyan);
+}
+
+.char-gravity-species-effect span {
+  color: var(--ss-text-muted);
+}
+
 .char-gravity-notes {
   grid-column: 1 / -1;
   margin: 0;
@@ -2353,6 +2368,10 @@
   }
 
   .char-gravity-notes {
+    grid-column: auto;
+  }
+
+  .char-gravity-species-effect {
     grid-column: auto;
   }
 

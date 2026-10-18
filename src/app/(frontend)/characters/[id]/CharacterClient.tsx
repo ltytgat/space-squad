@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier, GRAVITY_OPTIONS } from '@/lib/characterStats'
+import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier, GRAVITY_OPTIONS, GRAVITY_CATEGORY_LABELS } from '@/lib/characterStats'
 import type { GravityLevel } from '@/lib/characterStats'
 import { minimumRankForChipSlot } from '@/lib/rankSystem'
 import { updateCharacter, updateWeaponStatus, reloadWeapon } from './actions'
@@ -569,7 +569,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       }
       const rangeRows = rows.filter((row) => row.optimalRange)
       const bestRangeBonus = rangeRows.length ? Math.max(...rangeRows.map((row) => row.mod)) : null
-      const gravityRangeMultiplier = stats.gravity.optimalRangeMultiplier
+      const gravityRangeMultiplier = stats.weaponGravity.optimalRangeMultiplier
       const visibleRows = rows.map((row) => {
         const isOptimal = row.optimalRange && row.mod === bestRangeBonus && gravityRangeMultiplier !== 1
         const distance = isOptimal
@@ -1435,8 +1435,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               >
                 {GRAVITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
-              {stats.gravity.notes.length > 0 && (
+              {(character.origine === 'Strani' || character.origine === 'Vada') && (
+                <div className="char-gravity-species-effect">
+                  Catégorie appliquée à l&apos;espèce : <strong>{GRAVITY_CATEGORY_LABELS[stats.effectiveGravityLevel]}</strong>
+                  <span>(décalage {character.origine === 'Strani' ? '+1' : '−1'})</span>
+                </div>
+              )}
+              {(stats.gravity.notes.length > 0 || stats.weaponGravity.optimalRangeMultiplier === Infinity) && (
                 <ul className="char-gravity-notes">
+                  {stats.weaponGravity.optimalRangeMultiplier === Infinity && <li>Portée optimale des armes infinie</li>}
                   {stats.gravity.notes.map((note: string) => <li key={note}>{note}</li>)}
                 </ul>
               )}
