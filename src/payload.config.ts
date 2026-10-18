@@ -37,6 +37,7 @@ import {Factions} from './collections/Factions'
 import {FactionRewardTiers} from './collections/FactionRewardTiers'
 import {SessionRewards} from './collections/SessionRewards'
 import {ShopTransactions} from './collections/ShopTransactions'
+import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 
 
 const filename = fileURLToPath(import.meta.url)
@@ -59,6 +60,19 @@ export default buildConfig({
                 ],
             }),
         ],
+    }),
+    email: nodemailerAdapter({
+        defaultFromAddress: process.env.EMAIL_FROM!,
+        defaultFromName: process.env.EMAIL_FROM_NAME!,
+        transportOptions: {
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT || 465),
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        },
     }),
     secret: process.env.PAYLOAD_SECRET || '',
     typescript: {
