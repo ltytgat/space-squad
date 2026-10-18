@@ -242,11 +242,13 @@ export async function reloadWeapon(
   slot: string,
   consumableId: number,
   newAmmoCount: number,
-  fromSlot?: string
+  fromSlot?: string,
+  ammoUnitsToConsume = 1,
 ) {
   const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
   if (isTemporary && !['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(slot)) throw new Error('Emplacement d’arme invalide.')
   if (isTemporary && (!Number.isSafeInteger(newAmmoCount) || newAmmoCount < 0 || newAmmoCount > 100_000)) throw new Error('Valeur de munitions invalide.')
+  if (!Number.isSafeInteger(ammoUnitsToConsume) || ammoUnitsToConsume < 1 || ammoUnitsToConsume > 100_000) throw new Error('Quantité de munitions invalide.')
   if (!isAdmin && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
@@ -268,6 +270,7 @@ export async function reloadWeapon(
   }
 
   if (fromSlot) {
+    if (ammoUnitsToConsume !== 1) throw new Error('Un consommable équipé ne peut être utilisé qu’une unité à la fois.')
     if (fromSlot.startsWith('equipped[')) {
       const match = fromSlot.match(/\[(\d+)\]/)
       const idx = match ? parseInt(match[1]) : -1
@@ -283,13 +286,21 @@ export async function reloadWeapon(
     }
   } else {
     // Sinon, on met à jour l'inventaire : diminuer la quantité du consommable
+    const matchingQuantity = (character.inventaire || []).reduce((total: number, item: any) => {
+      const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
+      return String(cId) === String(consumableId) ? total + Number(item.quantite ?? 1) : total
+    }, 0)
+    if (matchingQuantity < ammoUnitsToConsume) throw new Error('Quantité de munitions insuffisante dans l’inventaire.')
+
+    let remainingQuantity = ammoUnitsToConsume
     const updatedInventory = (character.inventaire || []).map((item: any) => {
       const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
-      if (String(cId) === String(consumableId)) {
-        return { ...item, quantite: (item.quantite || 1) - 1 }
-      }
-      return item
-    }).filter((item: any) => item.quantite > 0)
+      if (String(cId) !== String(consumableId) || remainingQuantity <= 0) return item
+      const availableQuantity = Number(item.quantite ?? 1)
+      const consumedQuantity = Math.min(availableQuantity, remainingQuantity)
+      remainingQuantity -= consumedQuantity
+      return { ...item, quantite: availableQuantity - consumedQuantity }
+    }).filter((item: any) => Number(item.quantite ?? 1) > 0)
     updateData.inventaire = updatedInventory
   }
 

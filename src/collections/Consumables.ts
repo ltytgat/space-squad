@@ -57,6 +57,7 @@ export const Consumables: CollectionConfig = {
           label: 'Type de Munition',
           options: [
             { label: 'Chargeur (Cinétique)', value: 'chargeur' },
+            { label: 'Balles lourdes (Mitrailleuse)', value: 'balles-lourdes' },
             { label: 'Cartouche (Thermique)', value: 'cartouche' },
             { label: 'Conteneur (Plasma)', value: 'conteneur' },
           ],

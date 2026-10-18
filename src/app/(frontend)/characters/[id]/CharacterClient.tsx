@@ -47,6 +47,58 @@ function getArmorCategory(armorGroup: any): string | undefined {
   return typeof armor === 'object' && armor !== null ? armor.categorie : undefined
 }
 
+function relationId(value: any): string | null {
+  const id = value && typeof value === 'object' ? value.id : value
+  return id == null ? null : String(id)
+}
+
+function isHeavyMachineGun(weapon: any): boolean {
+  const name = String(weapon?.nom ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  return weapon?.categorie === 'lourde' && name.includes('mitrailleuse')
+}
+
+function isHeavyBulletMagazine(item: any): boolean {
+  const name = String(item?.nom ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  return item?.typeMunition === 'balles-lourdes' || /balles? lourdes?/.test(name)
+}
+
+function getReloadPlan(weaponGroup: any, magazine: any, availableQuantity: number) {
+  const weapon = weaponGroup?.item ?? {}
+  const mods = getStructuredMods(weaponGroup?.mods || [])
+  const magMods = magazine?.effet ? parseModifier(magazine.effet) : {}
+  const bonusChargeur = (mods['chargeur'] || 0) + (magMods['chargeur'] || 0)
+  const bonusChargeurPct = mods['chargeur_pct'] || 0
+  const maxAmmo = Math.ceil((weapon.tailleChargeur ?? 0) * (1 + bonusChargeurPct / 100)) + bonusChargeur
+  const isThermique = weapon.type?.includes('thermique')
+
+  if (isHeavyMachineGun(weapon) && isHeavyBulletMagazine(magazine)) {
+    const sameMagazine = relationId(weaponGroup?.chargeurRelie) === relationId(magazine)
+    const currentAmmo = sameMagazine ? Number(weaponGroup?.munitionsActuelles ?? 0) : 0
+    const unitsToConsume = Math.min(
+      Math.max(0, availableQuantity),
+      Math.ceil(Math.max(0, maxAmmo - currentAmmo) / 50),
+    )
+    return {
+      maxAmmo,
+      unitsToConsume,
+      newAmmoCount: Math.min(maxAmmo, currentAmmo + unitsToConsume * 50),
+    }
+  }
+
+  return { maxAmmo, unitsToConsume: 1, newAmmoCount: isThermique ? 0 : maxAmmo }
+}
+
+function consumeInventoryItems(inventory: any[], consumableId: any, quantity: number) {
+  let remaining = quantity
+  return (inventory || []).map((item: any) => {
+    if (relationId(item.consommable) !== String(consumableId) || remaining <= 0) return item
+    const available = Number(item.quantite ?? 1)
+    const consumed = Math.min(available, remaining)
+    remaining -= consumed
+    return { ...item, quantite: available - consumed }
+  }).filter((item: any) => Number(item.quantite ?? 1) > 0)
+}
+
 export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, isTemporary = false, allBaseSkills, relatedShips }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
@@ -423,14 +475,16 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     const handleReload = async (e: React.MouseEvent) => {
       e.stopPropagation()
-      let ammoType: 'chargeur' | 'cartouche' | 'conteneur' = 'chargeur'
+      let ammoType: 'chargeur' | 'balles-lourdes' | 'cartouche' | 'conteneur' = 'chargeur'
       if (isThermique) ammoType = 'cartouche'
       else if (isPlasma) ammoType = 'conteneur'
+      else if (isHeavyMachineGun(weapon)) ammoType = 'balles-lourdes'
 
       const checkCompatibility = (item: any) => {
         if (!item || typeof item === 'string' || !ownsRoleRequiredBy(item)) return false
         if (item.typeMunition === ammoType) return true
         const nom = item.nom?.toLowerCase() || ""
+        if (ammoType === 'balles-lourdes' && isHeavyBulletMagazine(item)) return true
         if (ammoType === 'chargeur' && nom.includes('chargeur')) return true
         if (ammoType === 'cartouche' && nom.includes('cartouche')) return true
         if (ammoType === 'conteneur' && nom.includes('conteneur')) return true
@@ -451,9 +505,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       })
 
       // 2. Chercher dans l'inventaire
-      const inventoryMags = (character.inventaire || []).filter((invItem: any) => {
-        return checkCompatibility(invItem.consommable)
+      const inventoryMagsById = new Map<string, any>()
+      ;(character.inventaire || []).filter((invItem: any) => checkCompatibility(invItem.consommable)).forEach((invItem: any) => {
+        const consumableId = relationId(invItem.consommable)
+        if (!consumableId) return
+        const existing = inventoryMagsById.get(consumableId)
+        if (existing) existing.quantite += Number(invItem.quantite ?? 1)
+        else inventoryMagsById.set(consumableId, { ...invItem, quantite: Number(invItem.quantite ?? 1) })
       })
+      const inventoryMags = Array.from(inventoryMagsById.values())
 
       const compatibleMags = [...equippedMags, ...inventoryMags]
 
@@ -472,8 +532,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       }
 
       const mag = compatibleMags[0]
-      const magConsumableId = mag.consommable.id || mag.consommable
-      const newAmmoCount = isThermique ? 0 : maxAmmo
+      const magConsumableId = relationId(mag.consommable)
+      const plan = getReloadPlan(weaponGroup, mag.consommable, mag.fromEquippedIndex !== undefined ? 1 : mag.quantite)
+      if (!plan.unitsToConsume) return
+      const newAmmoCount = plan.newAmmoCount
 
       // Mise à jour optimiste
       const newCharacter = { ...character }
@@ -481,13 +543,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       if (mag.fromEquippedIndex !== undefined) {
         newCharacter.consommablesEquipes = (newCharacter.consommablesEquipes || []).filter((_: any, idx: number) => idx !== mag.fromEquippedIndex)
       } else {
-        newCharacter.inventaire = (newCharacter.inventaire || []).map((item: any) => {
-          const cId = typeof item.consommable === 'object' ? item.consommable.id : item.consommable
-          if (String(cId) === String(magConsumableId)) {
-            return { ...item, quantite: (item.quantite || 1) - 1 }
-          }
-          return item
-        }).filter((item: any) => item.quantite > 0)
+        newCharacter.inventaire = consumeInventoryItems(newCharacter.inventaire || [], magConsumableId, plan.unitsToConsume)
       }
 
       setCharacter((prev: any) => ({
@@ -502,8 +558,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       }))
       setWeaponHeat((current) => ({ ...current, [heatKey]: 0 }))
 
-      // Note: reloadWeapon action needs adjustment if it strictly expects mag.fromSlot
-      await reloadWeapon(character.id, slotKey!, magConsumableId, newAmmoCount, mag.fromEquippedIndex !== undefined ? `equipped[${mag.fromEquippedIndex}]` : undefined)
+      await reloadWeapon(character.id, slotKey!, Number(magConsumableId), newAmmoCount, mag.fromEquippedIndex !== undefined ? `equipped[${mag.fromEquippedIndex}]` : undefined, plan.unitsToConsume)
     }
 
     const getFinalDamageData = () => {
@@ -1995,19 +2050,16 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                       className="char-selector-item"
                       onClick={() => {
                         const mag = itemObj
-                        const magConsumableId = mag.consommable.id || mag.consommable
+                        const magConsumableId = relationId(mag.consommable)
                         
                         const weaponGroup = character[reloadSelectorConfig.slotKey]
-                        const weapon = weaponGroup.item
-                        const structuredMods = getStructuredMods(weaponGroup.mods || [])
-                        const magEffet = mag.consommable.effet
-                        const magMods = magEffet ? parseModifier(magEffet) : {}
-                        const bonusChargeur = (structuredMods['chargeur'] || 0) + (magMods['chargeur'] || 0)
-                        const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
-                        const maxAmmo = Math.ceil((weapon.tailleChargeur ?? 0) * (1 + bonusChargeurPct / 100)) + bonusChargeur
-                        
-                        const isThermique = weapon.type?.includes('thermique')
-                        const newAmmoCount = isThermique ? 0 : maxAmmo
+                        const plan = getReloadPlan(
+                          weaponGroup,
+                          mag.consommable,
+                          mag.fromEquippedIndex !== undefined ? 1 : mag.quantite,
+                        )
+                        if (!plan.unitsToConsume) return
+                        const newAmmoCount = plan.newAmmoCount
 
                         let updatedInventory = character.inventaire
                         let updatedEquipped = character.consommablesEquipes
@@ -2020,13 +2072,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                         } else if (mag.fromSlot) {
                           updatedSlots[mag.fromSlot] = null
                         } else {
-                          updatedInventory = (character.inventaire || []).map((it: any) => {
-                            const cId = typeof it.consommable === 'object' ? it.consommable.id : it.consommable
-                            if (String(cId) === String(magConsumableId)) {
-                              return { ...it, quantite: (it.quantite || 1) - 1 }
-                            }
-                            return it
-                          }).filter((it: any) => it.quantite > 0)
+                          updatedInventory = consumeInventoryItems(character.inventaire || [], magConsumableId, plan.unitsToConsume)
                         }
 
                         setCharacter((prev: any) => ({
@@ -2042,7 +2088,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                         }))
                         setWeaponHeat((current) => ({ ...current, [reloadSelectorConfig.slotKey]: 0 }))
 
-                        reloadWeapon(character.id, reloadSelectorConfig.slotKey, magConsumableId, newAmmoCount, fromSlotOrIndex)
+                        reloadWeapon(character.id, reloadSelectorConfig.slotKey, Number(magConsumableId), newAmmoCount, fromSlotOrIndex, plan.unitsToConsume)
                         setReloadSelectorConfig(null)
                       }}
                       onMouseEnter={(e) => handleMouseEnter(e, itemObj, 'consumables')}
@@ -2051,7 +2097,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     >
                       <div className="char-selector-item-info">
                         <strong>{item.nom}</strong>
-                        {itemObj.fromSlot ? (
+                        {itemObj.fromSlot || itemObj.fromEquippedIndex !== undefined ? (
                           <span className="ss-tag tag-equipped">Équipé</span>
                         ) : (
                           <span className="ss-tag">Qté: {itemObj.quantite}</span>

@@ -1071,7 +1071,7 @@ export interface Consumable {
    * Nombre de demi-emplacements occupés (1: moitié, 2: entier, 4: double).
    */
   taille: number;
-  typeMunition?: ('chargeur' | 'cartouche' | 'conteneur') | null;
+  typeMunition?: ('chargeur' | 'balles-lourdes' | 'cartouche' | 'conteneur') | null;
   /**
    * Le consommable peut toujours être acheté et transféré, mais seul un personnage possédant ce rôle peut l’équiper.
    */
