@@ -75,6 +75,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   // Statistiques calculées en temps réel
   const stats = useMemo(() => calculateStats({ ...character, facteurGravite: gravityLevel }), [character, gravityLevel])
+  const hasEquippedASU = (character.consommablesEquipes || []).some((equippedItem: any) => {
+    const item = equippedItem?.consommable ?? equippedItem
+    return typeof item === 'object' && String(item?.nom ?? '').trim().toLocaleUpperCase('fr') === 'ASU'
+  })
+  const maxSoins = stats.maxKits + (hasEquippedASU ? stats.rankInfo.level + 2 : 0)
 
   const factionRank = useMemo(() => {
     const val = character.rangDeFaction
@@ -1519,7 +1524,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   </table>
                 </div>
                 <div className="char-kits-section">
-                  <h3 className="char-kits-title" title="Le nombre d'utilisations max est égal au modificateur de Connaissances">
+                  <h3 className="char-kits-title" title="Réparation : modificateur de Connaissances. Premiers soins : modificateur de Connaissances, augmenté de Rang + 2 si ASU est équipé.">
                     Kits de survie (Usages)
                   </h3>
                   <div className="char-kits-grid">
@@ -1540,7 +1545,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                         characterId={character.id}
                         field="utilisationsKitsSoins"
                         initialValue={character.utilisationsKitsSoins || 0}
-                        maxValue={stats.maxKits}
+                        maxValue={maxSoins}
                         onUpdate={handleMalusUpdate}
                         disabled={!isOwner && !isAdmin}
                       />
