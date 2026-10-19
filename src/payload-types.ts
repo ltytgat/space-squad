@@ -1171,7 +1171,7 @@ export interface VehicleSaleModel {
    */
   supportArme?: boolean | null;
   turboBonus?: number | null;
-  tourelleClasseMax?: ('alpha' | 'beta') | null;
+  tourelleClasseMax?: ('alpha' | 'beta' | 'gamma') | null;
   /**
    * Valeur numérique reliée à la table de règles.
    */

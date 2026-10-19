@@ -69,6 +69,21 @@ describe('vehicle collection state', () => {
     })
 
     expect(result.armeTourelle).toBe(3)
+
+    const gammaResult = await runBeforeChange({
+      model: { ...model, tourelleClasseMax: 'gamma' },
+      weapon: { id: 4, taille: '3' },
+      data: { modele: 1, armeTourelle: 4 },
+    })
+    expect(gammaResult.armeTourelle).toBe(4)
+
+    await expect(
+      runBeforeChange({
+        model: { ...model, tourelleClasseMax: 'gamma' },
+        weapon: { id: 5, taille: '4' },
+        data: { modele: 1, armeTourelle: 5 },
+      }),
+    ).rejects.toThrow('ne peut pas accueillir cette arme')
   })
 
   it('requires a turret weapon before recording a loaded magazine', async () => {

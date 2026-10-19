@@ -62,7 +62,8 @@ const initializeAndValidateVehicle: CollectionBeforeChangeHook = async ({
     overrideAccess: true,
     req,
   })
-  const maxSize = model.tourelleClasseMax === 'alpha' ? 1 : 2
+  const maxSizeByClass = { alpha: 1, beta: 2, gamma: 3 } as const
+  const maxSize = maxSizeByClass[model.tourelleClasseMax]
   if (Number(weapon.taille) > maxSize) {
     throw new Error(
       `La tourelle de classe ${model.tourelleClasseMax} ne peut pas accueillir cette arme de vaisseau.`,
