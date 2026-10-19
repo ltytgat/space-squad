@@ -36,7 +36,7 @@ export default async function ShopPage() {
         <p>Choisissez une section pour consulter le matériel et gérer vos transactions.</p>
       </div></section>
       <main className="ss-container shop-content shop-navigation">
-        {shopNavigation.map((group) => <section className="shop-navigation-group" key={group.title}>
+        {shopNavigation.map((group) => <section className={`shop-navigation-group shop-navigation-${group.title.toLowerCase().replaceAll(' ', '-')}`} key={group.title}>
           <h2>{group.title}</h2>
           <div className="shop-navigation-grid">
             {group.links.map((link) => <Link className="shop-navigation-card" href={link.href} key={link.href}>
@@ -44,7 +44,7 @@ export default async function ShopPage() {
             </Link>)}
           </div>
         </section>)}
-        {rewardLinkLabel && <section className="shop-navigation-group"><h2>Votre faction</h2><div className="shop-navigation-grid"><Link className="shop-navigation-card" href="/shop/recompenses"><span>{rewardLinkLabel}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span></Link></div></section>}
+        {rewardLinkLabel && <section className="shop-navigation-group shop-navigation-recompenses"><h2>Récompenses d’Organisation</h2><div className="shop-navigation-grid"><Link className="shop-navigation-card" href="/shop/recompenses"><span>{rewardLinkLabel}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span></Link></div></section>}
       </main>
     </div>
     <SiteFooter />

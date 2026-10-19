@@ -45,6 +45,12 @@ export const shopNavigation = [
     ],
   },
   {
+    title: 'Garage',
+    links: [
+      { href: '/shop/garage', label: 'Acheter et vendre des véhicules' },
+    ],
+  },
+  {
     title: 'Escouade',
     links: [
       { href: '/shop/transfert-personnages', label: 'Transférer du matériel ou des Konis' },

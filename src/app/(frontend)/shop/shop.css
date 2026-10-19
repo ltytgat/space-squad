@@ -10,7 +10,17 @@
 .shop-heading-title-row .shop-heading-all-link { grid-column: auto; flex: 0 0 auto; padding: .65rem .9rem; }
 .shop-heading p { margin-top: .55rem; color: var(--ss-text-muted); }
 .shop-content { max-width: 1280px; flex: 1; padding-block: 1.75rem 4rem; }
-.shop-navigation { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-content: start; gap: 1.4rem; }
+.shop-navigation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 1.4rem; }
+  @media (min-width: 901px) {
+    .shop-navigation-sol { grid-column: 1; grid-row: 1; }
+    .shop-navigation-espace { grid-column: 2; grid-row: 1; }
+    .shop-navigation-mods { grid-column: 3; grid-row: 1; }
+    .shop-navigation-chantier-naval { grid-column: 1; grid-row: 2; }
+    .shop-navigation-garage { grid-column: 2; grid-row: 2; }
+    .shop-navigation-escouade { grid-column: 1; grid-row: 3; }
+    .shop-navigation-formations { grid-column: 2; grid-row: 3; }
+    .shop-navigation-recompenses { grid-column: 3; grid-row: 3; }
+  }
 .shop-navigation-group { padding: 1.2rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); }
 .shop-navigation-group h2, .shop-section-owned > h2 { margin-bottom: .9rem; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.1rem; letter-spacing: .04em; }
 .shop-navigation-grid { display: grid; gap: .55rem; }
@@ -194,7 +204,25 @@
 .shipyard-transfer-detail .shop-quantity { margin-top: .4rem; }
 .shop-app .shipyard-operation > label input { min-height: 40px; padding: .5rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
 .shop-app .shipyard-operation > button { justify-self: start; }
-@media (max-width: 640px) {
+  .garage-variant-section { display: flex; flex-direction: column; gap: .75rem; }
+  .garage-variant-section > h3 { margin: 0; color: var(--ss-cyan); font-family: var(--ss-font-display); font-size: 1rem; letter-spacing: .03em; }
+  .garage-model-card { height: 100%; }
+  .garage-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: 0; }
+  .garage-stats > div { padding: .55rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: rgba(255, 255, 255, .02); }
+  .garage-stats dt { color: var(--ss-text-muted); font-size: .72rem; }
+  .garage-stats dd { margin: .15rem 0 0; color: var(--ss-text); font-family: var(--ss-font-mono); font-size: .85rem; }
+  .garage-options { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+  .garage-options li { padding: .28rem .55rem; border: 1px solid var(--ss-border); border-radius: 999px; color: var(--ss-text-muted); font-size: .75rem; }
+  .garage-sale-section > div:first-child, .garage-sale-section > .shop-empty, .garage-sale-section > .shipyard-select, .garage-sale-section > .garage-owned-card, .garage-sale-section > .shop-message, .garage-sale-section > .garage-cargo-note { width: 100%; }
+  .garage-sale-section > .shipyard-operation-button { justify-self: start; padding: .65rem .9rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); font-weight: 650; cursor: pointer; }
+  .garage-sale-section > .shipyard-operation-button:hover:not(:disabled) { background: var(--ss-cyan); color: var(--ss-bg); }
+  .garage-sale-section > .shipyard-operation-button:disabled { opacity: .45; cursor: not-allowed; }
+  .garage-cargo-note { padding: .75rem .9rem; border: 1px solid var(--ss-border); border-radius: 8px; color: var(--ss-text-muted); }
+  @media (max-width: 900px) {
+    .shop-navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .shop-navigation { grid-template-columns: 1fr; }
   .shop-heading { padding-block: 1.75rem 1.4rem; }
   .shop-item, .shop-inventory-item { align-items: flex-start; }
   .shop-item-action { max-width: 48%; }
@@ -203,7 +231,8 @@
   .shop-filters label, .shop-filters input, .shop-filters select { width: 100%; }
   .shipyard-transfer-selects { grid-template-columns: 1fr; }
   .shipyard-component-row { align-items: flex-start; }
-  .shipyard-model-heading { flex-direction: column; }
+    .shipyard-model-heading { flex-direction: column; }
+    .garage-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chip-draw-panel { align-items: stretch; flex-direction: column; }
   .shop-details-list { grid-template-columns: 1fr; }
   .chip-draw-actions { justify-content: stretch; }
