@@ -44,6 +44,16 @@ export const LoreArticles: CollectionConfig = {
   },
   fields: [
     {
+      name: 'unitConverter',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: {
+          Field: '@/components/admin/LoreUnitConverter#LoreUnitConverter',
+        },
+      },
+    },
+    {
       name: 'title',
       type: 'text',
       required: true,
