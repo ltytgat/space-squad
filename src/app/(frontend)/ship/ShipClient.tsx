@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import { canEquipConsumable, consumableCapacity, isShipAmmunition, sameConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
+import { isAmmoCompatibleWith, sameShipAmmo, shipAmmoName } from '@/lib/shipWeaponAmmo'
 import { getChassis, getShipLimits, getShipStats } from '@/lib/shipStats'
 import {
   applySeatChange,
@@ -65,23 +66,8 @@ const coolingFrom = (ammo: any) => {
   return match ? Number(match[1]) : 0
 }
 const isAmmunition = isShipAmmunition
-const isKineticAmmunition = (item: any) =>
-  isAmmunition(item) && !/cartouche/i.test(`${item?.nom ?? ''} ${item?.typeMunition ?? ''}`)
-const ammoName = (item: any) => String(item?.nom ?? '').normalize('NFKC').replace(/\s+/gu, ' ').trim()
-const sameAmmo = (left: any, right: any) => ammoName(left) === ammoName(right) && Boolean(ammoName(left))
-const isExplosiveAmmoFor = (weapon: any, ammo: any) => {
-  const weaponCategory = String(weapon?.categorie ?? '').toLowerCase()
-  const weaponName = String(weapon?.nom ?? '').toLowerCase()
-  const ammoNameValue = String(ammo?.nom ?? '').toLowerCase()
-  if (weaponCategory === 'mine' || weaponName.includes('mine')) return /mine/.test(ammoNameValue)
-  if (weaponCategory === 'lance-missile' || weaponName.includes('missile')) return /roquette|missile/.test(ammoNameValue)
-  return false
-}
-const isAmmoCompatibleWith = (weapon: any, ammo: any) => {
-  if (weapon?.type === 'thermique') return /cartouche/i.test(`${ammo?.typeMunition ?? ''} ${ammo?.nom ?? ''}`)
-  if (weapon?.type === 'explosif') return isExplosiveAmmoFor(weapon, ammo)
-  return isKineticAmmunition(ammo)
-}
+const ammoName = shipAmmoName
+const sameAmmo = sameShipAmmo
 
 export function ShipClient({
   ship: initialShip,
@@ -680,33 +666,33 @@ export function ShipClient({
       <p className="ship-muted">Aucune arme installée.</p>
     )
   const renderTurretModule = (moduleValue: any, turretIndex: number, entries: any[]) => {
-    const module = object(moduleValue)
-    if (!module) return null
+    const turretModule = object(moduleValue)
+    if (!turretModule) return null
     // Les champs masqués dans l’admin peuvent conserver des valeurs en base.
     // Appliquer les mêmes conditions de famille que la collection ShipModules.
-    const hasRange = turretConsumptionFamilies.includes(module.famille)
-    const hasDamageBonus = damageBonusFamilies.includes(module.famille)
-    const isFocusedFire = module.famille === 'tir-concentre'
-    const fireStateKey = focusedFireKey(turretIndex, module)
-    const maxFocusedFireMJ = Math.floor(Math.max(0, Number(module.mjMaxUtilisable) || 0) / 100) * 100
+    const hasRange = turretConsumptionFamilies.includes(turretModule.famille)
+    const hasDamageBonus = damageBonusFamilies.includes(turretModule.famille)
+    const isFocusedFire = turretModule.famille === 'tir-concentre'
+    const fireStateKey = focusedFireKey(turretIndex, turretModule)
+    const maxFocusedFireMJ = Math.floor(Math.max(0, Number(turretModule.mjMaxUtilisable) || 0) / 100) * 100
     const selectedFocusedFireMJ = Math.min(maxFocusedFireMJ, focusedFireMJByTurret[fireStateKey] ?? 0)
     const hasThermalWeapon = entries.some((entry: any) => object(entry.arme)?.type === 'thermique')
-    const focusedMultiplier = damageMultiplierFor(module, selectedFocusedFireMJ)
+    const focusedMultiplier = damageMultiplierFor(turretModule, selectedFocusedFireMJ)
     const effects = [
-      module.modificateurs && `Modificateurs : ${module.modificateurs}`,
-      hasRange && module.consommationSupplementaire != null && `Consommation supplémentaire : +${module.consommationSupplementaire}%`,
-      hasRange && module.portee && `Portée : ${module.portee}`,
-      hasDamageBonus && module.bonusDegatsPourcentage != null && `Bonus de dégâts : +${module.bonusDegatsPourcentage}%`,
-      isFocusedFire && module.bonusDegatsPar100MJ != null && `Bonus de dégâts / 100 MJ : +${module.bonusDegatsPar100MJ}%`,
-      isFocusedFire && module.mjMaxUtilisable != null && `MJ maximum utilisables : ${module.mjMaxUtilisable}`,
+      turretModule.modificateurs && `Modificateurs : ${turretModule.modificateurs}`,
+      hasRange && turretModule.consommationSupplementaire != null && `Consommation supplémentaire : +${turretModule.consommationSupplementaire}%`,
+      hasRange && turretModule.portee && `Portée : ${turretModule.portee}`,
+      hasDamageBonus && turretModule.bonusDegatsPourcentage != null && `Bonus de dégâts : +${turretModule.bonusDegatsPourcentage}%`,
+      isFocusedFire && turretModule.bonusDegatsPar100MJ != null && `Bonus de dégâts / 100 MJ : +${turretModule.bonusDegatsPar100MJ}%`,
+      isFocusedFire && turretModule.mjMaxUtilisable != null && `MJ maximum utilisables : ${turretModule.mjMaxUtilisable}`,
       isFocusedFire && `Multiplicateur actuel : ×${formatMultiplier(focusedMultiplier)}`,
-      module.famille === 'dispersion' && module.angleTir && `Angle de tir : ${module.angleTir}`,
+      turretModule.famille === 'dispersion' && turretModule.angleTir && `Angle de tir : ${turretModule.angleTir}`,
     ].filter(Boolean)
     return (
       <div className="ship-turret-module">
         <div className="ship-turret-module-heading">
           <span>Module de tourelle</span>
-          <strong>{module.nom ?? 'Module'}</strong>
+          <strong>{turretModule.nom ?? 'Module'}</strong>
         </div>
         {effects.length > 0 ? (
           <div className="ship-turret-module-effects">
@@ -736,7 +722,7 @@ export function ShipClient({
             />
           </label>
         )}
-        {module.description && <p className="ship-turret-module-description">{module.description}</p>}
+        {turretModule.description && <p className="ship-turret-module-description">{turretModule.description}</p>}
       </div>
     )
   }

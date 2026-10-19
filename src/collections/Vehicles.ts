@@ -1,5 +1,6 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+import { vehicleReadAccess } from '@/lib/vehicleAccess'
 
 const relationId = (value: unknown): number | string | undefined => {
   if (typeof value === 'number' || typeof value === 'string') return value
@@ -82,7 +83,7 @@ export const Vehicles: CollectionConfig = {
     group: 'Véhicules',
   },
   access: {
-    read: ({ req }) => !!req.user,
+    read: vehicleReadAccess,
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',

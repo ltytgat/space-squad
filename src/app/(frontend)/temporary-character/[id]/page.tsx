@@ -89,6 +89,7 @@ export default async function TemporaryCharacterPage({ params }: { params: Promi
         isOwner
         isTemporary
         allBaseSkills={allBaseSkills}
+        relatedVehicles={[]}
         relatedShips={JSON.parse(JSON.stringify(relatedShips)).map((ship: any) => ({
           id: ship.id,
           nom: ship.nom,

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import config from '@/payload.config'
 import { findGroupShipIds } from '@/lib/shipAccess'
+import { findVehicleOwnerIds } from '@/lib/vehicleAccess'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import '../../character/character.css'
 
@@ -192,6 +193,20 @@ export default async function CharacterDetailPage({
     relatedShips = docs as any[]
   }
 
+  const vehicleOwnerIds = await findVehicleOwnerIds(payload, character)
+  let relatedVehicles: any[] = []
+  if (vehicleOwnerIds.length > 0) {
+    const { docs } = await payload.find({
+      collection: 'vehicles',
+      where: { proprietaire: { in: vehicleOwnerIds } },
+      depth: 2,
+      limit: 200,
+      sort: 'nom',
+      overrideAccess: true,
+    })
+    relatedVehicles = docs as any[]
+  }
+
   // Récupérer la liste des compétences de base via le schéma (ou une constante partagée)
   // Ici on va extraire COMPETENCES_BASE du fichier src/collections/Characters.ts si possible
   // Mais pour faire simple et rapide, je vais utiliser les options du champ select de la collection
@@ -209,6 +224,7 @@ export default async function CharacterDetailPage({
         isOwner={isOwner}
         allBaseSkills={allBaseSkills}
         relatedShips={JSON.parse(JSON.stringify(relatedShips.filter(Boolean)))}
+        relatedVehicles={JSON.parse(JSON.stringify(relatedVehicles.filter(Boolean)))}
       />
       <SiteFooter />
     </>

@@ -14,6 +14,7 @@ type ActivePage =
   | 'ship'
   | 'characters'
   | 'ships'
+  | 'vehicles'
   | 'shop'
   | undefined
 
@@ -107,6 +108,12 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
               >
                 Vaisseaux
               </Link>
+              <Link
+                href="/vehicles"
+                className={`ss-nav-link${activePage === 'vehicles' ? ' ss-nav-link-active' : ''}`}
+              >
+                Véhicules
+              </Link>
             </>
           )}
           {user && !isAdmin && (
@@ -138,6 +145,9 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
                   Mes vaisseaux
                 </Link>
               )}
+              <Link href="/vehicles" className={`ss-nav-link${activePage === 'vehicles' ? ' ss-nav-link-active' : ''}`}>
+                Véhicules
+              </Link>
             </>
           )}
           {user && characterId && (

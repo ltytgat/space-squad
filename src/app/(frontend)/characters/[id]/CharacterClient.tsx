@@ -18,6 +18,7 @@ type CharacterProps = {
   isTemporary?: boolean
   allBaseSkills: string[]
   relatedShips: any[]
+  relatedVehicles: any[]
 }
 
 const SHIP_CLASS_LABEL: Record<string, string> = {
@@ -99,7 +100,7 @@ function consumeInventoryItems(inventory: any[], consumableId: any, quantity: nu
   }).filter((item: any) => Number(item.quantite ?? 1) > 0)
 }
 
-export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, isTemporary = false, allBaseSkills, relatedShips }: CharacterProps) {
+export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, isTemporary = false, allBaseSkills, relatedShips, relatedVehicles }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
   const [gravityLevel, setGravityLevel] = useState<GravityLevel>('normale')
@@ -1832,6 +1833,29 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   return isTemporary
                     ? <div className={`char-ship-link${assigned ? ' char-ship-link-assigned' : ''}`} key={ship.id}>{card}</div>
                     : <a className={`char-ship-link${assigned ? ' char-ship-link-assigned' : ''}`} href={`/ship/${ship.id}`} key={ship.id}>{card}</a>
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Section Véhicules ── */}
+          <div className="char-card">
+            <h2 className="char-card-title">Véhicules de l&apos;escouade</h2>
+            {relatedVehicles.length === 0 ? (
+              <p className="char-empty-hint">Aucun véhicule accessible.</p>
+            ) : (
+              <div className="char-ships-list">
+                {relatedVehicles.map((vehicle: any) => {
+                  const owner = typeof vehicle.proprietaire === 'object' ? vehicle.proprietaire : null
+                  const model = typeof vehicle.modele === 'object' ? vehicle.modele : null
+                  const variant = typeof model?.variante === 'object' ? model.variante : null
+                  const vehicleCard = <>
+                    <span className="char-ship-link-main"><strong>{vehicle.nom}</strong><span>{variant?.nom ?? 'Véhicule'}{model?.nom ? ` · ${model.nom}` : ''}</span></span>
+                    <span className="char-ship-link-meta">{owner?.nom ? `Propriété de ${owner.nom}` : 'Escouade'}{!isTemporary && <span aria-hidden="true">→</span>}</span>
+                  </>
+                  return isTemporary
+                    ? <div className="char-ship-link" key={vehicle.id}>{vehicleCard}</div>
+                    : <Link className="char-ship-link" href={`/vehicles/${vehicle.id}`} key={vehicle.id}>{vehicleCard}</Link>
                 })}
               </div>
             )}
