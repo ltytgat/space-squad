@@ -120,3 +120,24 @@ export function reloadVehicleWeapon(vehicle: any, ship: any, requestedAmmo: any)
     },
   }
 }
+
+/** Consume one firing action's ammunition without allowing a negative magazine. */
+export function fireVehicleWeapon(vehicle: any) {
+  const weapon = vehicle.armeTourelle && typeof vehicle.armeTourelle === 'object' ? vehicle.armeTourelle : null
+  if (!weapon) throw new Error('Aucune arme n’est équipée sur la tourelle.')
+  if (weapon.type !== 'cinetique' && weapon.type !== 'explosif') {
+    throw new Error('Cette arme ne consomme pas de munitions au tir.')
+  }
+
+  const ammoCount = Number(vehicle.munitionsActuelles ?? 0)
+  if (!Number.isSafeInteger(ammoCount) || ammoCount < 0) {
+    throw new Error('Le nombre de munitions du véhicule est incohérent.')
+  }
+  const ammoCost = weapon.type === 'explosif' ? 1 : Number(weapon.ballesParSalve) || 1
+  if (!Number.isSafeInteger(ammoCost) || ammoCost < 1) {
+    throw new Error('Le coût en munitions de cette arme est incohérent.')
+  }
+  if (ammoCount < ammoCost) throw new Error('Munitions insuffisantes pour tirer une salve.')
+
+  return { munitionsActuelles: ammoCount - ammoCost }
+}

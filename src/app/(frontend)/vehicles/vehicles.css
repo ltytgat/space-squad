@@ -53,6 +53,14 @@
 .vehicle-equipment-controls .vehicle-muted, .vehicle-reload-controls .vehicle-muted { flex-basis: 100%; margin: 0; font-size: .82rem; }
 .vehicle-weapon-summary > strong { display: block; margin-bottom: .85rem; color: #f3f7fb; font-size: 1.15rem; }
 .vehicle-ammo-state { margin: 1rem 0 0; color: #a9bacb; font-size: .9rem; }
+.vehicle-weapon-operation { margin-top: 1rem; }
+.vehicle-weapon-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.vehicle-heat-meter + .vehicle-weapon-controls { margin-top: .5rem; }
+.vehicle-weapon-controls b { margin-right: auto; color: #e4edf6; font-size: .85rem; }
+.vehicle-weapon-controls button { padding: .4rem .55rem; border: 1px solid rgba(79, 192, 215, .4); border-radius: 9px; background: linear-gradient(135deg, #167b91, #135b79); color: white; font: inherit; font-size: .72rem; font-weight: 700; cursor: pointer; }
+.vehicle-weapon-controls button:disabled { opacity: .48; cursor: not-allowed; }
+.vehicle-heat-meter { height: .45rem; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.1); }
+.vehicle-heat-meter span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #51b5cf, #ff5c4d); transition: width .2s ease; }
 .vehicle-options { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 .vehicle-model-image { display: block; max-width: min(100%, 480px); max-height: 300px; object-fit: contain; margin: 1.25rem auto 0; border-radius: 10px; }
 .vehicle-readonly-note, .vehicle-error { grid-column: 1 / -1; margin: 0; padding: .8rem 1rem; border-radius: 10px; }

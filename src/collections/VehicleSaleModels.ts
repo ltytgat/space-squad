@@ -98,7 +98,7 @@ export const VehicleSaleModels: CollectionConfig = {
           type: 'number',
           required: true,
           min: 0,
-          label: 'Prix (crédits)',
+          label: 'Prix (konis)',
           admin: { width: '25%' },
         },
       ],

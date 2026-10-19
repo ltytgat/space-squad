@@ -3,10 +3,19 @@
 import { useEffect, useMemo, useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { isAmmoCompatibleWith } from '@/lib/shipWeaponAmmo'
-import { equipVehicleWeapon, reloadVehicleWeapon, updateVehicleArmor } from '../actions'
+import { equipVehicleWeapon, fireVehicleWeapon, reloadVehicleWeapon, updateVehicleArmor } from '../actions'
 
 const object = (value: any) => value && typeof value === 'object' ? value : null
 const idOf = (value: any) => object(value)?.id ?? value
+const roundHeat = (value: number) => Math.round(value * 100) / 100
+const numberFrom = (value: unknown) => {
+  const match = String(value ?? '').replace(',', '.').match(/-?\d+(?:\.\d+)?/)
+  return match ? Number(match[0]) : 0
+}
+const coolingFrom = (ammo: any) => {
+  const match = String(ammo?.bonus ?? '').match(/refroidissement\s*:\s*([+-]?\d+)/i)
+  return match ? Number(match[1]) : 0
+}
 const VEHICLE_CLASS_SIZE: Record<string, number> = { alpha: 1, beta: 2, gamma: 3 }
 const VEHICLE_CLASS_LABEL: Record<string, string> = { alpha: 'Alpha', beta: 'Bêta', gamma: 'Gamma' }
 
@@ -31,6 +40,7 @@ export function VehicleClient({
   const [pending, startTransition] = useTransition()
   const [armorDraft, setArmorDraft] = useState(String(vehicle.blindageActuel ?? 0))
   const [selectedAmmo, setSelectedAmmo] = useState('')
+  const [localHeat, setLocalHeat] = useState(0)
   const [error, setError] = useState('')
   const model = object(vehicle.modele) ?? {}
   const weapon = object(vehicle.armeTourelle)
@@ -45,6 +55,7 @@ export function VehicleClient({
   const selectedAmmoItem = compatibleAmmo.find((item) => String(item.id) === selectedAmmo)
 
   useEffect(() => setArmorDraft(String(vehicle.blindageActuel ?? 0)), [vehicle.blindageActuel])
+  useEffect(() => setLocalHeat(0), [currentWeaponId])
   useEffect(() => {
     if (!compatibleAmmo.some((item) => String(item.id) === selectedAmmo)) {
       const preferred = compatibleAmmo.find((item) => String(item.id) === currentAmmoId) ?? compatibleAmmo[0]
@@ -52,11 +63,12 @@ export function VehicleClient({
     }
   }, [compatibleAmmo, currentAmmoId, selectedAmmo])
 
-  const runAction = (action: () => Promise<unknown>) => {
+  const runAction = (action: () => Promise<unknown>, onSuccess?: () => void) => {
     setError('')
     startTransition(async () => {
       try {
         await action()
+        onSuccess?.()
         router.refresh()
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : 'La modification a échoué.')
@@ -79,6 +91,17 @@ export function VehicleClient({
     runAction(() => equipVehicleWeapon(vehicle.id, weaponId))
   }
 
+  const thermal = weapon?.type === 'thermique'
+  const kinetic = weapon?.type === 'cinetique'
+  const explosive = weapon?.type === 'explosif'
+  const ammoCount = Number(vehicle.munitionsActuelles) || 0
+  const ammoCapacity = explosive ? 1 : Number(weapon?.chargeur) || 0
+  const ammoCost = explosive ? 1 : Number(weapon?.ballesParSalve) || 1
+  const maxHeat = thermal ? numberFrom(magazine?.calibre) : 0
+  const heatCost = Number(weapon?.chauffe) || 10
+  const cooling = thermal ? coolingFrom(magazine) : 0
+  const canFireThermal = maxHeat <= 0 || localHeat + heatCost <= maxHeat
+
   return <div className="ss-container vehicle-sheet">
     {error && <p className="vehicle-error" role="alert">{error}</p>}
     {!canEdit && <p className="vehicle-readonly-note">Consultation en lecture seule · propriétaire : {ownerName ?? 'inconnu'}</p>}
@@ -100,7 +123,7 @@ export function VehicleClient({
         <VehicleStat label="Bouclier maximal" value={model.bouclierMax} />
         <VehicleStat label="Recharge du bouclier" value={model.rechargeBouclier} />
         <VehicleStat label="Mouvement" value={model.mouvement} />
-        {model.prix != null && <VehicleStat label="Prix du modèle" value={`${model.prix} crédits`} />}
+        {model.prix != null && <VehicleStat label="Prix du modèle" value={`${model.prix} konis`} />}
         {Number(model.turboBonus) > 0 && <VehicleStat label="Bonus Turbo" value={`+${model.turboBonus}`} />}
         {Number(model.remorqueIndicePoids) > 0 && <VehicleStat label="Indice de poids de remorque" value={model.remorqueIndicePoids} />}
       </div>
@@ -124,9 +147,30 @@ export function VehicleClient({
           {weapon.type === 'cinetique' && weapon.chargeur != null && <VehicleStat label="Capacité" value={weapon.chargeur} />}
           {weapon.type === 'cinetique' && weapon.ballesParSalve != null && <VehicleStat label="Balles par salve" value={weapon.ballesParSalve} />}
           {weapon.type === 'explosif' && weapon.distance && <VehicleStat label="Distance / champ d’action" value={weapon.distance} />}
+          {weapon.cooldown != null && <VehicleStat label="Cooldown" value={`${weapon.cooldown} t`} />}
         </div>
-        {weapon.type === 'thermique' ? <p className="vehicle-ammo-state">Cartouche liée : {magazine?.nom ?? 'aucune'}{magazine?.calibre ? ` · calibre ${magazine.calibre}` : ''}</p> : <p className="vehicle-ammo-state">Munitions : {Number(vehicle.munitionsActuelles) || 0} / {weapon.type === 'explosif' ? 1 : Number(weapon.chargeur) || '—'} · {magazine?.nom ?? 'aucune munition liée'}</p>}
+        {thermal
+          ? <p className="vehicle-ammo-state">Cartouche liée : {magazine?.nom ?? 'aucune'}{magazine?.calibre ? ` · calibre ${magazine.calibre}` : ''} · refroidissement {cooling}</p>
+          : <p className="vehicle-ammo-state">Munitions : {ammoCount} / {ammoCapacity || '—'} · {magazine?.nom ?? 'aucune munition liée'}{kinetic && magazine?.bonus ? ` · ${magazine.bonus}` : ''}</p>}
       </div> : <p className="vehicle-muted">Aucune arme équipée.</p>}
+
+      {weapon && thermal && <div className="vehicle-weapon-operation">
+        <div className="vehicle-heat-meter" role="meter" aria-label="Chauffe de l’arme" aria-valuenow={localHeat} aria-valuemin={0} aria-valuemax={maxHeat || 0}>
+          <span style={{ width: `${maxHeat ? Math.min(100, (localHeat / maxHeat) * 100) : 0}%` }} />
+        </div>
+        <div className="vehicle-weapon-controls">
+          <b>Chauffe {localHeat} / {maxHeat || '—'} MJ</b>
+          {canEdit && <>
+            <button type="button" disabled={localHeat <= 0} onClick={() => setLocalHeat(roundHeat(Math.max(0, localHeat - cooling)))}>❄ Refroidir</button>
+            <button type="button" disabled={!canFireThermal} onClick={() => setLocalHeat(roundHeat(localHeat + heatCost))}>☼ Tirer</button>
+          </>}
+        </div>
+      </div>}
+
+      {weapon && (kinetic || explosive) && <div className="vehicle-weapon-controls vehicle-weapon-operation">
+        <b>{explosive ? 'Charge' : 'Munitions'} {ammoCount} / {ammoCapacity || '—'}</b>
+        {canEdit && <button type="button" disabled={pending || ammoCount < ammoCost} onClick={() => runAction(() => fireVehicleWeapon(vehicle.id))}>✦ Tirer{ammoCost > 1 ? ` (${ammoCost} par salve)` : ''}</button>}
+      </div>}
 
       {canEdit && <div className="vehicle-equipment-controls">
         <label>Arme présente dans la soute du vaisseau actif<select value={currentWeaponId} disabled={!canManageEquipment || pending} onChange={(event) => changeWeapon(event.target.value)}>
@@ -137,12 +181,12 @@ export function VehicleClient({
         {!canManageEquipment && <p className="vehicle-muted">{activeShipName ? `Vous ne pouvez pas modifier ${activeShipName}.` : 'Un vaisseau actif modifiable est nécessaire pour gérer la tourelle.'}</p>}
       </div>}
 
-      {weapon && canEdit && <div className="vehicle-reload-controls">
+      {weapon && (thermal || kinetic || explosive) && canEdit && <div className="vehicle-reload-controls">
         <label>Munition disponible dans la soute du vaisseau actif<select value={selectedAmmo} disabled={!canManageEquipment || pending || compatibleAmmo.length === 0} onChange={(event) => setSelectedAmmo(event.target.value)}>
           <option value="">Aucune munition compatible</option>
           {compatibleAmmo.map((item) => <option key={item.id} value={item.id}>{item.nom} · {item.quantity} disponible(s)</option>)}
         </select></label>
-        <button type="button" disabled={!canManageEquipment || pending || !selectedAmmoItem} onClick={() => runAction(() => reloadVehicleWeapon(vehicle.id, Number(selectedAmmo)))}>
+        <button type="button" disabled={!canManageEquipment || pending || !selectedAmmoItem} onClick={() => runAction(() => reloadVehicleWeapon(vehicle.id, Number(selectedAmmo)), () => { if (thermal) setLocalHeat(0) })}>
           {magazine && currentAmmoId !== selectedAmmo ? 'Changer de munition et recharger' : weapon.type === 'thermique' ? 'Changer de cartouche' : 'Recharger'}
         </button>
         {!canManageEquipment && <p className="vehicle-muted">Le rechargement utilise uniquement les réserves du vaisseau actif modifiable.</p>}

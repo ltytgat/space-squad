@@ -6,7 +6,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
-import { reloadVehicleWeapon as buildVehicleReload, replaceVehicleTurretWeapon } from '@/lib/vehicleOperations'
+import { fireVehicleWeapon as buildVehicleFire, reloadVehicleWeapon as buildVehicleReload, replaceVehicleTurretWeapon } from '@/lib/vehicleOperations'
 import { vehicleRelationId } from '@/lib/vehicleAccess'
 
 const validId = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) > 0
@@ -164,5 +164,17 @@ export async function reloadVehicleWeapon(vehicleId: number, ammoId: number) {
     })
   })
   revalidateVehicle(vehicleId, activeShipId)
+  return { success: true }
+}
+
+export async function fireVehicleWeapon(vehicleId: number) {
+  await withVehicleTransaction(vehicleId, false, async ({ payload, user, vehicle, req }) => {
+    const vehicleData = buildVehicleFire(vehicle)
+    await payload.update({
+      collection: 'vehicles', id: vehicleId, data: vehicleData,
+      overrideAccess: true, user, req,
+    })
+  })
+  revalidateVehicle(vehicleId)
   return { success: true }
 }

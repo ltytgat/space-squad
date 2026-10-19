@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reloadVehicleWeapon, replaceVehicleTurretWeapon } from '@/lib/vehicleOperations'
+import { fireVehicleWeapon, reloadVehicleWeapon, replaceVehicleTurretWeapon } from '@/lib/vehicleOperations'
 import { isAmmoCompatibleWith } from '@/lib/shipWeaponAmmo'
 
 describe('vehicle turret equipment', () => {
@@ -100,5 +100,35 @@ describe('vehicle turret reload', () => {
     )
     expect(result.vehicleData).toEqual({ chargeurRelie: 14, munitionsActuelles: 0 })
     expect(result.shipData.inventaireConsommables).toEqual([{ consommable: 14, quantite: 1 }])
+  })
+})
+
+describe('vehicle turret firing', () => {
+  it('consumes the weapon salvo from the loaded magazine', () => {
+    expect(fireVehicleWeapon({
+      armeTourelle: { type: 'cinetique', ballesParSalve: 3 },
+      munitionsActuelles: 8,
+    })).toEqual({ munitionsActuelles: 5 })
+  })
+
+  it('consumes one explosive charge', () => {
+    expect(fireVehicleWeapon({
+      armeTourelle: { type: 'explosif' },
+      munitionsActuelles: 1,
+    })).toEqual({ munitionsActuelles: 0 })
+  })
+
+  it('rejects a shot when the remaining ammunition cannot cover a full salvo', () => {
+    expect(() => fireVehicleWeapon({
+      armeTourelle: { type: 'cinetique', ballesParSalve: 3 },
+      munitionsActuelles: 2,
+    })).toThrow('Munitions insuffisantes')
+  })
+
+  it('does not persist firing for thermal weapons', () => {
+    expect(() => fireVehicleWeapon({
+      armeTourelle: { type: 'thermique' },
+      munitionsActuelles: 0,
+    })).toThrow('ne consomme pas de munitions')
   })
 })
