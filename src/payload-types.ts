@@ -78,6 +78,9 @@ export interface Config {
     'ship-weapons': ShipWeapon;
     'ship-modules': ShipModule;
     'ship-consumables': ShipConsumable;
+    'vehicle-variants': VehicleVariant;
+    'vehicle-sale-models': VehicleSaleModel;
+    vehicles: Vehicle;
     weapons: Weapon;
     armors: Armor;
     'armor-sets': ArmorSet;
@@ -115,6 +118,9 @@ export interface Config {
     'ship-weapons': ShipWeaponsSelect<false> | ShipWeaponsSelect<true>;
     'ship-modules': ShipModulesSelect<false> | ShipModulesSelect<true>;
     'ship-consumables': ShipConsumablesSelect<false> | ShipConsumablesSelect<true>;
+    'vehicle-variants': VehicleVariantsSelect<false> | VehicleVariantsSelect<true>;
+    'vehicle-sale-models': VehicleSaleModelsSelect<false> | VehicleSaleModelsSelect<true>;
+    vehicles: VehiclesSelect<false> | VehiclesSelect<true>;
     weapons: WeaponsSelect<false> | WeaponsSelect<true>;
     armors: ArmorsSelect<false> | ArmorsSelect<true>;
     'armor-sets': ArmorSetsSelect<false> | ArmorSetsSelect<true>;
@@ -1134,6 +1140,67 @@ export interface ShipConsumable {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vehicle-variants".
+ */
+export interface VehicleVariant {
+  id: number;
+  nom: string;
+  classe: 'alpha' | 'beta' | 'gamma' | 'delta';
+  position: '1' | '2';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vehicle-sale-models".
+ */
+export interface VehicleSaleModel {
+  id: number;
+  nom: string;
+  variante: number | VehicleVariant;
+  places: number;
+  emportsArmesPersonnages: number;
+  blindageMax: number;
+  bouclierMax: number;
+  rechargeBouclier: number;
+  mouvement: number;
+  prix: number;
+  toutTerrain?: boolean | null;
+  /**
+   * Réduit de moitié les malus de tir pour un pilote non conducteur.
+   */
+  supportArme?: boolean | null;
+  turboBonus?: number | null;
+  tourelleClasseMax?: ('alpha' | 'beta') | null;
+  /**
+   * Valeur numérique reliée à la table de règles.
+   */
+  remorqueIndicePoids?: number | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vehicles".
+ */
+export interface Vehicle {
+  id: number;
+  nom: string;
+  modele: number | VehicleSaleModel;
+  proprietaire?: (number | null) | Character;
+  /**
+   * Initialisé à la valeur maximale du modèle à la création.
+   */
+  blindageActuel: number;
+  armeTourelle?: (number | null) | ShipWeapon;
+  chargeurRelie?: (number | null) | ShipConsumable;
+  munitionsActuelles?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "formations".
  */
 export interface Formation {
@@ -1357,6 +1424,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ship-consumables';
         value: number | ShipConsumable;
+      } | null)
+    | ({
+        relationTo: 'vehicle-variants';
+        value: number | VehicleVariant;
+      } | null)
+    | ({
+        relationTo: 'vehicle-sale-models';
+        value: number | VehicleSaleModel;
+      } | null)
+    | ({
+        relationTo: 'vehicles';
+        value: number | Vehicle;
       } | null)
     | ({
         relationTo: 'weapons';
@@ -1733,6 +1812,55 @@ export interface ShipConsumablesSelect<T extends boolean = true> {
   prix?: T;
   effet?: T;
   image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vehicle-variants_select".
+ */
+export interface VehicleVariantsSelect<T extends boolean = true> {
+  nom?: T;
+  classe?: T;
+  position?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vehicle-sale-models_select".
+ */
+export interface VehicleSaleModelsSelect<T extends boolean = true> {
+  nom?: T;
+  variante?: T;
+  places?: T;
+  emportsArmesPersonnages?: T;
+  blindageMax?: T;
+  bouclierMax?: T;
+  rechargeBouclier?: T;
+  mouvement?: T;
+  prix?: T;
+  toutTerrain?: T;
+  supportArme?: T;
+  turboBonus?: T;
+  tourelleClasseMax?: T;
+  remorqueIndicePoids?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vehicles_select".
+ */
+export interface VehiclesSelect<T extends boolean = true> {
+  nom?: T;
+  modele?: T;
+  proprietaire?: T;
+  blindageActuel?: T;
+  armeTourelle?: T;
+  chargeurRelie?: T;
+  munitionsActuelles?: T;
   updatedAt?: T;
   createdAt?: T;
 }

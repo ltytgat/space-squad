@@ -26,6 +26,9 @@ import {ShipSaleModels} from './collections/ShipSaleModels'
 import {ShipWeapons} from './collections/ShipWeapons'
 import {ShipModules} from './collections/ShipModules'
 import {ShipConsumables} from './collections/ShipConsumables'
+import {VehicleVariants} from './collections/VehicleVariants'
+import {VehicleSaleModels} from './collections/VehicleSaleModels'
+import {Vehicles} from './collections/Vehicles'
 import {Weapons} from './collections/Weapons'
 import {Armors} from './collections/Armors'
 import {ArmorSets} from './collections/ArmorSets'
@@ -50,7 +53,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions],
+    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, VehicleVariants, VehicleSaleModels, Vehicles, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions],
     editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
             ...defaultFeatures,
