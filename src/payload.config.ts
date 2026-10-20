@@ -84,7 +84,10 @@ export default buildConfig({
     db: postgresAdapter({
         pool: {
             connectionString: process.env.DATABASE_URL || '',
+            options: '-c search_path=public',
         },
+        migrationDir: path.resolve(dirname, 'migrations'),
+        push: false,
     }),
     sharp,
     plugins: [
