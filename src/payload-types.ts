@@ -896,7 +896,7 @@ export interface ArmorSet {
   /**
    * Rang unique de ce set, utilisé comme récompense de promotion (1 à 10).
    */
-  rang: number;
+  rang?: number | null;
   nom: string;
   /**
    * Bonus appliqué lorsque le set est complet.

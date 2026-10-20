@@ -88,9 +88,8 @@ export function checkSeatChange(
 }
 
 /**
- * Équipage d'un vaisseau, limité aux champs utiles à la fiche : le nom, le rôle
- * miroir, et l'Habilité qui alimente le bonus d'esquive du pilote. On ne
- * renvoie pas la fiche complète des autres personnages.
+ * Équipage d'un vaisseau, limité aux données utiles à la fiche : identité,
+ * rôle, Habilité pour l'esquive du pilote, et épreuves affichées à bord.
  */
 export async function findShipCrew(payload: any, shipId: number | string) {
   const { docs } = await payload.find({
@@ -111,6 +110,7 @@ export async function findShipCrew(payload: any, shipId: number | string) {
       culture: true,
       anticipation: true,
       perception: true,
+      competences: true,
       malusForce: true,
       malusHabilite: true,
       malusConnaissances: true,
@@ -125,12 +125,16 @@ export async function findShipCrew(payload: any, shipId: number | string) {
     },
     overrideAccess: true,
   })
-  return docs.map((character: any) => ({
-    id: character.id,
-    nom: character.nom,
-    roleVaisseau: character.roleVaisseau,
-    habiliteDieMod: calculateStats(character).habiliteDieMod,
-  }))
+  return docs.map((character: any) => {
+    const stats = calculateStats(character)
+    return {
+      id: character.id,
+      nom: character.nom,
+      roleVaisseau: character.roleVaisseau,
+      habiliteDieMod: stats.habiliteDieMod,
+      epreuves: stats.epreuves,
+    }
+  })
 }
 
 /** Personnage unique de l'utilisateur connecté. */

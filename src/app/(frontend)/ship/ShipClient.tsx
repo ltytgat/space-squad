@@ -14,6 +14,7 @@ import {
   type Seat,
 } from '@/lib/shipCrew'
 import { StatTooltip, type StatTooltipData } from '@/components/StatTooltip'
+import { getShipEpreuves, type ShipEpreuveRow } from '@/lib/shipEpreuves'
 import { HeatRedistribution, roundHeat, type HeatTarget } from './HeatRedistribution'
 import {
   manageShipConsumable,
@@ -68,6 +69,36 @@ const coolingFrom = (ammo: any) => {
 const isAmmunition = isShipAmmunition
 const ammoName = shipAmmoName
 const sameAmmo = sameShipAmmo
+
+const formatEpreuveValue = (value: number) => `${value >= 0 ? '+' : ''}${value}`
+
+function ShipEpreuveItem({ row, tooltipId }: { row: ShipEpreuveRow; tooltipId?: string }) {
+  return (
+    <div className={`ship-epreuve-item ship-epreuve-item-${row.role}`}>
+      <span className="ship-epreuve-label">{row.label}</span>
+      {row.details && tooltipId ? (
+        <span
+          className="ship-epreuve-detail"
+          tabIndex={0}
+          aria-describedby={tooltipId}
+          aria-label={`${row.label} : ${formatEpreuveValue(row.value)}. Détail individuel.`}
+        >
+          <span className="ship-epreuve-value">{formatEpreuveValue(row.value)}</span>
+          <span className="ship-epreuve-tooltip" id={tooltipId} role="tooltip">
+            {row.details.map((detail) => (
+              <span className="ship-epreuve-tooltip-line" key={detail.characterId}>
+                <span>{detail.name} · {detail.seatLabel}</span>
+                <strong>{formatEpreuveValue(detail.value)}</strong>
+              </span>
+            ))}
+          </span>
+        </span>
+      ) : (
+        <span className="ship-epreuve-value">{formatEpreuveValue(row.value)}</span>
+      )}
+    </div>
+  )
+}
 
 export function ShipClient({
   ship: initialShip,
@@ -803,6 +834,7 @@ export function ShipClient({
       {isViewer(member) && <span className="ship-crew-you"> · vous</span>}
     </span>
   )
+  const displayedEpreuves = useMemo(() => getShipEpreuves(ship, crew), [ship, crew])
 
   return (
     <div className={`ship-content ss-container${readOnly ? ' ship-read-only' : ''}`}>
@@ -882,7 +914,7 @@ export function ShipClient({
             const occupant = crewMember(seat.occupantId)
             return (
               <div
-                className={`ship-crew-item${occupant ? '' : ' ship-crew-seat-empty'}${
+                className={`ship-crew-item ship-crew-item-${seat.role}${occupant ? '' : ' ship-crew-seat-empty'}${
                   isViewer(occupant) ? ' ship-crew-item-self' : ''
                 }`}
                 key={seat.key}
@@ -955,7 +987,7 @@ export function ShipClient({
           <div className="ship-crew-seats">
             {passengers.map((member) => (
               <div
-                className={`ship-crew-item${isViewer(member) ? ' ship-crew-item-self' : ''}`}
+                className={`ship-crew-item ship-crew-item-passager${isViewer(member) ? ' ship-crew-item-self' : ''}`}
                 key={member.id}
               >
                 <div className="ship-crew-info">
@@ -977,6 +1009,31 @@ export function ShipClient({
             ))}
           </div>
         )}
+      </section>
+      <section className="ship-card ship-epreuves-card">
+        <h2 className="ship-card-title">Épreuves</h2>
+        <div className="ship-epreuves-grid">
+          <div className="ship-epreuves-section">
+            <h3 className="ship-epreuves-subtitle">En vaisseau</h3>
+            <div className="ship-epreuves-list">
+              {displayedEpreuves.vaisseau.length > 0 ? displayedEpreuves.vaisseau.map((row) => (
+                <ShipEpreuveItem key={row.key} row={row} />
+              )) : <p className="ship-muted">Aucun poste de vaisseau occupé</p>}
+            </div>
+          </div>
+          <div className="ship-epreuves-section">
+            <h3 className="ship-epreuves-subtitle">Actions pacifiques</h3>
+            <div className="ship-epreuves-list">
+              {displayedEpreuves.actions.length > 0 ? displayedEpreuves.actions.map((row, index) => (
+                <ShipEpreuveItem
+                  key={row.key}
+                  row={row}
+                  tooltipId={`ship-epreuve-details-${index}`}
+                />
+              )) : <p className="ship-muted">Aucun membre d’équipage à évaluer</p>}
+            </div>
+          </div>
+        </div>
       </section>
       <div className="ship-main-grid">
         <div className="ship-column">

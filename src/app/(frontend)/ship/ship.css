@@ -217,6 +217,7 @@
 @media (max-width: 700px) {
   .ship-stats-grid, .ship-state-grid, .ship-form-grid { grid-template-columns: repeat(2, 1fr); }
   .ship-main-grid, .ship-crew-seats { grid-template-columns: 1fr; }
+  .ship-epreuves-grid { grid-template-columns: 1fr; gap: 1.25rem; }
   .ship-equipment-row { align-items: flex-start; flex-wrap: wrap; }
 }
 
@@ -346,7 +347,6 @@
 }
 
 .ship-crew-item-self {
-  border-color: rgba(0, 212, 255, 0.2);
   background: rgba(0, 212, 255, 0.04);
 }
 
@@ -402,6 +402,127 @@
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
 }
+
+.ship-crew-item-pilote, .ship-epreuve-item.ship-epreuve-item-pilote { border-color: #00d4ff; }
+.ship-crew-item-copilote, .ship-epreuve-item.ship-epreuve-item-copilote { border-color: #c8a6ff; }
+.ship-crew-item-canonnier, .ship-epreuve-item.ship-epreuve-item-canonnier { border-color: #ffb454; }
+.ship-crew-item-passager, .ship-epreuve-item.ship-epreuve-item-passager { border-color: rgba(160, 170, 180, .65); }
+
+/* ── Épreuves ── */
+
+.ship-epreuves-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.ship-epreuves-section {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.ship-epreuves-subtitle {
+  margin: 0;
+  padding-bottom: .4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  color: var(--ss-text-muted);
+  font-family: var(--ss-font-display);
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.ship-epreuves-list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.ship-epreuves-list > .ship-muted { margin: 0; }
+
+.ship-epreuve-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-width: 0;
+  padding: .45rem .75rem;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: var(--ss-radius);
+  background: rgba(255, 255, 255, .03);
+}
+
+.ship-epreuve-label {
+  min-width: 0;
+  color: var(--ss-text-dim);
+  font-size: .8rem;
+}
+
+.ship-epreuve-value {
+  color: var(--ss-cyan);
+  font-family: var(--ss-font-mono);
+  font-size: .9rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ship-epreuve-detail {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  outline: none;
+  cursor: help;
+}
+
+.ship-epreuve-detail:focus-visible {
+  box-shadow: 0 0 0 2px var(--ss-bg-card), 0 0 0 4px var(--ss-cyan);
+}
+
+.ship-epreuve-tooltip {
+  position: absolute;
+  z-index: 1100;
+  top: calc(100% + .4rem);
+  right: 0;
+  width: max-content;
+  min-width: 15rem;
+  max-width: min(22rem, calc(100vw - 3rem));
+  padding: .65rem .75rem;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: #101923;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .55);
+  color: var(--ss-text);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+
+.ship-epreuve-detail:hover .ship-epreuve-tooltip,
+.ship-epreuve-detail:focus .ship-epreuve-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ship-epreuve-tooltip-line {
+  display: flex;
+  justify-content: space-between;
+  gap: .9rem;
+  padding: .2rem 0;
+  font-size: .75rem;
+}
+
+.ship-epreuve-tooltip-line + .ship-epreuve-tooltip-line {
+  border-top: 1px solid rgba(255, 255, 255, .06);
+}
+
+.ship-epreuve-tooltip-line > span { color: var(--ss-text-muted); }
+.ship-epreuve-tooltip-line strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); }
+
 .ship-consumables .ship-card-title { margin: 0; }
 .ship-consumable-list { display: grid; gap: .55rem; margin-bottom: .65rem; }
 .ship-consumable-slot { padding: .7rem; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); background: rgba(255,255,255,.025); }
