@@ -7,7 +7,17 @@ const ship = { modele: { chassis }, blindageActuel: 18, bouclierActuel: 3, modul
 describe('ship rules', () => {
   it('exposes chassis capacities and calculated runtime values', () => {
     expect(getShipLimits(ship)).toMatchObject({ pilotWeaponPoints: 2, turretCount: 1, moduleSlots: 1, consumableSlots: 2 })
-    expect(getShipStats(ship)).toMatchObject({ maxArmor: 20, maxShield: 6, armor: 18, shield: 3, evasion: 20, power: 6, consumption: 3 })
+    expect(getShipStats(ship)).toMatchObject({ maxArmor: 20, maxShield: 6, armor: 18, shield: 3, evasion: 20, evasionCopilot: 0, power: 6, consumption: 3 })
+  })
+
+  it('adds the copilots ability modifier to evasion when the seat is occupied', () => {
+    const shipWithCopilot = {
+      ...ship,
+      copilote: 2,
+      crew: [{ id: 2, habiliteDieMod: 3 }],
+    }
+
+    expect(getShipStats(shipWithCopilot)).toMatchObject({ evasion: 23, evasionCopilot: 3 })
   })
 
   it('flags power overflow', () => {

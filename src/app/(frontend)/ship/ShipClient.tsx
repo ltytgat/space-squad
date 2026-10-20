@@ -880,6 +880,7 @@ export function ShipClient({
               components: [
                 { label: 'Base vaisseau', value: stats.evasionBase },
                 { label: 'Modificateur Habilité pilote (équipement inclus)', value: stats.evasionPilot },
+                { label: 'Modificateur Habilité copilote (équipement inclus)', value: stats.evasionCopilot },
                 { label: 'Propulseurs', value: stats.evasionThrusters },
               ],
             })
@@ -1109,8 +1110,8 @@ export function ShipClient({
               <div className="ship-dl-row">
                 <dt>Esquive</dt>
                 <dd>
-                  {stats.evasionBase} + {stats.evasionPilot} pilote + {stats.evasionThrusters}{' '}
-                  propulseurs
+                  {stats.evasionBase} + {stats.evasionPilot} pilote + {stats.evasionCopilot} copilote +{' '}
+                  {stats.evasionThrusters} propulseurs
                 </dd>
               </div>
             </dl>

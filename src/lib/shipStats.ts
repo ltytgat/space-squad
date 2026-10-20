@@ -70,6 +70,10 @@ export function getShipStats(ship: ShipRecord) {
     (ship?.crew ?? []).find((member: any) => pilotId != null && String(member?.id) === String(pilotId)) ??
     objectOf(ship?.pilote) ??
     (ship?.crew ?? []).find((member: any) => member?.roleVaisseau === 'pilote')
+  const copilotId = idOf(ship?.copilote)
+  const copilot = copilotId == null
+    ? objectOf(ship?.copilote)
+    : (ship?.crew ?? []).find((member: any) => String(member?.id) === String(copilotId)) ?? objectOf(ship?.copilote)
   const maxShield = numeric('bouclierMax')
   const maxArmor = (Number(chassis?.blindage) || 0) + numeric('blindageBonus')
   const consumption = numeric('consommation')
@@ -87,15 +91,17 @@ export function getShipStats(ship: ShipRecord) {
   const power = numericText(generator?.puissance)
   const evasionBase = Number(chassis?.esquiveBase) || 0
   const evasionPilot = getPilotAbilityBonus(pilot)
+  const evasionCopilot = getPilotAbilityBonus(copilot)
   const evasionThrusters = getModuleModifier(thrusters, 'Esquive')
   return {
     maxArmor,
     maxShield,
     armor: ship?.blindageActuel ?? maxArmor,
     shield: ship?.bouclierActuel ?? maxShield,
-    evasion: evasionBase + evasionPilot + evasionThrusters,
+    evasion: evasionBase + evasionPilot + evasionCopilot + evasionThrusters,
     evasionBase,
     evasionPilot,
+    evasionCopilot,
     evasionThrusters,
     power,
     consumption,
