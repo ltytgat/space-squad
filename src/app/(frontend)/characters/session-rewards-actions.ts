@@ -6,6 +6,12 @@ import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character, Faction } from '@/payload-types'
 import { computeFactionPoints, type FactionLite } from './session-rewards-formula'
+import {
+  ranksGainedFromPoints,
+  rollRankUpRewards,
+  type CharacterOrigin,
+  type RankUpRoll,
+} from '@/lib/rankUpRewards'
 
 /**
  * Payload envoyé par le drawer "Terminer la session".
@@ -59,6 +65,7 @@ type PerCharSnapshot = {
     konis: number
     pointsDeRang: number
     pointsDeCompetence: number
+    bonusPointsDeBlessures: number
     pointsDeFaction: number
     reputation: { categorie: string; valeur: number }[]
   }
@@ -66,6 +73,7 @@ type PerCharSnapshot = {
     konis: number
     pointsDeRang: number
     pointsDeCompetence: number
+    bonusPointsDeBlessures: number
     pointsDeFaction: number
     reputation: { categorie: string; valeur: number }[]
   }
@@ -73,6 +81,8 @@ type PerCharSnapshot = {
     konis: number
     pointsDeRang: number
     pointsDeCompetence: number
+    pointsDeCompetenceMission: number
+    bonusPointsDeBlessures: number
     pointsDeFaction: number
     /** Décomposition des points de faction : bonus commanditaire + points liés à l'affiliation. */
     pointsDeFactionBreakdown: {
@@ -81,6 +91,11 @@ type PerCharSnapshot = {
       factionLabel: string | null
     }
     reputation: { categorie: string; delta: number } | null
+    progressionRang: (RankUpRoll & {
+      armureSetId: number | null
+      armuresAjoutees: number[]
+      armureManquante: boolean
+    })[]
   }
 }
 
@@ -186,6 +201,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       const beforeKonis = before.konis ?? 0
       const beforePR = before.pointsDeRang ?? 0
       const beforePC = before.pointsDeCompetence ?? 0
+      const beforeBonusBlessures = before.bonusPointsDeBlessures ?? 0
       const beforePF = (before as any).pointsDeFaction ?? 0
       const beforeRep = Array.isArray(before.reputation)
         ? before.reputation.map((r) => ({
@@ -199,6 +215,50 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       const deltaPC = input.apply.pointsDeCompetence
         ? perChar.pointsDeCompetence ?? 0
         : 0
+
+      const nouveauxRangs = ranksGainedFromPoints(beforePR, deltaPR)
+      const rankUpRewards =
+        nouveauxRangs.length > 0
+          ? rollRankUpRewards(nouveauxRangs[0]!, nouveauxRangs[nouveauxRangs.length - 1]!, before.origine as CharacterOrigin)
+          : { bonusBlessures: 0, pointsDeCompetence: 0, promotions: [] }
+      const progressionRang: PerCharSnapshot['delta']['progressionRang'] = []
+      const inventaireArmures = [...(before.inventaireArmures ?? [])]
+
+      for (const promotion of rankUpRewards.promotions) {
+        const armorSetResult = await payload.find({
+          collection: 'armor-sets',
+          where: { rang: { equals: promotion.rang } },
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
+          req: reqOpts as any,
+        })
+        const armorSet = armorSetResult.docs[0]
+        const armureSetId: number | null = armorSet?.id ?? null
+        let armuresAjoutees: number[] = []
+
+        if (armorSet) {
+          const armorResult = await payload.find({
+            collection: 'armors',
+            where: { set: { equals: armorSet.id } },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+            req: reqOpts as any,
+          })
+          armuresAjoutees = armorResult.docs.map((armor) => armor.id)
+          for (const armorId of armuresAjoutees) {
+            inventaireArmures.push({ item: armorId, mods: [] })
+          }
+        }
+
+        progressionRang.push({
+          ...promotion,
+          armureSetId,
+          armuresAjoutees,
+          armureManquante: !armorSet || armuresAjoutees.length === 0,
+        })
+      }
 
       // Points de faction — calcul via la formule partagée.
       //   Le "konisGain" pour la Guilde correspond aux konis reçus durant
@@ -244,13 +304,18 @@ export async function applySessionRewards(input: SessionRewardsInput) {
 
       const nextKonis = beforeKonis + deltaKonis
       const nextPR = beforePR + deltaPR
-      const nextPC = beforePC + deltaPC
+      const nextPC = beforePC + deltaPC + rankUpRewards.pointsDeCompetence
+      const nextBonusBlessures = beforeBonusBlessures + rankUpRewards.bonusBlessures
       const nextPF = beforePF + deltaPF
 
       const updateData: Partial<Character> = {}
       if (deltaKonis !== 0) updateData.konis = nextKonis
       if (deltaPR !== 0) updateData.pointsDeRang = nextPR
-      if (deltaPC !== 0) updateData.pointsDeCompetence = nextPC
+      if (deltaPC !== 0 || rankUpRewards.pointsDeCompetence !== 0) updateData.pointsDeCompetence = nextPC
+      if (rankUpRewards.bonusBlessures !== 0) updateData.bonusPointsDeBlessures = nextBonusBlessures
+      if (inventaireArmures.length !== (before.inventaireArmures ?? []).length) {
+        updateData.inventaireArmures = inventaireArmures
+      }
       if (deltaPF !== 0) (updateData as any).pointsDeFaction = nextPF
       if (repDelta) (updateData as any).reputation = afterRep
 
@@ -272,6 +337,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
           konis: beforeKonis,
           pointsDeRang: beforePR,
           pointsDeCompetence: beforePC,
+          bonusPointsDeBlessures: beforeBonusBlessures,
           pointsDeFaction: beforePF,
           reputation: beforeRep,
         },
@@ -279,13 +345,16 @@ export async function applySessionRewards(input: SessionRewardsInput) {
           konis: nextKonis,
           pointsDeRang: nextPR,
           pointsDeCompetence: nextPC,
+          bonusPointsDeBlessures: nextBonusBlessures,
           pointsDeFaction: nextPF,
           reputation: afterRep,
         },
         delta: {
           konis: deltaKonis,
           pointsDeRang: deltaPR,
-          pointsDeCompetence: deltaPC,
+          pointsDeCompetence: deltaPC + rankUpRewards.pointsDeCompetence,
+          pointsDeCompetenceMission: deltaPC,
+          bonusPointsDeBlessures: rankUpRewards.bonusBlessures,
           pointsDeFaction: deltaPF,
           pointsDeFactionBreakdown: {
             commanditaire: factionPtsBreakdown.commanditaire,
@@ -293,6 +362,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
             factionLabel: factionPtsBreakdown.factionLabel,
           },
           reputation: repDelta,
+          progressionRang,
         },
       })
     }

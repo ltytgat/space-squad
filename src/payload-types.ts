@@ -893,6 +893,10 @@ export interface Armor {
  */
 export interface ArmorSet {
   id: number;
+  /**
+   * Rang unique de ce set, utilisé comme récompense de promotion (1 à 10).
+   */
+  rang: number;
   nom: string;
   /**
    * Bonus appliqué lorsque le set est complet.
@@ -1929,6 +1933,7 @@ export interface ArmorsSelect<T extends boolean = true> {
  * via the `definition` "armor-sets_select".
  */
 export interface ArmorSetsSelect<T extends boolean = true> {
+  rang?: T;
   nom?: T;
   bonus?: T;
   image?: T;
