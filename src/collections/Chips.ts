@@ -8,7 +8,7 @@ export const Chips: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'nom',
-    group: 'Jeu de Rôle',
+    group: 'Équipement',
   },
   fields: [
     {
