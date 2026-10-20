@@ -44,7 +44,7 @@ describe('rank-up rewards', () => {
     expect(ranksGainedFromPoints(2390, 1)).toEqual([])
   })
 
-  it('requires a unique integer rank from 1 to 10 on each armor set', () => {
+  it('allows armor sets without a rank and keeps configured ranks unique integers from 1 to 10', () => {
     const rankField = ArmorSets.fields.find((field) => 'name' in field && field.name === 'rang') as unknown as {
       required: boolean
       unique: boolean
@@ -53,9 +53,10 @@ describe('rank-up rewards', () => {
       validate: (value: unknown, options?: unknown) => string | true
     }
 
-    expect(rankField).toMatchObject({ required: true, unique: true, min: 1, max: 10 })
+    expect(rankField).toMatchObject({ required: false, unique: true, min: 1, max: 10 })
     expect(rankField.validate(1)).toBe(true)
+    expect(rankField.validate(null)).toBe(true)
+    expect(rankField.validate(undefined)).toBe(true)
     expect(rankField.validate(1.5)).toContain('entier')
-    expect(rankField.validate(null)).toContain('entier')
   })
 })

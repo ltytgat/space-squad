@@ -23,7 +23,7 @@ export const Ships: CollectionConfig = {
   admin: {
     useAsTitle: 'nom',
     defaultColumns: ['nom', 'modele', 'proprietaire'],
-    group: 'Jeu de Rôle',
+    group: 'Équipement',
   },
   access: {
     read: ({ req }) => !!req.user,

@@ -18,12 +18,13 @@ export const ArmorSets: CollectionConfig = {
     {
       name: 'rang',
       type: 'number',
-      required: true,
+      required: false,
       unique: true,
       min: 1,
       max: 10,
       label: 'Rang',
       validate: (value: unknown) =>
+        value == null ||
         (typeof value === 'number' && Number.isInteger(value)) || 'Le rang doit être un entier entre 1 et 10.',
       admin: {
         description: 'Rang unique de ce set, utilisé comme récompense de promotion (1 à 10).',
