@@ -137,6 +137,33 @@ export const ShipModules: CollectionConfig = {
       },
     },
     {
+      name: 'bonusCalcul',
+      type: 'group',
+      label: 'Bonus de calcul',
+      fields: [
+        {
+          name: 'cible',
+          type: 'select',
+          required: true,
+          label: 'Épreuve / stat',
+          options: [
+            { label: 'Esquive', value: 'esquive' },
+            { label: 'Tir (pilote)', value: 'tir-pilote' },
+            { label: 'Pilotage', value: 'pilotage' },
+            { label: 'Analyse (Crypter / Décrypter / Analyse)', value: 'analyse' },
+          ],
+          admin: { width: '50%' },
+        },
+        {
+          name: 'valeur',
+          type: 'number',
+          required: true,
+          label: 'Valeur',
+          admin: { width: '50%' },
+        },
+      ],
+    },
+    {
       name: 'bouclierMax',
       type: 'number',
       label: 'Boucliers Max',

@@ -512,6 +512,10 @@ export interface ShipModule {
    * Bonus apportés (ex: Esquive +3, Tir(pilote)+2, Crypto +1, Dash +1).
    */
   modificateurs?: string | null;
+  bonusCalcul: {
+    cible: 'esquive' | 'tir-pilote' | 'pilotage' | 'analyse';
+    valeur: number;
+  };
   bouclierMax?: number | null;
   /**
    * Nombre de tours avant réactivation.
@@ -1782,6 +1786,12 @@ export interface ShipModulesSelect<T extends boolean = true> {
   prix?: T;
   puissance?: T;
   modificateurs?: T;
+  bonusCalcul?:
+    | T
+    | {
+        cible?: T;
+        valeur?: T;
+      };
   bouclierMax?: T;
   cooldownBouclier?: T;
   rechargeBouclier?: T;
