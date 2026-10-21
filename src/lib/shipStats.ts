@@ -11,6 +11,25 @@ const numericText = (value: unknown) => {
   return match ? Number(match[0]) : 0
 }
 
+export type ShipModuleBonusTarget = 'esquive' | 'tir-pilote' | 'pilotage' | 'analyse'
+
+export function getModuleCalculationBonus(module: any, target: ShipModuleBonusTarget) {
+  const bonus = objectOf(module?.bonusCalcul)
+  return bonus?.cible === target ? Number(bonus.valeur) || 0 : 0
+}
+
+export function getShipModuleCalculationBonus(ship: ShipRecord, target: ShipModuleBonusTarget) {
+  const modules = [
+    ship?.moduleGenerateur,
+    ship?.modulePropulseurs,
+    ship?.moduleSurvie,
+    ship?.moduleBoucliers,
+    ...(ship?.modulesSupplementaires ?? []).filter((module: any) => !isTurretModule(module)),
+    ...(ship?.armesTourelles ?? []).map((turret: any) => turret.module),
+  ]
+  return modules.reduce((total, entry) => total + getModuleCalculationBonus(entry, target), 0)
+}
+
 export function getModuleModifier(module: any, label: string) {
   const text = String(module?.modificateurs ?? '')
   const match = text.match(new RegExp(`${label}\\s*([+-]?\\d+)`, 'i'))
@@ -92,7 +111,7 @@ export function getShipStats(ship: ShipRecord) {
   const evasionBase = Number(chassis?.esquiveBase) || 0
   const evasionPilot = getPilotAbilityBonus(pilot)
   const evasionCopilot = getPilotAbilityBonus(copilot)
-  const evasionThrusters = getModuleModifier(thrusters, 'Esquive')
+  const evasionThrusters = getModuleCalculationBonus(thrusters, 'esquive') || getModuleModifier(thrusters, 'Esquive')
   return {
     maxArmor,
     maxShield,
