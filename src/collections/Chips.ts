@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { User } from '@/payload-types'
 
 export const Chips: CollectionConfig = {
   slug: 'chips',
@@ -9,6 +10,12 @@ export const Chips: CollectionConfig = {
   admin: {
     useAsTitle: 'nom',
     group: 'Équipement',
+  },
+  access: {
+    read: ({ req }) => !!req.user,
+    create: ({ req }) => (req.user as User | null)?.role === 'admin',
+    update: ({ req }) => (req.user as User | null)?.role === 'admin',
+    delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   fields: [
     {

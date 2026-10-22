@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const payloadMocks = vi.hoisted(() => ({
   find: vi.fn(),
+  count: vi.fn(),
   create: vi.fn(),
   getPayload: vi.fn(),
 }))
@@ -24,7 +25,8 @@ describe('POST /api/auth/register', () => {
     vi.clearAllMocks()
     payloadMocks.find.mockResolvedValue({ docs: [] })
     payloadMocks.create.mockResolvedValue({ id: 1 })
-    payloadMocks.getPayload.mockResolvedValue({ find: payloadMocks.find, create: payloadMocks.create })
+    payloadMocks.count.mockResolvedValue({ totalDocs: 0 })
+    payloadMocks.getPayload.mockResolvedValue({ find: payloadMocks.find, count: payloadMocks.count, create: payloadMocks.create })
   })
 
   it('creates a player account and ignores privilege fields supplied by the caller', async () => {
@@ -53,6 +55,8 @@ describe('POST /api/auth/register', () => {
     { email: 'player@example.fr', password: 'short', passwordConfirmation: 'short' },
     { email: 'player@example.fr', password: 'a-secure-password', passwordConfirmation: 'different-password' },
     { email: 'invalid-email', password: 'a-secure-password', passwordConfirmation: 'a-secure-password' },
+    { email: `${'a'.repeat(250)}@example.fr`, password: 'a-secure-password', passwordConfirmation: 'a-secure-password' },
+    { email: 'player@example.fr', password: 'a'.repeat(257), passwordConfirmation: 'a'.repeat(257) },
   ])('rejects invalid registration data', async (body) => {
     const response = await POST(registrationRequest(body))
 
@@ -70,6 +74,47 @@ describe('POST /api/auth/register', () => {
     }))
 
     expect(response.status).toBe(409)
+    expect(payloadMocks.create).not.toHaveBeenCalled()
+  })
+
+  it('pretends to succeed without creating anything when the honeypot is filled', async () => {
+    const response = await POST(registrationRequest({
+      email: 'bot@example.fr',
+      password: 'a-secure-password',
+      passwordConfirmation: 'a-secure-password',
+      website: 'https://spam.example',
+    }))
+
+    expect(response.status).toBe(201)
+    expect(payloadMocks.getPayload).not.toHaveBeenCalled()
+    expect(payloadMocks.create).not.toHaveBeenCalled()
+  })
+
+  it('closes registration once the total account cap is reached', async () => {
+    payloadMocks.count.mockResolvedValueOnce({ totalDocs: 200 })
+
+    const response = await POST(registrationRequest({
+      email: 'player@example.fr',
+      password: 'a-secure-password',
+      passwordConfirmation: 'a-secure-password',
+    }))
+
+    expect(response.status).toBe(403)
+    expect(payloadMocks.create).not.toHaveBeenCalled()
+  })
+
+  it('throttles registration once the hourly cap is reached', async () => {
+    payloadMocks.count
+      .mockResolvedValueOnce({ totalDocs: 20 })
+      .mockResolvedValueOnce({ totalDocs: 10 })
+
+    const response = await POST(registrationRequest({
+      email: 'player@example.fr',
+      password: 'a-secure-password',
+      passwordConfirmation: 'a-secure-password',
+    }))
+
+    expect(response.status).toBe(429)
     expect(payloadMocks.create).not.toHaveBeenCalled()
   })
 })

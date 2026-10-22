@@ -32,7 +32,7 @@ export async function createSquad(name: string) {
   const { payload, user, mode } = await context()
   if (mode !== 'mj' || (user as any).isMJ !== true) return { success: false, error: 'Passez en mode MJ pour créer une escouade.' }
   const nom = typeof name === 'string' ? name.trim() : ''
-  if (!nom) return { success: false, error: 'Le nom de l’escouade ne peut pas être vide.' }
+  if (!nom || nom.length > 100) return { success: false, error: 'Le nom de l’escouade doit contenir entre 1 et 100 caractères.' }
 
   const transactionID = await payload.db.beginTransaction?.()
   if (!transactionID) return { success: false, error: 'Les transactions PostgreSQL sont indisponibles.' }

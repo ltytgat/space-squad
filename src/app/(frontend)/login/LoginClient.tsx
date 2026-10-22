@@ -19,6 +19,8 @@ export function LoginClient() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [registrationError, setRegistrationError] = useState('')
+  // Champ leurre : invisible pour un humain, souvent rempli par les robots.
+  const [website, setWebsite] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -96,7 +98,7 @@ export function LoginClient() {
       const registerResponse = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password, passwordConfirmation }),
+        body: JSON.stringify({ email: normalizedEmail, password, passwordConfirmation, website }),
       })
 
       if (!registerResponse.ok) {
@@ -231,6 +233,18 @@ export function LoginClient() {
             required
             minLength={MIN_PASSWORD_LENGTH}
             autoComplete="new-password"
+          />
+        </div>
+        <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+          <label htmlFor="register-website">Ne pas remplir ce champ</label>
+          <input
+            id="register-website"
+            type="text"
+            name="website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
           />
         </div>
 

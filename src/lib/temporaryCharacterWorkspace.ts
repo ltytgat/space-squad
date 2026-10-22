@@ -3,6 +3,7 @@ import 'server-only'
 import { createHash, createHmac } from 'node:crypto'
 import { cookies, headers } from 'next/headers.js'
 import { sql } from '@payloadcms/db-postgres'
+import { envLimit } from '@/lib/envLimit'
 export { stripTemporaryWorkspaceSecrets as stripWorkspaceSecrets } from '@/lib/temporaryCharacterRules'
 
 export const TEMP_WORKSPACE_COOKIE = 'ss_temporary_character_workspace'
@@ -13,11 +14,6 @@ export const TEMP_WORKSPACE_MAX_REQUESTS_PER_HOUR = envLimit('TEMP_WORKSPACE_MAX
 export const TEMP_WORKSPACE_MAX_ARRAY_ITEMS = envLimit('TEMP_WORKSPACE_MAX_ARRAY_ITEMS', 100)
 export const TEMP_WORKSPACE_MAX_CUSTOM_SKILLS = envLimit('TEMP_WORKSPACE_MAX_CUSTOM_SKILLS', 20)
 export const TEMP_WORKSPACE_MAX_PAYLOAD_BYTES = envLimit('TEMP_WORKSPACE_MAX_PAYLOAD_BYTES', 128_000)
-
-function envLimit(name: string, fallback: number): number {
-  const parsed = Number.parseInt(process.env[name] ?? '', 10)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback
-}
 
 export function hashWorkspaceToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')

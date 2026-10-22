@@ -43,6 +43,7 @@ describe('login registration flow', () => {
         email: 'joueur@example.fr',
         password: 'a-secure-password',
         passwordConfirmation: 'a-secure-password',
+        website: '',
       }),
     }))
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/users/login', expect.objectContaining({

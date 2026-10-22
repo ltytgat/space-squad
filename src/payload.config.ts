@@ -41,6 +41,7 @@ import {FactionRewardTiers} from './collections/FactionRewardTiers'
 import {SessionRewards} from './collections/SessionRewards'
 import {ShopTransactions} from './collections/ShopTransactions'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
+import type { User } from './payload-types'
 
 
 const filename = fileURLToPath(import.meta.url)
@@ -78,6 +79,16 @@ export default buildConfig({
         },
     }),
     secret: process.env.PAYLOAD_SECRET || '',
+    // Le frontend n'utilise que l'API locale et REST : GraphQL n'est pas exposé.
+    graphQL: {
+        disable: true,
+    },
+    // Taille maximale d'un fichier envoyé vers le bucket (5 Mo).
+    upload: {
+        limits: {
+            fileSize: 5_000_000,
+        },
+    },
     typescript: {
         outputFile: path.resolve(dirname, 'payload-types.ts'),
     },
@@ -94,6 +105,11 @@ export default buildConfig({
         searchPlugin({
             collections: ['lore-articles'],
             searchOverrides: {
+                // Les résultats sont synchronisés automatiquement : seuls les admins peuvent y toucher.
+                access: {
+                    update: ({ req }) => (req.user as User | null)?.role === 'admin',
+                    delete: ({ req }) => (req.user as User | null)?.role === 'admin',
+                },
                 fields: ({ defaultFields }) => [
                     ...defaultFields,
                     {

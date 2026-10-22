@@ -3,18 +3,18 @@ import { APIError } from 'payload'
 import type { User } from '@/payload-types'
 import { sql } from '@payloadcms/db-postgres'
 import { createHmac } from 'node:crypto'
-import { meetsPasswordLength, MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
+import { meetsPasswordLength, PASSWORD_LENGTH_ERROR } from '@/lib/passwordPolicy'
 
 const protectPasswordFlows: CollectionBeforeOperationHook<'users'> = async ({ args, operation, req }) => {
   if (operation === 'resetPassword') {
     if (!meetsPasswordLength(args.data.password)) {
-      throw new APIError(`Le mot de passe doit comporter au moins ${MIN_PASSWORD_LENGTH} caractères.`, 400)
+      throw new APIError(PASSWORD_LENGTH_ERROR, 400)
     }
     return args
   }
   if ((operation === 'create' || operation === 'update') && args.data.password !== undefined) {
     if (!meetsPasswordLength(args.data.password)) {
-      throw new APIError(`Le mot de passe doit comporter au moins ${MIN_PASSWORD_LENGTH} caractères.`, 400)
+      throw new APIError(PASSWORD_LENGTH_ERROR, 400)
     }
     return args
   }
@@ -82,6 +82,9 @@ export const Users: CollectionConfig = {
     group: 'Administration',
   },
   auth: {
+    // Verrouille le compte 10 minutes après 5 échecs de connexion.
+    maxLoginAttempts: 5,
+    lockTime: 10 * 60 * 1000,
     forgotPassword: {
       expiration: 30 * 60 * 1000,
       generateEmailSubject: () => 'Réinitialisation de votre mot de passe Space Squad',
