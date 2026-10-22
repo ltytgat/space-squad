@@ -2393,9 +2393,9 @@
 .char-mode-toggle {
   min-height: unset;
   padding: 0.5rem 1.25rem;
-  border: 1px solid #f4a62a;
+  border: 1px solid #9b8adb;
   border-radius: var(--ss-radius);
-  background: #f4a62a;
+  background: #9b8adb;
   color: #101820;
   font: inherit;
   font-size: 0.875rem;
@@ -2407,47 +2407,47 @@
 }
 
 .char-mode-toggle:hover {
-  background: #ffc45c;
-  box-shadow: 0 0 18px rgba(244, 166, 42, 0.35);
+  background: #b8a9f5;
+  box-shadow: 0 0 18px rgba(155, 138, 219, 0.35);
 }
 
 .char-root.char-edit-mode {
-  background: #f4a62a;
+  background: #393449;
 }
 
 .char-edit-mode .char-page-header {
-  background: #f4a62a;
-  border-bottom-color: rgba(16, 24, 32, 0.3);
+  background: #393449;
+  border-bottom-color: rgba(196, 181, 253, 0.3);
 }
 
 .char-edit-mode .char-name {
-  color: #101820;
+  color: #f3efff;
 }
 
 .char-edit-mode .char-breadcrumb,
 .char-edit-mode .char-breadcrumb a {
-  color: #263746;
+  color: #d0c9e3;
 }
 
 .char-edit-mode .char-breadcrumb a:hover {
-  color: #101820;
+  color: #ffffff;
 }
 
 .char-edit-mode .char-mode-toggle {
   background: #101820;
   border-color: #101820;
-  color: #f4a62a;
+  color: #b8a9f5;
 }
 
 .char-edit-mode .char-mode-toggle:hover {
   background: #263746;
   border-color: #263746;
-  color: #ffc45c;
+  color: #d8ccff;
 }
 
 .char-manager-edit-panel {
-  border-color: #f4a62a;
-  box-shadow: 0 0 0 1px rgba(244, 166, 42, 0.22);
+  border-color: #9b8adb;
+  box-shadow: 0 0 0 1px rgba(155, 138, 219, 0.22);
 }
 
 .char-manager-edit-grid {
@@ -2528,9 +2528,9 @@
 .char-inventory-action-remove {
   min-height: 34px;
   padding: 0.35rem 0.7rem;
-  border: 1px solid #f4a62a;
+  border: 1px solid #9b8adb;
   border-radius: 5px;
-  background: #f4a62a;
+  background: #9b8adb;
   color: #101820;
   font: inherit;
   font-size: 0.72rem;
