@@ -165,7 +165,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       },
       depth: 0,
       limit: input.characterIds.length,
-      select: { id: true },
+      select: { nom: true },
       overrideAccess: true,
     })
     if (docs.length !== input.characterIds.length) {
