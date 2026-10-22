@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
 
 export function ResetPasswordClient({ token }: { token: string }) {
   const [password, setPassword] = useState('')
@@ -18,9 +19,9 @@ export function ResetPasswordClient({ token }: { token: string }) {
       setError('Les deux mots de passe ne correspondent pas.')
       return
     }
-    if (password.length < 12) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       setStatus('error')
-      setError('Choisissez un mot de passe de 12 caractères minimum.')
+      setError(`Choisissez un mot de passe de ${MIN_PASSWORD_LENGTH} caractères minimum.`)
       return
     }
 
@@ -68,7 +69,7 @@ export function ResetPasswordClient({ token }: { token: string }) {
           value={password}
           onChange={(event) => { setPassword(event.target.value); setStatus('idle') }}
           autoComplete="new-password"
-          minLength={12}
+          minLength={MIN_PASSWORD_LENGTH}
           required
           autoFocus
         />
@@ -82,7 +83,7 @@ export function ResetPasswordClient({ token }: { token: string }) {
           value={confirmation}
           onChange={(event) => { setConfirmation(event.target.value); setStatus('idle') }}
           autoComplete="new-password"
-          minLength={12}
+          minLength={MIN_PASSWORD_LENGTH}
           required
         />
       </div>

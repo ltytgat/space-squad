@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
 
 interface AccountClientProps {
   userId: string
@@ -78,9 +79,9 @@ export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt
       return
     }
 
-    if (newPassword.length < 8) {
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setPasswordStatus('error')
-      setPasswordError('Le mot de passe doit comporter au moins 8 caractères.')
+      setPasswordError(`Le mot de passe doit comporter au moins ${MIN_PASSWORD_LENGTH} caractères.`)
       return
     }
 
@@ -236,7 +237,7 @@ export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt
         <div className="account-card">
           <div className="account-card-header">
             <h2>Changer le mot de passe</h2>
-            <p>Choisissez un mot de passe robuste d&apos;au moins 8 caractères.</p>
+            <p>Choisissez un mot de passe robuste d&apos;au moins {MIN_PASSWORD_LENGTH} caractères.</p>
           </div>
           <form onSubmit={handlePasswordChange} className="account-form" noValidate>
             <div className="account-field">
@@ -261,7 +262,7 @@ export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt
                 onChange={(e) => { setNewPassword(e.target.value); setPasswordStatus('idle') }}
                 required
                 autoComplete="new-password"
-                minLength={8}
+                minLength={MIN_PASSWORD_LENGTH}
               />
             </div>
             <div className="account-field">
@@ -274,6 +275,7 @@ export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt
                 onChange={(e) => { setConfirmPassword(e.target.value); setPasswordStatus('idle') }}
                 required
                 autoComplete="new-password"
+                minLength={MIN_PASSWORD_LENGTH}
               />
             </div>
             {passwordStatus === 'error' && (

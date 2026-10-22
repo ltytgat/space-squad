@@ -3,11 +3,18 @@ import { APIError } from 'payload'
 import type { User } from '@/payload-types'
 import { sql } from '@payloadcms/db-postgres'
 import { createHmac } from 'node:crypto'
+import { meetsPasswordLength, MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
 
-const protectPasswordReset: CollectionBeforeOperationHook<'users'> = async ({ args, operation, req }) => {
+const protectPasswordFlows: CollectionBeforeOperationHook<'users'> = async ({ args, operation, req }) => {
   if (operation === 'resetPassword') {
-    if (typeof args.data.password !== 'string' || args.data.password.length < 12) {
-      throw new APIError('Le mot de passe doit comporter au moins 12 caractères.', 400)
+    if (!meetsPasswordLength(args.data.password)) {
+      throw new APIError(`Le mot de passe doit comporter au moins ${MIN_PASSWORD_LENGTH} caractères.`, 400)
+    }
+    return args
+  }
+  if ((operation === 'create' || operation === 'update') && args.data.password !== undefined) {
+    if (!meetsPasswordLength(args.data.password)) {
+      throw new APIError(`Le mot de passe doit comporter au moins ${MIN_PASSWORD_LENGTH} caractères.`, 400)
     }
     return args
   }
@@ -57,6 +64,7 @@ const afterCreateUser: CollectionAfterOperationHook = async ({ operation, result
       await req.payload.create({
         collection: 'characters',
         data: { user: user.id, creationEtape: 'caracteristiques' },
+        overrideAccess: true,
         req,
       })
     } catch (err) {
@@ -101,7 +109,7 @@ export const Users: CollectionConfig = {
     admin: ({ req }) => (req.user as User | null)?.role === 'admin',
     // La liste des utilisateurs est réservée aux admins
     read: ({ req }) => (req.user as User | null)?.role === 'admin',
-    // Pas d'inscription publique — création par un admin uniquement
+    // La collection reste réservée aux admins ; l'inscription passe par la route dédiée.
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
     // Admins modifient tout ; chaque utilisateur peut modifier son propre profil
     update: ({ req, id }) => {
@@ -120,7 +128,7 @@ export const Users: CollectionConfig = {
   },
   hooks: {
     afterOperation: [afterCreateUser],
-    beforeOperation: [protectPasswordReset],
+    beforeOperation: [protectPasswordFlows],
   },
   fields: [
     {
