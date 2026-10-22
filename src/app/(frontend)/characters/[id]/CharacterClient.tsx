@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier, GRAVITY_OPTIONS, GRAVITY_CATEGORY_LABELS } from '@/lib/characterStats'
 import type { GravityLevel } from '@/lib/characterStats'
 import { minimumRankForChipSlot } from '@/lib/rankSystem'
-import { updateCharacter, updateWeaponStatus, reloadWeapon } from './actions'
+import { searchCharacterEditCatalog, updateCharacter, updateCharacterInEditMode, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
 import { CoachingInput } from './CoachingInput'
@@ -15,6 +15,8 @@ type CharacterProps = {
   character: any
   isAdmin: boolean
   isOwner: boolean
+  editMode: boolean
+  factions: any[]
   isTemporary?: boolean
   allBaseSkills: string[]
   relatedShips: any[]
@@ -100,9 +102,10 @@ function consumeInventoryItems(inventory: any[], consumableId: any, quantity: nu
   }).filter((item: any) => Number(item.quantite ?? 1) > 0)
 }
 
-export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, isTemporary = false, allBaseSkills, relatedShips, relatedVehicles }: CharacterProps) {
+export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, editMode, factions, isTemporary = false, allBaseSkills, relatedShips, relatedVehicles }: CharacterProps) {
   useRouter();
   const [character, setCharacter] = useState(initialCharacter)
+  const [lastSavedCharacter, setLastSavedCharacter] = useState(initialCharacter)
   const [gravityLevel, setGravityLevel] = useState<GravityLevel>('normale')
   const [weaponHeat, setWeaponHeat] = useState<Record<string, number>>({})
   const [isModified, setIsModified] = useState(false)
@@ -111,6 +114,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const [showLearnNewSkill, setShowLearnNewSkill] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
   const [hoveredItem, setHoveredItem] = useState<{item: any, type: string, mods?: any[], x: number, y: number} | null>(null)
+  const [managerChangedFields, setManagerChangedFields] = useState<Set<string>>(new Set())
+  const [inventoryEditor, setInventoryEditor] = useState<{ section: 'weapons' | 'armors' | 'mods' | 'chips' | 'consumables'; index?: number } | null>(null)
+  const [inventorySearch, setInventorySearch] = useState('')
+  const [inventorySearchResults, setInventorySearchResults] = useState<any[]>([])
+  const [inventorySearchLoading, setInventorySearchLoading] = useState(false)
+  const [inventorySearchError, setInventorySearchError] = useState('')
   const [selectorConfig, setSelectorConfig] = useState<{
     slot: string,
     label: string,
@@ -239,11 +248,114 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   const handleCancel = () => {
     if (confirm('Voulez-vous vraiment annuler toutes les modifications ?')) {
-      setCharacter(initialCharacter)
+      setCharacter(lastSavedCharacter)
       setIsModified(false)
+      setManagerChangedFields(new Set())
       setShowLearnNewSkill(false)
     }
   }
+
+  const handleEditFieldChange = (field: string, value: any) => {
+    setCharacter((prev: any) => ({ ...prev, [field]: value }))
+    setManagerChangedFields((previous) => new Set(previous).add(field))
+    setIsModified(true)
+  }
+
+  const handleEditFactionChange = (value: string) => {
+    const faction = factions.find((entry) => String(entry.id) === value) ?? null
+    setCharacter((prev: any) => ({ ...prev, affiliation: faction, rangDeFaction: '' }))
+    setManagerChangedFields((previous) => new Set(previous).add('affiliation').add('rangDeFaction'))
+    setIsModified(true)
+  }
+
+  const inventoryField = (section: NonNullable<typeof inventoryEditor>['section']) => ({
+    weapons: 'inventaireArmes',
+    armors: 'inventaireArmures',
+    mods: 'inventaireMods',
+    chips: 'inventairePuces',
+    consumables: 'inventaire',
+  })[section]
+
+  const handleOpenInventoryEditor = (section: NonNullable<typeof inventoryEditor>['section'], index?: number) => {
+    setInventoryEditor({ section, ...(index === undefined ? {} : { index }) })
+    setInventorySearch('')
+    setInventorySearchResults([])
+    setInventorySearchError('')
+    setHoveredItem(null)
+  }
+
+  const handleInventoryCatalogPick = (item: any) => {
+    if (!inventoryEditor) return
+    const { section, index } = inventoryEditor
+    const field = inventoryField(section)
+    setCharacter((previous: any) => {
+      const rows = [...(previous[field] ?? [])]
+      if (section === 'weapons') {
+        if (index === undefined) rows.push({ item, mods: [], munitionsActuelles: 0, chargeurRelie: null })
+        else rows[index] = { ...rows[index], item }
+      } else if (section === 'armors') {
+        if (index === undefined) rows.push({ item, mods: [] })
+        else rows[index] = { ...rows[index], item }
+      } else if (section === 'consumables') {
+        if (index === undefined) rows.push({ consommable: item, quantite: 1 })
+        else rows[index] = { ...rows[index], consommable: item }
+      } else if (index === undefined) {
+        rows.push(item)
+      } else {
+        rows[index] = item
+      }
+      return { ...previous, [field]: rows }
+    })
+    setManagerChangedFields((previous) => new Set(previous).add(field))
+    setIsModified(true)
+    setInventoryEditor(null)
+  }
+
+  const handleInventoryRowChange = (section: NonNullable<typeof inventoryEditor>['section'], index: number, key: string, value: any) => {
+    const field = inventoryField(section)
+    setCharacter((previous: any) => {
+      const rows = [...(previous[field] ?? [])]
+      rows[index] = { ...rows[index], [key]: value }
+      return { ...previous, [field]: rows }
+    })
+    setManagerChangedFields((previous) => new Set(previous).add(field))
+    setIsModified(true)
+  }
+
+  const handleRemoveInventoryItem = (section: NonNullable<typeof inventoryEditor>['section'], index: number) => {
+    const field = inventoryField(section)
+    setCharacter((previous: any) => ({
+      ...previous,
+      [field]: (previous[field] ?? []).filter((_: any, rowIndex: number) => rowIndex !== index),
+    }))
+    setManagerChangedFields((previous) => new Set(previous).add(field))
+    setIsModified(true)
+  }
+
+  const inventoryEditSection = inventoryEditor?.section ?? null
+  useEffect(() => {
+    if (!editMode || !inventoryEditSection) return
+    let active = true
+    const timeout = window.setTimeout(async () => {
+      setInventorySearchLoading(true)
+      setInventorySearchError('')
+      try {
+        const results = await searchCharacterEditCatalog(character.id, inventoryEditSection, inventorySearch)
+        if (active) setInventorySearchResults(results as any[])
+      } catch (error) {
+        if (active) {
+          setInventorySearchResults([])
+          setInventorySearchError(error instanceof Error ? error.message : 'Impossible de rechercher dans le catalogue.')
+        }
+      } finally {
+        if (active) setInventorySearchLoading(false)
+      }
+    }, 200)
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
+    }
+  }, [character.id, editMode, inventoryEditSection, inventorySearch])
 
   const handleSave = async (): Promise<boolean> => {
     setIsSaving(true)
@@ -270,7 +382,16 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         }
       })
 
-      await updateCharacter(character.id, saveData)
+      if (editMode) {
+        managerChangedFields.forEach((field) => {
+          if (character[field] !== undefined) saveData[field] = character[field]
+        })
+        await updateCharacterInEditMode(character.id, saveData)
+      } else {
+        await updateCharacter(character.id, saveData)
+      }
+      setLastSavedCharacter(character)
+      setManagerChangedFields(new Set())
       setIsModified(false)
       alert('Modifications enregistrées !')
       return true
@@ -312,7 +433,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       { id: 'mods', label: 'Mods', items: mods },
       { id: 'chips', label: 'Puces', items: puces },
       { id: 'consumables', label: 'Consommables', items: consumables },
-    ].filter(cat => cat.items.length > 0)
+    ]
   }, [character])
 
   // Valeur de stockage pour les consommables équipés
@@ -1456,8 +1577,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     setHoveredItem(null)
   }
 
+  const handleEditModeToggle = () => {
+    window.location.assign(`/characters/${character.id}${editMode ? '' : '?edit=1'}`)
+  }
+
   return (
-    <div className={`ss-root char-root ${isModified ? 'is-editing' : ''}`}>
+    <div className={`ss-root char-root${isModified ? ' is-editing' : ''}${editMode ? ' char-edit-mode' : ''}`}>
       <div className="char-layout">
         {/* ── En-tête ── */}
         <div className="char-page-header">
@@ -1471,6 +1596,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
             <div className="char-name-container">
               <h1 className="char-name">{character.nom || 'Personnage en cours de création'}</h1>
+              {isAdmin && !isTemporary && <button className="ss-btn char-mode-toggle" type="button" onClick={handleEditModeToggle}>
+                {editMode ? 'Mode Lecture' : 'Mode Edition'}
+              </button>}
               <button className="ss-btn ss-btn-outline" type="button" onClick={handleExport} disabled={isSaving || isExporting}>
                 {isExporting ? 'Exportation…' : 'Exporter'}
               </button>
@@ -1514,6 +1642,51 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
         {/* ── Contenu ── */}
         <div className="char-content ss-container">
+
+          {editMode && <section className="char-card char-manager-edit-panel">
+            <h2 className="char-card-title">Mode Edition · Valeurs de la fiche</h2>
+            <div className="char-manager-edit-grid">
+              <label>Espèce
+                <select value={character.origine ?? ''} onChange={(event) => handleEditFieldChange('origine', event.target.value)}>
+                  <option value="">Choisir une espèce</option>
+                  <option value="Humain">Humain</option>
+                  <option value="Strani">Strani</option>
+                  <option value="Vada">Vada</option>
+                </select>
+              </label>
+              <label>Sexe
+                <select value={character.sexe ?? ''} onChange={(event) => handleEditFieldChange('sexe', event.target.value)}>
+                  <option value="">Choisir un sexe</option>
+                  <option value="M">M</option>
+                  <option value="F">F</option>
+                  <option value="X">X</option>
+                </select>
+              </label>
+              <label>Faction
+                <select value={relationId(character.affiliation) ?? ''} onChange={(event) => handleEditFactionChange(event.target.value)}>
+                  <option value="">Aucune faction</option>
+                  {factions.map((faction: any) => <option key={faction.id} value={faction.id}>{faction.nom}</option>)}
+                </select>
+              </label>
+              {[
+                ['Points de rang', 'pointsDeRang'],
+                ['Konis', 'konis'],
+                ['Légende', 'legende'],
+                ['Points de compétence', 'pointsDeCompetence'],
+              ].map(([label, field]) => <label key={field}>{label}
+                <input type="number" step="any" value={character[field] ?? 0} onChange={(event) => handleEditFieldChange(field, Number(event.target.value) || 0)} />
+              </label>)}
+            </div>
+            <h3 className="char-manager-edit-subtitle">Caractéristiques</h3>
+            <div className="char-manager-edit-grid char-manager-edit-grid-stats">
+              {[
+                ['Force', 'force'], ['Habilité', 'habilite'], ['Connaissances', 'connaissances'],
+                ['Culture', 'culture'], ['Anticipation', 'anticipation'], ['Perception', 'perception'],
+              ].map(([label, field]) => <label key={field}>{label}
+                <input type="number" step="1" value={character[field] ?? 0} onChange={(event) => handleEditFieldChange(field, Number(event.target.value) || 0)} />
+              </label>)}
+            </div>
+          </section>}
 
           {/* ── Rangée 1 : Identité + Attributs ── */}
           <div className="char-row char-row-top">
@@ -1873,6 +2046,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               <div className="char-inventory-categories">
                 {inventoryData.map(cat => (
                   <div key={cat.id} className="char-inventory-category">
+                    {editMode && <button type="button" className="char-inventory-add-button" onClick={() => handleOpenInventoryEditor(cat.id as NonNullable<typeof inventoryEditor>['section'])}>Ajouter à la section</button>}
                     <button 
                       className="char-inventory-category-header"
                       onClick={() => toggleCategory(cat.id)}
@@ -1883,12 +2057,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     
                     {!collapsedCategories[cat.id] && (
                       <div className="char-inventory-list">
+                        {cat.items.length === 0 && <p className="char-empty-hint">Cette section est vide.</p>}
                         <table className="char-inventory-table">
                           <thead>
                             <tr>
                               <th>Nom</th>
                               <th>Détails</th>
                               {cat.id === 'consumables' && <th>Qté</th>}
+                              {cat.id === 'weapons' && <th>Munitions</th>}
+                              {editMode && <th>Gestion</th>}
                             </tr>
                           </thead>
                           <tbody>
@@ -1912,13 +2089,22 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                                 <tr 
                                   key={idx} 
                                   className="char-inventory-row-hoverable"
-                                  onMouseEnter={(e) => handleMouseEnter(e, itemObj, cat.id)}
-                                  onMouseMove={handleMouseMove}
-                                  onMouseLeave={handleMouseLeave}
+                                  onMouseEnter={editMode ? undefined : (e) => handleMouseEnter(e, itemObj, cat.id)}
+                                  onMouseMove={editMode ? undefined : handleMouseMove}
+                                  onMouseLeave={editMode ? undefined : handleMouseLeave}
                                 >
                                   <td><strong>{item.nom}</strong></td>
                                   <td>{subLabel}</td>
-                                  {cat.id === 'consumables' && <td>{itemObj.quantite}</td>}
+                                  {cat.id === 'consumables' && <td>{editMode
+                                    ? <input aria-label="Quantité" className="char-inventory-quantity" type="number" min="1" step="1" value={itemObj.quantite ?? 1} onChange={(event) => handleInventoryRowChange('consumables', idx, 'quantite', Math.max(1, Number(event.target.value) || 1))} />
+                                    : itemObj.quantite}</td>}
+                                  {cat.id === 'weapons' && <td>{editMode
+                                    ? <input aria-label="Munitions" className="char-inventory-quantity" type="number" min="0" step="1" value={itemObj.munitionsActuelles ?? 0} onChange={(event) => handleInventoryRowChange('weapons', idx, 'munitionsActuelles', Math.max(0, Number(event.target.value) || 0))} />
+                                    : itemObj.munitionsActuelles ?? 0}</td>}
+                                  {editMode && <td className="char-inventory-actions">
+                                    <button type="button" className="char-inventory-action-button" onClick={() => handleOpenInventoryEditor(cat.id as NonNullable<typeof inventoryEditor>['section'], idx)}>Remplacer</button>
+                                    <button type="button" className="char-inventory-action-remove" onClick={() => handleRemoveInventoryItem(cat.id as NonNullable<typeof inventoryEditor>['section'], idx)}>Retirer</button>
+                                  </td>}
                                 </tr>
                               )
                             })}
@@ -1938,6 +2124,22 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             <div className="char-reputation-layout">
               <div className="char-reputation-section">
                 <h3 className="char-reputation-subtitle">Renommée</h3>
+                {editMode && <div className="char-reputation-editor">
+                  {(character.reputation ?? []).map((rep: any, index: number) => <div className="char-reputation-edit-row" key={rep.id ?? index}>
+                    <label>Catégorie<input value={rep.categorie ?? ''} onChange={(event) => {
+                      const reputation = [...(character.reputation ?? [])]
+                      reputation[index] = { ...reputation[index], categorie: event.target.value }
+                      handleEditFieldChange('reputation', reputation)
+                    }} /></label>
+                    <label>Valeur<input type="number" step="any" value={rep.valeur ?? 0} onChange={(event) => {
+                      const reputation = [...(character.reputation ?? [])]
+                      reputation[index] = { ...reputation[index], valeur: Number(event.target.value) || 0 }
+                      handleEditFieldChange('reputation', reputation)
+                    }} /></label>
+                    <button type="button" className="char-inventory-action-remove" onClick={() => handleEditFieldChange('reputation', (character.reputation ?? []).filter((_: any, rowIndex: number) => rowIndex !== index))}>Retirer</button>
+                  </div>)}
+                  <button type="button" className="char-inventory-add-button" onClick={() => handleEditFieldChange('reputation', [...(character.reputation ?? []), { categorie: '', valeur: 0 }])}>Ajouter une renommée</button>
+                </div>}
                 {(!character.reputation || character.reputation.length === 0) ? (
                   <p className="char-empty-hint">Aucune renommée enregistrée.</p>
                 ) : (
@@ -1952,11 +2154,20 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                 )}
               </div>
 
-              {character.affiliation && (
+              {(character.affiliation || editMode) && (
                 <div className="char-reputation-section">
                   <h3 className="char-reputation-subtitle">
                     Faction : {affiliationName}
                   </h3>
+                  {editMode && <div className="char-faction-edit-grid">
+                    <label>Points de faction<input type="number" step="any" value={character.pointsDeFaction ?? 0} onChange={(event) => handleEditFieldChange('pointsDeFaction', Number(event.target.value) || 0)} /></label>
+                    <label>Rang de faction
+                      <select value={character.rangDeFaction ?? ''} onChange={(event) => handleEditFieldChange('rangDeFaction', event.target.value)}>
+                        <option value="">Aucun rang</option>
+                        {(character.affiliation?.rangs ?? []).map((rank: any, index: number) => <option key={`${rank.nom}-${index}`} value={String(index + 1)}>{rank.nom}</option>)}
+                      </select>
+                    </label>
+                  </div>}
                   <div className="char-faction-grid">
                     <div className="char-faction-item">
                       <span className="char-faction-label">Points de faction</span>
@@ -1990,6 +2201,32 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         </div>
       )}
       {/* Sélecteur d'équipement */}
+      {inventoryEditor && (
+        <div className="char-selector-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setInventoryEditor(null) }}>
+          <section className="char-selector-modal char-inventory-editor-modal" role="dialog" aria-modal="true" aria-labelledby="char-inventory-editor-title">
+            <div className="char-selector-header">
+              <h3 id="char-inventory-editor-title">{inventoryEditor.index === undefined ? 'Ajouter à' : 'Remplacer dans'} la section {({ weapons: 'Armes', armors: 'Armures', mods: 'Mods', chips: 'Puces', consumables: 'Consommables' })[inventoryEditor.section]}</h3>
+              <button type="button" className="char-selector-close" aria-label="Fermer" onClick={() => setInventoryEditor(null)}>×</button>
+            </div>
+            <div className="char-selector-content">
+              <label className="char-inventory-search-label">Rechercher dans le catalogue
+                <input type="search" value={inventorySearch} autoFocus onChange={(event) => setInventorySearch(event.target.value)} placeholder="Nom de l’objet…" />
+              </label>
+              {inventorySearchError && <p className="char-empty-hint">{inventorySearchError}</p>}
+              {inventorySearchLoading ? <p className="char-empty-hint">Recherche…</p> : (
+                <div className="char-selector-list">
+                  {inventorySearchResults.length === 0
+                    ? <p className="char-selector-empty">Aucun objet trouvé.</p>
+                    : inventorySearchResults.map((item) => <button key={item.id} type="button" className="char-selector-item char-inventory-search-result" onClick={() => handleInventoryCatalogPick(item)}>
+                      <strong>{item.nom}</strong>
+                      <span>{item.categorie ?? item.categoriePrincipale ?? ''}</span>
+                    </button>)}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
       {selectorConfig && (
         <div className="char-selector-overlay" onClick={() => { setSelectorConfig(null); setHoveredItem(null); }}>
           <div className="char-selector-modal" onClick={e => e.stopPropagation()}>

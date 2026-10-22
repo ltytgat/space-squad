@@ -87,6 +87,8 @@ export default async function TemporaryCharacterPage({ params }: { params: Promi
         character={stripWorkspaceSecrets(JSON.parse(JSON.stringify(character)))}
         isAdmin={false}
         isOwner
+        editMode={false}
+        factions={[]}
         isTemporary
         allBaseSkills={allBaseSkills}
         relatedVehicles={[]}

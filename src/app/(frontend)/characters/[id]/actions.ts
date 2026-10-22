@@ -220,6 +220,229 @@ export async function updateCharacter(characterId: number, data: any) {
   return { success: true }
 }
 
+const EDIT_MODE_FIELDS = new Set([
+  'origine', 'sexe', 'affiliation', 'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
+  'force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception',
+  'reputation', 'pointsDeFaction', 'rangDeFaction',
+  'competences', 'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
+  'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
+  'puceMk1', 'puceMk2', 'puceMk3', 'consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3',
+  'consommablesEquipes', 'inventaireArmes', 'inventaireArmures', 'inventaire', 'inventaireMods', 'inventairePuces',
+])
+
+const EDIT_MODE_NUMBER_FIELDS = new Set([
+  'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
+  'force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception', 'pointsDeFaction',
+])
+
+const EDIT_MODE_CATALOGS = {
+  weapons: 'weapons',
+  armors: 'armors',
+  mods: 'mods',
+  chips: 'chips',
+  consumables: 'consumables',
+} as const
+
+type EditInventorySection = keyof typeof EDIT_MODE_CATALOGS
+
+function editRelationId(value: any, label: string, nullable = false): number | null {
+  if (nullable && (value == null || value === '')) return null
+  const id = relationNumericId(value)
+  if (!id) throw new Error(`${label} invalide.`)
+  return id
+}
+
+async function assertEditCatalogIds(payload: any, collection: string, ids: number[]) {
+  const uniqueIds = [...new Set(ids)]
+  if (!uniqueIds.length) return
+  const { docs } = await payload.find({
+    collection,
+    where: { id: { in: uniqueIds } },
+    depth: 0,
+    limit: uniqueIds.length,
+    overrideAccess: true,
+  })
+  if (docs.length !== uniqueIds.length) throw new Error('Un ou plusieurs objets sélectionnés sont introuvables.')
+}
+
+function requireEditArray(value: any, label: string): any[] {
+  if (value == null) return []
+  if (!Array.isArray(value)) throw new Error(`${label} invalide.`)
+  if (value.length > 300) throw new Error(`${label} contient trop d’objets.`)
+  return value
+}
+
+async function sanitizeEditInventory(payload: any, field: string, value: any) {
+  if (field === 'inventaireArmes') {
+    const rows = requireEditArray(value, 'Inventaire des armes')
+    const weaponIds: number[] = []
+    const modIds: number[] = []
+    const magazineIds: number[] = []
+    const clean = rows.map((row) => {
+      if (!row || typeof row !== 'object') throw new Error('Arme invalide.')
+      const item = editRelationId(row.item, 'Arme')!
+      const mods = requireEditArray(row.mods ?? [], 'Mods de l’arme').map((mod) => editRelationId(mod, 'Mod')!)
+      const ammo = Number(row.munitionsActuelles ?? 0)
+      if (!Number.isSafeInteger(ammo) || ammo < 0) throw new Error('Nombre de munitions invalide.')
+      const magazine = editRelationId(row.chargeurRelie, 'Chargeur', true)
+      weaponIds.push(item)
+      modIds.push(...mods)
+      if (magazine) magazineIds.push(magazine)
+      return { ...(row.id ? { id: row.id } : {}), item, mods, munitionsActuelles: ammo, chargeurRelie: magazine }
+    })
+    await Promise.all([
+      assertEditCatalogIds(payload, 'weapons', weaponIds),
+      assertEditCatalogIds(payload, 'mods', modIds),
+      assertEditCatalogIds(payload, 'consumables', magazineIds),
+    ])
+    return clean
+  }
+
+  if (field === 'inventaireArmures') {
+    const rows = requireEditArray(value, 'Inventaire des armures')
+    const armorIds: number[] = []
+    const modIds: number[] = []
+    const clean = rows.map((row) => {
+      if (!row || typeof row !== 'object') throw new Error('Armure invalide.')
+      const item = editRelationId(row.item, 'Armure')!
+      const mods = requireEditArray(row.mods ?? [], 'Mods de l’armure').map((mod) => editRelationId(mod, 'Mod')!)
+      armorIds.push(item)
+      modIds.push(...mods)
+      return { ...(row.id ? { id: row.id } : {}), item, mods }
+    })
+    await Promise.all([
+      assertEditCatalogIds(payload, 'armors', armorIds),
+      assertEditCatalogIds(payload, 'mods', modIds),
+    ])
+    return clean
+  }
+
+  if (field === 'inventaireMods' || field === 'inventairePuces') {
+    const collection = field === 'inventaireMods' ? 'mods' : 'chips'
+    const ids = requireEditArray(value, field).map((item) => editRelationId(item, 'Objet')!)
+    await assertEditCatalogIds(payload, collection, ids)
+    return ids
+  }
+
+  if (field === 'inventaire') {
+    const rows = requireEditArray(value, 'Inventaire des consommables')
+    const consumableIds: number[] = []
+    const clean = rows.map((row) => {
+      if (!row || typeof row !== 'object') throw new Error('Consommable invalide.')
+      const consommable = editRelationId(row.consommable, 'Consommable')!
+      const quantite = Number(row.quantite)
+      if (!Number.isSafeInteger(quantite) || quantite < 1) throw new Error('Quantité de consommables invalide.')
+      consumableIds.push(consommable)
+      return { ...(row.id ? { id: row.id } : {}), consommable, quantite }
+    })
+    await assertEditCatalogIds(payload, 'consumables', consumableIds)
+    return clean
+  }
+
+  throw new Error('Section d’inventaire invalide.')
+}
+
+export async function updateCharacterInEditMode(characterId: number, data: any) {
+  const { payload, user, character, isManager } = await getAuthorizedCharacter(characterId)
+  if (!isManager || !user) throw new Error('Mode Edition réservé aux MJ autorisés et aux admins.')
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Modifications invalides.')
+
+  const keys = Object.keys(data)
+  if (keys.some((key) => !EDIT_MODE_FIELDS.has(key))) throw new Error('Le Mode Edition ne peut pas modifier ces champs.')
+  const updateData: Record<string, any> = {}
+
+  for (const [key, value] of Object.entries(data)) {
+    if (EDIT_MODE_NUMBER_FIELDS.has(key)) {
+      const number = Number(value)
+      if (!Number.isFinite(number)) throw new Error(`Valeur invalide pour ${key}.`)
+      updateData[key] = number
+      continue
+    }
+    if (key === 'origine') {
+      if (value === '') {
+        updateData[key] = null
+        continue
+      }
+      if (!['Humain', 'Strani', 'Vada'].includes(String(value))) throw new Error('Espèce invalide.')
+    }
+    if (key === 'sexe') {
+      if (value === '') {
+        updateData[key] = null
+        continue
+      }
+      if (!['M', 'F', 'X'].includes(String(value))) throw new Error('Sexe invalide.')
+    }
+    if (key === 'rangDeFaction') {
+      if (typeof value !== 'string') throw new Error('Rang de faction invalide.')
+      updateData[key] = value
+      continue
+    }
+    if (key === 'affiliation') {
+      const factionId = editRelationId(value, 'Faction', true)
+      if (factionId) await assertEditCatalogIds(payload, 'factions', [factionId])
+      updateData.affiliation = factionId
+      continue
+    }
+    if (key === 'reputation') {
+      const rows = requireEditArray(value, 'Renommée')
+      updateData.reputation = rows.map((row) => {
+        const categorie = String(row?.categorie ?? '').trim()
+        const valeur = Number(row?.valeur)
+        if (!categorie || !Number.isFinite(valeur)) throw new Error('Chaque renommée doit avoir une catégorie et une valeur valides.')
+        return { ...(row.id ? { id: row.id } : {}), categorie, valeur }
+      })
+      continue
+    }
+    if (['inventaireArmes', 'inventaireArmures', 'inventaireMods', 'inventairePuces', 'inventaire'].includes(key)) {
+      updateData[key] = await sanitizeEditInventory(payload, key, value)
+      continue
+    }
+    updateData[key] = value
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'rangDeFaction') && updateData.rangDeFaction) {
+    const factionId = Object.prototype.hasOwnProperty.call(updateData, 'affiliation')
+      ? updateData.affiliation
+      : relationNumericId(character.affiliation)
+    if (!factionId) throw new Error('Choisissez une faction avant de définir son rang.')
+    const faction: any = await payload.findByID({ collection: 'factions', id: factionId, depth: 0, overrideAccess: true }).catch(() => null)
+    const rankIndex = Number(updateData.rangDeFaction)
+    if (!faction || !Number.isSafeInteger(rankIndex) || rankIndex < 1 || rankIndex > (faction.rangs?.length ?? 0)) {
+      throw new Error('Rang de faction invalide.')
+    }
+  }
+
+  await payload.update({
+    collection: 'characters',
+    id: characterId,
+    data: withoutTransientWeaponHeat(updateData),
+    user,
+    overrideAccess: true,
+  })
+  revalidatePath(`/characters/${characterId}`)
+  return { success: true }
+}
+
+export async function searchCharacterEditCatalog(characterId: number, section: EditInventorySection, query: string) {
+  const { payload, isManager } = await getAuthorizedCharacter(characterId)
+  if (!isManager) throw new Error('Recherche réservée aux MJ autorisés et aux admins.')
+  const collection = Object.prototype.hasOwnProperty.call(EDIT_MODE_CATALOGS, section)
+    ? EDIT_MODE_CATALOGS[section]
+    : null
+  if (!collection) throw new Error('Section d’inventaire invalide.')
+  const term = typeof query === 'string' ? query.trim().slice(0, 80) : ''
+  const { docs } = await payload.find({
+    collection,
+    ...(term ? { where: { nom: { like: term } } } : {}),
+    depth: 1,
+    limit: 30,
+    page: 1,
+    sort: 'nom',
+    overrideAccess: true,
+  })
+  return docs
+}
+
 export async function updateWeaponStatus(
   characterId: number, 
   slot: string, 
