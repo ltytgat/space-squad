@@ -5,6 +5,8 @@ import config from '@/payload.config'
 import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
 import type { User, Character, Faction } from '@/payload-types'
+import { isMJMode } from '@/lib/activeMode'
+import { getMJGroupIds } from '@/lib/mjAccess'
 import { computeFactionPoints, type FactionLite } from './session-rewards-formula'
 import {
   ranksGainedFromPoints,
@@ -19,7 +21,7 @@ import {
  * — `batchId` : UUID généré côté client. Rejoué à l'identique en cas de
  *   double-clic ou de rafraîchissement, garantit l'idempotence.
  * — `perCharacter.konis` / `perCharacter.pointsDeCompetence` : valeurs finales
- *   à ajouter, éventuellement ajustées manuellement par l'admin.
+ *   à ajouter, éventuellement ajustées manuellement par la personne qui termine la session.
  * — `apply.*` : cases à cocher du drawer (défaut true).
  */
 export type SessionRewardsInput = {
@@ -116,8 +118,10 @@ async function getAuthenticatedPayload() {
  */
 export async function applySessionRewards(input: SessionRewardsInput) {
   const { payload, user } = await getAuthenticatedPayload()
+  const isAdmin = user?.role === 'admin'
+  const isMJ = user?.role === 'player' && user.isMJ === true && await isMJMode(user)
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (!isAdmin && !isMJ)) {
     throw new Error('Non autorisé')
   }
 
@@ -126,6 +130,47 @@ export async function applySessionRewards(input: SessionRewardsInput) {
   }
   if (!Array.isArray(input.characterIds) || input.characterIds.length === 0) {
     throw new Error('Aucun personnage ciblé')
+  }
+
+  if (
+    !input.characterIds.every((id) => Number.isSafeInteger(id) && id > 0) ||
+    new Set(input.characterIds).size !== input.characterIds.length
+  ) {
+    throw new Error('Sélection de personnages invalide')
+  }
+  if (input.scopeType !== 'group' && input.scopeType !== 'selection') {
+    throw new Error('Périmètre de récompense invalide')
+  }
+
+  if (isMJ) {
+    const groupIds = await getMJGroupIds(payload, user)
+    if (groupIds.length === 0) throw new Error('Aucune escouade gérée')
+
+    let allowedGroupIds = groupIds
+    if (input.scopeType === 'group') {
+      const groupId = Number(input.groupId)
+      if (!Number.isSafeInteger(groupId) || !groupIds.includes(groupId)) {
+        throw new Error('Escouade non autorisée')
+      }
+      allowedGroupIds = [groupId]
+    }
+
+    const { docs } = await payload.find({
+      collection: 'characters',
+      where: {
+        and: [
+          { id: { in: input.characterIds } },
+          { groupe: { in: allowedGroupIds } },
+        ],
+      },
+      depth: 0,
+      limit: input.characterIds.length,
+      select: { id: true },
+      overrideAccess: true,
+    })
+    if (docs.length !== input.characterIds.length) {
+      throw new Error('Un ou plusieurs personnages ne sont pas dans vos escouades')
+    }
   }
 
   // — Idempotence : on regarde si ce batch a déjà été appliqué.
@@ -168,7 +213,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
   }
 
   // — Répartition des konis par personnage.
-  //   L'admin peut avoir ajusté manuellement les valeurs par personnage
+  //   La personne qui termine la session peut avoir ajusté les valeurs par personnage
   //   (perCharacter), sinon on tombe sur la division du total.
   const N = input.characterIds.length
   const konisPart = input.apply.konis

@@ -81,7 +81,6 @@ export default async function CharactersPage() {
             characters={characters as Parameters<typeof CharactersClient>[0]['characters']}
             groups={groups as Parameters<typeof CharactersClient>[0]['groups']}
             factions={factions as Parameters<typeof CharactersClient>[0]['factions']}
-            isMJ={isMJ}
           />
         </div>
       </div>

@@ -71,7 +71,7 @@ export function SessionRewardsDrawer({
   const [horsConfederation, setHorsConfederation] = useState<boolean>(false)
 
   // — Ajustements par personnage.
-  //   konis : par défaut floor(konisTotal / N), mais si l'admin a saisi une
+  //   konis : par défaut floor(konisTotal / N), mais si la personne a saisi une
   //   valeur manuelle on ne l'écrase plus.
   const [perCharKonis, setPerCharKonis] = useState<Record<number, number>>({})
   const [perCharPC, setPerCharPC] = useState<Record<number, number>>({})

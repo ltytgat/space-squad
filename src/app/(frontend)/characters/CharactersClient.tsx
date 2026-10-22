@@ -57,10 +57,9 @@ interface Props {
   characters: Character[]
   groups: Group[]
   factions: Faction[]
-  isMJ: boolean
 }
 
-export function CharactersClient({ characters, groups, factions, isMJ }: Props) {
+export function CharactersClient({ characters, groups, factions }: Props) {
   const [activeGroup, setActiveGroup] = useState<number | 'none' | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
@@ -266,7 +265,7 @@ export function CharactersClient({ characters, groups, factions, isMJ }: Props) 
       )}
 
       {/* ── Barre d'actions contextuelle ── */}
-      {!isMJ && showActionBar && (
+      {showActionBar && (
         <div className="chars-actionbar" role="region" aria-label="Actions sur la sélection">
           <div className="chars-actionbar-info">
             <strong>{scopeLabel}</strong>
@@ -304,7 +303,7 @@ export function CharactersClient({ characters, groups, factions, isMJ }: Props) 
         </div>
       )}
 
-      {!isMJ && <SessionRewardsDrawer
+      <SessionRewardsDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         characters={targeted.map((c) => ({
@@ -330,7 +329,7 @@ export function CharactersClient({ characters, groups, factions, isMJ }: Props) 
         scopeType={isGroupScope ? 'group' : 'selection'}
         groupId={isGroupScope ? (activeGroup as number) : null}
         scopeLabel={scopeLabel}
-      />}
+      />
     </div>
   )
 }
