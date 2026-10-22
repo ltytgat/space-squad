@@ -146,10 +146,13 @@ import { CharacterClient } from './CharacterClient'
 
 export default async function CharacterDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ edit?: string }>
 }) {
   const { id } = await params
+  const { edit: requestedEditMode } = await searchParams
   const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
@@ -183,6 +186,7 @@ export default async function CharacterDetailPage({
   const isOwner = activeMode !== 'mj' && String(ownerId) === String(user.id)
   const isMJEditor = activeMode === 'mj' && await canMJManageCharacter(payload, user, character)
   const canEditAsAdmin = isAdmin || isMJEditor
+  const editMode = requestedEditMode === '1' && canEditAsAdmin
 
   if (!canEditAsAdmin && !isOwner) redirect('/')
   if (isOwner && !canEditAsAdmin && !isCharacterCreationComplete(character as any)) redirect('/character')
@@ -218,6 +222,9 @@ export default async function CharacterDetailPage({
   const competencesField = characterCollection?.fields.find((f: any) => f.name === 'competences') as any
   const skillSelectField = competencesField?.fields?.find((f: any) => f.name === 'competence')
   const allBaseSkills = skillSelectField?.options?.map((opt: any) => typeof opt === 'string' ? opt : opt.value) || []
+  const factions = editMode
+    ? (await payload.find({ collection: 'factions', depth: 0, limit: 500, sort: 'nom', overrideAccess: true })).docs
+    : []
 
   return (
     <>
@@ -226,6 +233,8 @@ export default async function CharacterDetailPage({
         character={JSON.parse(JSON.stringify(character))} 
         isAdmin={canEditAsAdmin}
         isOwner={isOwner}
+        editMode={editMode}
+        factions={JSON.parse(JSON.stringify(factions))}
         allBaseSkills={allBaseSkills}
         relatedShips={JSON.parse(JSON.stringify(relatedShips.filter(Boolean)))}
         relatedVehicles={JSON.parse(JSON.stringify(relatedVehicles.filter(Boolean)))}
