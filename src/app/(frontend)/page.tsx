@@ -7,6 +7,7 @@ import config from '@/payload.config'
 import { startTemporaryCharacterWorkspace } from './temporary-character/actions'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import './home.css'
 
 export default async function HomePage() {
@@ -15,16 +16,8 @@ export default async function HomePage() {
   const payload = await getPayload({ config: payloadConfig })
   const { user } = await payload.auth({ headers })
 
-  let characterId: string | number | null = null
-  if (user) {
-    const { docs } = await payload.find({
-      collection: 'characters',
-      where: { user: { equals: user.id } },
-      depth: 0,
-      limit: 1,
-    })
-    if (docs[0]) characterId = docs[0].id
-  }
+  const activeCharacter = user ? await getActiveCharacter(payload, user) : null
+  const characterId: string | number | null = activeCharacter?.id ?? null
 
   return (
     <div className="ss-root">

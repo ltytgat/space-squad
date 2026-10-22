@@ -10,6 +10,7 @@ import { exactSubtract, relationId } from '@/lib/shop'
 import { factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
 import { factionExWeaponType, ownsAnyFactionWeaponPermit, rewardUsageForApplication } from '@/lib/factionRewards'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 type FactionRewardActionInput =
   | { transactionId: string; action: 'promote' }
@@ -33,8 +34,7 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
   if (raw.action !== 'promote' && raw.action !== 'purchase') fail('Opération inconnue.')
   if (raw.action === 'purchase' && (!Number.isSafeInteger(raw.rewardId) || raw.rewardId <= 0)) fail('Récompense invalide.')
 
-  const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 2, limit: 1, overrideAccess: true })
-  const character: any = docs[0]
+  const character: any = await getActiveCharacter(payload, user, { depth: 2 })
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser les récompenses de faction.')
   const transactionID = await payload.db.beginTransaction?.()

@@ -1,6 +1,7 @@
 import { relationId } from './shop'
 import { getMJVehicleIds } from './mjAccess'
 import { isMJMode } from './activeMode'
+import { getActiveCharacter } from './activeCharacter'
 
 export function vehicleRelationId(value: unknown): number | null {
   const id = relationId(value)
@@ -31,15 +32,7 @@ export async function findVehicleOwnerIds(payload: any, character: any): Promise
 }
 
 export async function getUserCharacter(payload: any, user: any) {
-  if (!user?.id) return null
-  const { docs } = await payload.find({
-    collection: 'characters',
-    where: { user: { equals: user.id } },
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-  })
-  return (docs[0] as any) ?? null
+  return getActiveCharacter(payload, user)
 }
 
 /** Payload read filter for a viewer's own and squad-owned vehicles. */

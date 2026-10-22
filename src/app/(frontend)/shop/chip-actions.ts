@@ -9,6 +9,7 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 const CHIP_PRICES = { active: 75_000, passive: 100_000 } as const
 const DRAW_PRICES = { active: 30_000, passive: 50_000 } as const
@@ -73,8 +74,7 @@ export async function executeChipTransaction(raw: ChipInput) {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
   await assertPlayerMode(user)
-  const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
-  const characterRef: any = docs[0]
+  const characterRef: any = await getActiveCharacter(payload, user)
   if (!characterRef) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(characterRef)) fail('Terminez le parcours de création avant d’utiliser les puces.')
   const characterId = Number(characterRef.id)

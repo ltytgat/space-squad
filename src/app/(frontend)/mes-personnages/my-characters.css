@@ -1,0 +1,85 @@
+.my-characters-heading p,
+.my-characters-toolbar p,
+.my-characters-notice,
+.my-characters-message {
+  color: var(--ss-text-muted);
+}
+
+.my-characters-client {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.my-characters-toolbar,
+.my-character-title-row,
+.my-character-actions,
+.my-character-confirm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.my-characters-toolbar p { margin: 0; }
+.my-character-card { cursor: default; }
+.my-character-card-active { border-color: var(--ss-cyan); }
+.my-character-title-row .chars-card-name { margin: 0; }
+
+.my-character-active-tag {
+  flex: 0 0 auto;
+  color: var(--ss-cyan);
+  border: 1px solid var(--ss-cyan);
+  border-radius: 100px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.my-character-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.my-character-actions .ss-btn { cursor: pointer; }
+.my-character-delete {
+  border: 0;
+  background: transparent;
+  color: #ff8585;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.my-character-delete:disabled { opacity: 0.55; cursor: wait; }
+
+.my-character-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.my-character-confirm {
+  width: min(100%, 34rem);
+  padding: 1.5rem;
+  border: 1px solid var(--ss-border-h);
+  border-radius: var(--ss-radius-lg);
+  background: var(--ss-bg-card);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+}
+
+.my-character-confirm h2 { margin: 0 0 1rem; color: var(--ss-text); }
+.my-character-confirm p { color: var(--ss-text-muted); line-height: 1.6; }
+.my-character-confirm-actions { justify-content: flex-end; margin-top: 1.5rem; }
+.my-character-confirm-delete { border-color: #a83030; background: #8f2424; color: white; }
+.my-character-confirm-delete:hover { background: #a83030; }
+
+@media (max-width: 560px) {
+  .my-characters-toolbar { align-items: flex-start; flex-direction: column; }
+  .my-character-confirm-actions { align-items: stretch; flex-direction: column-reverse; }
+}

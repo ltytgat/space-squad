@@ -3,6 +3,7 @@ import { calculateStats } from './characterStats'
 import { isSeatFree, listSeats, roleForSeat, seatOf, type SeatKey } from './shipCrew'
 import { getMJShipIds } from './mjAccess'
 import { isMJMode } from './activeMode'
+import { getActiveCharacter } from './activeCharacter'
 
 /**
  * Droits d'un utilisateur (via son personnage unique) sur un vaisseau.
@@ -143,17 +144,9 @@ export async function findShipCrew(payload: any, shipId: number | string) {
   })
 }
 
-/** Personnage unique de l'utilisateur connecté. */
+/** Personnage actif de l'utilisateur connecté. */
 export async function getViewerCharacter(payload: any, user: any) {
-  if (!user) return null
-  const { docs } = await payload.find({
-    collection: 'characters',
-    where: { user: { equals: user.id } },
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-  })
-  return (docs[0] as any) ?? null
+  return getActiveCharacter(payload, user)
 }
 
 /**

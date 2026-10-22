@@ -6,6 +6,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import { shopNavigation } from './shop-sections'
 import { factionRewardsTitle } from '@/lib/factionRewards'
 import './shop.css'
@@ -16,10 +17,10 @@ export default async function ShopPage() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
-  const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 1, limit: 1, overrideAccess: true })
-  if (!characters[0]) redirect('/character')
-  if (!isCharacterCreationComplete(characters[0] as any)) redirect('/character')
-  const affiliation = (characters[0] as any).affiliation
+  const character = await getActiveCharacter(payload, user, { depth: 1 })
+  if (!character) redirect('/character')
+  if (!isCharacterCreationComplete(character)) redirect('/character')
+  const affiliation = character.affiliation
   const faction = affiliation && typeof affiliation === 'object' ? affiliation : null
   const factionName = String(faction?.nom ?? '').trim()
   const rewardLinkLabel = factionName ? factionRewardsTitle(factionName) : null

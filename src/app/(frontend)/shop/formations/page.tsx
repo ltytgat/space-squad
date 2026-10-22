@@ -9,6 +9,7 @@ import { FormationsClient } from '../FormationsClient'
 import type { FormationCharacterState, FormationOffer } from '../formation-pricing'
 import type { SpecialRoleOffer } from '../special-role-pricing'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import '../shop.css'
 
 export const metadata = { title: 'Formations — Space Squad' }
@@ -18,18 +19,12 @@ export default async function FormationsShopPage() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
 
-  const [{ docs: characters }, { docs: formationDocs }, { docs: roleDocs }] = await Promise.all([
-    payload.find({
-      collection: 'characters',
-      where: { user: { equals: user.id } },
-      depth: 1,
-      limit: 1,
-      overrideAccess: true,
-    }),
+  const [characterResult, { docs: formationDocs }, { docs: roleDocs }] = await Promise.all([
+    getActiveCharacter(payload, user, { depth: 1 }),
     payload.find({ collection: 'formations', depth: 1, pagination: false, sort: 'competence', overrideAccess: true }),
     payload.find({ collection: 'special-roles', depth: 0, pagination: false, sort: 'nom', overrideAccess: true }),
   ])
-  const character: any = characters[0]
+  const character: any = characterResult
   if (!character) redirect('/character')
   if (!isCharacterCreationComplete(character)) redirect('/character')
 

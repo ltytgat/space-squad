@@ -12,6 +12,7 @@ import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { minimumRankForVehicleClass, vehicleGarageFingerprint, vehiclePurchasePrice, vehicleSalePrice } from '@/lib/vehicleGarage'
 import { mergeShipInventory } from '@/lib/shipyard'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 type VehicleGarageInput = {
   transactionId: string
@@ -38,14 +39,7 @@ async function getContext() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
   await assertPlayerMode(user)
-  const { docs } = await payload.find({
-    collection: 'characters',
-    where: { user: { equals: user.id } },
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-  })
-  const character = docs[0] as any
+  const character = await getActiveCharacter(payload, user) as any
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser le Garage.')
   return { payload, user, character }

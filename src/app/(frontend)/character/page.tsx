@@ -9,6 +9,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { CharacterCreationWizard } from './CreationWizard'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveMode } from '@/lib/activeMode'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import './character.css'
 import './creation.css'
 import '../shop/shop.css'
@@ -26,14 +27,7 @@ export default async function CharacterPage() {
   if (!user) redirect('/login')
   if ((await getActiveMode(user)) === 'mj') redirect('/characters')
 
-  const { docs } = await payload.find({
-    collection: 'characters',
-    where: { user: { equals: user.id } },
-    depth: 1,
-    limit: 1,
-  })
-
-  const character = docs[0] ?? null
+  const character = await getActiveCharacter(payload, user, { depth: 1 })
   if (character && isCharacterCreationComplete(character)) redirect(`/characters/${character.id}`)
 
   if (character) {
@@ -96,7 +90,7 @@ export default async function CharacterPage() {
 
             <h1 className="char-name char-name-empty">Fiche de personnage introuvable</h1>
             <p className="char-empty-hint">
-              Aucune fiche n’est associée à votre compte. Contactez un administrateur pour commencer votre création.
+              Aucune fiche n’est associée à votre compte. <Link href="/mes-personnages">Créez votre premier personnage.</Link>
             </p>
           </div>
         </div>

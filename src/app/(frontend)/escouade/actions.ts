@@ -7,6 +7,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getActiveMode } from '@/lib/activeMode'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 8
@@ -96,11 +97,7 @@ export async function joinSquadWithCode(submittedCode: string) {
   try {
     const transactionDb = (payload.db as any).sessions?.[transactionID]?.db
     if (!transactionDb) throw new Error('Impossible d’ouvrir la transaction.')
-    const { docs: characters } = await payload.find({
-      collection: 'characters', where: { user: { equals: user.id } },
-      depth: 0, limit: 1, overrideAccess: true, req,
-    })
-    const character = characters[0] as any
+    const character = await getActiveCharacter(payload, user, { req })
     if (!character) throw new Error('Aucun personnage n’est associé à ce compte.')
     await payload.db.execute({
       db: transactionDb,

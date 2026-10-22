@@ -8,6 +8,7 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 type TransferInput = {
   transactionId: string
@@ -34,10 +35,10 @@ async function getContext() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
   await assertPlayerMode(user)
-  const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
-  if (!docs[0]) fail('Aucun personnage associé à ce compte.')
-  if (!isCharacterCreationComplete(docs[0] as any)) fail('Terminez le parcours de création avant d’utiliser les transferts.')
-  return { payload, user, character: docs[0] as any }
+  const character = await getActiveCharacter(payload, user)
+  if (!character) fail('Aucun personnage associé à ce compte.')
+  if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’utiliser les transferts.')
+  return { payload, user, character: character as any }
 }
 
 function itemData(character: any, sourceKey: string, quantity: number | undefined, destination: any) {

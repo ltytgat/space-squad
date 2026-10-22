@@ -8,6 +8,7 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 type PurchaseInput = { transactionId: string; roleId: number }
 
@@ -28,14 +29,7 @@ export async function purchaseSpecialRole(raw: PurchaseInput) {
   if (!raw || !uuid.test(raw.transactionId ?? '')) fail('Identifiant de transaction invalide.')
   if (!Number.isSafeInteger(raw.roleId) || raw.roleId <= 0) fail('Rôle spécial invalide.')
 
-  const { docs } = await payload.find({
-    collection: 'characters',
-    where: { user: { equals: user.id } },
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-  })
-  const character = docs[0]
+  const character = await getActiveCharacter(payload, user)
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’acheter un rôle spécial.')
 

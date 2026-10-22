@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { findGroupShipIds } from '@/lib/shipAccess'
 import { getActiveMode } from '@/lib/activeMode'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import { RoleModeSwitch } from '@/components/RoleModeSwitch'
 
 import config from '@/payload.config'
@@ -13,6 +14,7 @@ type ActivePage =
   | 'jdr'
   | 'jeux'
   | 'character'
+  | 'myCharacters'
   | 'ship'
   | 'characters'
   | 'ships'
@@ -36,14 +38,7 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
   let characterId: string | number | null = null
   let ships: { id: number; nom: string }[] = []
   if (user && !isAdminView) {
-    const { docs } = await payload.find({
-      collection: 'characters',
-      where: { user: { equals: user.id } },
-      depth: 0,
-      limit: 1,
-      overrideAccess: true,
-    })
-    character = docs[0] ?? null
+    character = await getActiveCharacter(payload, user)
     if (character) {
       characterId = character.id
       const shipIds = new Set(await findGroupShipIds(payload, character))
@@ -92,13 +87,6 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
           >
             Jeu de Rôle
           </Link>
-          <Link
-            href="/#jeux"
-            className={`ss-nav-link${activePage === 'jeux' ? ' ss-nav-link-active' : ''}`}
-          >
-            Jeux de Plateau
-          </Link>
-
           {/* ── Liens conditionnels selon rôle ── */}
           {user && isAdminView && (
             <>
@@ -164,6 +152,11 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
           {user && characterId && (
             <Link href="/shop" className={`ss-nav-link${activePage === 'shop' ? ' ss-nav-link-active' : ''}`}>
               Boutique
+            </Link>
+          )}
+          {user && (
+            <Link href="/mes-personnages" className={`ss-nav-link${activePage === 'myCharacters' ? ' ss-nav-link-active' : ''}`}>
+              Mes personnages
             </Link>
           )}
         </nav>

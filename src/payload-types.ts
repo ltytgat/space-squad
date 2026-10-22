@@ -592,7 +592,7 @@ export interface ShipWeapon {
 export interface Character {
   id: number;
   /**
-   * Utilisateur propriétaire de ce personnage (1 personnage par compte).
+   * Utilisateur propriétaire de ce personnage.
    */
   user?: (number | null) | User;
   nom?: string | null;
@@ -1338,7 +1338,7 @@ export interface ShopTransaction {
   fingerprint: string;
   operation: string;
   actor: number | User;
-  character: number | Character;
+  character?: (number | null) | Character;
   ship?: (number | null) | Ship;
   amount: number;
   details:

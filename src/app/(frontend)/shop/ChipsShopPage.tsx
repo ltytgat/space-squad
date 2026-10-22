@@ -8,6 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import ChipsShopClient, { type ShopChip } from './ChipsShopClient'
 import { shopScopes } from './shop-sections'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import './shop.css'
 
 const categoryOrder: Record<string, number> = { active: 0, passive: 1 }
@@ -20,8 +21,7 @@ export default async function ChipsShopPage() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
-  const { docs: characters } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 1, limit: 1, overrideAccess: true })
-  const character: any = characters[0]
+  const character: any = await getActiveCharacter(payload, user, { depth: 1 })
   if (!character) redirect('/character')
   if (!isCharacterCreationComplete(character)) redirect('/character')
 

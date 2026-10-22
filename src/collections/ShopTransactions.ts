@@ -46,7 +46,7 @@ export const ShopTransactions: CollectionConfig = {
       name: 'character',
       type: 'relationship',
       relationTo: 'characters',
-      required: true,
+      required: false,
       index: true,
     },
     {

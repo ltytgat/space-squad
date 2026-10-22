@@ -9,6 +9,7 @@ import { assertPlayerMode } from '@/lib/activeMode'
 import { exactMultiply, exactSubtract, relationId } from '@/lib/shop'
 import { computeRank } from '@/lib/rankSystem'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 
 type FormationPurchaseInput = { transactionId: string; formationId: number }
 
@@ -26,14 +27,7 @@ async function getContext() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
   await assertPlayerMode(user)
-  const { docs } = await payload.find({
-    collection: 'characters',
-    where: { user: { equals: user.id } },
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-  })
-  const character = docs[0]
+  const character = await getActiveCharacter(payload, user)
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (!isCharacterCreationComplete(character as any)) fail('Terminez le parcours de création avant d’acheter une formation.')
   return { payload, user, characterId: character.id }

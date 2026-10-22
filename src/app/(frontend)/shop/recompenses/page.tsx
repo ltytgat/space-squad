@@ -8,6 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { relationId } from '@/lib/shop'
 import { factionRewardsTitle } from '@/lib/factionRewards'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import { FactionRewardsClient } from '../FactionRewardsClient'
 import type { FactionRewardCharacter, FactionRewardOffer } from '../faction-reward-pricing'
 import '../shop.css'
@@ -19,11 +20,7 @@ export default async function FactionRewardsPage() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
 
-  const { docs } = await payload.find({
-    collection: 'characters', where: { user: { equals: user.id }, affiliation: { exists: true } },
-    depth: 2, limit: 1, overrideAccess: true,
-  })
-  const rawCharacter: any = docs[0]
+  const rawCharacter: any = await getActiveCharacter(payload, user, { depth: 2 })
   if (!rawCharacter) redirect('/shop')
   if (!isCharacterCreationComplete(rawCharacter)) redirect('/character')
   const faction = rawCharacter.affiliation && typeof rawCharacter.affiliation === 'object'

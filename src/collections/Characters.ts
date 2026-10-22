@@ -43,7 +43,7 @@ export const Characters: CollectionConfig = {
     group: 'Jeu de Rôle',
   },
   access: {
-    // Admin lit tout ; MJ actif lit les membres de ses escouades ; joueur lit son personnage.
+    // Admin lit tout ; MJ actif lit les membres de ses escouades ; joueur lit ses personnages.
     read: async ({ req }) => {
       const user = req.user as User | null
       if (!user) return false
@@ -73,12 +73,11 @@ export const Characters: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: false,
-      unique: true,
       label: 'Utilisateur',
       access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
       admin: {
         position: 'sidebar',
-        description: 'Utilisateur propriétaire de ce personnage (1 personnage par compte).',
+        description: 'Utilisateur propriétaire de ce personnage.',
       },
     },
     {

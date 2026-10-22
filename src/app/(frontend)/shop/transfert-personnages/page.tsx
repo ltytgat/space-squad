@@ -6,6 +6,7 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveCharacter } from '@/lib/activeCharacter'
 import { CharacterTransferClient, type TransferItem } from './TransferClient'
 import '../shop.css'
 
@@ -40,8 +41,7 @@ export default async function CharacterTransfersPage() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
-  const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 2, limit: 1, overrideAccess: true })
-  const character: any = docs[0]
+  const character: any = await getActiveCharacter(payload, user, { depth: 2 })
   if (!character) redirect('/character')
   if (!isCharacterCreationComplete(character)) redirect('/character')
 
