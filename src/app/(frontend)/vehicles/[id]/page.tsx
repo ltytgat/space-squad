@@ -5,7 +5,7 @@ import Link from 'next/link'
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
-import { computeShipAccess } from '@/lib/shipAccess'
+import { getShipAccess } from '@/lib/shipAccess'
 import { getVehicleAccess, vehicleRelationId } from '@/lib/vehicleAccess'
 import { VehicleClient } from './VehicleClient'
 import '../vehicles.css'
@@ -24,13 +24,19 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
 
   let activeShip: any = null
   let canManageEquipment = false
-  if (access.isOwner && access.character) {
-    const activeShipId = vehicleRelationId(access.character.vaisseau)
+  if (access.canEdit) {
+    const ownerCharacterId = vehicleRelationId(access.vehicle.proprietaire)
+    const ownerCharacter = access.isOwner
+      ? access.character
+      : ownerCharacterId
+        ? await payload.findByID({ collection: 'characters', id: ownerCharacterId, depth: 0, overrideAccess: true }).catch(() => null)
+        : null
+    const activeShipId = vehicleRelationId(ownerCharacter?.vaisseau)
     if (activeShipId) {
       activeShip = await payload.findByID({
         collection: 'ships', id: activeShipId, depth: 3, overrideAccess: true,
       }).catch(() => null)
-      canManageEquipment = Boolean(activeShip && computeShipAccess({ ship: activeShip, character: access.character }).canEdit)
+      canManageEquipment = Boolean(activeShip && (await getShipAccess(payload, user, activeShipId, { depth: 3 })).canEdit)
     }
   }
 

@@ -7,10 +7,11 @@ interface AccountClientProps {
   userId: string
   userEmail: string
   userRole: string
+  isMJ: boolean
   userCreatedAt: string
 }
 
-export function AccountClient({ userId, userEmail, userRole, userCreatedAt }: AccountClientProps) {
+export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt }: AccountClientProps) {
   const router = useRouter()
 
   // ── Email ──
@@ -31,7 +32,7 @@ export function AccountClient({ userId, userEmail, userRole, userCreatedAt }: Ac
   const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [deleteError, setDeleteError] = useState('')
 
-  const roleLabel = userRole === 'admin' ? 'Administrateur' : 'Joueur'
+  const roleLabel = userRole === 'admin' ? 'Administrateur' : isMJ ? 'Joueur · MJ' : 'Joueur'
   const memberSince = userCreatedAt
     ? new Date(userCreatedAt).toLocaleDateString('fr-FR', {
         day: 'numeric',

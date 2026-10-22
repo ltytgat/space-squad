@@ -71,7 +71,11 @@ async function releaseSeat(payload: any, user: any, shipId: number, characterId:
 
 export async function updateShipConfiguration(shipId: number, data: Record<string, unknown>) {
   const { payload, user } = await context()
-  const { ship: current } = await authorizeEdit(payload, user, shipId, 3)
+  const access = await authorizeEdit(payload, user, shipId, 3)
+  const { ship: current } = access
+  if (access.isMJ && Object.prototype.hasOwnProperty.call(data, 'proprietaire')) {
+    throw new Error('Le MJ ne peut pas modifier le propriétaire du vaisseau.')
+  }
   const next = { ...current, ...data }
   validateShipConfiguration(next)
   await payload.update({ collection: 'ships', id: shipId, data: withoutTransientWeaponHeat(data), user, overrideAccess: true })

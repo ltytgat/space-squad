@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
+import { assertPlayerMode } from '@/lib/activeMode'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
@@ -71,6 +72,7 @@ export async function executeChipTransaction(raw: ChipInput) {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
+  await assertPlayerMode(user)
   const { docs } = await payload.find({ collection: 'characters', where: { user: { equals: user.id } }, depth: 0, limit: 1, overrideAccess: true })
   const characterRef: any = docs[0]
   if (!characterRef) fail('Aucun personnage associé à ce compte.')

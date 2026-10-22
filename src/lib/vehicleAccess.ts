@@ -1,4 +1,6 @@
 import { relationId } from './shop'
+import { getMJVehicleIds } from './mjAccess'
+import { isMJMode } from './activeMode'
 
 export function vehicleRelationId(value: unknown): number | null {
   const id = relationId(value)
@@ -44,10 +46,14 @@ export async function getUserCharacter(payload: any, user: any) {
 export async function vehicleReadAccess({ req }: { req: any }) {
   if (!req.user) return false
   if (req.user.role === 'admin') return true
+  if (await isMJMode(req.user)) {
+    const vehicleIds = await getMJVehicleIds(req.payload, req.user)
+    return vehicleIds.length ? { id: { in: vehicleIds } } as any : false
+  }
   const character = await getUserCharacter(req.payload, req.user)
   if (!character) return false
   const ownerIds = await findVehicleOwnerIds(req.payload, character)
-  return ownerIds.length ? { proprietaire: { in: ownerIds } } : false
+  return ownerIds.length ? { proprietaire: { in: ownerIds } } as any : false
 }
 
 export async function getVehicleAccess(payload: any, user: any, vehicleId: number | string, depth = 3) {
@@ -58,13 +64,16 @@ export async function getVehicleAccess(payload: any, user: any, vehicleId: numbe
   if (!vehicle) return { vehicle: null, character, canRead: false, canEdit: false, isOwner: false }
   const isAdmin = user?.role === 'admin'
   const isOwner = Boolean(character && vehicleRelationId(vehicle.proprietaire) === vehicleRelationId(character))
+  const isMJ = await isMJMode(user)
+  const managedVehicleIds = isMJ ? await getMJVehicleIds(payload, user) : []
+  const isManagedByMJ = managedVehicleIds.includes(Number(vehicle.id))
   const ownerIds = character ? await findVehicleOwnerIds(payload, character) : []
   const isInSquad = ownerIds.includes(vehicleRelationId(vehicle.proprietaire) ?? -1)
   return {
     vehicle,
     character,
     isOwner,
-    canRead: isAdmin || isOwner || isInSquad,
-    canEdit: isOwner,
+    canRead: isAdmin || (isMJ ? isManagedByMJ : isOwner || isInSquad),
+    canEdit: isMJ ? isManagedByMJ : isOwner,
   }
 }

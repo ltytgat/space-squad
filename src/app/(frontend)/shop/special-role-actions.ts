@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
+import { assertPlayerMode } from '@/lib/activeMode'
 import { relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 
@@ -23,6 +24,7 @@ export async function purchaseSpecialRole(raw: PurchaseInput) {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
+  await assertPlayerMode(user)
   if (!raw || !uuid.test(raw.transactionId ?? '')) fail('Identifiant de transaction invalide.')
   if (!Number.isSafeInteger(raw.roleId) || raw.roleId <= 0) fail('Rôle spécial invalide.')
 

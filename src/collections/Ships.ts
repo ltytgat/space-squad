@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 import { syncShipCrew, validateCrewAssignments } from '@/lib/shipCrewSync'
+import { getMJShipIds } from '@/lib/mjAccess'
+import { isMJMode } from '@/lib/activeMode'
 
 const shipWeaponStateFields = () => [
   {
@@ -26,9 +28,24 @@ export const Ships: CollectionConfig = {
     group: 'Jeu de Rôle',
   },
   access: {
-    read: ({ req }) => !!req.user,
+    read: async ({ req }) => {
+      const user = req.user as User | null
+      if (!user) return false
+      if (user.role === 'admin') return true
+      if (await isMJMode(user)) {
+        const shipIds = await getMJShipIds(req.payload, user)
+        return shipIds.length ? { id: { in: shipIds } } : false
+      }
+      return true
+    },
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
-    update: ({ req }) => (req.user as User | null)?.role === 'admin',
+    update: async ({ req }) => {
+      const user = req.user as User | null
+      if (!user) return false
+      if (user.role === 'admin') return true
+      const shipIds = await getMJShipIds(req.payload, user)
+      return shipIds.length ? { id: { in: shipIds } } : false
+    },
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   hooks: {
@@ -136,6 +153,7 @@ export const Ships: CollectionConfig = {
       type: 'relationship',
       relationTo: 'characters',
       label: 'Propriétaire (acheteur)',
+      access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
       admin: {
         position: 'sidebar',
         description: 'Le personnage qui a acheté ce vaisseau.',

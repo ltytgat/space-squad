@@ -6,6 +6,8 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { listSeats, seatOf } from '@/lib/shipCrew'
+import { getActiveMode } from '@/lib/activeMode'
+import { getMJCharacterIds, getMJShipIds } from '@/lib/mjAccess'
 import './ships.css'
 
 export const metadata = {
@@ -51,16 +53,26 @@ export default async function ShipsPage() {
   const { user } = await payload.auth({ headers })
 
   if (!user) redirect('/login')
-  if ((user as { role?: string }).role !== 'admin') redirect('/')
+  const mode = await getActiveMode(user)
+  const isAdmin = mode === 'admin'
+  const isMJ = mode === 'mj'
+  if (!isAdmin && !isMJ) redirect('/')
+  const mjShipIds = isMJ ? await getMJShipIds(payload, user) : []
+  const mjCharacterIds = isMJ ? await getMJCharacterIds(payload, user) : []
 
   const [{ docs: ships }, { docs: characters }] = await Promise.all([
     // depth 2 : le châssis du modèle porte le nombre de tourelles (donc de places).
-    payload.find({ collection: 'ships', depth: 2, limit: 200, sort: 'nom' }),
+    payload.find({
+      collection: 'ships', ...(isMJ ? { where: { id: { in: mjShipIds.length ? mjShipIds : [-1] } } } : {}),
+      depth: 2, limit: 1000, sort: 'nom', overrideAccess: true,
+    }),
     payload.find({
       collection: 'characters',
+      ...(isMJ ? { where: { id: { in: mjCharacterIds.length ? mjCharacterIds : [-1] } } } : {}),
       depth: 0,
-      limit: 500,
+      limit: 1000,
       sort: 'nom',
+      overrideAccess: true,
     }),
   ])
 

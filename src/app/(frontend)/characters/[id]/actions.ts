@@ -16,12 +16,16 @@ import {
   TEMP_WORKSPACE_MAX_PAYLOAD_BYTES,
 } from '@/lib/temporaryCharacterWorkspace'
 import { validateTemporaryCharacterUpdate } from '@/lib/temporaryCharacterRules'
+import { canMJManageCharacter } from '@/lib/mjAccess'
+import { getActiveMode } from '@/lib/activeMode'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
   const id = Number(raw)
   return Number.isSafeInteger(id) && id > 0 ? id : null
 }
+const CHARACTER_WEAPON_SLOTS = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'] as const
+const CHARACTER_CONSUMABLE_SLOTS = ['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3'] as const
 
 function withoutTransientWeaponHeat(value: any): any {
   if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
@@ -118,18 +122,21 @@ async function getAuthorizedCharacter(characterId: number) {
 
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   const isAdmin = user?.role === 'admin'
-  const isUserOwner = !!user && String(ownerId) === String(user.id)
-  if (isAdmin || isUserOwner) return { payload, user, character, isAdmin, isTemporary: false }
+  const activeMode = user ? await getActiveMode(user) : 'player'
+  const isMJEditor = Boolean(user && await canMJManageCharacter(payload, user, character))
+  const isManager = isAdmin || isMJEditor
+  const isUserOwner = !!user && activeMode === 'player' && String(ownerId) === String(user.id)
+  if (isManager || isUserOwner) return { payload, user, character, isAdmin, isMJEditor, isManager, isTemporary: false }
 
   const workspaceId = typeof character.workspace === 'object' ? character.workspace?.id : character.workspace
   if (!workspace || character.user || String(workspaceId) !== String(workspace.id)) throw new Error('Non autorisé')
   if (user) await consumeWorkspaceRequest(payload, Number(workspace.id))
-  return { payload, user, character, isAdmin: false, isTemporary: true }
+  return { payload, user, character, isAdmin: false, isMJEditor: false, isManager: false, isTemporary: true }
 }
 
 export async function updateCharacter(characterId: number, data: any) {
-  const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
-  if (!isAdmin && !isCharacterCreationComplete(character)) {
+  const { payload, user, character, isMJEditor, isManager, isTemporary } = await getAuthorizedCharacter(characterId)
+  if (!isManager && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
 
@@ -140,7 +147,7 @@ export async function updateCharacter(characterId: number, data: any) {
     maxPayloadBytes: TEMP_WORKSPACE_MAX_PAYLOAD_BYTES,
   })
   const updateData = withoutTransientWeaponHeat(data)
-  if (!isAdmin) {
+  if (!isManager) {
     const forbiddenPatterns = [
       /^coaching.*(Label|Max)$/,
       /^malus.*$/,
@@ -165,7 +172,14 @@ export async function updateCharacter(characterId: number, data: any) {
     })
   }
 
-  if (!isAdmin) {
+  // The MJ can edit the sheet, but ownership and group membership remain controlled.
+  if (isMJEditor) {
+    delete updateData.user
+    delete updateData.workspace
+    delete updateData.groupe
+  }
+
+  if (!isManager) {
     const currentRank = computeRank(Number(character.pointsDeRang) || 0).level
     for (const slot of ['puceMk1', 'puceMk2', 'puceMk3']) {
       if (!Object.prototype.hasOwnProperty.call(updateData, slot) || updateData[slot] == null) continue
@@ -211,10 +225,10 @@ export async function updateWeaponStatus(
   slot: string, 
   data: { munitionsActuelles?: number; chargeurRelie?: any }
 ) {
-  const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
-  if (isTemporary && !['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(slot)) throw new Error('Emplacement d’arme invalide.')
+  const { payload, user, character, isManager, isTemporary } = await getAuthorizedCharacter(characterId)
+  if (!CHARACTER_WEAPON_SLOTS.includes(slot as typeof CHARACTER_WEAPON_SLOTS[number])) throw new Error('Emplacement d’arme invalide.')
   if (isTemporary && data.munitionsActuelles !== undefined && (!Number.isSafeInteger(data.munitionsActuelles) || data.munitionsActuelles < 0 || data.munitionsActuelles > 100_000)) throw new Error('Valeur de munitions invalide.')
-  if (!isAdmin && !isCharacterCreationComplete(character)) {
+  if (!isManager && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
   if (data.chargeurRelie != null) await assertConsumablesCanBeEquipped(payload, character, [data.chargeurRelie])
@@ -245,11 +259,11 @@ export async function reloadWeapon(
   fromSlot?: string,
   ammoUnitsToConsume = 1,
 ) {
-  const { payload, user, character, isAdmin, isTemporary } = await getAuthorizedCharacter(characterId)
-  if (isTemporary && !['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(slot)) throw new Error('Emplacement d’arme invalide.')
+  const { payload, user, character, isManager, isTemporary } = await getAuthorizedCharacter(characterId)
+  if (!CHARACTER_WEAPON_SLOTS.includes(slot as typeof CHARACTER_WEAPON_SLOTS[number])) throw new Error('Emplacement d’arme invalide.')
   if (isTemporary && (!Number.isSafeInteger(newAmmoCount) || newAmmoCount < 0 || newAmmoCount > 100_000)) throw new Error('Valeur de munitions invalide.')
   if (!Number.isSafeInteger(ammoUnitsToConsume) || ammoUnitsToConsume < 1 || ammoUnitsToConsume > 100_000) throw new Error('Quantité de munitions invalide.')
-  if (!isAdmin && !isCharacterCreationComplete(character)) {
+  if (!isManager && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
 
@@ -274,13 +288,13 @@ export async function reloadWeapon(
     if (fromSlot.startsWith('equipped[')) {
       const match = fromSlot.match(/\[(\d+)\]/)
       const idx = match ? parseInt(match[1]) : -1
-      if (isTemporary && (idx < 0 || idx >= ((character as any).consommablesEquipes || []).length)) throw new Error('Emplacement de consommable invalide.')
+      if (idx < 0 || idx >= ((character as any).consommablesEquipes || []).length) throw new Error('Emplacement de consommable invalide.')
       if (idx > -1) {
         const currentEquipped = (character as any).consommablesEquipes || []
         updateData.consommablesEquipes = currentEquipped.filter((_: any, i: number) => i !== idx)
       }
     } else {
-      if (isTemporary && !['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3'].includes(fromSlot)) throw new Error('Emplacement de consommable invalide.')
+      if (!CHARACTER_CONSUMABLE_SLOTS.includes(fromSlot as typeof CHARACTER_CONSUMABLE_SLOTS[number])) throw new Error('Emplacement de consommable invalide.')
       // Si ça vient d'un slot équipé classique (ancien système ou autres slots)
       updateData[fromSlot] = null
     }
@@ -329,8 +343,11 @@ export async function updateCharacterSkills(characterId: number, data: {
 export async function updateMalus(characterId: number, field: string, value: number) {
   const { payload, user } = await getAuthenticatedPayload()
 
-  if (!user || user.role !== 'admin') {
-    throw new Error('Non autorisé')
+  if (!user) throw new Error('Non autorisé')
+  const character = await payload.findByID({ collection: 'characters', id: characterId, depth: 0, overrideAccess: true }).catch(() => null)
+  if (!character || (user.role !== 'admin' && !(await canMJManageCharacter(payload, user, character)))) throw new Error('Non autorisé')
+  if (user.role !== 'admin' && !/^malus[A-Z].*$/.test(field) && field !== 'bonusPointsDeBlessures') {
+    throw new Error('Ce champ ne peut pas être modifié depuis cette fiche.')
   }
 
   await payload.update({

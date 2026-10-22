@@ -6,6 +6,8 @@ import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { findVehicleOwnerIds, getUserCharacter } from '@/lib/vehicleAccess'
+import { getActiveMode } from '@/lib/activeMode'
+import { getMJVehicleIds } from '@/lib/mjAccess'
 import './vehicles.css'
 
 export const metadata = { title: 'Véhicules de l’escouade — Space Squad' }
@@ -15,13 +17,18 @@ export default async function VehiclesPage() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) redirect('/login')
 
-  const isAdmin = user.role === 'admin'
+  const mode = await getActiveMode(user)
+  const isAdmin = mode === 'admin'
+  const isMJ = mode === 'mj'
   const character = await getUserCharacter(payload, user)
-  if (!character && !isAdmin) redirect('/character')
+  if (!character && !isAdmin && !isMJ) redirect('/character')
   const ownerIds = character ? await findVehicleOwnerIds(payload, character) : []
+  const mjVehicleIds = isMJ ? await getMJVehicleIds(payload, user) : []
   const { docs } = await payload.find({
     collection: 'vehicles',
-    ...(isAdmin ? {} : { where: { proprietaire: { in: ownerIds } } }),
+    ...(isAdmin ? {} : isMJ
+      ? { where: { id: { in: mjVehicleIds.length ? mjVehicleIds : [-1] } } }
+      : { where: { proprietaire: { in: ownerIds } } }),
     depth: 2,
     limit: 500,
     sort: 'nom',

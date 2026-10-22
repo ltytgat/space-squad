@@ -6,6 +6,8 @@ import config from '@/payload.config'
 import { findGroupShipIds } from '@/lib/shipAccess'
 import { findVehicleOwnerIds } from '@/lib/vehicleAccess'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveMode } from '@/lib/activeMode'
+import { canMJManageCharacter } from '@/lib/mjAccess'
 import '../../character/character.css'
 
 // ── Types locaux pour les relations populées (depth: 1) ──────────────────────
@@ -155,8 +157,8 @@ export default async function CharacterDetailPage({
 
   if (!user) redirect('/login')
 
-  const role = (user as { role?: string }).role
-  const isAdmin = role === 'admin'
+  const activeMode = await getActiveMode(user)
+  const isAdmin = activeMode === 'admin'
   const characterId = parseInt(id, 10)
 
   if (isNaN(characterId)) redirect(isAdmin ? '/characters' : '/')
@@ -176,12 +178,14 @@ export default async function CharacterDetailPage({
 
   if (!character) redirect(isAdmin ? '/characters' : '/')
 
-  // Contrôle d'accès : admin voit tout, joueur uniquement son propre personnage
+  // En mode MJ, seules les fiches des membres de ses propres escouades sont visibles.
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
-  const isOwner = String(ownerId) === String(user.id)
+  const isOwner = activeMode !== 'mj' && String(ownerId) === String(user.id)
+  const isMJEditor = activeMode === 'mj' && await canMJManageCharacter(payload, user, character)
+  const canEditAsAdmin = isAdmin || isMJEditor
 
-  if (!isAdmin && !isOwner) redirect('/')
-  if (isOwner && !isCharacterCreationComplete(character as any)) redirect('/character')
+  if (!canEditAsAdmin && !isOwner) redirect('/')
+  if (isOwner && !canEditAsAdmin && !isCharacterCreationComplete(character as any)) redirect('/character')
 
   // Vaisseaux accessibles : ceux du groupe, plus celui où le personnage est embarqué.
   const groupShipIds = await findGroupShipIds(payload, character)
@@ -217,10 +221,10 @@ export default async function CharacterDetailPage({
 
   return (
     <>
-      <SiteHeader activePage={isOwner ? 'character' : (isAdmin ? 'characters' : undefined)} />
+      <SiteHeader activePage={isOwner && !isMJEditor ? 'character' : (canEditAsAdmin ? 'characters' : undefined)} />
       <CharacterClient 
         character={JSON.parse(JSON.stringify(character))} 
-        isAdmin={isAdmin} 
+        isAdmin={canEditAsAdmin}
         isOwner={isOwner}
         allBaseSkills={allBaseSkills}
         relatedShips={JSON.parse(JSON.stringify(relatedShips.filter(Boolean)))}

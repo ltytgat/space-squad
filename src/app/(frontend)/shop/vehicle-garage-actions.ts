@@ -6,6 +6,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
+import { assertPlayerMode } from '@/lib/activeMode'
 import { computeRank } from '@/lib/rankSystem'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
@@ -36,6 +37,7 @@ async function getContext() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
+  await assertPlayerMode(user)
   const { docs } = await payload.find({
     collection: 'characters',
     where: { user: { equals: user.id } },

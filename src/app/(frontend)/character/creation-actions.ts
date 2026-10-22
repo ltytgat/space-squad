@@ -8,6 +8,7 @@ import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { consumeWorkspaceRequest, getWorkspaceFromCookie } from '@/lib/temporaryCharacterWorkspace'
+import { isMJMode } from '@/lib/activeMode'
 
 type CreationStep = 'caracteristiques' | 'espece' | 'equipement' | 'identite' | 'termine'
 type AbilityRoll = { dice: number[]; kept: number[]; discarded: number; total: number }
@@ -66,6 +67,7 @@ function parseRolls(value: unknown): CharacterRolls {
 async function getSession() {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
+  if (user && await isMJMode(user)) fail('Passez en mode joueur pour modifier votre personnage.')
   const workspace = await getWorkspaceFromCookie(payload)
   if (!user && !workspace) fail('Connexion requise ou session temporaire expirée.')
   return { payload, user, workspace }

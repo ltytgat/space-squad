@@ -42,6 +42,7 @@ export default async function AccountPage() {
           userId={String(user.id)}
           userEmail={user.email ?? ''}
           userRole={(user as { role?: string }).role ?? 'player'}
+          isMJ={(user as any).isMJ === true}
           userCreatedAt={user.createdAt ?? ''}
         />
       </div>

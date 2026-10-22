@@ -185,6 +185,10 @@ export interface User {
    * Détermine les droits de l'utilisateur dans l'application.
    */
   role: 'admin' | 'player';
+  /**
+   * Autorise le compte joueur à utiliser le mode MJ.
+   */
+  isMJ?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -304,6 +308,8 @@ export interface LoreArticle {
 export interface Group {
   id: number;
   nom: string;
+  creator?: (number | null) | User;
+  inviteCode?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1553,6 +1559,7 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   role?: T;
+  isMJ?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1620,6 +1627,8 @@ export interface LoreArticlesSelect<T extends boolean = true> {
  */
 export interface GroupsSelect<T extends boolean = true> {
   nom?: T;
+  creator?: T;
+  inviteCode?: T;
   updatedAt?: T;
   createdAt?: T;
 }

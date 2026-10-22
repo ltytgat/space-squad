@@ -8,6 +8,8 @@ import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
 import { fireVehicleWeapon as buildVehicleFire, reloadVehicleWeapon as buildVehicleReload, replaceVehicleTurretWeapon } from '@/lib/vehicleOperations'
 import { vehicleRelationId } from '@/lib/vehicleAccess'
+import { canMJManageCharacter, getMJShipIds } from '@/lib/mjAccess'
+import { getActiveMode } from '@/lib/activeMode'
 
 const validId = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) > 0
 
@@ -58,13 +60,17 @@ async function withVehicleTransaction<T>(
       collection: 'vehicles', id: vehicleId, depth: 3, overrideAccess: true, req,
     }).catch(() => null) as any
     if (!vehicle) throw new Error('Véhicule introuvable.')
-    if (vehicleRelationId(vehicle.proprietaire) !== Number(currentCharacter.id)) {
-      throw new Error('Seul le propriétaire peut modifier ce véhicule.')
-    }
+    const ownerCharacterId = vehicleRelationId(vehicle.proprietaire)
+    const ownerCharacter = ownerCharacterId
+      ? await payload.findByID({ collection: 'characters', id: ownerCharacterId, depth: 0, overrideAccess: true, req }).catch(() => null) as any
+      : null
+    const isOwner = (await getActiveMode(user)) === 'player' && ownerCharacterId === Number(currentCharacter.id)
+    const isMJEditor = Boolean(ownerCharacter && await canMJManageCharacter(payload, user, ownerCharacter))
+    if (!isOwner && !isMJEditor) throw new Error('Vous ne pouvez pas modifier ce véhicule.')
 
     let ship: any = null
     if (needsShip) {
-      const shipId = vehicleRelationId(currentCharacter.vaisseau)
+      const shipId = vehicleRelationId(ownerCharacter?.vaisseau)
       if (!shipId) throw new Error('Aucun vaisseau actif ne peut fournir cet équipement.')
       await payload.db.execute({
         db: transactionDb,
@@ -73,7 +79,13 @@ async function withVehicleTransaction<T>(
       ship = await payload.findByID({
         collection: 'ships', id: shipId, depth: 3, overrideAccess: true, req,
       }).catch(() => null) as any
-      if (!ship || !computeShipAccess({ ship, character: currentCharacter }).canEdit) {
+      const mjShipIds = isMJEditor ? await getMJShipIds(payload, user) : []
+      if (!ship || !computeShipAccess({
+        ship,
+        character: ownerCharacter,
+        isAdmin: user.role === 'admin',
+        isMJ: mjShipIds.includes(Number(ship.id)),
+      }).canEdit) {
         throw new Error('Vous devez avoir les droits d’écriture sur votre vaisseau actif.')
       }
     }

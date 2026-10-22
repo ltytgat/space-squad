@@ -1,6 +1,7 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 import { vehicleReadAccess } from '@/lib/vehicleAccess'
+import { getMJVehicleIds } from '@/lib/mjAccess'
 
 const relationId = (value: unknown): number | string | undefined => {
   if (typeof value === 'number' || typeof value === 'string') return value
@@ -85,7 +86,13 @@ export const Vehicles: CollectionConfig = {
   access: {
     read: vehicleReadAccess,
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
-    update: ({ req }) => (req.user as User | null)?.role === 'admin',
+    update: async ({ req }) => {
+      const user = req.user as User | null
+      if (!user) return false
+      if (user.role === 'admin') return true
+      const vehicleIds = await getMJVehicleIds(req.payload, user)
+      return vehicleIds.length ? { id: { in: vehicleIds } } as any : false
+    },
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   hooks: { beforeChange: [initializeAndValidateVehicle] },
@@ -113,6 +120,7 @@ export const Vehicles: CollectionConfig = {
           type: 'relationship',
           relationTo: 'characters',
           label: 'Propriétaire',
+          access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
           admin: { width: '33%' },
         },
       ],

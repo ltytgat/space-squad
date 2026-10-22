@@ -1,6 +1,8 @@
 import { idOf } from './shipStats'
 import { calculateStats } from './characterStats'
 import { isSeatFree, listSeats, roleForSeat, seatOf, type SeatKey } from './shipCrew'
+import { getMJShipIds } from './mjAccess'
+import { isMJMode } from './activeMode'
 
 /**
  * Droits d'un utilisateur (via son personnage unique) sur un vaisseau.
@@ -15,6 +17,7 @@ import { isSeatFree, listSeats, roleForSeat, seatOf, type SeatKey } from './ship
 
 export type ShipAccess = {
   isAdmin: boolean
+  isMJ: boolean
   isOwner: boolean
   isAboard: boolean
   seat: SeatKey
@@ -28,11 +31,13 @@ export function computeShipAccess({
   ship,
   character,
   isAdmin = false,
+  isMJ = false,
   groupShipIds = [],
 }: {
   ship: any
   character: any
   isAdmin?: boolean
+  isMJ?: boolean
   groupShipIds?: (number | string)[]
 }): ShipAccess {
   const shipId = idOf(ship)
@@ -45,11 +50,12 @@ export function computeShipAccess({
   )
   const seat = isAboard ? seatOf(ship, characterId) : ('passager' as SeatKey)
   const inGroup = groupShipIds.some((id) => String(id) === String(shipId))
-  const canRead = isAdmin || isOwner || isAboard || inGroup
-  const canManageCrew = isAdmin || isOwner
+  const canRead = isAdmin || isMJ || isOwner || isAboard || inGroup
+  const canManageCrew = isAdmin || isMJ || isOwner
 
   return {
     isAdmin,
+    isMJ,
     isOwner,
     isAboard,
     seat,
@@ -194,6 +200,7 @@ export async function getShipAccess(
   { depth = 4 }: { depth?: number } = {},
 ): Promise<ShipAccess & { ship: any; character: any }> {
   const isAdmin = user?.role === 'admin'
+  const isMJ = await isMJMode(user)
   const character = await getViewerCharacter(payload, user)
 
   let ship: any = null
@@ -204,7 +211,7 @@ export async function getShipAccess(
   }
   if (!ship) {
     return {
-      ...computeShipAccess({ ship: null, character, isAdmin }),
+      ...computeShipAccess({ ship: null, character, isAdmin, isMJ }),
       canRead: false,
       canEdit: false,
       canManageCrew: false,
@@ -214,6 +221,8 @@ export async function getShipAccess(
     }
   }
 
-  const groupShipIds = character ? await findGroupShipIds(payload, character) : []
-  return { ...computeShipAccess({ ship, character, isAdmin, groupShipIds }), ship, character }
+  const mjShipIds = isMJ ? await getMJShipIds(payload, user) : []
+  const groupShipIds = isMJ ? mjShipIds : character ? await findGroupShipIds(payload, character) : []
+  const managesThisShip = isMJ && mjShipIds.some((id) => String(id) === String(shipId))
+  return { ...computeShipAccess({ ship, character, isAdmin, isMJ: managesThisShip, groupShipIds }), ship, character }
 }

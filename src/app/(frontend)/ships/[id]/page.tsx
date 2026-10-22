@@ -35,7 +35,7 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
             <nav className="ship-breadcrumb" aria-label="Fil d'Ariane">
             <Link href="/">Accueil</Link>
             <span aria-hidden="true">›</span>
-            {access.isAdmin && <>
+            {(access.isAdmin || access.isMJ) && <>
               <Link href="/ships">Vaisseaux</Link>
               <span aria-hidden="true">›</span>
             </>}

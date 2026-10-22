@@ -70,7 +70,7 @@ export const Users: CollectionConfig = {
   slug: 'users',
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'role', 'createdAt'],
+    defaultColumns: ['email', 'role', 'isMJ', 'createdAt'],
     group: 'Administration',
   },
   auth: {
@@ -142,6 +142,20 @@ export const Users: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: "Détermine les droits de l'utilisateur dans l'application.",
+      },
+    },
+    {
+      name: 'isMJ',
+      type: 'checkbox',
+      defaultValue: false,
+      saveToJWT: true,
+      label: 'Maître du jeu',
+      access: {
+        update: ({ req }) => (req.user as User | null)?.role === 'admin',
+      },
+      admin: {
+        position: 'sidebar',
+        description: 'Autorise le compte joueur à utiliser le mode MJ.',
       },
     },
   ],

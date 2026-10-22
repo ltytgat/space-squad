@@ -1,6 +1,8 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
 import { syncCharacterShip } from '@/lib/shipCrewSync'
+import { getMJGroupIds } from '@/lib/mjAccess'
+import { isMJMode } from '@/lib/activeMode'
 
 export const COMPETENCES_BASE = [
   'Chasseur',
@@ -41,16 +43,26 @@ export const Characters: CollectionConfig = {
     group: 'Jeu de Rôle',
   },
   access: {
-    // Admin lit tout ; joueur lit uniquement son propre personnage
-    read: ({ req }) => {
+    // Admin lit tout ; MJ actif lit les membres de ses escouades ; joueur lit son personnage.
+    read: async ({ req }) => {
       const user = req.user as User | null
       if (!user) return false
       if (user.role === 'admin') return true
-      return { user: { equals: user.id } }
+      if (await isMJMode(user)) {
+        const groupIds = await getMJGroupIds(req.payload, user)
+        return groupIds.length ? { groupe: { in: groupIds } } as any : false
+      }
+      return { user: { equals: user.id } } as any
     },
-    // Seul l'admin crée et modifie les fiches
+    // Les MJs peuvent modifier les fiches de leurs escouades en mode MJ.
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
-    update: ({ req }) => (req.user as User | null)?.role === 'admin',
+    update: async ({ req }) => {
+      const user = req.user as User | null
+      if (!user) return false
+      if (user.role === 'admin') return true
+      const groupIds = await getMJGroupIds(req.payload, user)
+      return groupIds.length ? { groupe: { in: groupIds } } as any : false
+    },
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
   hooks: { beforeChange: [validateCharacterOwner, syncCharacterShip] },
@@ -63,6 +75,7 @@ export const Characters: CollectionConfig = {
       required: false,
       unique: true,
       label: 'Utilisateur',
+      access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
       admin: {
         position: 'sidebar',
         description: 'Utilisateur propriétaire de ce personnage (1 personnage par compte).',
@@ -146,6 +159,7 @@ export const Characters: CollectionConfig = {
       type: 'relationship',
       relationTo: 'groups',
       label: 'Groupe / Escouade',
+      access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
       admin: { position: 'sidebar' },
     },
 

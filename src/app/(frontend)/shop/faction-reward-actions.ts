@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@/payload.config'
+import { assertPlayerMode } from '@/lib/activeMode'
 import { exactSubtract, relationId } from '@/lib/shop'
 import { factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
 import { factionExWeaponType, ownsAnyFactionWeaponPermit, rewardUsageForApplication } from '@/lib/factionRewards'
@@ -27,6 +28,7 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
+  await assertPlayerMode(user)
   if (!raw || !uuid.test(raw.transactionId ?? '')) fail('Identifiant de transaction invalide.')
   if (raw.action !== 'promote' && raw.action !== 'purchase') fail('Opération inconnue.')
   if (raw.action === 'purchase' && (!Number.isSafeInteger(raw.rewardId) || raw.rewardId <= 0)) fail('Récompense invalide.')

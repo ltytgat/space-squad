@@ -4,6 +4,8 @@ import config from '@/payload.config'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { createCharacterOds } from '@/lib/characterOdsExport'
 import { consumeWorkspaceRequest, getWorkspaceFromCookie } from '@/lib/temporaryCharacterWorkspace'
+import { getActiveMode } from '@/lib/activeMode'
+import { canMJManageCharacter } from '@/lib/mjAccess'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,11 +42,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (!character) return errorResponse('Personnage introuvable.', 404)
 
     const isAdmin = (user as any)?.role === 'admin'
-    const isUserOwner = !!user && relationId(character.user) === String(user.id)
+    const activeMode = user ? await getActiveMode(user) : 'player'
+    const isUserOwner = !!user && activeMode === 'player' && relationId(character.user) === String(user.id)
+    const isMJEditor = Boolean(user && await canMJManageCharacter(payload, user, character))
     const isWorkspaceOwner = !!workspace
       && !character.user
       && relationId(character.workspace) === String(workspace.id)
-    if (!isAdmin && !isUserOwner && !isWorkspaceOwner) return errorResponse('Accès refusé.', 403)
+    if (!isAdmin && !isMJEditor && !isUserOwner && !isWorkspaceOwner) return errorResponse('Accès refusé.', 403)
 
     if (isWorkspaceOwner) {
       try {

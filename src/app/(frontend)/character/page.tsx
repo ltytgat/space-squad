@@ -8,6 +8,7 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { CharacterCreationWizard } from './CreationWizard'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
+import { getActiveMode } from '@/lib/activeMode'
 import './character.css'
 import './creation.css'
 import '../shop/shop.css'
@@ -23,6 +24,7 @@ export default async function CharacterPage() {
   const { user } = await payload.auth({ headers })
 
   if (!user) redirect('/login')
+  if ((await getActiveMode(user)) === 'mj') redirect('/characters')
 
   const { docs } = await payload.find({
     collection: 'characters',

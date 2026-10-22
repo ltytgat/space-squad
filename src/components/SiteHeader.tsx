@@ -3,6 +3,8 @@ import { getPayload } from 'payload'
 import React from 'react'
 import Link from 'next/link'
 import { findGroupShipIds } from '@/lib/shipAccess'
+import { getActiveMode } from '@/lib/activeMode'
+import { RoleModeSwitch } from '@/components/RoleModeSwitch'
 
 import config from '@/payload.config'
 
@@ -16,6 +18,7 @@ type ActivePage =
   | 'ships'
   | 'vehicles'
   | 'shop'
+  | 'squad'
   | undefined
 
 export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
@@ -25,11 +28,14 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
   const { user } = await payload.auth({ headers })
 
   const isAdmin = user && (user as { role?: string }).role === 'admin'
+  const activeMode = user ? await getActiveMode(user) : 'player'
+  const isAdminView = Boolean(isAdmin || activeMode === 'mj')
+  const canSwitchMode = Boolean(user && user.role === 'player' && (user as any).isMJ === true)
 
   let character: any = null
   let characterId: string | number | null = null
   let ships: { id: number; nom: string }[] = []
-  if (user && !isAdmin) {
+  if (user && !isAdminView) {
     const { docs } = await payload.find({
       collection: 'characters',
       where: { user: { equals: user.id } },
@@ -94,7 +100,7 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
           </Link>
 
           {/* ── Liens conditionnels selon rôle ── */}
-          {user && isAdmin && (
+          {user && isAdminView && (
             <>
               <Link
                 href="/characters"
@@ -116,7 +122,7 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
               </Link>
             </>
           )}
-          {user && !isAdmin && (
+          {user && !isAdminView && (
             <>
               <Link
                 href={characterId ? `/characters/${characterId}` : '/character'}
@@ -150,6 +156,11 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
               </Link>
             </>
           )}
+          {user && !isAdmin && (
+            <Link href="/escouade" className={`ss-nav-link${activePage === 'squad' ? ' ss-nav-link-active' : ''}`}>
+              {activeMode === 'mj' ? 'Mes escouades' : 'Mon escouade'}
+            </Link>
+          )}
           {user && characterId && (
             <Link href="/shop" className={`ss-nav-link${activePage === 'shop' ? ' ss-nav-link-active' : ''}`}>
               Boutique
@@ -159,9 +170,10 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
 
         <div className="ss-header-cta">
           {user ? (
-            <Link href="/account" className="ss-btn ss-btn-primary">
-              Mon compte
-            </Link>
+            <>
+              {canSwitchMode && <RoleModeSwitch activeMode={activeMode === 'mj' ? 'mj' : 'player'} />}
+              <Link href="/account" className="ss-btn ss-btn-primary">Mon compte</Link>
+            </>
           ) : (
             <Link href="/login" className="ss-btn ss-btn-primary">
               Connexion
