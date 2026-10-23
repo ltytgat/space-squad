@@ -69,7 +69,6 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
-    pages: Page;
     'lore-articles': LoreArticle;
     groups: Group;
     ships: Ship;
@@ -110,7 +109,6 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    pages: PagesSelect<false> | PagesSelect<true>;
     'lore-articles': LoreArticlesSelect<false> | LoreArticlesSelect<true>;
     groups: GroupsSelect<false> | GroupsSelect<true>;
     ships: ShipsSelect<false> | ShipsSelect<true>;
@@ -228,32 +226,6 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages".
- */
-export interface Page {
-  id: number;
-  title: string;
-  content?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  slug: string;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * Articles encyclopédiques de l'univers Space Squad.
@@ -1424,10 +1396,6 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
-        relationTo: 'pages';
-        value: number | Page;
-      } | null)
-    | ({
         relationTo: 'lore-articles';
         value: number | LoreArticle;
       } | null)
@@ -1618,17 +1586,6 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages_select".
- */
-export interface PagesSelect<T extends boolean = true> {
-  title?: T;
-  content?: T;
-  slug?: T;
-  updatedAt?: T;
-  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

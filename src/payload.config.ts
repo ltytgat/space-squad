@@ -14,7 +14,6 @@ import {extractLorePlainText} from './lib/loreSearch'
 
 import {Users} from './collections/Users'
 import {Media} from './collections/Media'
-import {Pages} from './collections/Pages'
 import {LoreArticles} from './collections/LoreArticles'
 import {Characters} from './collections/Characters'
 import {CharacterWorkspaces} from './collections/CharacterWorkspaces'
@@ -55,7 +54,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Media, Pages, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, VehicleVariants, VehicleSaleModels, Vehicles, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions, ContactMessages],
+    collections: [Users, Media, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, VehicleVariants, VehicleSaleModels, Vehicles, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions, ContactMessages],
     editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
             ...defaultFeatures,
@@ -106,6 +105,9 @@ export default buildConfig({
         searchPlugin({
             collections: ['lore-articles'],
             searchOverrides: {
+                admin: {
+                    group: 'Lore',
+                },
                 // Les résultats sont synchronisés automatiquement : seuls les admins peuvent y toucher.
                 access: {
                     update: ({ req }) => (req.user as User | null)?.role === 'admin',

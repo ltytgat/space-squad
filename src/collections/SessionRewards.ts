@@ -16,7 +16,7 @@ export const SessionRewards: CollectionConfig = {
   admin: {
     useAsTitle: 'batchId',
     defaultColumns: ['batchId', 'appliedBy', 'createdAt'],
-    group: 'Administration',
+    group: 'Jeu de Rôle',
     description:
       "Historique des scripts de fin de mission appliqués aux escouades / sélections de personnages.",
   },

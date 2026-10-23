@@ -3,6 +3,9 @@ import type { User } from '@/payload-types'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  admin: {
+    group: 'Administration',
+  },
   access: {
     read: () => true,
     // L'envoi de fichiers vers le bucket est réservé aux admins.
