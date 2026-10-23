@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { meetsPasswordLength, PASSWORD_LENGTH_ERROR } from '@/lib/passwordPolicy'
 import { envLimit } from '@/lib/envLimit'
+import { normalizeEmail } from '@/lib/emailPolicy'
 
 type RegistrationBody = {
   email?: unknown
@@ -11,8 +12,6 @@ type RegistrationBody = {
   website?: unknown
 }
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const MAX_EMAIL_LENGTH = 254
 // Plafonds globaux : suffisants pour un groupe de joueurs, bloquants pour un script.
 const REGISTRATION_MAX_USERS = envLimit('REGISTRATION_MAX_USERS', 200)
 const REGISTRATION_MAX_PER_HOUR = envLimit('REGISTRATION_MAX_PER_HOUR', 10)
@@ -39,10 +38,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: CREATED_MESSAGE }, { status: 201 })
   }
 
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-  if (email.length > MAX_EMAIL_LENGTH || !EMAIL_PATTERN.test(email)) {
-    return jsonError('Saisissez une adresse e-mail valide.', 400)
-  }
+  const email = normalizeEmail(body.email)
+  if (!email) return jsonError('Saisissez une adresse e-mail valide.', 400)
   if (!meetsPasswordLength(body.password)) {
     return jsonError(PASSWORD_LENGTH_ERROR, 400)
   }

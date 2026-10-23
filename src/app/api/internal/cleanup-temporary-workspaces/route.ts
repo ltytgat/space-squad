@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { cleanupExpiredCharacterWorkspaces } from '@/lib/cleanupTemporaryCharacterWorkspaces'
+import { cleanupOldContactMessages } from '@/lib/cleanupContactMessages'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,9 @@ async function handleCleanupRequest(request: Request) {
 
   try {
     const result = await cleanupExpiredCharacterWorkspaces()
-    return NextResponse.json(result)
+    // Le même cron quotidien purge aussi les vieux messages de contact.
+    const contactResult = await cleanupOldContactMessages()
+    return NextResponse.json({ ...result, ...contactResult })
   } catch (error) {
     console.error('[Temporary workspaces] Échec du nettoyage', error)
     return NextResponse.json({ error: 'Le nettoyage des workspaces temporaires a échoué.' }, { status: 500 })

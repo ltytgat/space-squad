@@ -1,10 +1,11 @@
 import 'server-only'
 
-import { createHash, createHmac } from 'node:crypto'
-import { cookies, headers } from 'next/headers.js'
+import { createHash } from 'node:crypto'
+import { cookies } from 'next/headers.js'
 import { sql } from '@payloadcms/db-postgres'
 import { envLimit } from '@/lib/envLimit'
 export { stripTemporaryWorkspaceSecrets as stripWorkspaceSecrets } from '@/lib/temporaryCharacterRules'
+export { getRequestIPHash as getCreationIPHash } from '@/lib/requestIP'
 
 export const TEMP_WORKSPACE_COOKIE = 'ss_temporary_character_workspace'
 export const TEMP_WORKSPACE_TTL_MS = 24 * 60 * 60 * 1000
@@ -76,15 +77,6 @@ export async function consumeWorkspaceRequest(payload: any, workspaceId: number,
     `,
   })
   if (!query.rows?.length) throw new Error('Cette session temporaire a expiré ou a dépassé sa limite de requêtes.')
-}
-
-export async function getCreationIPHash(): Promise<string | null> {
-  const requestHeaders = await headers()
-  const address = requestHeaders.get('x-real-ip')?.trim()
-    || requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim()
-  const secret = process.env.PAYLOAD_SECRET
-  if (!address || !secret) return null
-  return createHmac('sha256', secret).update(address).digest('hex')
 }
 
 export function temporaryWorkspaceCookieOptions() {

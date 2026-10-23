@@ -1,0 +1,27 @@
+/* ════════════════════════════════════════════
+   Page Contact (réutilise la mise en page Connexion)
+   ════════════════════════════════════════════ */
+
+.contact-box {
+  max-width: 560px;
+}
+
+.contact-textarea {
+  resize: vertical;
+  min-height: 9rem;
+  line-height: 1.5;
+}
+
+.contact-box .login-input[readonly] {
+  color: var(--ss-text-dim);
+  cursor: default;
+}
+
+.contact-hint {
+  font-size: 0.75rem;
+  color: var(--ss-text-muted);
+}
+
+.contact-counter {
+  align-self: flex-end;
+}

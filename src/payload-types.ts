@@ -95,6 +95,7 @@ export interface Config {
     'faction-reward-tiers': FactionRewardTier;
     'session-rewards': SessionReward;
     'shop-transactions': ShopTransaction;
+    'contact-messages': ContactMessage;
     search: Search;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -135,6 +136,7 @@ export interface Config {
     'faction-reward-tiers': FactionRewardTiersSelect<false> | FactionRewardTiersSelect<true>;
     'session-rewards': SessionRewardsSelect<false> | SessionRewardsSelect<true>;
     'shop-transactions': ShopTransactionsSelect<false> | ShopTransactionsSelect<true>;
+    'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1354,6 +1356,24 @@ export interface ShopTransaction {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages".
+ */
+export interface ContactMessage {
+  id: number;
+  kind: 'guest' | 'user';
+  status: 'nouveau' | 'traite';
+  emailSent?: boolean | null;
+  email: string;
+  subject: string;
+  message: string;
+  user?: (number | null) | User;
+  character?: (number | null) | Character;
+  ipHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This is a collection of automatically created search results. These results are used by the global site search and will be updated automatically as documents in the CMS are created or updated.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1506,6 +1526,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'shop-transactions';
         value: number | ShopTransaction;
+      } | null)
+    | ({
+        relationTo: 'contact-messages';
+        value: number | ContactMessage;
       } | null)
     | ({
         relationTo: 'search';
@@ -2314,6 +2338,23 @@ export interface ShopTransactionsSelect<T extends boolean = true> {
   ship?: T;
   amount?: T;
   details?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages_select".
+ */
+export interface ContactMessagesSelect<T extends boolean = true> {
+  kind?: T;
+  status?: T;
+  emailSent?: T;
+  email?: T;
+  subject?: T;
+  message?: T;
+  user?: T;
+  character?: T;
+  ipHash?: T;
   updatedAt?: T;
   createdAt?: T;
 }
