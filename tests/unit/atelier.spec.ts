@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyAtelierEffects, atelierCost, atelierModificationMatches, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
+import { applyAtelierEffects, atelierCost, atelierModificationMatches, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
 
 describe('Atelier compatibility', () => {
   it('requires an exact weapon subcategory and thermal or kinetic type', () => {
@@ -16,6 +16,28 @@ describe('Atelier compatibility', () => {
     expect(atelierModificationMatches({ compatibilites: [{ categorieEquipement: 'vaisseau', classeVaisseau: 'beta' }] }, { kind: 'vaisseau', classe: 'beta' })).toBe(true)
     expect(atelierModificationMatches({ active: false, compatibilites: [{ categorieEquipement: 'armure', sousCategorie: 'torse' }] }, { kind: 'armure', categorie: 'torse' })).toBe(false)
   })
+
+  it('resolves the exact compatibility row so each equipment match can have its own price', () => {
+    const modification = {
+      compatibilites: [
+        { categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'thermique', prix: 120, maximum: 2, multiplicateurRachat: 3 },
+        { categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'cinetique', prix: 250, maximum: 1, multiplicateurRachat: 4 },
+      ],
+    }
+    expect(findAtelierCompatibility(modification, { kind: 'arme', categorie: 'fusil-assaut', type: ['cinetique'] })).toMatchObject({ prix: 250, maximum: 1, multiplicateurRachat: 4 })
+    expect(atelierCost(1000, [findAtelierCompatibility(modification, { kind: 'arme', categorie: 'fusil-assaut', type: ['thermique'] })?.prix])).toBe(1120)
+  })
+
+  it('rejects duplicate compatibility keys but allows separate weapon variants', () => {
+    expect(hasDuplicateAtelierCompatibilities([
+      { categorieEquipement: 'arme', sousCategorie: 'fusil-assaut', typeArme: 'thermique' },
+      { categorieEquipement: 'arme', sousCategorie: 'fusil-assaut', typeArme: 'cinetique' },
+    ])).toBe(false)
+    expect(hasDuplicateAtelierCompatibilities([
+      { categorieEquipement: 'vaisseau', classeVaisseau: 'beta' },
+      { categorieEquipement: 'vaisseau', classeVaisseau: 'beta' },
+    ])).toBe(true)
+  })
 })
 
 describe('Atelier frozen effects and prices', () => {
@@ -31,6 +53,15 @@ describe('Atelier frozen effects and prices', () => {
       { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
     ], 'arme')
     expect(custom.valeurDegats).toBe('3d10-2')
+  })
+
+  it('applies repeated modification effects in sequence', () => {
+    const custom = applyAtelierEffects({ valeurDegats: '1d4+2' }, [
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1' },
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1' },
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+    ], 'arme')
+    expect(custom.valeurDegats).toBe('3d6+2')
   })
 
   it('follows each configured die size in order', () => {

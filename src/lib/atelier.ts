@@ -14,6 +14,9 @@ export type AtelierCompatibility = {
   sousCategorie?: string | null
   typeArme?: string | null
   classeVaisseau?: string | null
+  prix?: number | string | null
+  maximum?: number | null
+  multiplicateurRachat?: number | null
 }
 
 const TARGETS: Record<AtelierEquipmentKind, ReadonlySet<string>> = {
@@ -143,12 +146,12 @@ export function applyAtelierEffects<T extends Record<string, any>>(
   return result as T
 }
 
-export function atelierModificationMatches(
+export function findAtelierCompatibility(
   modification: { compatibilites?: AtelierCompatibility[]; active?: boolean },
   item: { kind: AtelierEquipmentKind; categorie?: string; type?: string[]; classe?: string },
-): boolean {
-  if (modification.active === false) return false
-  return (modification.compatibilites ?? []).some((compatibility) => {
+): AtelierCompatibility | null {
+  if (modification.active === false) return null
+  return (modification.compatibilites ?? []).find((compatibility) => {
     if (compatibility.categorieEquipement !== item.kind) return false
     if (item.kind === 'arme') {
       return compatibility.sousCategorie === item.categorie &&
@@ -157,7 +160,29 @@ export function atelierModificationMatches(
     }
     if (item.kind === 'armure') return compatibility.sousCategorie === item.categorie
     return compatibility.classeVaisseau === item.classe
-  })
+  }) ?? null
+}
+
+export function atelierModificationMatches(
+  modification: { compatibilites?: AtelierCompatibility[]; active?: boolean },
+  item: { kind: AtelierEquipmentKind; categorie?: string; type?: string[]; classe?: string },
+): boolean {
+  return findAtelierCompatibility(modification, item) !== null
+}
+
+export function hasDuplicateAtelierCompatibilities(compatibilities: AtelierCompatibility[]): boolean {
+  const keys = new Set<string>()
+  for (const compatibility of compatibilities) {
+    let key: (string | null | undefined)[] | null = null
+    if (compatibility.categorieEquipement === 'arme') key = ['arme', compatibility.sousCategorie, compatibility.typeArme]
+    else if (compatibility.categorieEquipement === 'armure') key = ['armure', compatibility.sousCategorie]
+    else if (compatibility.categorieEquipement === 'vaisseau') key = ['vaisseau', compatibility.classeVaisseau]
+    if (!key || key.some((part) => typeof part !== 'string' || !part)) continue
+    const serialized = JSON.stringify(key)
+    if (keys.has(serialized)) return true
+    keys.add(serialized)
+  }
+  return false
 }
 
 export function snapshotWeapon(weapon: Record<string, any>): Record<string, any> {

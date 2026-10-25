@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+import { hasDuplicateAtelierCompatibilities } from '@/lib/atelier'
 
 const effectTargetOptions = [
   { label: 'Nom', value: 'nom' },
@@ -32,7 +33,6 @@ const effectTargetOptions = [
   { label: 'Set d’armure', value: 'set' },
   { label: 'Image', value: 'image' },
   { label: 'Classe du châssis', value: 'classe' },
-  { label: 'Catégorie du châssis', value: 'categorie' },
   { label: 'Tourelles', value: 'tourelles' },
   { label: "Points d'emport pilote", value: 'pointsEmportPilote' },
   { label: "Points d'emport tourelles", value: 'pointsEmportTourelles' },
@@ -47,7 +47,7 @@ export const AtelierModifications: CollectionConfig = {
   labels: { singular: 'Modification Atelier', plural: 'Modifications Atelier' },
   admin: {
     useAsTitle: 'nom',
-    defaultColumns: ['nom', 'prix', 'active'],
+    defaultColumns: ['nom', 'active'],
     group: 'Ateliers',
   },
   access: {
@@ -60,19 +60,14 @@ export const AtelierModifications: CollectionConfig = {
     { name: 'nom', type: 'text', required: true, label: 'Nom' },
     { name: 'description', type: 'textarea', label: 'Description' },
     {
-      name: 'prix',
-      type: 'number',
-      required: true,
-      min: 0,
-      label: 'Prix fixe',
-      admin: { description: 'Coût ajouté au prix d’achat de l’équipement custom.' },
-    },
-    {
       name: 'compatibilites',
       type: 'array',
       required: true,
       minRows: 1,
       label: 'Catégories compatibles',
+      validate: (value: unknown) => {
+        return !Array.isArray(value) || !hasDuplicateAtelierCompatibilities(value) || 'Chaque compatibilité doit être unique.'
+      },
       fields: [
         {
           type: 'row',
@@ -134,6 +129,38 @@ export const AtelierModifications: CollectionConfig = {
             { label: 'Beta', value: 'beta' },
             { label: 'Gamma', value: 'gamma' },
             { label: 'Delta', value: 'delta' },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'prix',
+              type: 'number',
+              required: true,
+              min: 0,
+              label: 'Prix',
+              admin: { width: '34%', description: 'Coût ajouté au prix d’achat de l’équipement custom.' },
+            },
+            {
+              name: 'maximum',
+              type: 'number',
+              required: true,
+              min: 1,
+              validate: (value: unknown) => (typeof value === 'number' && Number.isSafeInteger(value)) || 'Le maximum doit être un entier positif.',
+              label: 'Maximum',
+              admin: { width: '33%', description: 'Nombre maximum d’achats pour cette compatibilité.' },
+            },
+            {
+              name: 'multiplicateurRachat',
+              type: 'number',
+              validate: (value: unknown, { siblingData }: any) => siblingData?.categorieEquipement !== 'arme' || (typeof value === 'number' && Number.isSafeInteger(value)) || 'Le multiplicateur de rachat doit être un entier pour une arme.',
+              label: 'Multiplicateur de rachat',
+              admin: {
+                width: '33%',
+                condition: (_: unknown, siblingData: any) => siblingData?.categorieEquipement === 'arme',
+              },
+            },
           ],
         },
       ],

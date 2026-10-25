@@ -941,6 +941,17 @@ export interface CustomEquipment {
         modificationSourceId?: number | null;
         nom: string;
         prix: number;
+        maximum?: number | null;
+        multiplicateurRachat?: number | null;
+        compatibilite?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
         effets:
           | {
               [k: string]: unknown;
@@ -1312,15 +1323,20 @@ export interface AtelierModification {
   id: number;
   nom: string;
   description?: string | null;
-  /**
-   * Coût ajouté au prix d’achat de l’équipement custom.
-   */
-  prix: number;
   compatibilites: {
     categorieEquipement: 'arme' | 'armure' | 'vaisseau';
     sousCategorie?: ('fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
     typeArme?: ('thermique' | 'cinetique') | null;
     classeVaisseau?: ('alpha' | 'beta' | 'gamma' | 'delta') | null;
+    /**
+     * Coût ajouté au prix d’achat de l’équipement custom.
+     */
+    prix: number;
+    /**
+     * Nombre maximum d’achats pour cette compatibilité.
+     */
+    maximum: number;
+    multiplicateurRachat?: number | null;
     id?: string | null;
   }[];
   effets?:
@@ -2386,7 +2402,6 @@ export interface ModsSelect<T extends boolean = true> {
 export interface AtelierModificationsSelect<T extends boolean = true> {
   nom?: T;
   description?: T;
-  prix?: T;
   compatibilites?:
     | T
     | {
@@ -2394,6 +2409,9 @@ export interface AtelierModificationsSelect<T extends boolean = true> {
         sousCategorie?: T;
         typeArme?: T;
         classeVaisseau?: T;
+        prix?: T;
+        maximum?: T;
+        multiplicateurRachat?: T;
         id?: T;
       };
   effets?:
@@ -2433,6 +2451,9 @@ export interface CustomEquipmentSelect<T extends boolean = true> {
         modificationSourceId?: T;
         nom?: T;
         prix?: T;
+        maximum?: T;
+        multiplicateurRachat?: T;
+        compatibilite?: T;
         effets?: T;
         id?: T;
       };

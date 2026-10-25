@@ -8,8 +8,8 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
-import { atelierCost, atelierModificationMatches, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect } from '@/lib/atelier'
-import { exactAdd, exactMultiply, exactSubtract, readShopPrice, relationId } from '@/lib/shop'
+import { atelierCost, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect } from '@/lib/atelier'
+import { exactAdd, exactMultiply, exactSubtract, readShopPrice } from '@/lib/shop'
 import { computeShipAccess } from '@/lib/shipAccess'
 import { assignedCrew } from '@/lib/shipCrewSync'
 import { validateShipConfiguration } from '@/lib/shipStats'
@@ -85,7 +85,6 @@ async function recordTransaction(payload: any, transactionDb: any, values: {
 
 async function getActiveModifications(payload: any, ids: number[], req: any) {
   if (!Array.isArray(ids) || ids.length < 1 || ids.length > 50 || ids.some((id) => !isId(id))) fail('Sélectionnez entre une et cinquante modifications valides.')
-  if (new Set(ids).size !== ids.length) fail('Une même modification ne peut être choisie plusieurs fois.')
   const modifications = []
   for (const id of ids) {
     const modification = await payload.findByID({ collection: 'atelier-modifications', id, depth: 0, overrideAccess: true, req }).catch(() => null) as any
@@ -96,10 +95,19 @@ async function getActiveModifications(payload: any, ids: number[], req: any) {
 }
 
 function modificationSnapshot(modification: any) {
+  const compatibility = modification.atelierCompatibilite
   return {
     modificationSourceId: Number(modification.id),
     nom: String(modification.nom ?? ''),
-    prix: Number(modification.prix),
+    prix: Number(compatibility.prix),
+    maximum: Number(compatibility.maximum),
+    multiplicateurRachat: compatibility.multiplicateurRachat == null ? null : Number(compatibility.multiplicateurRachat),
+    compatibilite: {
+      categorieEquipement: compatibility.categorieEquipement,
+      sousCategorie: compatibility.sousCategorie ?? null,
+      typeArme: compatibility.typeArme ?? null,
+      classeVaisseau: compatibility.classeVaisseau ?? null,
+    },
     effets: (modification.effets ?? []).map((effect: any) => ({
       cible: String(effect.cible), operation: String(effect.operation), valeur: String(effect.valeur),
     })),
@@ -108,13 +116,17 @@ function modificationSnapshot(modification: any) {
 
 function applyModifications(base: Record<string, any>, modifications: any[], kind: AtelierEquipmentKind, item: any) {
   const effects: AtelierEffect[] = []
-  for (const modification of modifications) {
-    if (!atelierModificationMatches(modification, item)) fail(`La modification « ${modification.nom} » n’est pas compatible avec cet équipement.`)
+  const selectedModifications = modifications.map((modification) => {
+    const compatibility = findAtelierCompatibility(modification, item)
+    if (!compatibility) fail(`La modification « ${modification.nom} » n’est pas compatible avec cet équipement.`)
+    return { ...modification, atelierCompatibilite: compatibility }
+  })
+  for (const modification of selectedModifications) {
     for (const effect of modification.effets ?? []) {
       effects.push({ cible: String(effect.cible), operation: String(effect.operation) as AtelierEffect['operation'], valeur: String(effect.valeur) })
     }
   }
-  return applyAtelierEffects(base, effects, kind)
+  return { properties: applyAtelierEffects(base, effects, kind), modifications: selectedModifications }
 }
 
 function validatePersonalLocation(input: CustomizePersonalInput) {
@@ -135,7 +147,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
   validatePersonalLocation(input)
   const modificationIds = input.modificationIds
   if (!Array.isArray(modificationIds) || modificationIds.some((id) => !isId(id))) fail('Liste de modifications invalide.')
-  const fingerprint = JSON.stringify(['atelier-customize', input.kind, input.source.location, 'index' in input.source ? input.source.index : input.source.slot, [...modificationIds].sort((a, b) => a - b)])
+  const fingerprint = JSON.stringify(['atelier-customize', input.kind, input.source.location, 'index' in input.source ? input.source.index : input.source.slot, modificationIds])
   const { transactionID, transactionDb, req } = await beginTransaction(payload)
   try {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
@@ -163,10 +175,12 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     if (!sourceItem) fail('Équipement source introuvable.')
     const baseSnapshot = input.kind === 'arme' ? snapshotWeapon(sourceItem) : snapshotArmor(sourceItem)
     const type: AtelierEquipmentKind = input.kind
-    const customProperties = applyModifications(baseSnapshot, modifications, type, {
+    const applied = applyModifications(baseSnapshot, modifications, type, {
       kind: type, categorie: sourceItem.categorie, type: sourceItem.type ?? [],
     })
-    const cost = atelierCost(sourceItem.prix, modifications.map((modification) => modification.prix))
+    const customProperties = applied.properties
+    const selectedModifications = applied.modifications
+    const cost = atelierCost(sourceItem.prix, selectedModifications.map((modification) => modification.atelierCompatibilite.prix))
     const balance = Number(current.konis ?? 0)
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)
@@ -188,7 +202,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
         munitionsActuelles: input.kind === 'arme' ? Number(sourceEntry.munitionsActuelles) || 0 : undefined,
         chargeurRelie: input.kind === 'arme' ? numericId(sourceEntry.chargeurRelie) : undefined,
         proprietesFigees: customProperties,
-        modificationsAtelier: modifications.map(modificationSnapshot),
+        modificationsAtelier: selectedModifications.map(modificationSnapshot),
       },
       depth: 0, overrideAccess: true, req,
     }) as any
@@ -374,7 +388,7 @@ function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number
 export async function customizeShip(input: ShipCustomizationInput) {
   const { payload, user, character } = await getContext()
   if (!isUuid(input?.transactionId) || !isId(input.shipId) || !Array.isArray(input.modificationIds)) fail('Données de personnalisation du vaisseau invalides.')
-  const fingerprint = JSON.stringify(['atelier-customize-ship', input.shipId, [...input.modificationIds].sort((a, b) => a - b)])
+  const fingerprint = JSON.stringify(['atelier-customize-ship', input.shipId, input.modificationIds])
   const { transactionID, transactionDb, req } = await beginTransaction(payload)
   try {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
@@ -400,14 +414,16 @@ export async function customizeShip(input: ShipCustomizationInput) {
     const modifications = await getActiveModifications(payload, input.modificationIds, req)
     const baseChassis = { ...chassis }
     delete baseChassis.id; delete baseChassis.createdAt; delete baseChassis.updatedAt
-    const customChassis = applyModifications(baseChassis, modifications, 'vaisseau', { kind: 'vaisseau', classe: chassis.classe })
+    const applied = applyModifications(baseChassis, modifications, 'vaisseau', { kind: 'vaisseau', classe: chassis.classe })
+    const customChassis = applied.properties
+    const selectedModifications = applied.modifications
     try {
       validateShipConfiguration({ ...source, modele: { ...model, chassis: customChassis } })
     } catch (error) {
       fail(error instanceof Error ? error.message : 'Les composants du vaisseau ne sont pas compatibles avec le nouveau châssis.')
     }
     const sourcePrice = model.atelierPrive && model.atelierPrixAchat != null ? model.atelierPrixAchat : model.prix
-    const cost = atelierCost(sourcePrice, modifications.map((modification) => modification.prix))
+    const cost = atelierCost(sourcePrice, selectedModifications.map((modification) => modification.atelierCompatibilite.prix))
     const balance = Number(current.konis ?? 0)
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)
@@ -443,7 +459,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
         atelierProprietaireOrigine: originalOwner,
         atelierModeleSource: Number(model.id),
         atelierPrixAchat: cost,
-        atelierModifications: modifications.map(modificationSnapshot),
+        atelierModifications: selectedModifications.map(modificationSnapshot),
       },
       depth: 0, overrideAccess: true, req,
     }) as any
