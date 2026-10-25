@@ -23,6 +23,10 @@ type CharacterProps = {
   relatedVehicles: any[]
 }
 
+const WEAPON_HEAT_SEGMENT_PERCENT = 100
+const WEAPON_HEAT_SEGMENT_COUNT = 4
+const MAX_WEAPON_HEAT_PERCENT = WEAPON_HEAT_SEGMENT_PERCENT * WEAPON_HEAT_SEGMENT_COUNT
+
 const SHIP_CLASS_LABEL: Record<string, string> = {
   alpha: 'Alpha',
   beta: 'Beta',
@@ -563,6 +567,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const munitionsActuelles = weaponGroup?.munitionsActuelles ?? 0
     const heatKey = slotKey ?? `preview:${weapon.id}`
     const currentHeat = weaponHeat[heatKey] ?? 0
+    const heatLevel = Math.min(WEAPON_HEAT_SEGMENT_COUNT, Math.max(1, Math.ceil(currentHeat / WEAPON_HEAT_SEGMENT_PERCENT)))
+    const heatFillPercent = currentHeat <= 0
+      ? 0
+      : Math.min(100, ((currentHeat - (heatLevel - 1) * WEAPON_HEAT_SEGMENT_PERCENT) / WEAPON_HEAT_SEGMENT_PERCENT) * 100)
     
     const bonusChargeur = (structuredMods['chargeur'] || 0) + (magMods['chargeur'] || 0)
     const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
@@ -573,7 +581,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       let newData: any = {}
       if (isThermique) {
         const value = weapon.valeurChauffe ?? 10
-        setWeaponHeat((current) => ({ ...current, [heatKey]: Math.min(400, (current[heatKey] ?? 0) + value) }))
+        setWeaponHeat((current) => ({ ...current, [heatKey]: Math.min(MAX_WEAPON_HEAT_PERCENT, (current[heatKey] ?? 0) + value) }))
         return
       } else {
         const cost = totalProjectiles || 1
@@ -817,9 +825,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               <div className="weapon-heat-tracking">
                 <div className="weapon-heat-bar-container">
                   <div 
-                    className={`weapon-heat-bar level-${Math.floor((currentHeat - 0.1) / 100) + 1}`}
+                    className={`weapon-heat-bar level-${heatLevel}`}
                     style={{ 
-                      width: `${(currentHeat % 100) || (currentHeat > 0 ? 100 : 0)}%`,
+                      width: `${heatFillPercent}%`,
                     }}
                   />
                 </div>
@@ -837,7 +845,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     <button 
                       className="ammo-btn heat-btn fire" 
                       onClick={handleFire} 
-                      disabled={currentHeat >= 400}
+                      disabled={currentHeat >= MAX_WEAPON_HEAT_PERCENT}
                       title="Tirer (chauffe)"
                     >
                       🔥

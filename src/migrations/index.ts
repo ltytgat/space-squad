@@ -34,6 +34,7 @@ import * as migration_20261023_082446_contact_messages from './20261023_082446_c
 import * as migration_20261025_022904 from './20261025_022904';
 import * as migration_20261025_182000_atelier_operations from './20261025_182000_atelier_operations';
 import * as migration_20261025_190000_atelier_compatibility_pricing from './20261025_190000_atelier_compatibility_pricing';
+import * as migration_20261025_191056 from './20261025_191056';
 
 export const migrations = [
   {
@@ -214,6 +215,11 @@ export const migrations = [
   {
     up: migration_20261025_190000_atelier_compatibility_pricing.up,
     down: migration_20261025_190000_atelier_compatibility_pricing.down,
-    name: '20261025_190000_atelier_compatibility_pricing'
+    name: '20261025_190000_atelier_compatibility_pricing',
+  },
+  {
+    up: migration_20261025_191056.up,
+    down: migration_20261025_191056.down,
+    name: '20261025_191056'
   },
 ];
