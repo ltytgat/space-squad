@@ -88,34 +88,35 @@ export const Ships: CollectionConfig = {
             })),
         })).filter((turret: any) => turret.armes.length > 0)
         const chassisOnlyPurchase = context.shipyardChassisOnly === true
+        const preserveShipState = context.atelierPreserveShipState === true
 
         return {
           ...data,
           moduleGenerateur:
-            chassisOnlyPurchase ? null : data.moduleGenerateur ??
+            chassisOnlyPurchase ? null : preserveShipState ? data.moduleGenerateur ?? null : data.moduleGenerateur ??
             (typeof saleModel.generateur === 'object'
               ? saleModel.generateur.id
               : saleModel.generateur),
           modulePropulseurs:
-            chassisOnlyPurchase ? null : data.modulePropulseurs ??
+            chassisOnlyPurchase ? null : preserveShipState ? data.modulePropulseurs ?? null : data.modulePropulseurs ??
             (typeof saleModel.propulseurs === 'object'
               ? saleModel.propulseurs.id
               : saleModel.propulseurs),
           moduleBoucliers:
-            chassisOnlyPurchase ? null : data.moduleBoucliers ??
+            chassisOnlyPurchase ? null : preserveShipState ? data.moduleBoucliers ?? null : data.moduleBoucliers ??
             (typeof saleModel.boucliers === 'object'
               ? saleModel.boucliers.id
               : saleModel.boucliers),
           moduleSurvie:
-            chassisOnlyPurchase ? null : data.moduleSurvie ??
+            chassisOnlyPurchase ? null : preserveShipState ? data.moduleSurvie ?? null : data.moduleSurvie ??
             (typeof saleModel.survie === 'object' ? saleModel.survie.id : saleModel.survie),
           modulesSupplementaires:
-            chassisOnlyPurchase ? [] : data.modulesSupplementaires ??
+            chassisOnlyPurchase ? [] : preserveShipState ? data.modulesSupplementaires ?? [] : data.modulesSupplementaires ??
             (saleModel.modulesOptionnels ?? []).map((module: any) =>
               typeof module === 'object' ? module.id : module,
             ),
-          armesPilote: chassisOnlyPurchase ? [] : data.armesPilote ?? pilotWeapons,
-          armesTourelles: chassisOnlyPurchase ? [] : data.armesTourelles ?? turretWeapons,
+          armesPilote: chassisOnlyPurchase ? [] : preserveShipState ? data.armesPilote ?? [] : data.armesPilote ?? pilotWeapons,
+          armesTourelles: chassisOnlyPurchase ? [] : preserveShipState ? data.armesTourelles ?? [] : data.armesTourelles ?? turretWeapons,
           blindageActuel: data.blindageActuel ?? chassis?.blindage,
           bouclierActuel: data.bouclierActuel ?? 0,
           esquiveActuelle: data.esquiveActuelle ?? chassis?.esquiveBase,
@@ -159,6 +160,9 @@ export const Ships: CollectionConfig = {
         description: 'Le personnage qui a acheté ce vaisseau.',
       },
     },
+    { name: 'proprietaireOrigineAtelier', type: 'relationship', relationTo: 'characters', label: 'Propriétaire d’origine Atelier', admin: { hidden: true } },
+    { name: 'prixAchatAtelier', type: 'number', min: 0, label: 'Prix d’achat Atelier', admin: { hidden: true } },
+    { name: 'atelierPersonnalise', type: 'checkbox', defaultValue: false, label: 'Vaisseau Atelier', admin: { hidden: true } },
 
     // ── État actuel ───────────────────────────────────
     {

@@ -88,6 +88,8 @@ export interface Config {
     formations: Formation;
     'special-roles': SpecialRole;
     mods: Mod;
+    'atelier-modifications': AtelierModification;
+    'custom-equipment': CustomEquipment;
     consumables: Consumable;
     chips: Chip;
     factions: Faction;
@@ -128,6 +130,8 @@ export interface Config {
     formations: FormationsSelect<false> | FormationsSelect<true>;
     'special-roles': SpecialRolesSelect<false> | SpecialRolesSelect<true>;
     mods: ModsSelect<false> | ModsSelect<true>;
+    'atelier-modifications': AtelierModificationsSelect<false> | AtelierModificationsSelect<true>;
+    'custom-equipment': CustomEquipmentSelect<false> | CustomEquipmentSelect<true>;
     consumables: ConsumablesSelect<false> | ConsumablesSelect<true>;
     chips: ChipsSelect<false> | ChipsSelect<true>;
     factions: FactionsSelect<false> | FactionsSelect<true>;
@@ -299,6 +303,9 @@ export interface Ship {
    * Le personnage qui a acheté ce vaisseau.
    */
   proprietaire?: (number | null) | Character;
+  proprietaireOrigineAtelier?: (number | null) | Character;
+  prixAchatAtelier?: number | null;
+  atelierPersonnalise?: boolean | null;
   blindageActuel?: number | null;
   bouclierActuel?: number | null;
   esquiveActuelle?: number | null;
@@ -413,6 +420,20 @@ export interface ShipSaleModel {
   modulesOptionnels?: (number | ShipModule)[] | null;
   description?: string | null;
   image?: (number | null) | Media;
+  atelierPrive?: boolean | null;
+  atelierProprietaire?: (number | null) | Character;
+  atelierProprietaireOrigine?: (number | null) | Character;
+  atelierModeleSource?: (number | null) | ShipSaleModel;
+  atelierPrixAchat?: number | null;
+  atelierModifications?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -445,117 +466,8 @@ export interface ShipModel {
    */
   esquiveBase?: number | null;
   image?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ship-modules".
- */
-export interface ShipModule {
-  id: number;
-  nom: string;
-  famille:
-    | '_base_header'
-    | 'generateur'
-    | 'propulseurs'
-    | 'survie'
-    | 'boucliers'
-    | '_supp_header'
-    | 'blindage'
-    | 'reparateur'
-    | 'hangar'
-    | 'scanner'
-    | 'infirmerie'
-    | 'sas-abordage'
-    | 'ordinateur-tir'
-    | 'harmonisateur'
-    | 'baie-amarrage'
-    | 'pilotage-assiste'
-    | 'propulseurs-stardash'
-    | 'cabines-equipage'
-    | '_tourelles_header'
-    | 'bombardement'
-    | 'shotgun'
-    | 'tir-concentre'
-    | 'dispersion';
-  typeModule: 'base' | 'supplementaire' | 'tourelle';
-  taille: '1' | '2' | '3' | '4';
-  modele: 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
-  consommation?: number | null;
-  prix?: string | null;
-  /**
-   * Puissance du générateur (ex: 6 GW).
-   */
-  puissance?: string | null;
-  /**
-   * Bonus apportés (ex: Esquive +3, Tir(pilote)+2, Crypto +1, Dash +1).
-   */
-  modificateurs?: string | null;
-  bonusCalcul: {
-    cible: 'esquive' | 'tir-pilote' | 'pilotage' | 'analyse';
-    valeur: number;
-  };
-  bouclierMax?: number | null;
-  /**
-   * Nombre de tours avant réactivation.
-   */
-  cooldownBouclier?: number | null;
-  rechargeBouclier?: number | null;
-  /**
-   * Réparations par tour (max). Ex: 3 (12).
-   */
-  reparations?: string | null;
-  malusPoids?: number | null;
-  blindageBonus?: number | null;
-  /**
-   * Capacité ou nombre de places.
-   */
-  capacite?: string | null;
-  consommationParPersonne?: number | null;
-  nombrePlaces?: number | null;
-  consommationSupplementaire?: number | null;
-  portee?: string | null;
-  bonusDegatsPourcentage?: number | null;
-  bonusDegatsPar100MJ?: number | null;
-  mjMaxUtilisable?: number | null;
-  /**
-   * Angle de tir de la dispersion (ex: 45°, 90°).
-   */
-  angleTir?: string | null;
-  description?: string | null;
-  image?: (number | null) | Media;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ship-weapons".
- */
-export interface ShipWeapon {
-  id: number;
-  nom: string;
-  taille: '1' | '2' | '3' | '4';
-  modele: 'G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
-  type: 'thermique' | 'cinetique' | 'explosif' | 'blindage';
-  categorie?: ('cartouche' | 'cinetique' | 'lance-missile' | 'mine' | 'bouclier-joute') | null;
-  degats?: string | null;
-  chauffe?: number | null;
-  ballesParSalve?: number | null;
-  chargeur?: number | null;
-  distance?: string | null;
-  cooldown?: number | null;
-  bonusBlindage?: number | null;
-  /**
-   * Nombre de points d'emport consommés (ex: x2 pour lance-missiles).
-   */
-  pointsEmport?: number | null;
-  /**
-   * Prix de l'arme (ex: 100 k, 1 M).
-   */
-  prix?: string | null;
-  description?: string | null;
-  image?: (number | null) | Media;
+  atelierPrive?: boolean | null;
+  atelierProprietaire?: (number | null) | Character;
   updatedAt: string;
   createdAt: string;
 }
@@ -646,44 +558,53 @@ export interface Character {
   coachingPerceptionValue?: number | null;
   armureTete?: {
     item?: (number | null) | Armor;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
   };
   armureTorse?: {
     item?: (number | null) | Armor;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
   };
   armureBras?: {
     item?: (number | null) | Armor;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
   };
   armureJambes?: {
     item?: (number | null) | Armor;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
   };
   armureBackpack?: {
     item?: (number | null) | Armor;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
   };
   armePrincipale?: {
     item?: (number | null) | Weapon;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
   };
   armeSecondaire?: {
     item?: (number | null) | Weapon;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
   };
   armeLourde?: {
     item?: (number | null) | Weapon;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
   };
   armeDeMelee?: {
     item?: (number | null) | Weapon;
+    customItem?: (number | null) | CustomEquipment;
     mods?: (number | Mod)[] | null;
     munitionsActuelles?: number | null;
     chargeurRelie?: (number | null) | Consumable;
@@ -703,6 +624,10 @@ export interface Character {
    * Calculé depuis les postes de la fiche du vaisseau. Sans poste : passager.
    */
   roleVaisseau?: ('pilote' | 'copilote' | 'canonnier' | 'passager') | null;
+  /**
+   * Instances Atelier uniques possédées par ce personnage.
+   */
+  inventaireEquipementsCustom?: (number | CustomEquipment)[] | null;
   inventaireArmes?:
     | {
         item: number | Weapon;
@@ -985,6 +910,54 @@ export interface Mod {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "custom-equipment".
+ */
+export interface CustomEquipment {
+  id: number;
+  nom: string;
+  categorieEquipement: 'arme' | 'armure';
+  categorie: string;
+  typeArme?: string | null;
+  armeSource?: (number | null) | Weapon;
+  armureSource?: (number | null) | Armor;
+  set?: (number | null) | ArmorSet;
+  proprietaireActuel: number | Character;
+  proprietaireOrigine: number | Character;
+  prixAchat: number;
+  mods?: (number | Mod)[] | null;
+  munitionsActuelles?: number | null;
+  chargeurRelie?: (number | null) | Consumable;
+  proprietesFigees:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  modificationsAtelier?:
+    | {
+        modificationSourceId?: number | null;
+        nom: string;
+        prix: number;
+        effets:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "weapons".
  */
 export interface Weapon {
@@ -1104,6 +1077,117 @@ export interface Chip {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-modules".
+ */
+export interface ShipModule {
+  id: number;
+  nom: string;
+  famille:
+    | '_base_header'
+    | 'generateur'
+    | 'propulseurs'
+    | 'survie'
+    | 'boucliers'
+    | '_supp_header'
+    | 'blindage'
+    | 'reparateur'
+    | 'hangar'
+    | 'scanner'
+    | 'infirmerie'
+    | 'sas-abordage'
+    | 'ordinateur-tir'
+    | 'harmonisateur'
+    | 'baie-amarrage'
+    | 'pilotage-assiste'
+    | 'propulseurs-stardash'
+    | 'cabines-equipage'
+    | '_tourelles_header'
+    | 'bombardement'
+    | 'shotgun'
+    | 'tir-concentre'
+    | 'dispersion';
+  typeModule: 'base' | 'supplementaire' | 'tourelle';
+  taille: '1' | '2' | '3' | '4';
+  modele: 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+  consommation?: number | null;
+  prix?: string | null;
+  /**
+   * Puissance du générateur (ex: 6 GW).
+   */
+  puissance?: string | null;
+  /**
+   * Bonus apportés (ex: Esquive +3, Tir(pilote)+2, Crypto +1, Dash +1).
+   */
+  modificateurs?: string | null;
+  bonusCalcul: {
+    cible: 'esquive' | 'tir-pilote' | 'pilotage' | 'analyse';
+    valeur: number;
+  };
+  bouclierMax?: number | null;
+  /**
+   * Nombre de tours avant réactivation.
+   */
+  cooldownBouclier?: number | null;
+  rechargeBouclier?: number | null;
+  /**
+   * Réparations par tour (max). Ex: 3 (12).
+   */
+  reparations?: string | null;
+  malusPoids?: number | null;
+  blindageBonus?: number | null;
+  /**
+   * Capacité ou nombre de places.
+   */
+  capacite?: string | null;
+  consommationParPersonne?: number | null;
+  nombrePlaces?: number | null;
+  consommationSupplementaire?: number | null;
+  portee?: string | null;
+  bonusDegatsPourcentage?: number | null;
+  bonusDegatsPar100MJ?: number | null;
+  mjMaxUtilisable?: number | null;
+  /**
+   * Angle de tir de la dispersion (ex: 45°, 90°).
+   */
+  angleTir?: string | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ship-weapons".
+ */
+export interface ShipWeapon {
+  id: number;
+  nom: string;
+  taille: '1' | '2' | '3' | '4';
+  modele: 'G' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+  type: 'thermique' | 'cinetique' | 'explosif' | 'blindage';
+  categorie?: ('cartouche' | 'cinetique' | 'lance-missile' | 'mine' | 'bouclier-joute') | null;
+  degats?: string | null;
+  chauffe?: number | null;
+  ballesParSalve?: number | null;
+  chargeur?: number | null;
+  distance?: string | null;
+  cooldown?: number | null;
+  bonusBlindage?: number | null;
+  /**
+   * Nombre de points d'emport consommés (ex: x2 pour lance-missiles).
+   */
+  pointsEmport?: number | null;
+  /**
+   * Prix de l'arme (ex: 100 k, 1 M).
+   */
+  prix?: string | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ship-consumables".
  */
 export interface ShipConsumable {
@@ -1217,6 +1301,77 @@ export interface Formation {
   coutKonis: number;
   coutPointsDeRang: number;
   coutRenommee: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "atelier-modifications".
+ */
+export interface AtelierModification {
+  id: number;
+  nom: string;
+  description?: string | null;
+  /**
+   * Coût ajouté au prix d’achat de l’équipement custom.
+   */
+  prix: number;
+  compatibilites: {
+    categorieEquipement: 'arme' | 'armure' | 'vaisseau';
+    sousCategorie?: ('fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
+    typeArme?: ('thermique' | 'cinetique') | null;
+    classeVaisseau?: ('alpha' | 'beta' | 'gamma' | 'delta') | null;
+    id?: string | null;
+  }[];
+  effets?:
+    | {
+        cible:
+          | 'nom'
+          | 'fabricant'
+          | 'categorie'
+          | 'type'
+          | 'poids'
+          | 'prix'
+          | 'forceMinimum'
+          | 'valeurDegats'
+          | 'zoneEffet'
+          | 'projectilesParTir'
+          | 'tempsRechargement'
+          | 'porteeFixe'
+          | 'courtePortee'
+          | 'modCourtePortee'
+          | 'moyennePortee'
+          | 'modMoyennePortee'
+          | 'paliersSniper'
+          | 'trancheMalusLonguePortee'
+          | 'malusParTranche'
+          | 'tailleChargeur'
+          | 'valeurChauffe'
+          | 'tempsRefroidissement'
+          | 'valeurArmurePhysique'
+          | 'valeurBouclier'
+          | 'valeurRupture'
+          | 'modificateur'
+          | 'stockage'
+          | 'set'
+          | 'image'
+          | 'classe'
+          | 'tourelles'
+          | 'pointsEmportPilote'
+          | 'pointsEmportTourelles'
+          | 'blindage'
+          | 'modulesSupplementaires'
+          | 'consommables'
+          | 'esquiveBase';
+        operation: 'percent' | 'add' | 'replace' | 'dice-bonus' | 'slot-add';
+        /**
+         * Pourcentage signé, nombre, valeur de remplacement ou objet JSON pour une cible structurée.
+         */
+        valeur: string;
+        id?: string | null;
+      }[]
+    | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1472,6 +1627,14 @@ export interface PayloadLockedDocument {
         value: number | Mod;
       } | null)
     | ({
+        relationTo: 'atelier-modifications';
+        value: number | AtelierModification;
+      } | null)
+    | ({
+        relationTo: 'custom-equipment';
+        value: number | CustomEquipment;
+      } | null)
+    | ({
         relationTo: 'consumables';
         value: number | Consumable;
       } | null)
@@ -1621,6 +1784,9 @@ export interface ShipsSelect<T extends boolean = true> {
   nom?: T;
   modele?: T;
   proprietaire?: T;
+  proprietaireOrigineAtelier?: T;
+  prixAchatAtelier?: T;
+  atelierPersonnalise?: T;
   blindageActuel?: T;
   bouclierActuel?: T;
   esquiveActuelle?: T;
@@ -1710,6 +1876,8 @@ export interface ShipModelsSelect<T extends boolean = true> {
   consommables?: T;
   esquiveBase?: T;
   image?: T;
+  atelierPrive?: T;
+  atelierProprietaire?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1735,6 +1903,12 @@ export interface ShipSaleModelsSelect<T extends boolean = true> {
   modulesOptionnels?: T;
   description?: T;
   image?: T;
+  atelierPrive?: T;
+  atelierProprietaire?: T;
+  atelierProprietaireOrigine?: T;
+  atelierModeleSource?: T;
+  atelierPrixAchat?: T;
+  atelierModifications?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2006,36 +2180,42 @@ export interface CharactersSelect<T extends boolean = true> {
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
       };
   armureTorse?:
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
       };
   armureBras?:
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
       };
   armureJambes?:
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
       };
   armureBackpack?:
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
       };
   armePrincipale?:
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
@@ -2044,6 +2224,7 @@ export interface CharactersSelect<T extends boolean = true> {
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
@@ -2052,6 +2233,7 @@ export interface CharactersSelect<T extends boolean = true> {
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
@@ -2060,6 +2242,7 @@ export interface CharactersSelect<T extends boolean = true> {
     | T
     | {
         item?: T;
+        customItem?: T;
         mods?: T;
         munitionsActuelles?: T;
         chargeurRelie?: T;
@@ -2073,6 +2256,7 @@ export interface CharactersSelect<T extends boolean = true> {
   puceMk3?: T;
   vaisseau?: T;
   roleVaisseau?: T;
+  inventaireEquipementsCustom?: T;
   inventaireArmes?:
     | T
     | {
@@ -2192,6 +2376,66 @@ export interface ModsSelect<T extends boolean = true> {
         id?: T;
       };
   image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "atelier-modifications_select".
+ */
+export interface AtelierModificationsSelect<T extends boolean = true> {
+  nom?: T;
+  description?: T;
+  prix?: T;
+  compatibilites?:
+    | T
+    | {
+        categorieEquipement?: T;
+        sousCategorie?: T;
+        typeArme?: T;
+        classeVaisseau?: T;
+        id?: T;
+      };
+  effets?:
+    | T
+    | {
+        cible?: T;
+        operation?: T;
+        valeur?: T;
+        id?: T;
+      };
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "custom-equipment_select".
+ */
+export interface CustomEquipmentSelect<T extends boolean = true> {
+  nom?: T;
+  categorieEquipement?: T;
+  categorie?: T;
+  typeArme?: T;
+  armeSource?: T;
+  armureSource?: T;
+  set?: T;
+  proprietaireActuel?: T;
+  proprietaireOrigine?: T;
+  prixAchat?: T;
+  mods?: T;
+  munitionsActuelles?: T;
+  chargeurRelie?: T;
+  proprietesFigees?: T;
+  modificationsAtelier?:
+    | T
+    | {
+        modificationSourceId?: T;
+        nom?: T;
+        prix?: T;
+        effets?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

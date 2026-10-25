@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+import { atelierPrivateModelReadAccess } from '@/lib/atelierAccess'
 
 /**
  * Châssis de vaisseaux.
@@ -16,7 +17,7 @@ export const ShipModels: CollectionConfig = {
     group: 'Vaisseaux',
   },
   access: {
-    read: ({ req }) => !!req.user,
+    read: atelierPrivateModelReadAccess,
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
@@ -143,5 +144,7 @@ export const ShipModels: CollectionConfig = {
       label: 'Image',
       admin: { position: 'sidebar' },
     },
+    { name: 'atelierPrive', type: 'checkbox', defaultValue: false, label: 'Châssis Atelier privé', admin: { hidden: true } },
+    { name: 'atelierProprietaire', type: 'relationship', relationTo: 'characters', label: 'Propriétaire Atelier', admin: { hidden: true } },
   ],
 }

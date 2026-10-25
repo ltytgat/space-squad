@@ -262,7 +262,14 @@ export function calculateStats(character: any) {
 
   const asArmor = (v: any): Armor | null => {
     if (!v) return null
+    if (typeof v === 'object' && v.customItem && typeof v.customItem === 'object') {
+      const custom = v.customItem
+      const properties = custom.proprietesFigees
+      if (!properties || typeof properties !== 'object') return null
+      return { ...properties, id: custom.id, nom: custom.nom ?? properties.nom, categorie: custom.categorie ?? properties.categorie, set: custom.set ?? properties.set } as Armor
+    }
     if (typeof v === 'object' && 'item' in v) {
+      if (v.customItem && typeof v.customItem === 'object') return asArmor({ customItem: v.customItem })
       if (!v.item || typeof v.item === 'string') return null
       return v.item
     }
@@ -273,6 +280,9 @@ export function calculateStats(character: any) {
   const asMods = (v: any): Mod[] => {
     if (!v) return []
     let mods = []
+    if (typeof v === 'object' && v.customItem && typeof v.customItem === 'object') {
+      mods = v.customItem.mods ?? []
+    } else
     if (typeof v === 'object' && 'mods' in v) {
       mods = v.mods ?? []
     } else if (Array.isArray(v)) {
@@ -283,7 +293,14 @@ export function calculateStats(character: any) {
 
   const asWeapon = (v: any): Weapon | null => {
     if (!v) return null
+    if (typeof v === 'object' && v.customItem && typeof v.customItem === 'object') {
+      const custom = v.customItem
+      const properties = custom.proprietesFigees
+      if (!properties || typeof properties !== 'object') return null
+      return { ...properties, id: custom.id, nom: custom.nom ?? properties.nom, categorie: custom.categorie ?? properties.categorie } as Weapon
+    }
     if (typeof v === 'object' && 'item' in v) {
+      if (v.customItem && typeof v.customItem === 'object') return asWeapon({ customItem: v.customItem })
       if (!v.item || typeof v.item === 'string') return null
       return v.item
     }

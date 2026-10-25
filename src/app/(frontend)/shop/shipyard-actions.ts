@@ -8,7 +8,7 @@ import config from '@/payload.config'
 import { computeShipAccess } from '@/lib/shipAccess'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { computeRank } from '@/lib/rankSystem'
-import { exactAdd, exactSubtract, readShopPrice, relationId, resalePrice } from '@/lib/shop'
+import { exactAdd, exactMultiply, exactSubtract, readShopPrice, relationId, resalePrice } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { detachShipTransferItem, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, minimumRankForShipClass, shipPurchasePrice, shipSalePrice, shipyardFingerprint, type ShipTransferKind } from '@/lib/shipyard'
 import { getActiveCharacter } from '@/lib/activeCharacter'
@@ -187,6 +187,7 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
       const modelLock = await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM ship_sale_models WHERE id = ${raw.saleModelId} FOR SHARE` })
       if (!modelLock.rows[0]) fail('Modèle de vente introuvable.')
       const model = await payload.findByID({ collection: 'ship-sale-models', id: raw.saleModelId!, depth: 2, overrideAccess: true, req }) as any
+      if (model.atelierPrive) fail('Un vaisseau personnalisé ne peut pas être racheté au chantier naval.')
       const minimumRank = minimumRankForShipClass(model.chassis?.classe)
       const currentRank = computeRank(Number(currentCharacter.pointsDeRang) || 0).level
       if (minimumRank !== null && currentRank < minimumRank) {
@@ -235,7 +236,11 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
         if (price === null) fail(`${component.nom} n’a pas de prix et ne peut pas être vendu.`)
         return { component, price }
       })
-      const total = shipSalePrice(model.prix, selected.map(({ price }) => price))
+      const atelierPrice = model?.atelierPrive ? readShopPrice(model.atelierPrixAchat) : null
+      const chassisValue = atelierPrice === null ? null : exactMultiply(atelierPrice, 0.25)
+      const total = atelierPrice === null
+        ? shipSalePrice(model.prix, selected.map(({ price }) => price))
+        : selected.reduce((sum, { price }) => exactAdd(sum, resalePrice(price)), chassisValue!)
       if (total === null) fail('Le montant de revente ne peut pas être calculé.')
 
       mergeCargo(destination, source)
@@ -249,6 +254,11 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
         await payload.update({ collection: 'characters', id: member.id, data: { vaisseau: null, roleVaisseau: null }, overrideAccess: true, user, req })
       }
       await payload.delete({ collection: 'ships', id: source.id, overrideAccess: true, user, req })
+      if (model?.atelierPrive) {
+        const privateChassisId = relationId(model.chassis)
+        await payload.delete({ collection: 'ship-sale-models', id: model.id, overrideAccess: true, user, req })
+        if (privateChassisId) await payload.delete({ collection: 'ship-models', id: Number(privateChassisId), overrideAccess: true, user, req })
+      }
 
       const currentBalance = Number(currentCharacter.konis ?? 0)
       if (!Number.isFinite(currentBalance) || currentBalance < 0) fail('Le solde du personnage est incohérent.')
@@ -256,7 +266,7 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
       await payload.update({ collection: 'characters', id: character.id, data: { konis: nextBalance }, overrideAccess: true, user, req })
       amount = total
       ledgerShipId = Number(destination.id)
-      Object.assign(detail, { soldShipId: Number(source.id), shipName: source.nom, destinationShipId: Number(destination.id), chassisAmount: resalePrice(modelPrice) / 2, soldComponentKeys: selectedKeys, balanceBefore: currentBalance, balanceAfter: nextBalance })
+      Object.assign(detail, { soldShipId: Number(source.id), shipName: source.nom, destinationShipId: Number(destination.id), chassisAmount: chassisValue ?? resalePrice(modelPrice) / 2, soldComponentKeys: selectedKeys, balanceBefore: currentBalance, balanceAfter: nextBalance, atelierPurchasePrice: atelierPrice })
     } else {
       const source = await fetchShip(payload, raw.shipId!, req)
       const destination = await fetchShip(payload, raw.destinationShipId!, req)

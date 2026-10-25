@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
+import { atelierPrivateModelReadAccess } from '@/lib/atelierAccess'
 
 /**
  * Modèles de vente de vaisseaux.
@@ -17,7 +18,7 @@ export const ShipSaleModels: CollectionConfig = {
     group: 'Vaisseaux',
   },
   access: {
-    read: ({ req }) => !!req.user,
+    read: atelierPrivateModelReadAccess,
     create: ({ req }) => (req.user as User | null)?.role === 'admin',
     update: ({ req }) => (req.user as User | null)?.role === 'admin',
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
@@ -200,5 +201,11 @@ export const ShipSaleModels: CollectionConfig = {
       label: 'Image',
       admin: { position: 'sidebar' },
     },
+    { name: 'atelierPrive', type: 'checkbox', defaultValue: false, label: 'Modèle Atelier privé', admin: { hidden: true } },
+    { name: 'atelierProprietaire', type: 'relationship', relationTo: 'characters', label: 'Propriétaire Atelier', admin: { hidden: true } },
+    { name: 'atelierProprietaireOrigine', type: 'relationship', relationTo: 'characters', label: 'Propriétaire d’origine', admin: { hidden: true } },
+    { name: 'atelierModeleSource', type: 'relationship', relationTo: 'ship-sale-models', label: 'Modèle source', admin: { hidden: true } },
+    { name: 'atelierPrixAchat', type: 'number', min: 0, label: 'Prix d’achat Atelier', admin: { hidden: true } },
+    { name: 'atelierModifications', type: 'json', label: 'Modifications Atelier figées', admin: { hidden: true } },
   ],
 }

@@ -396,6 +396,7 @@ export const Characters: CollectionConfig = {
                   label: 'Pièce d\'armure',
                   filterOptions: { categorie: { equals: 'tete' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Armure personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -424,6 +425,7 @@ export const Characters: CollectionConfig = {
                   label: 'Pièce d\'armure',
                   filterOptions: { categorie: { equals: 'torse' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Armure personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -457,6 +459,7 @@ export const Characters: CollectionConfig = {
                   label: 'Pièce d\'armure',
                   filterOptions: { categorie: { equals: 'bras' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Armure personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -485,6 +488,7 @@ export const Characters: CollectionConfig = {
                   label: 'Pièce d\'armure',
                   filterOptions: { categorie: { equals: 'jambes' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Armure personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -516,6 +520,7 @@ export const Characters: CollectionConfig = {
                   label: 'Back-pack',
                   filterOptions: { categorie: { equals: 'backpack' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Armure personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -561,6 +566,7 @@ export const Characters: CollectionConfig = {
                     },
                   },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Arme personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -617,6 +623,7 @@ export const Characters: CollectionConfig = {
                     },
                   },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Arme personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -674,6 +681,7 @@ export const Characters: CollectionConfig = {
                   label: 'Arme',
                   filterOptions: { categorie: { equals: 'lourde' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Arme personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -724,6 +732,7 @@ export const Characters: CollectionConfig = {
                   label: 'Arme',
                   filterOptions: { categorie: { equals: 'melee' } },
                 },
+                { name: 'customItem', type: 'relationship', relationTo: 'custom-equipment', label: 'Arme personnalisée' },
                 {
                   name: 'mods',
                   type: 'relationship',
@@ -854,6 +863,14 @@ export const Characters: CollectionConfig = {
       type: 'collapsible',
       label: 'Inventaire Global (Possessions)',
       fields: [
+        {
+          name: 'inventaireEquipementsCustom',
+          type: 'relationship',
+          relationTo: 'custom-equipment',
+          hasMany: true,
+          label: 'Équipements personnalisés en réserve',
+          admin: { description: 'Instances Atelier uniques possédées par ce personnage.' },
+        },
         {
           name: 'inventaireArmes',
           type: 'array',

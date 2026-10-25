@@ -18,6 +18,7 @@ import {
 import { validateTemporaryCharacterUpdate } from '@/lib/temporaryCharacterRules'
 import { canMJManageCharacter } from '@/lib/mjAccess'
 import { getActiveMode } from '@/lib/activeMode'
+import { reconcileCustomEquipmentInventory } from '@/lib/atelier'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
@@ -26,6 +27,17 @@ const relationNumericId = (value: any): number | null => {
 }
 const CHARACTER_WEAPON_SLOTS = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'] as const
 const CHARACTER_CONSUMABLE_SLOTS = ['consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3'] as const
+const CUSTOM_EQUIPMENT_SLOTS = {
+  armePrincipale: 'arme',
+  armeSecondaire: 'arme',
+  armeLourde: 'arme',
+  armeDeMelee: 'arme',
+  armureTete: 'armure',
+  armureTorse: 'armure',
+  armureBras: 'armure',
+  armureJambes: 'armure',
+  armureBackpack: 'armure',
+} as const
 
 function withoutTransientWeaponHeat(value: any): any {
   if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
@@ -97,6 +109,55 @@ async function assertHeavyWeaponsMeetForce(payload: any, character: any, updateD
     if (force < weapon.forceMinimum) {
       throw new Error(`Force insuffisante pour équiper ${weapon.nom} : Fo ${weapon.forceMinimum} minimum requise (votre Force : ${force}).`)
     }
+  }
+}
+
+async function syncCustomEquipmentOwnership(payload: any, character: any, updateData: Record<string, any>) {
+  // This relationship is managed by the Atelier actions so clients cannot grant themselves items.
+  delete updateData.inventaireEquipementsCustom
+
+  const inventory = character.inventaireEquipementsCustom ?? []
+  const currentEquipped = new Map<string, number>()
+  const finalEquipped = new Map<string, number>()
+  const requestedIds = new Set<number>()
+
+  for (const [slot, kind] of Object.entries(CUSTOM_EQUIPMENT_SLOTS)) {
+    const currentId = relationNumericId(character[slot]?.customItem)
+    if (currentId) currentEquipped.set(slot, currentId)
+    const target = Object.prototype.hasOwnProperty.call(updateData, slot) ? updateData[slot] : character[slot]
+    const customId = relationNumericId(target?.customItem)
+    if (customId) {
+      if (relationNumericId(target?.item)) throw new Error('Un emplacement ne peut contenir qu’un équipement standard ou personnalisé.')
+      finalEquipped.set(slot, customId)
+      requestedIds.add(customId)
+      if (!inventory.includes(customId) && currentId !== customId) {
+        throw new Error('Cet équipement personnalisé ne se trouve pas dans votre réserve.')
+      }
+    }
+  }
+
+  const equippedIds = [...finalEquipped.values()]
+  if (new Set(equippedIds).size !== equippedIds.length) throw new Error('Un équipement personnalisé ne peut être équipé qu’à un seul emplacement.')
+
+  for (const id of requestedIds) {
+    const item = await payload.findByID({ collection: 'custom-equipment', id, depth: 0, overrideAccess: true }).catch(() => null) as any
+    if (!item || relationNumericId(item.proprietaireActuel) !== Number(character.id)) {
+      throw new Error('Cet équipement personnalisé ne vous appartient pas.')
+    }
+    const slot = [...finalEquipped].find(([, itemId]) => itemId === id)?.[0]
+    if (!slot || item.categorieEquipement !== CUSTOM_EQUIPMENT_SLOTS[slot as keyof typeof CUSTOM_EQUIPMENT_SLOTS]) {
+      throw new Error('Cet équipement personnalisé ne correspond pas à cet emplacement.')
+    }
+  }
+
+  const nextInventory = reconcileCustomEquipmentInventory(inventory, [...currentEquipped.values()], equippedIds)
+  if (Object.keys(CUSTOM_EQUIPMENT_SLOTS).some((slot) => Object.prototype.hasOwnProperty.call(updateData, slot))) {
+    updateData.inventaireEquipementsCustom = nextInventory
+  }
+
+  // Custom items have their own reserve relationship, not the catalog-backed weapon/armor arrays.
+  for (const field of ['inventaireArmes', 'inventaireArmures']) {
+    if (Array.isArray(updateData[field])) updateData[field] = updateData[field].filter((row: any) => !row?.customItem)
   }
 }
 
@@ -178,6 +239,8 @@ export async function updateCharacter(characterId: number, data: any) {
     delete updateData.workspace
     delete updateData.groupe
   }
+
+  await syncCustomEquipmentOwnership(payload, character, updateData)
 
   if (!isManager) {
     const currentRank = computeRank(Number(character.pointsDeRang) || 0).level
@@ -411,6 +474,8 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
       throw new Error('Rang de faction invalide.')
     }
   }
+
+  await syncCustomEquipmentOwnership(payload, character, updateData)
 
   await payload.update({
     collection: 'characters',

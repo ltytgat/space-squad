@@ -96,7 +96,7 @@ export default async function ShipyardPage({ searchParams }: {
   if (!isCharacterCreationComplete(character)) redirect('/character')
 
   const [modelsResult, ownedResult] = await Promise.all([
-    payload.find({ collection: 'ship-sale-models', depth: 4, limit: 500, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'ship-sale-models', where: { atelierPrive: { equals: false } }, depth: 4, limit: 500, sort: 'nom', overrideAccess: true }),
     payload.find({ collection: 'ships', where: { proprietaire: { equals: character.id } }, depth: 4, limit: 200, sort: 'nom', overrideAccess: true }),
   ])
   const activeShipId = idOf(character.vaisseau)
