@@ -19,19 +19,72 @@ describe('Atelier compatibility', () => {
 })
 
 describe('Atelier frozen effects and prices', () => {
+  it('adds the configured number of damage dice and preserves flat bonuses', () => {
+    expect(applyAtelierEffects({ valeurDegats: '2d6+1' }, [
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '2' },
+    ], 'arme').valeurDegats).toBe('4d6+1')
+  })
+
+  it('increases damage die size by one progression step and preserves signed flat bonuses', () => {
+    const custom = applyAtelierEffects({ valeurDegats: '3d6 - 2' }, [
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+    ], 'arme')
+    expect(custom.valeurDegats).toBe('3d10-2')
+  })
+
+  it('follows each configured die size in order', () => {
+    let damage = '1d2+5'
+    for (const size of [3, 4, 6, 8, 10, 12, 15, 18, 20]) {
+      damage = applyAtelierEffects({ valeurDegats: damage }, [
+        { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+      ], 'arme').valeurDegats
+      expect(damage).toBe(`1d${size}+5`)
+    }
+  })
+
   it('applies configured effects to a frozen property copy', () => {
     const source = { nom: 'Fusil', valeurDegats: '2d6', poids: 4 }
     const custom = applyAtelierEffects(source, [
-      { cible: 'valeurDegats', operation: 'dice-bonus', valeur: '2' },
-      { cible: 'poids', operation: 'percent', valeur: '-25' },
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '2' },
+      { cible: 'poids', operation: 'add', valeur: '-1' },
     ], 'arme')
-    expect(custom).toMatchObject({ nom: 'Fusil', valeurDegats: '2d6+2', poids: 3 })
+    expect(custom).toMatchObject({ nom: 'Fusil', valeurDegats: '4d6', poids: 3 })
     expect(source).toEqual({ nom: 'Fusil', valeurDegats: '2d6', poids: 4 })
   })
 
   it('prevents chassis reductions and invalid effect targets', () => {
     expect(() => applyAtelierEffects({ blindage: 10 }, [{ cible: 'blindage', operation: 'add', valeur: '-1' }], 'vaisseau')).toThrow()
-    expect(() => applyAtelierEffects({ nom: 'Fusil' }, [{ cible: 'id', operation: 'replace', valeur: '4' }], 'arme')).toThrow()
+    expect(() => applyAtelierEffects({ nom: 'Fusil' }, [{ cible: 'id', operation: 'add', valeur: '4' }], 'arme')).toThrow()
+  })
+
+  it('blocks damage die sizes outside the progression and increases above d20', () => {
+    expect(() => applyAtelierEffects({ valeurDegats: '2d5' }, [
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+    ], 'arme')).toThrow()
+    expect(() => applyAtelierEffects({ valeurDegats: '2d6+' }, [
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1' },
+    ], 'arme')).toThrow()
+    expect(() => applyAtelierEffects({ valeurDegats: '2d20+3' }, [
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+    ], 'arme')).toThrow(/d20/)
+  })
+
+  it('requires a positive integer for added dice and exactly one step for die size', () => {
+    expect(() => applyAtelierEffects({ valeurDegats: '2d6' }, [
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1.5' },
+    ], 'arme')).toThrow()
+    expect(() => applyAtelierEffects({ valeurDegats: '2d6' }, [
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '2' },
+    ], 'arme')).toThrow()
+  })
+
+  it('rejects the removed operations at runtime', () => {
+    for (const operation of ['percent', 'replace']) {
+      expect(() => applyAtelierEffects({ poids: 4 }, [
+        { cible: 'poids', operation: operation as never, valeur: '10' },
+      ], 'arme')).toThrow('Opération Atelier inconnue.')
+    }
   })
 
   it('adds fixed recipe prices to the source price and strips live item metadata from snapshots', () => {

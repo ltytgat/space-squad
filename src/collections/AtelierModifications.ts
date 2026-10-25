@@ -161,10 +161,9 @@ export const AtelierModifications: CollectionConfig = {
               required: true,
               label: 'Opération',
               options: [
-                { label: 'Pourcentage', value: 'percent' },
                 { label: 'Ajout numérique', value: 'add' },
-                { label: 'Remplacement', value: 'replace' },
-                { label: 'Bonus aux dés de dégâts', value: 'dice-bonus' },
+                { label: 'Plus de dés de dégâts', value: 'dice-count-add' },
+                { label: 'Augmenter la taille du dé', value: 'dice-size-step' },
                 { label: 'Augmenter des emplacements codés', value: 'slot-add' },
               ],
               admin: { width: '30%' },
@@ -176,7 +175,7 @@ export const AtelierModifications: CollectionConfig = {
               label: 'Valeur / donnée JSON',
               admin: {
                 width: '35%',
-                description: 'Pourcentage signé, nombre, valeur de remplacement ou objet JSON pour une cible structurée.',
+                description: 'Nombre signé pour un ajout, quantité de dés à ajouter, valeur 1 pour augmenter la taille du dé d’un rang, ou nombre/liste JSON pour les emplacements codés.',
               },
             },
           ],

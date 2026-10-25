@@ -1363,9 +1363,9 @@ export interface AtelierModification {
           | 'modulesSupplementaires'
           | 'consommables'
           | 'esquiveBase';
-        operation: 'percent' | 'add' | 'replace' | 'dice-bonus' | 'slot-add';
+        operation: 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add';
         /**
-         * Pourcentage signé, nombre, valeur de remplacement ou objet JSON pour une cible structurée.
+         * Nombre signé pour un ajout, quantité de dés à ajouter, valeur 1 pour augmenter la taille du dé d’un rang, ou nombre/liste JSON pour les emplacements codés.
          */
         valeur: string;
         id?: string | null;

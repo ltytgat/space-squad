@@ -1,7 +1,7 @@
-import { exactAdd, exactMultiply, readShopPrice, relationId } from './shop'
+import { exactAdd, readShopPrice, relationId } from './shop'
 
 export type AtelierEquipmentKind = 'arme' | 'armure' | 'vaisseau'
-export type AtelierOperation = 'percent' | 'add' | 'replace' | 'dice-bonus' | 'slot-add'
+export type AtelierOperation = 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add'
 
 export type AtelierEffect = {
   cible: string
@@ -37,32 +37,45 @@ const SHIP_INCREASE_ONLY = new Set([
   'tourelles', 'pointsEmportPilote', 'blindage', 'consommables', 'esquiveBase',
 ])
 
+const DAMAGE_DIE_SIZES = [2, 3, 4, 6, 8, 10, 12, 15, 18, 20] as const
+
 function finiteValue(value: string, label: string): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) throw new Error(`${label} doit être un nombre valide.`)
   return parsed
 }
 
-function replacementValue(value: string, current: unknown): unknown {
-  if (typeof current === 'number') return finiteValue(value, 'La valeur de remplacement')
-  if (typeof current === 'boolean') {
-    if (value !== 'true' && value !== 'false') throw new Error('La valeur de remplacement doit être true ou false.')
-    return value === 'true'
+function parseDamageExpression(current: unknown): { count: number; size: number; flatBonus: string } {
+  if (typeof current !== 'string') throw new Error('Les dés ne peuvent être modifiés qu’avec une expression de dégâts au format kdn±x.')
+  const match = current.trim().match(/^(\d+)\s*[dD]\s*(\d+)\s*((?:[+-]\s*\d+))?$/)
+  if (!match) throw new Error('Les dés ne peuvent être modifiés qu’avec une expression de dégâts au format kdn±x.')
+  const count = Number(match[1])
+  const size = Number(match[2])
+  if (!Number.isSafeInteger(count) || !Number.isSafeInteger(size)) {
+    throw new Error('Le nombre ou la taille des dés de dégâts est invalide.')
   }
-  if (Array.isArray(current) || (current !== null && typeof current === 'object')) {
-    try { return JSON.parse(value) } catch { throw new Error('La valeur de remplacement structurée doit être du JSON valide.') }
-  }
-  return value
+  return { count, size, flatBonus: (match[3] ?? '').replace(/\s+/g, '') }
 }
 
-function diceBonus(current: unknown, value: string): string {
-  if (typeof current !== 'string' || !/^\s*\d+[dD]\d+(?:\s*[+-]\s*\d+)?\s*$/.test(current)) {
-    throw new Error('Le bonus de dés ne peut être appliqué qu’à une expression de dégâts au format NdN±N.')
+function addDamageDice(current: unknown, value: string): string {
+  const damage = parseDamageExpression(current)
+  const increment = finiteValue(value, 'Le nombre de dés à ajouter')
+  if (!Number.isSafeInteger(increment) || increment <= 0) {
+    throw new Error('Le nombre de dés à ajouter doit être un entier positif.')
   }
-  const bonus = finiteValue(value, 'Le bonus aux dégâts')
-  if (!Number.isInteger(bonus)) throw new Error('Le bonus aux dégâts doit être un entier.')
-  if (bonus === 0) return current.trim()
-  return `${current.trim()}${bonus > 0 ? '+' : ''}${bonus}`
+  const count = damage.count + increment
+  if (!Number.isSafeInteger(count)) throw new Error('Le nombre de dés de dégâts dépasse la limite autorisée.')
+  return `${count}d${damage.size}${damage.flatBonus}`
+}
+
+function increaseDamageDieSize(current: unknown, value: string): string {
+  const damage = parseDamageExpression(current)
+  const increment = finiteValue(value, 'L’augmentation de taille du dé')
+  if (increment !== 1) throw new Error('L’augmentation de la taille du dé doit valoir 1 rang.')
+  const sizeIndex = DAMAGE_DIE_SIZES.indexOf(damage.size as (typeof DAMAGE_DIE_SIZES)[number])
+  if (sizeIndex === -1) throw new Error('La taille du dé de dégâts ne figure pas dans la progression Atelier.')
+  if (sizeIndex === DAMAGE_DIE_SIZES.length - 1) throw new Error('La taille du dé de dégâts est déjà au maximum (d20).')
+  return `${damage.count}d${DAMAGE_DIE_SIZES[sizeIndex + 1]}${damage.flatBonus}`
 }
 
 function addEncodedSlots(current: unknown, value: string, increaseOnly: boolean): string {
@@ -93,34 +106,30 @@ export function applyAtelierEffects<T extends Record<string, any>>(
   const result: Record<string, any> = { ...properties }
   for (const effect of effects) {
     if (!TARGETS[kind].has(effect.cible)) throw new Error(`La propriété « ${effect.cible} » ne peut pas être personnalisée sur cet équipement.`)
-    if (!['percent', 'add', 'replace', 'dice-bonus', 'slot-add'].includes(effect.operation)) throw new Error('Opération Atelier inconnue.')
+    if (!['add', 'dice-count-add', 'dice-size-step', 'slot-add'].includes(effect.operation)) throw new Error('Opération Atelier inconnue.')
     const current = result[effect.cible]
     if (kind === 'vaisseau') {
-      if (effect.operation === 'replace' || effect.operation === 'dice-bonus') {
+      if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
         throw new Error('Les propriétés d’un châssis Atelier ne peuvent être qu’augmentées.')
       }
       if (SHIP_INCREASE_ONLY.has(effect.cible) && finiteValue(effect.valeur, 'La valeur Atelier') < 0) {
         throw new Error('Une modification de châssis ne peut pas diminuer cette propriété.')
-      }
-      if (!SHIP_INCREASE_ONLY.has(effect.cible) && effect.operation === 'percent') {
-        throw new Error('Cette propriété du châssis n’accepte pas de pourcentage.')
       }
     }
 
     if (effect.operation === 'slot-add') {
       if (!['modulesSupplementaires', 'pointsEmportTourelles'].includes(effect.cible)) throw new Error('Cette propriété ne représente pas des emplacements codés.')
       result[effect.cible] = addEncodedSlots(current, effect.valeur, kind === 'vaisseau')
-    } else if (effect.operation === 'percent') {
-      if (typeof current !== 'number') throw new Error(`La propriété « ${effect.cible} » n’est pas numérique et n’accepte pas un pourcentage.`)
-      result[effect.cible] = exactMultiply(current, 1 + finiteValue(effect.valeur, 'Le pourcentage') / 100)
     } else if (effect.operation === 'add') {
       if (typeof current !== 'number') throw new Error(`La propriété « ${effect.cible} » n’est pas numérique et n’accepte pas un ajout.`)
       result[effect.cible] = exactAdd(current, finiteValue(effect.valeur, 'La valeur ajoutée'))
-    } else if (effect.operation === 'dice-bonus') {
-      if (kind !== 'arme' || effect.cible !== 'valeurDegats') throw new Error('Le bonus de dés est réservé aux dégâts des armes.')
-      result[effect.cible] = diceBonus(current, effect.valeur)
+    } else if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
+      if (kind !== 'arme' || effect.cible !== 'valeurDegats') throw new Error('Les opérations sur les dés sont réservées aux dégâts des armes.')
+      result[effect.cible] = effect.operation === 'dice-count-add'
+        ? addDamageDice(current, effect.valeur)
+        : increaseDamageDieSize(current, effect.valeur)
     } else {
-      result[effect.cible] = replacementValue(effect.valeur, current)
+      throw new Error('Opération Atelier inconnue.')
     }
   }
 
