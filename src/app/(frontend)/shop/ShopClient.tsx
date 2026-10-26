@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShopItemDetailsButton, type ShopItemDetail } from './ShopItemDetails'
 import { executeShopTransaction } from './actions'
+import { sellCustomEquipment } from './atelier-actions'
 import type { ShopScope } from './shop-sections'
 import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, resalePrice, weaponModPrice } from '@/lib/shop'
 import { factionCanBuyWeaponAtRank, factionKey, isFactionDiscountCouponApplicable, type DiscountTarget, type FactionRewardUsage, type OwnedFactionReward } from '@/lib/factionRewards'
@@ -29,8 +30,9 @@ export type ShopItem = {
   effet?: string | null
   image?: ShopImage | null
   details?: ShopItemDetail[]
+  custom?: boolean
 }
-type Owned = { item: ShopItem | null; quantite?: number; mods?: ShopItem[] }
+type Owned = { item: ShopItem | null; quantite?: number; mods?: ShopItem[]; customEquipmentId?: number }
 export type ShopCharacter = {
   id: number
   nom: string
@@ -57,7 +59,9 @@ type Catalogs = {
 }
 type Target = { key: string; location: 'inventory' | 'equipped'; index?: number; slot?: ShopCharacter['armesEquipees'][number]['slot']; item: ShopItem; mods: ShopItem[] }
 type TransactionArgs = Parameters<typeof executeShopTransaction>[0]
-type Confirmation = { args: TransactionArgs; successText: string; text: string; transactionId: string }
+type Confirmation =
+  | { args: TransactionArgs; successText: string; text: string; transactionId: string }
+  | { customEquipmentId: number; successText: string; text: string; transactionId: string }
 
 const currency = (value: number) => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(value)} Konis`
 const labelFor = (kind: string) => ({ weapon: 'Arme', armor: 'Armure', consumable: 'Consommable', 'ship-weapon': 'Arme spatiale', 'ship-module': 'Module spatial', 'ship-consumable': 'Consommable spatial', 'weapon-mod': 'Mod d’arme', 'armor-mod': 'Mod d’armure' }[kind] ?? kind)
@@ -77,7 +81,7 @@ const sectionForScope: Record<Exclude<ShopScope, 'tout'>, 'personal' | 'spatial'
 }
 
 function itemDescription(item: ShopItem) {
-  return [item.categorie ? categoryLabel[item.categorie] ?? item.categorie : null, item.famille, item.type, item.modele ? `Modèle ${item.modele}` : null, item.taille ? `Taille ${item.taille}` : null, item.degats ? `Dégâts ${item.degats}` : null, item.calibre].filter(Boolean).join(' · ')
+  return [item.custom ? 'Custom' : null, item.categorie ? categoryLabel[item.categorie] ?? item.categorie : null, item.famille, item.type, item.modele ? `Modèle ${item.modele}` : null, item.taille ? `Taille ${item.taille}` : null, item.degats ? `Dégâts ${item.degats}` : null, item.calibre].filter(Boolean).join(' · ')
 }
 
 function weaponDamageBadges(item: ShopItem) {
@@ -96,6 +100,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const [category, setCategory] = useState('all')
   const [facet, setFacet] = useState('all')
   const [damageType, setDamageType] = useState('all')
+  const [weaponPriceOrder, setWeaponPriceOrder] = useState<'asc' | 'desc'>('asc')
   const [shipType, setShipType] = useState('all')
   const [shipClass, setShipClass] = useState('all')
   const [shipId, setShipId] = useState(ships[0]?.id ?? 0)
@@ -110,7 +115,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const ship = ships.find((value) => value.id === shipId)
 
   const targets = useMemo<Target[]>(() => [
-    ...character.inventaireArmes.flatMap((entry, index) => entry.item ? [{ key: `inventory:${index}`, location: 'inventory' as const, index, item: entry.item, mods: entry.mods ?? [] }] : []),
+    ...character.inventaireArmes.flatMap((entry, index) => entry.item && !entry.customEquipmentId ? [{ key: `inventory:${index}`, location: 'inventory' as const, index, item: entry.item, mods: entry.mods ?? [] }] : []),
     ...character.armesEquipees.flatMap((entry) => entry.item ? [{ key: `equipped:${entry.slot}`, location: 'equipped' as const, slot: entry.slot, item: entry.item, mods: entry.mods ?? [] }] : []),
   ], [character])
   const selectedTarget = targets.find((target) => target.key === targetKey)
@@ -169,15 +174,24 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     setConfirmation({ args: args as TransactionArgs, successText, text, transactionId: crypto.randomUUID() })
   }
 
+  function transactCustomSale(customEquipmentId: number, successText: string, text: string) {
+    setRetryRequest(null)
+    setConfirmation({ customEquipmentId, successText, text, transactionId: crypto.randomUUID() })
+  }
+
   async function sendTransaction(current: Confirmation) {
     if (submitting.current) return
     submitting.current = true
     setPending(true); setMessage(null)
     try {
-      await executeShopTransaction({ ...current.args, transactionId: current.transactionId })
+      if ('customEquipmentId' in current) {
+        await sellCustomEquipment({ transactionId: current.transactionId, customEquipmentId: current.customEquipmentId })
+      } else {
+        await executeShopTransaction({ ...current.args, transactionId: current.transactionId })
+      }
       setMessage({ kind: 'success', text: current.successText })
       setRetryRequest(null)
-      if (current.args.discountRewardId !== undefined) setCouponSelections({})
+      if (!('customEquipmentId' in current) && current.args.discountRewardId !== undefined) setCouponSelections({})
       router.refresh()
     } catch (error) {
       setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'La transaction a échoué.' })
@@ -252,15 +266,19 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       const factor = readShopPrice(mods[0].prix)
       resaleTotal = factor === null ? null : exactAdd(resaleTotal, weaponModPrice(resaleTotal, factor))
     }
-    const saleAmount = kind === 'weapon' && (mods.length > 1 || resaleTotal === null) ? null : kind === 'weapon' ? resalePrice(resaleTotal!) : resale
+    const saleAmount = entry.customEquipmentId
+      ? amount === null ? null : exactMultiply(amount, 0.25)
+      : kind === 'weapon' && (mods.length > 1 || resaleTotal === null) ? null : kind === 'weapon' ? resalePrice(resaleTotal!) : resale
     const illustrated = owner === 'personal' && ['weapon', 'armor', 'consumable'].includes(kind)
     return <article className={`shop-inventory-item${illustrated ? ' shop-item-illustrated' : ''}`} key={key}>
       {illustrated && <div className="shop-item-visual">{item.image
         ? <img src={item.image.url} alt={item.image.alt || item.nom} loading="lazy" decoding="async" />
         : <span aria-hidden="true">Visuel à ajouter</span>}</div>}
-      <div className="shop-item-main"><div className="shop-item-title-line"><div><strong>{item.nom}</strong><span>{labelFor(kind)}{stack ? ` · ${entry.quantite ?? 0} possédé(s)` : ''}{mods.length ? ` · Mod : ${mods.map((mod) => mod.nom).join(', ')}` : ''}</span></div><ShopItemDetailsButton name={item.nom} category={labelFor(kind)} image={item.image} details={item.details ?? []} /></div>{(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}</div>
+      <div className="shop-item-main"><div className="shop-item-title-line"><div><strong>{item.nom}</strong><span>{labelFor(kind)}{item.custom ? ' · Custom' : ''}{stack ? ` · ${entry.quantite ?? 0} possédé(s)` : ''}{mods.length ? ` · Mod : ${mods.map((mod) => mod.nom).join(', ')}` : ''}</span></div><ShopItemDetailsButton name={item.nom} category={labelFor(kind)} image={item.image} details={item.details ?? []} /></div>{(kind === 'weapon' || kind === 'ship-weapon') && weaponDamageBadges(item)}</div>
       <div className="shop-item-action">{stack && quantityControl(key)}<strong>{saleAmount === null ? 'Non vendable' : `Revente : ${currency(saleAmount)}`}</strong>
-        <button type="button" className="shop-sell-button" disabled={pending || saleAmount === null || (stack && quantityFor(key) > (entry.quantite ?? 0))} onClick={() => transact({ action: 'sell', kind, itemId: item.id, quantity: stack ? quantityFor(key) : 1, ...(owner === 'ship' ? { shipId, ownedIndex: undefined } : { ownedIndex: index }) }, `${item.nom} vendu${stack ? ` (${quantityFor(key)})` : ''}.`, `Vendre ${item.nom} pour ${currency(saleAmount!)} ?${kind === 'armor' && mods.length ? ' Les Mods retourneront dans votre réserve.' : ''}`)}>Vendre</button>
+        <button type="button" className="shop-sell-button" disabled={pending || saleAmount === null || (stack && quantityFor(key) > (entry.quantite ?? 0))} onClick={() => entry.customEquipmentId
+          ? transactCustomSale(entry.customEquipmentId, `${item.nom} vendu.`, `Vendre ${item.nom} pour ${currency(saleAmount!)} ? Les Mods installés retourneront dans votre réserve.`)
+          : transact({ action: 'sell', kind, itemId: item.id, quantity: stack ? quantityFor(key) : 1, ...(owner === 'ship' ? { shipId, ownedIndex: undefined } : { ownedIndex: index }) }, `${item.nom} vendu${stack ? ` (${quantityFor(key)})` : ''}.`, `Vendre ${item.nom} pour ${currency(saleAmount!)} ?${kind === 'armor' && mods.length ? ' Les Mods retourneront dans votre réserve.' : ''}`)}>Vendre</button>
       </div>
     </article>
   }
@@ -280,6 +298,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       {!isAll && facetField && <label>{scope === 'mods-armes' ? 'Type d’arme compatible' : scope === 'mods-armures' ? 'Type d’armure compatible' : scope === 'espace-modules' ? 'Type de module' : 'Type'} <select value={facet} onChange={(event) => setFacet(event.target.value)}><option value="all">Tous</option>{facetChoices.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
       {scope === 'espace-armes' && <><label>Type d’arme <select value={shipType} onChange={(event) => setShipType(event.target.value)}><option value="all">Tous</option>{Object.entries(shipTypeLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Classe de vaisseau <select value={shipClass} onChange={(event) => setShipClass(event.target.value)}><option value="all">Toutes</option>{Object.entries(shipClassLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></>}
       {(scope === 'sol-armes' || scope === 'espace-armes' || (isAll && (activeSection === 'personal' || activeSection === 'spatial'))) && <label>Type de dégâts <select value={damageType} onChange={(event) => setDamageType(event.target.value)}><option value="all">Tous</option>{availableDamageTypeChoices.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
+      {(scope === 'sol-armes' || (isAll && activeSection === 'personal')) && <label>Trier les armes <select value={weaponPriceOrder} onChange={(event) => setWeaponPriceOrder(event.target.value as 'asc' | 'desc')}><option value="asc">Prix croissant</option><option value="desc">Prix décroissant</option></select></label>}
       {activeSection === 'spatial' && <label>Vaisseau <select value={shipId} onChange={(event) => setShipId(Number(event.target.value))}>{ships.map((value) => <option key={value.id} value={value.id}>{value.nom}</option>)}</select></label>}
     </div>}
 
@@ -291,7 +310,14 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     </section>}
 
     {activeSection === 'personal' && <div className="shop-catalog-groups">
-      {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{availableWeapons.filter((item) => matches(item, true)).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
+      {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{availableWeapons.filter((item) => matches(item, true)).sort((left, right) => {
+        const leftPrice = readShopPrice(left.prix)
+        const rightPrice = readShopPrice(right.prix)
+        if (leftPrice === null && rightPrice !== null) return 1
+        if (rightPrice === null && leftPrice !== null) return -1
+        if (leftPrice !== null && rightPrice !== null && leftPrice !== rightPrice) return (leftPrice - rightPrice) * (weaponPriceOrder === 'asc' ? 1 : -1)
+        return left.nom.localeCompare(right.nom, 'fr')
+      }).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
       {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{availableArmors.filter((item) => matches(item)).map((item) => card(item, 'armor', 'personal'))}</div></section>}
       {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2><div className="shop-grid">{catalogs.consumables.filter((item) => matches(item)).map((item) => card(item, 'consumable', 'personal'))}</div></section>}
     </div>}

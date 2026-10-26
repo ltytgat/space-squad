@@ -136,11 +136,34 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   const weaponById = byId(catalogs.weapons), armorById = byId(catalogs.armors), consumableById = byId(catalogs.consumables), modById = byId(catalogs.mods)
   const shipWeaponById = byId(catalogs.shipWeapons), shipModuleById = byId(catalogs.shipModules), shipConsumableById = byId(catalogs.shipConsumables)
   const modList = (values: any[]) => (values ?? []).map((value) => modById.get(String(idOf(value)))).filter(Boolean) as ShopItem[]
+  const customEquipmentIds = (character.inventaireEquipementsCustom ?? []).map(idOf).filter((id: number | null): id is number => id !== null)
+  const customEquipmentDocs = customEquipmentIds.length
+    ? (await payload.find({ collection: 'custom-equipment', where: { id: { in: customEquipmentIds } }, depth: 2, limit: 500, overrideAccess: true })).docs as any[]
+    : []
+  const customWeapons: ShopCharacter['inventaireArmes'] = customEquipmentDocs
+    .filter((item) => item.categorieEquipement === 'arme')
+    .map((customItem) => {
+      const properties = customItem.proprietesFigees && typeof customItem.proprietesFigees === 'object' ? customItem.proprietesFigees : {}
+      const weapon = summaries([{
+        ...properties,
+        id: customItem.id,
+        nom: customItem.nom,
+        prix: customItem.prixAchat,
+        categorie: customItem.categorie ?? properties.categorie,
+        type: typeof customItem.typeArme === 'string' ? customItem.typeArme.split(',').filter(Boolean) : properties.type,
+        image: customItem.armeSource?.image ?? properties.image,
+      }])[0]
+      weapon.custom = true
+      return { item: weapon, mods: modList(customItem.mods), customEquipmentId: Number(customItem.id) }
+    })
   const characterData: ShopCharacter = {
     id: character.id, nom: character.nom ?? 'Personnage', konis: character.konis ?? 0,
     rang: computeRank(Number(character.pointsDeRang) || 0).level,
     factionName: String(faction?.nom ?? ''), inventaireRecompensesFaction: factionRewards,
-    inventaireArmes: (character.inventaireArmes ?? []).map((row: any) => ({ item: weaponById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods), munitions: row.munitionsActuelles ?? 0 })),
+    inventaireArmes: [
+      ...(character.inventaireArmes ?? []).map((row: any) => ({ item: weaponById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods), munitions: row.munitionsActuelles ?? 0 })),
+      ...customWeapons,
+    ],
     inventaireArmures: (character.inventaireArmures ?? []).map((row: any) => ({ item: armorById.get(String(idOf(row.item))) ?? null, mods: modList(row.mods) })),
     inventaireMods: modList(character.inventaireMods),
     inventaire: stackSummary(character.inventaire, 'consommable', consumableById),

@@ -37,7 +37,7 @@ const numericId = (value: unknown) => atelierRelationId(value)
 const isId = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) > 0
 const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 
-async function getContext() {
+async function getContext(options: { requireWorkshopAccess?: boolean } = {}) {
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
@@ -51,8 +51,8 @@ async function getContext() {
   const factionName = String(affiliation && typeof affiliation === 'object' ? affiliation.nom ?? '' : '').trim()
   const faction = factionKey(factionName)
   const workshopKind: AtelierEquipmentKind | null = faction === 'alliance' ? 'arme' : faction === 'union' ? 'armure' : faction === 'guilde' ? 'vaisseau' : null
-  if (!workshopKind) fail('Aucun Atelier n’est défini pour cette organisation.')
-  if (!ownsFactionAtelierAccess((character as any).inventaireRecompensesFaction, factionName)) {
+  if (options.requireWorkshopAccess !== false && !workshopKind) fail('Aucun Atelier n’est défini pour cette organisation.')
+  if (options.requireWorkshopAccess !== false && workshopKind && !ownsFactionAtelierAccess((character as any).inventaireRecompensesFaction, factionName)) {
     fail('Un permis Accès Atelier valide pour votre organisation est nécessaire.')
   }
   return { payload, user, character: character as any, workshopKind }
@@ -298,7 +298,7 @@ export async function transferCustomEquipment(input: { transactionId: string; cu
 }
 
 export async function sellCustomEquipment(input: { transactionId: string; customEquipmentId: number }) {
-  const { payload, user, character } = await getContext()
+  const { payload, user, character } = await getContext({ requireWorkshopAccess: false })
   if (!isUuid(input?.transactionId) || !isId(input.customEquipmentId)) fail('Données de vente invalides.')
   const fingerprint = JSON.stringify(['atelier-sell-equipment', input.customEquipmentId])
   const { transactionID, transactionDb, req } = await beginTransaction(payload)

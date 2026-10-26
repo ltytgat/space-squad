@@ -84,6 +84,28 @@ describe('Atelier frozen effects and prices', () => {
     ], 'arme')).toThrow()
   })
 
+  it('persists a custom weapon heat segment through character weapon hydration', () => {
+    const customized = applyAtelierEffects({ categorie: 'fusil-assaut' }, [
+      { cible: 'weaponHeatSegment', operation: 'add', valeur: '50' },
+    ], 'arme')
+    const weapon = weaponFromGroup({ customItem: { id: 7, nom: 'Fusil Custom', categorie: 'fusil-assaut', proprietesFigees: customized } })
+    expect(weapon?.weaponHeatSegment).toBe(150)
+  })
+
+  it('applies sniper medium-range bonuses to Palier 02', () => {
+    const custom = applyAtelierEffects({
+      categorie: 'sniper',
+      paliersSniper: [{ distanceMax: 50, modificateur: -1 }, { distanceMax: 100, modificateur: -3 }],
+    }, [{ cible: 'modMoyennePortee', operation: 'add', valeur: '2' }], 'arme')
+    expect(custom.paliersSniper).toEqual([
+      { distanceMax: 50, modificateur: -1 },
+      { distanceMax: 100, modificateur: -1 },
+    ])
+    expect(() => applyAtelierEffects({ categorie: 'sniper', paliersSniper: [] }, [
+      { cible: 'modMoyennePortee', operation: 'add', valeur: '1' },
+    ], 'arme')).toThrow(/Palier 02/)
+  })
+
   it('applies repeated modification effects in sequence', () => {
     const custom = applyAtelierEffects({ valeurDegats: '1d4+2' }, [
       { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1' },

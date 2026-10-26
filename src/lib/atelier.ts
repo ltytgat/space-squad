@@ -132,6 +132,16 @@ export function applyAtelierEffects<T extends Record<string, any>>(
       result[effect.cible] = addEncodedSlots(current, effect.valeur, kind === 'vaisseau')
     } else if (effect.operation === 'add') {
       const increment = finiteValue(effect.valeur, 'La valeur ajoutée')
+      if (kind === 'arme' && effect.cible === 'modMoyennePortee' && result.categorie === 'sniper') {
+        const stages = result.paliersSniper
+        if (!Array.isArray(stages) || !stages[1] || typeof stages[1].modificateur !== 'number') {
+          throw new Error('Le Palier 02 du sniper est introuvable ou ne possède pas de modificateur numérique.')
+        }
+        result.paliersSniper = stages.map((stage: any, index: number) => index === 1
+          ? { ...stage, modificateur: exactAdd(stage.modificateur, increment) }
+          : stage)
+        continue
+      }
       if (kind === 'arme' && effect.cible === 'paliersSniper' && Array.isArray(current)) {
         const nextStages = current.map((stage: any) => ({
           ...stage,
