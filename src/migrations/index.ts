@@ -37,6 +37,7 @@ import * as migration_20261025_190000_atelier_compatibility_pricing from './2026
 import * as migration_20261025_191056 from './20261025_191056';
 import * as migration_20261026_080713 from './20261026_080713';
 import * as migration_20261026_090305 from './20261026_090305';
+import * as migration_20261026_095218 from './20261026_095218';
 
 export const migrations = [
   {
@@ -233,5 +234,10 @@ export const migrations = [
     up: migration_20261026_090305.up,
     down: migration_20261026_090305.down,
     name: '20261026_090305',
+  },
+  {
+    up: migration_20261026_095218.up,
+    down: migration_20261026_095218.down,
+    name: '20261026_095218'
   },
 ];
