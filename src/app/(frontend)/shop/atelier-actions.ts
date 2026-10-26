@@ -8,10 +8,10 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
-import { atelierCost, atelierModificationPoints, atelierPointsForPersonalItem, atelierPointsForShip, atelierPurchasePrice, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect, type AtelierPurchase } from '@/lib/atelier'
+import { atelierCost, atelierModificationPoints, atelierPointsForPersonalItem, atelierPointsForShip, atelierPurchasePrice, atelierShipSpecializationTags, atelierSpecializationTagForTarget, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect, type AtelierPurchase } from '@/lib/atelier'
 import { exactAdd, exactMultiply, exactSubtract, readShopPrice } from '@/lib/shop'
 import { computeShipAccess } from '@/lib/shipAccess'
-import { validateShipConfiguration } from '@/lib/shipStats'
+import { completeTurretEntries, validateShipConfiguration } from '@/lib/shipStats'
 import { factionKey, ownsFactionAtelierAccess } from '@/lib/factionRewards'
 
 type PersonalLocation = { location: 'inventory'; index: number; itemId: number }
@@ -101,7 +101,7 @@ async function getActiveModifications(payload: any, purchases: AtelierPurchase[]
     seen.add(purchase.modificationId)
     const modification = await payload.findByID({ collection: 'atelier-modifications', id: purchase.modificationId, depth: 0, overrideAccess: true, req }).catch(() => null) as any
     if (!modification || modification.active === false) fail('Une modification sélectionnée est indisponible.')
-    resolved.push({ modification, quantity: purchase.quantity })
+    resolved.push({ modification, quantity: purchase.quantity, turretAssignments: purchase.turretAssignments })
   }
   return resolved
 }
@@ -127,18 +127,40 @@ function modificationSnapshot(modification: any) {
   }
 }
 
-function applyModifications(base: Record<string, any>, selections: { modification: any; quantity: number }[], kind: AtelierEquipmentKind, item: any) {
+function applyModifications(base: Record<string, any>, selections: { modification: any; quantity: number; turretAssignments?: (number | null)[] }[], kind: AtelierEquipmentKind, item: any) {
   const effects: AtelierEffect[] = []
-  const selectedModifications = selections.map(({ modification, quantity }) => {
+  const selectedModifications = selections.map(({ modification, quantity, turretAssignments }) => {
     const compatibility = findAtelierCompatibility(modification, item)
     if (!compatibility) fail(`La modification « ${modification.nom} » n’est pas compatible avec cet équipement.`)
     if (!Number.isSafeInteger(compatibility.maximum) || quantity > Number(compatibility.maximum)) fail(`La modification « ${modification.nom} » dépasse son nombre maximum d’achats.`)
-    return { ...modification, atelierCompatibilite: compatibility, atelierQuantite: quantity }
+    const needsTurretAssignments = (modification.effets ?? []).some((effect: any) => effect.cible === 'pointsEmportTourelles')
+    if (needsTurretAssignments && (kind !== 'vaisseau' || !Array.isArray(turretAssignments) || turretAssignments.length !== quantity || turretAssignments.some((index) => !Number.isSafeInteger(index) || Number(index) < 1))) {
+      fail('Sélectionnez une tourelle disponible pour chaque achat de points d’emport.')
+    }
+    if (!needsTurretAssignments && turretAssignments !== undefined) fail('Des affectations de tourelles ont été fournies pour une modification qui ne les utilise pas.')
+    return { ...modification, atelierCompatibilite: compatibility, atelierQuantite: quantity, atelierAffectationsTourelles: turretAssignments ?? [] }
   })
+  if (kind === 'vaisseau') {
+    const existingTags = new Set(atelierShipSpecializationTags(base))
+    const selectedTags = new Set<string>()
+    for (const modification of selectedModifications) {
+      for (const effect of modification.effets ?? []) {
+        const tag = atelierSpecializationTagForTarget(String(effect.cible))
+        if (!tag) continue
+        if (modification.atelierQuantite !== 1 || existingTags.has(tag) || selectedTags.has(tag)) {
+          fail('Cette spécialité est déjà présente ou a déjà été sélectionnée pour ce vaisseau.')
+        }
+        selectedTags.add(tag)
+      }
+    }
+  }
   for (const modification of selectedModifications) {
     for (let purchase = 0; purchase < modification.atelierQuantite; purchase += 1) {
       for (const effect of modification.effets ?? []) {
-        effects.push({ cible: String(effect.cible), operation: String(effect.operation) as AtelierEffect['operation'], valeur: String(effect.valeur) })
+        effects.push({
+          cible: String(effect.cible), operation: String(effect.operation) as AtelierEffect['operation'], valeur: String(effect.valeur),
+          ...(effect.cible === 'pointsEmportTourelles' ? { turretIndex: modification.atelierAffectationsTourelles[purchase] } : {}),
+        })
       }
     }
   }
@@ -348,7 +370,7 @@ function requiredRelation(value: unknown, label: string): number {
   return id
 }
 
-function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number, purchasePrice: number) {
+function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number, purchasePrice: number, turretCount: number) {
   const weaponState = (entry: any) => ({
     arme: relation(entry.arme), munitionsActuelles: Number(entry.munitionsActuelles) || 0,
     chargeurRelie: relation(entry.chargeurRelie),
@@ -372,7 +394,7 @@ function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number
     moduleSurvie: relation(ship.moduleSurvie),
     modulesSupplementaires: (ship.modulesSupplementaires ?? []).map(relation).filter(Boolean),
     armesPilote: (ship.armesPilote ?? []).map(weaponState),
-    armesTourelles: (ship.armesTourelles ?? []).map((turret: any) => ({
+    armesTourelles: completeTurretEntries(ship.armesTourelles ?? [], turretCount).map((turret: any) => ({
       tourelle: turret.tourelle,
       module: relation(turret.module),
       armes: (turret.armes ?? []).map(weaponState),
@@ -476,7 +498,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
       },
       depth: 0, overrideAccess: true, req,
     }) as any
-    const state = shipStateForCopy(source, Number(newSaleModel.id), originalOwner, cost)
+    const state = shipStateForCopy(source, Number(newSaleModel.id), originalOwner, cost, Number(customChassis.tourelles))
     const createdShip = await payload.create({
       collection: 'ships', data: state, depth: 0, overrideAccess: true, user, req,
       context: { atelierPreserveShipState: true },

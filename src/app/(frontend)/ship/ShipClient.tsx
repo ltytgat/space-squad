@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import { canEquipConsumable, consumableCapacity, isShipAmmunition, sameConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
 import { isAmmoCompatibleWith, sameShipAmmo, shipAmmoName } from '@/lib/shipWeaponAmmo'
-import { getChassis, getShipLimits, getShipStats } from '@/lib/shipStats'
+import { canEquipWeaponInTurret, getChassis, getShipLimits, getShipStats, turretWeaponPointsRemaining } from '@/lib/shipStats'
 import {
   applySeatChange,
   listSeats,
@@ -137,6 +137,7 @@ export function ShipClient({
   const [weaponSelector, setWeaponSelector] = useState<{
     turretIndex: number
     weaponIndex: number
+    emptySlot?: boolean
   } | null>(null)
   const [ammoSelector, setAmmoSelector] = useState<{
     turretIndex: number
@@ -402,21 +403,25 @@ export function ShipClient({
     if (readOnly || !weaponSelector) return
     const targetIndex = weaponSelector.weaponIndex
     const targetTurret = weaponSelector.turretIndex
-    const targetEntries =
-      targetTurret >= 0 ? ship.armesTourelles[targetTurret].armes : ship.armesPilote
-    const target = targetEntries[targetIndex]
+    const targetEntries = targetTurret >= 0
+      ? ship.armesTourelles?.[targetTurret]?.armes ?? []
+      : ship.armesPilote ?? []
+    const target = targetEntries[targetIndex] ?? { arme: null }
     const next = { ...ship }
     const setTarget = (value: any) => {
       if (targetTurret >= 0) {
         next.armesTourelles = [...(ship.armesTourelles ?? [])]
+        const weapons = [...(next.armesTourelles[targetTurret].armes ?? [])]
+        if (targetIndex >= weapons.length) weapons.push(value)
+        else weapons[targetIndex] = value
         next.armesTourelles[targetTurret] = {
           ...next.armesTourelles[targetTurret],
-          armes: [...next.armesTourelles[targetTurret].armes],
+          armes: weapons,
         }
-        next.armesTourelles[targetTurret].armes[targetIndex] = value
       } else {
         next.armesPilote = [...(ship.armesPilote ?? [])]
-        next.armesPilote[targetIndex] = value
+        if (targetIndex >= next.armesPilote.length) next.armesPilote.push(value)
+        else next.armesPilote[targetIndex] = value
       }
     }
     if (source.kind === 'inventory') {
@@ -425,15 +430,17 @@ export function ShipClient({
         ...inventory[source.index],
         quantite: Number(inventory[source.index].quantite ?? 1) - 1,
       }
-      const oldIndex = inventory.findIndex(
-        (entry: any) => String(id(entry.arme)) === String(id(target.arme)),
-      )
-      if (oldIndex >= 0)
-        inventory[oldIndex] = {
-          ...inventory[oldIndex],
-          quantite: Number(inventory[oldIndex].quantite ?? 0) + 1,
-        }
-      else inventory.push({ arme: target.arme, quantite: 1 })
+      if (target.arme) {
+        const oldIndex = inventory.findIndex(
+          (entry: any) => String(id(entry.arme)) === String(id(target.arme)),
+        )
+        if (oldIndex >= 0)
+          inventory[oldIndex] = {
+            ...inventory[oldIndex],
+            quantite: Number(inventory[oldIndex].quantite ?? 0) + 1,
+          }
+        else inventory.push({ arme: target.arme, quantite: 1 })
+      }
       next.inventaireArmes = inventory.filter((entry: any) => entry.quantite > 0)
       setTarget({
         ...target,
@@ -815,6 +822,13 @@ export function ShipClient({
       </div>
       {turretModule && renderTurretModule(turretModule, turretIndex, entries)}
       {weaponList(entries, turretIndex)}
+      {turretIndex >= 0 && turretWeaponPointsRemaining(ship, turretIndex + 1) > 0 && <button
+        className="ship-change-weapon ship-equip-empty-weapon"
+        disabled={readOnly || saving}
+        onClick={() => setWeaponSelector({ turretIndex, weaponIndex: entries.length, emptySlot: true })}
+      >
+        + Équiper une arme
+      </button>}
     </section>
   )
   // Places d'équipage : 1 pilote, 1 copilote, 1 canonnier par tourelle du châssis.
@@ -1304,14 +1318,16 @@ export function ShipClient({
         <div className="ship-selector-overlay" onClick={() => setWeaponSelector(null)}>
           <div className="ship-selector-modal" onClick={(event) => event.stopPropagation()}>
             <div className="ship-selector-header">
-              <h3>Changer l’arme</h3>
+              <h3>{weaponSelector.emptySlot ? 'Équiper une arme' : 'Changer l’arme'}</h3>
               <button onClick={() => setWeaponSelector(null)}>×</button>
             </div>
             <div className="ship-selector-list">
               {weaponSources()
                 .filter(
                   (source: any) =>
-                    !(
+                    weaponSelector.emptySlot
+                      ? source.kind === 'inventory' && canEquipWeaponInTurret(ship, weaponSelector.turretIndex + 1, source.weapon)
+                      : !(
                       source.kind === 'equipped' &&
                       source.turretIndex === weaponSelector.turretIndex &&
                       source.index === weaponSelector.weaponIndex
@@ -1338,7 +1354,9 @@ export function ShipClient({
                     </span>
                   </button>
                 ))}
-              {!weaponSources().length && <p className="ship-muted">Aucune arme disponible.</p>}
+              {!weaponSources().filter((source: any) => weaponSelector.emptySlot
+                ? source.kind === 'inventory' && canEquipWeaponInTurret(ship, weaponSelector.turretIndex + 1, source.weapon)
+                : !(source.kind === 'equipped' && source.turretIndex === weaponSelector.turretIndex && source.index === weaponSelector.weaponIndex)).length && <p className="ship-muted">{weaponSelector.emptySlot ? 'Aucune arme compatible dans la soute.' : 'Aucune arme disponible.'}</p>}
             </div>
           </div>
         </div>

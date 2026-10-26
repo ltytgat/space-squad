@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detachShipTransferItem, groupShipCatalog, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, shipPurchasePrice, shipSalePrice, shipyardFingerprint } from '@/lib/shipyard'
+import { detachShipTransferItem, groupShipCatalog, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, shipModelDisplayName, shipPurchasePrice, shipSalePrice, shipyardFingerprint } from '@/lib/shipyard'
 
 describe('shipyard pricing', () => {
   it('charges the full sale-model price or half for a chassis-only purchase', () => {
@@ -32,6 +32,14 @@ describe('shipyard purchase catalog grouping', () => {
     expect(sections[0].categories[0].models.map(({ id }) => id)).toEqual([2, 1, 3])
     expect(sections[1].categories[0].models.map(({ id }) => id)).toEqual([5])
     expect(sections[2].categories).toEqual([])
+  })
+})
+
+describe('custom ship model labels', () => {
+  it('uses the source model name without exposing the Atelier identifier', () => {
+    expect(shipModelDisplayName({ nom: 'Éclaireur · Atelier 42 1700000000000', atelierPrive: true, atelierModeleSource: { nom: 'Éclaireur' } })).toBe('Éclaireur')
+    expect(shipModelDisplayName({ nom: 'Éclaireur · Atelier 42 1700000000000', atelierPrive: true })).toBe('Éclaireur')
+    expect(shipModelDisplayName({ nom: 'Éclaireur', atelierPrive: false })).toBe('Éclaireur')
   })
 })
 

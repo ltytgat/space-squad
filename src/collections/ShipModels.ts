@@ -63,6 +63,19 @@ export const ShipModels: CollectionConfig = {
       ],
     },
     {
+      name: 'specialisations',
+      type: 'select',
+      hasMany: true,
+      defaultValue: [],
+      label: 'Spécialisations du vaisseau',
+      options: [
+        { label: 'Combat', value: 'combat' },
+        { label: 'Exploration', value: 'exploration' },
+        { label: 'Transport', value: 'transport' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+    {
       type: 'row',
       fields: [
         {

@@ -8,11 +8,13 @@ export type AtelierEffect = {
   cible: string
   operation: AtelierOperation
   valeur: string
+  turretIndex?: number
 }
 
 export type AtelierPurchase = {
   modificationId: number
   quantity: number
+  turretAssignments?: (number | null)[]
 }
 
 export type AtelierCompatibility = {
@@ -39,7 +41,8 @@ const TARGETS: Record<AtelierEquipmentKind, ReadonlySet<string>> = {
   ]),
   vaisseau: new Set([
     'nom', 'classe', 'categorie', 'tourelles', 'pointsEmportPilote', 'pointsEmportTourelles',
-    'blindage', 'modulesSupplementaires', 'consommables', 'esquiveBase', 'image',
+    'blindage', 'modulesSupplementaires', 'consommables', 'esquiveBase', 'image', 'specializationCombat',
+    'specializationExploration', 'specializationTransport',
   ]),
 }
 
@@ -48,6 +51,49 @@ const SHIP_INCREASE_ONLY = new Set([
 ])
 
 const DAMAGE_DIE_SIZES = [2, 3, 4, 6, 8, 10, 12, 15, 18, 20] as const
+const SHIP_SPECIALIZATIONS: Record<string, string> = {
+  specializationCombat: 'combat',
+  specializationExploration: 'exploration',
+  specializationTransport: 'transport',
+}
+
+export function atelierSpecializationTagForTarget(target: string): string | null {
+  return SHIP_SPECIALIZATIONS[target] ?? null
+}
+
+export function atelierShipSpecializationTags(properties: Record<string, unknown>): string[] {
+  const tags = new Set<string>()
+  const valid = new Set(Object.values(SHIP_SPECIALIZATIONS))
+  for (const value of Array.isArray(properties.specialisations) ? properties.specialisations : []) {
+    const tag = String(value).toLocaleLowerCase('fr')
+    if (valid.has(tag)) tags.add(tag)
+  }
+  const category = String(properties.categorie ?? '').toLocaleLowerCase('fr')
+  if (valid.has(category)) tags.add(category)
+  return ['combat', 'exploration', 'transport'].filter((tag) => tags.has(tag))
+}
+
+export function atelierTurretCapacities(value: unknown, turretCount: number): number[] {
+  if (!Number.isSafeInteger(turretCount) || turretCount < 0) throw new Error('Le nombre de tourelles du châssis est invalide.')
+  let slots: number[]
+  if (value === null || value === undefined || value === '') slots = []
+  else if (typeof value === 'string' && /^\d+(?:\+\d+)*$/.test(value)) slots = value.split('+').map(Number)
+  else throw new Error('Les points d’emport des tourelles doivent utiliser le format nombre+nombre.')
+  if (slots.some((slot) => !Number.isSafeInteger(slot))) throw new Error('Chaque point d’emport de tourelle doit être un entier valide.')
+  if (slots.length > turretCount) throw new Error('Le nombre de valeurs de points d’emport dépasse celui des tourelles.')
+  while (slots.length < turretCount) slots.push(0)
+  return slots
+}
+
+export function atelierTurretPointIncrease(effects: AtelierEffect[]): number {
+  return effects.filter((effect) => effect.cible === 'pointsEmportTourelles').reduce((total, effect) => {
+    const value = Number(effect.valeur)
+    if (!Number.isSafeInteger(value) || value < 1) throw new Error('Les points d’emport ajoutés doivent être un entier positif.')
+    const nextTotal = total + value
+    if (!Number.isSafeInteger(nextTotal)) throw new Error('Le nombre de points d’emport ajoutés dépasse la limite autorisée.')
+    return nextTotal
+  }, 0)
+}
 
 function finiteValue(value: string, label: string): number {
   const parsed = Number(value)
@@ -114,9 +160,21 @@ export function applyAtelierEffects<T extends Record<string, any>>(
   kind: AtelierEquipmentKind,
 ): T {
   const result: Record<string, any> = { ...properties }
-  for (const effect of effects) {
+  const orderedEffects = effects.map((effect, index) => ({ effect, index })).sort((left, right) => {
+    const leftPriority = kind === 'vaisseau' && left.effect.cible === 'tourelles' ? 0 : 1
+    const rightPriority = kind === 'vaisseau' && right.effect.cible === 'tourelles' ? 0 : 1
+    return leftPriority - rightPriority || left.index - right.index
+  }).map(({ effect }) => effect)
+  for (const effect of orderedEffects) {
     if (!TARGETS[kind].has(effect.cible)) throw new Error(`La propriété « ${effect.cible} » ne peut pas être personnalisée sur cet équipement.`)
     if (!['add', 'dice-count-add', 'dice-size-step', 'slot-add'].includes(effect.operation)) throw new Error('Opération Atelier inconnue.')
+    const specializationTag = kind === 'vaisseau' ? atelierSpecializationTagForTarget(effect.cible) : null
+    if (specializationTag) {
+      if (effect.operation !== 'add') throw new Error('Une spécialisation doit utiliser l’opération d’ajout numérique.')
+      const tags = atelierShipSpecializationTags(result)
+      result.specialisations = [...new Set([...tags.filter((tag) => tag !== result.categorie), specializationTag])]
+      continue
+    }
     const current = result[effect.cible] ?? (kind === 'arme' && effect.cible === 'weaponHeatSegment' ? 100 : undefined)
     if (kind === 'vaisseau') {
       if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
@@ -127,8 +185,22 @@ export function applyAtelierEffects<T extends Record<string, any>>(
       }
     }
 
-    if (effect.operation === 'slot-add') {
-      if (!['modulesSupplementaires', 'pointsEmportTourelles'].includes(effect.cible)) throw new Error('Cette propriété ne représente pas des emplacements codés.')
+    if (kind === 'vaisseau' && effect.cible === 'pointsEmportTourelles') {
+      if (effect.operation !== 'slot-add') throw new Error('Les points d’emport des tourelles doivent utiliser l’opération d’emplacements.')
+      const turretCount = Number(result.tourelles)
+      const turretIndex = effect.turretIndex
+      if (!Number.isSafeInteger(turretIndex) || Number(turretIndex) < 1 || Number(turretIndex) > turretCount) {
+        throw new Error('Sélectionnez une tourelle disponible pour chaque achat de points d’emport.')
+      }
+      const increment = Number(effect.valeur)
+      if (!Number.isSafeInteger(increment) || increment < 1) throw new Error('Les points d’emport ajoutés doivent être un entier positif.')
+      const slots = atelierTurretCapacities(current, turretCount)
+      const index = Number(turretIndex) - 1
+      if (slots[index] + increment > 4) throw new Error('Une tourelle ne peut pas dépasser 4 points d’emport.')
+      slots[index] += increment
+      result[effect.cible] = slots.join('+')
+    } else if (effect.operation === 'slot-add') {
+      if (effect.cible !== 'modulesSupplementaires') throw new Error('Cette propriété ne représente pas des emplacements codés.')
       result[effect.cible] = addEncodedSlots(current, effect.valeur, kind === 'vaisseau')
     } else if (effect.operation === 'add') {
       const increment = finiteValue(effect.valeur, 'La valeur ajoutée')
@@ -158,6 +230,13 @@ export function applyAtelierEffects<T extends Record<string, any>>(
       if (kind === 'arme' && ['porteeFixe', 'courtePortee', 'moyennePortee'].includes(effect.cible) && nextValue < 1) throw new Error('La portée d’une arme ne peut pas être inférieure à 1 mètre.')
       if (kind === 'arme' && effect.cible === 'weaponHeatSegment' && nextValue < 1) throw new Error('Un segment de chauffe invalide.')
       result[effect.cible] = nextValue
+      if (kind === 'vaisseau' && effect.cible === 'tourelles') {
+        if (!Number.isSafeInteger(nextValue) || nextValue < 0) throw new Error('Le nombre de tourelles doit rester un entier positif.')
+        const previousCount = Number(current)
+        const capacities = atelierTurretCapacities(result.pointsEmportTourelles, nextValue)
+        for (let index = previousCount; index < nextValue; index += 1) capacities[index] = Math.max(1, capacities[index])
+        result.pointsEmportTourelles = capacities.join('+')
+      }
     } else if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
       if (kind !== 'arme' || effect.cible !== 'valeurDegats') throw new Error('Les opérations sur les dés sont réservées aux dégâts des armes.')
       result[effect.cible] = effect.operation === 'dice-count-add'
@@ -174,6 +253,15 @@ export function applyAtelierEffects<T extends Record<string, any>>(
         throw new Error(`La propriété « ${key} » ne peut pas diminuer sur un châssis Atelier.`)
       }
     }
+  }
+  if (kind === 'vaisseau' && effects.some((effect) => effect.cible === 'tourelles' || effect.cible === 'pointsEmportTourelles')) {
+    const initialTurretCount = Number(properties.tourelles)
+    const finalTurretCount = Number(result.tourelles)
+    const capacities = atelierTurretCapacities(result.pointsEmportTourelles, finalTurretCount)
+    if (Number.isSafeInteger(initialTurretCount) && initialTurretCount >= 0) {
+      for (let index = initialTurretCount; index < finalTurretCount; index += 1) capacities[index] = Math.max(1, capacities[index])
+    }
+    result.pointsEmportTourelles = capacities.join('+')
   }
   return result as T
 }

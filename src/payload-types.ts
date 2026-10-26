@@ -446,6 +446,7 @@ export interface ShipModel {
   nom: string;
   classe: 'alpha' | 'beta' | 'gamma' | 'delta';
   categorie: 'polyvalent' | 'combat' | 'exploration' | 'transport';
+  specialisations?: ('combat' | 'exploration' | 'transport')[] | null;
   tourelles: number;
   /**
    * Nombre d'armes équipables par le pilote.
@@ -1382,7 +1383,7 @@ export interface AtelierModification {
           | 'esquiveBase';
         operation: 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add';
         /**
-         * Nombre signé pour un ajout, quantité de dés à ajouter, valeur 1 pour augmenter la taille du dé d’un rang, ou nombre/liste JSON pour les emplacements codés.
+         * Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.
          */
         valeur: string;
         id?: string | null;
@@ -1885,6 +1886,7 @@ export interface ShipModelsSelect<T extends boolean = true> {
   nom?: T;
   classe?: T;
   categorie?: T;
+  specialisations?: T;
   tourelles?: T;
   pointsEmportPilote?: T;
   pointsEmportTourelles?: T;

@@ -203,9 +203,15 @@ export const AtelierModifications: CollectionConfig = {
               type: 'text',
               required: true,
               label: 'Valeur / donnée JSON',
+              validate: (value: unknown, { siblingData }: any) => {
+                if (siblingData?.cible !== 'pointsEmportTourelles') return true
+                const parsed = Number(value)
+                return siblingData?.operation === 'slot-add' && Number.isSafeInteger(parsed) && parsed > 0
+                  || 'Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie.'
+              },
               admin: {
                 width: '35%',
-                description: 'Nombre signé pour un ajout, quantité de dés à ajouter, valeur 1 pour augmenter la taille du dé d’un rang, ou nombre/liste JSON pour les emplacements codés.',
+                description: 'Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.',
               },
             },
           ],

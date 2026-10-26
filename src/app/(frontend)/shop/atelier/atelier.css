@@ -8,12 +8,17 @@
 .atelier-section-heading p, .atelier-cart p { margin-top: .25rem; color: var(--ss-text-muted); font-size: .84rem; }
 .atelier-select-label { display: grid; gap: .45rem; max-width: 680px; color: var(--ss-text-muted); font-size: .85rem; }
 .atelier-select-label select { min-height: 42px; padding: .55rem .7rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
-.atelier-ship-preview { display: flex; align-items: center; gap: 1rem; padding: .85rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+.atelier-ship-preview { display: flex; align-items: flex-start; gap: 1rem; padding: .85rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
 .atelier-ship-preview > img { width: min(32%, 220px); height: 120px; border-radius: 7px; background: rgba(0, 0, 0, .16); object-fit: contain; }
+.atelier-ship-preview > div { flex: 1; min-width: 0; }
 .atelier-ship-preview h3, .atelier-personal-heading h3 { margin: .2rem 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1rem; }
 .atelier-ship-preview p, .atelier-personal-heading p { color: var(--ss-text-muted); font-size: .82rem; }
 .atelier-ship-preview .shop-item-details-trigger { margin-top: .55rem; }
 .atelier-personal-preview { display: grid; grid-template-columns: minmax(140px, 220px) minmax(0, 1fr); gap: 1rem; padding: .85rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+.atelier-ship-details { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); width: 100%; margin-top: .75rem; }
+.atelier-turret-assignments { display: grid; gap: .45rem; padding: .65rem; border: 1px solid var(--ss-border); border-radius: 7px; }
+.atelier-turret-assignments label { display: grid; grid-template-columns: minmax(0, 1fr) minmax(130px, 1fr); align-items: center; gap: .6rem; color: var(--ss-text-muted); font-size: .76rem; }
+.atelier-turret-assignments select { min-height: 34px; padding: .35rem .5rem; border: 1px solid var(--ss-border); border-radius: 6px; background: var(--ss-bg); color: var(--ss-text); }
 .atelier-personal-preview > img { grid-row: span 2; width: 100%; max-height: 220px; border-radius: 7px; background: rgba(0, 0, 0, .16); object-fit: contain; }
 .atelier-personal-content { display: grid; gap: .75rem; min-width: 0; }
 .atelier-range-table { width: 100%; border: 1px solid rgba(0, 212, 255, .72); }

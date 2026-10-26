@@ -47,6 +47,24 @@ export function getChassis(ship: ShipRecord) {
   return objectOf(model?.chassis)
 }
 
+export function completeTurretEntries(entries: any[], turretCount: number): any[] {
+  if (!Number.isSafeInteger(turretCount) || turretCount < 0) throw new Error('Le nombre de tourelles du châssis est invalide.')
+  const byNumber = new Map<number, any>()
+  for (const entry of entries ?? []) {
+    const turretNumber = Number(entry?.tourelle)
+    if (Number.isSafeInteger(turretNumber) && turretNumber > 0 && turretNumber <= turretCount && !byNumber.has(turretNumber)) {
+      byNumber.set(turretNumber, entry)
+    }
+  }
+  return Array.from({ length: turretCount }, (_, index) => {
+    const turretNumber = index + 1
+    const existing = byNumber.get(turretNumber)
+    return existing
+      ? { ...existing, tourelle: turretNumber, armes: Array.isArray(existing.armes) ? existing.armes : [] }
+      : { tourelle: turretNumber, module: null, armes: [] }
+  })
+}
+
 export function getShipLimits(ship: ShipRecord) {
   const chassis = getChassis(ship)
   const turretWeaponSlots = String(chassis?.pointsEmportTourelles ?? '')
@@ -61,6 +79,25 @@ export function getShipLimits(ship: ShipRecord) {
     moduleSlots: Number(String(chassis?.modulesSupplementaires ?? '').split('+')[0]) || 0,
     consumableSlots: Number(chassis?.consommables ?? 0),
   }
+}
+
+export function turretWeaponPointsRemaining(ship: ShipRecord, turretNumber: number): number {
+  const limits = getShipLimits(ship)
+  if (!Number.isSafeInteger(turretNumber) || turretNumber < 1 || turretNumber > limits.turretCount) return 0
+  const capacity = limits.turretWeaponSlotLimits[turretNumber - 1] ?? 0
+  const turret = (ship?.armesTourelles ?? []).find((entry: any) => Number(entry?.tourelle) === turretNumber)
+  const used = (turret?.armes ?? []).reduce((total: number, entry: any) => total + (Number(objectOf(entry?.arme)?.pointsEmport) || 1), 0)
+  return Math.max(0, capacity - used)
+}
+
+export function canEquipWeaponInTurret(ship: ShipRecord, turretNumber: number, weapon: any): boolean {
+  if (!weapon) return false
+  const points = Number(weapon.pointsEmport) || 1
+  const chassisSize = Number(getChassis(ship)?.classe?.replace('alpha', '1').replace('beta', '2').replace('gamma', '3').replace('delta', '4'))
+  const weaponSize = Number(weapon.taille)
+  return Number.isFinite(points) && points > 0
+    && Number.isFinite(weaponSize) && weaponSize <= chassisSize
+    && points <= turretWeaponPointsRemaining(ship, turretNumber)
 }
 
 export function getShipStats(ship: ShipRecord) {

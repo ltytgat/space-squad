@@ -143,6 +143,7 @@
 .ship-weapon-heading, .ship-weapon-summary, .ship-weapon-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
 .ship-weapon-heading strong { flex: 1; color: var(--ss-text); }
 .ship-change-weapon { color: var(--ss-text-muted); background: transparent; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: .35rem .5rem; cursor: pointer; font-size: .72rem; }
+.ship-equip-empty-weapon { align-self: flex-start; margin-top: .55rem; }
 .ship-weapon-icon { color: var(--ss-cyan); font-size: 1.2rem; }
 .ship-weapon-summary, .ship-weapon small { color: var(--ss-text-muted); font-size: .75rem; }
 .ship-ammo-effect { color: var(--ss-yellow); font-style: italic; }

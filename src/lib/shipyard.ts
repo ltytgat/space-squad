@@ -57,6 +57,17 @@ export type ShipCatalogEntry = {
   categorie: string | null
 }
 
+export function shipModelDisplayName(model: any): string {
+  const sourceName = model?.atelierModeleSource && typeof model.atelierModeleSource === 'object'
+    ? model.atelierModeleSource.nom
+    : null
+  if (model?.atelierPrive && typeof sourceName === 'string' && sourceName.trim()) return sourceName
+  const name = String(model?.nom ?? 'Modèle indéfini')
+  return model?.atelierPrive
+    ? name.replace(/\s*·\s*Atelier\s+\d+(?:\s+\d+)?\s*$/u, '') || name
+    : name
+}
+
 /** Groups ship sale models by chassis class and category, sorting each category by price. */
 export function groupShipCatalog<T extends ShipCatalogEntry>(models: T[]) {
   return shipCatalogClasses.map((shipClass) => ({

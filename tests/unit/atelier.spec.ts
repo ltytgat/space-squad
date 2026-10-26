@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyAtelierEffects, atelierCost, atelierModificationMatches, atelierNextPurchasePrice, atelierPurchasePrice, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
+import { applyAtelierEffects, atelierCost, atelierModificationMatches, atelierNextPurchasePrice, atelierPurchasePrice, atelierShipSpecializationTags, atelierTurretCapacities, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
 import { weaponRangeRows } from '@/lib/weaponRanges'
 import { weaponAllowedInSlot, weaponFromGroup } from '@/lib/characterWeapons'
 
@@ -180,6 +180,48 @@ describe('Atelier equipped-item inventory', () => {
     expect(reconcileCustomEquipmentInventory([1, { id: 2 }, 2], [3], [1])).toEqual([2, 3])
     expect(reconcileCustomEquipmentInventory([], [3], [])).toEqual([3])
     expect(reconcileCustomEquipmentInventory([3], [3], [3])).toEqual([])
+  })
+})
+
+describe('Atelier ship turret points and specialization tags', () => {
+  it('assigns each turret point purchase to its selected turret and supports newly purchased turrets', () => {
+    expect(applyAtelierEffects({ tourelles: 2, pointsEmportTourelles: '1+2' }, [
+      { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '2', turretIndex: 2 },
+    ], 'vaisseau').pointsEmportTourelles).toBe('1+4')
+    expect(applyAtelierEffects({ tourelles: 2, pointsEmportTourelles: '1+2' }, [
+      { cible: 'tourelles', operation: 'add', valeur: '1' },
+    ], 'vaisseau').pointsEmportTourelles).toBe('1+2+1')
+    expect(applyAtelierEffects({ tourelles: 2, pointsEmportTourelles: '1+2' }, [
+      { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '1', turretIndex: 3 },
+      { cible: 'tourelles', operation: 'add', valeur: '1' },
+    ], 'vaisseau')).toMatchObject({ tourelles: 3, pointsEmportTourelles: '1+2+2' })
+    expect(applyAtelierEffects({ tourelles: 2, pointsEmportTourelles: '1+2' }, [
+      { cible: 'tourelles', operation: 'add', valeur: '1' },
+      { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '3', turretIndex: 3 },
+    ], 'vaisseau').pointsEmportTourelles).toBe('1+2+4')
+    expect(() => applyAtelierEffects({ tourelles: 2, pointsEmportTourelles: '1+2' }, [
+      { cible: 'tourelles', operation: 'add', valeur: '1' },
+      { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '4', turretIndex: 3 },
+    ], 'vaisseau')).toThrow(/4 points d’emport/)
+  })
+
+  it('requires a selected available turret and caps each turret at four points', () => {
+    expect(() => applyAtelierEffects({ tourelles: 1, pointsEmportTourelles: '3' }, [
+      { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '2' },
+    ], 'vaisseau')).toThrow(/tourelle disponible/)
+    expect(() => applyAtelierEffects({ tourelles: 1, pointsEmportTourelles: '3' }, [
+      { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '2', turretIndex: 1 },
+    ], 'vaisseau')).toThrow(/4 points d’emport/)
+    expect(atelierTurretCapacities('', 2)).toEqual([0, 0])
+  })
+
+  it('adds and deduplicates specialization tags while treating the chassis category as an existing tag', () => {
+    const specialized = applyAtelierEffects({ categorie: 'combat', specialisations: [] }, [
+      { cible: 'specializationExploration', operation: 'add', valeur: '1' },
+      { cible: 'specializationExploration', operation: 'add', valeur: '1' },
+    ], 'vaisseau')
+    expect(specialized.specialisations).toEqual(['exploration'])
+    expect(atelierShipSpecializationTags(specialized)).toEqual(['combat', 'exploration'])
   })
 })
 

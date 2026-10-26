@@ -9,6 +9,8 @@ import { findShipCrew, getShipAccess } from '@/lib/shipAccess'
 import { ShipClient } from '../../ship/ShipClient'
 import { ShipNameEditor } from '../../ship/ShipNameEditor'
 import '../../ship/ship.css'
+import { atelierShipSpecializationTags } from '@/lib/atelier'
+import { shipModelDisplayName } from '@/lib/shipyard'
 
 export const metadata = { title: 'Fiche vaisseau — Space Squad' }
 
@@ -24,6 +26,9 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
   const access = await getShipAccess(payload, user, shipId)
   if (!access.ship || !access.canRead) redirect(access.isAdmin ? '/ships' : '/')
   const ship = access.ship
+  const typeTagLabels: Record<string, string> = { combat: 'Combat', exploration: 'Exploration', transport: 'Transport' }
+  const typeTags = atelierShipSpecializationTags(ship.modele?.chassis ?? {})
+  const isCustom = Boolean(ship.atelierPersonnalise || ship.modele?.atelierPrive || ship.modele?.chassis?.atelierPrive)
 
   const crew = await findShipCrew(payload, shipId)
 
@@ -42,7 +47,7 @@ export default async function AdminShipPage({ params }: { params: Promise<{ id: 
             <span>{ship.nom}</span>
           </nav>
           <ShipNameEditor shipId={ship.id} initialName={ship.nom} readOnly={!access.canEdit} />
-          <div className="ship-tags"><span className="ship-tag">{ship.modele?.nom ?? 'Modèle indéfini'}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span></div>
+          <div className="ship-tags"><span className="ship-tag">{shipModelDisplayName(ship.modele)}</span><span className="ship-tag ship-tag-class">Classe {ship.modele?.chassis?.classe ?? '—'}</span>{isCustom && <span className="ship-tag">Custom</span>}{typeTags.map((tag) => <span className="ship-tag" key={tag}>{typeTagLabels[tag] ?? tag}</span>)}</div>
         </div>
       </div>
       <ShipClient

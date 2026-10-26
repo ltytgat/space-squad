@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { applyAtelierEffects, atelierModificationPoints, atelierNextPurchasePrice, atelierPurchasePrice, findAtelierCompatibility, type AtelierCompatibility, type AtelierEffect, type AtelierEquipmentKind, type AtelierPurchase } from '@/lib/atelier'
+import { applyAtelierEffects, atelierModificationPoints, atelierNextPurchasePrice, atelierPurchasePrice, atelierShipSpecializationTags, atelierSpecializationTagForTarget, atelierTurretCapacities, atelierTurretPointIncrease, findAtelierCompatibility, type AtelierCompatibility, type AtelierEffect, type AtelierEquipmentKind, type AtelierPurchase } from '@/lib/atelier'
 import { exactAdd } from '@/lib/shop'
 import { weaponRangeRows } from '@/lib/weaponRanges'
 import type { ShopItemDetail } from '../ShopItemDetails'
-import { ShopItemDetailsButton } from '../ShopItemDetails'
 import { customizePersonalEquipment, customizeShip } from '../atelier-actions'
 
 type ImageSummary = { url: string; alt: string } | null
@@ -68,6 +67,7 @@ const labels = (kind: AtelierEquipmentKind) => kind === 'arme' ? 'Armes de la r�
 function propertyValue(key: string, value: any): string {
   if (value === null || value === undefined || value === '') return ''
   if (key === 'categorie') return categoryLabels[String(value)] ?? String(value)
+  if (key === 'specialisations' && Array.isArray(value)) return value.map((tag) => ({ combat: 'Combat', exploration: 'Exploration', transport: 'Transport' } as Record<string, string>)[String(tag)] ?? String(tag)).join(', ')
   if (key === 'type' && Array.isArray(value)) return value.map((type) => ({ thermique: 'Thermique', cinetique: 'Cinétique', plasma: 'Plasma', explosif: 'Explosif', melee: 'Mêlée' } as Record<string, string>)[String(type)] ?? String(type)).join(', ')
   if (Array.isArray(value)) {
     return value.map((entry) => typeof entry === 'object' ? Object.entries(entry).filter(([, child]) => child != null && child !== '').map(([name, child]) => `${name} ${child}`).join(' · ') : String(entry)).filter(Boolean).join(' · ')
@@ -103,12 +103,16 @@ const effectLabels: Record<string, string> = {
   specializationTransport: 'Spécialisation transport', tourelles: 'Tourelles', pointsEmportPilote: 'Points d’emport pilote',
   pointsEmportTourelles: 'Points d’emport tourelles', blindage: 'Blindage', modulesSupplementaires: 'Modules supplémentaires',
   consommables: 'Emplacements consommables', esquiveBase: 'Esquive de base',
+  specialisations: 'Tags de type',
 }
 
 function formatEffect(effect: AtelierEffect): string {
   const label = effectLabels[effect.cible] ?? effect.cible
+  const specialization = atelierSpecializationTagForTarget(effect.cible)
+  if (specialization) return `Tag de type ajouté : ${{ combat: 'Combat', exploration: 'Exploration', transport: 'Transport' }[specialization]}`
   if (effect.operation === 'dice-count-add') return `${label} : +${effect.valeur} dé${Number(effect.valeur) === 1 ? '' : 's'}`
   if (effect.operation === 'dice-size-step') return `${label} : +1 rang de dé`
+  if (effect.cible === 'pointsEmportTourelles') return `${label} : +${effect.valeur} par achat sur une tourelle au choix`
   if (effect.operation === 'slot-add') return `${label} : ${effect.valeur} emplacement(s)`
   const amount = Number(effect.valeur)
   const displayValue = Number.isFinite(amount) && amount > 0 ? `+${effect.valeur}` : effect.valeur
@@ -117,13 +121,14 @@ function formatEffect(effect: AtelierEffect): string {
 }
 
 function shipDetails(item: AtelierItem, properties: Record<string, any>): ShopItemDetail[] {
+  const typeLabels: Record<string, string> = { combat: 'Combat', exploration: 'Exploration', transport: 'Transport' }
   const details: ShopItemDetail[] = [
     { label: 'Châssis', value: propertyValue('nom', properties.nom) },
     { label: 'Classe', value: String(properties.classe ?? '') },
-    ...Object.entries(properties).filter(([key, value]) => !['nom', 'classe', 'categorie'].includes(key) && value !== null && value !== undefined && value !== '')
+    { label: 'Tags de type', value: atelierShipSpecializationTags(properties).map((tag) => typeLabels[tag] ?? tag).join(', ') },
+    ...Object.entries(properties).filter(([key, value]) => !['nom', 'classe', 'categorie', 'specialisations'].includes(key) && value !== null && value !== undefined && value !== '')
       .map(([key, value]) => ({ label: detailLabels[key] ?? key, value: propertyValue(key, value) })),
   ].filter((detail) => detail.value !== '')
-  if (item.components.length) details.push({ label: 'Équipements inclus', value: item.components.join(' · ') })
   if (item.description) details.push({ label: 'Description', value: item.description })
   return details
 }
@@ -136,7 +141,14 @@ function createPreview(item: AtelierItem | null, selections: AtelierPurchase[], 
       const modification = modifications.find((entry) => entry.id === selection.modificationId)
       const compatibility = modification && findAtelierCompatibility(modification, item)
       if (!modification || !compatibility) throw new Error('Une modification sélectionnée n’est plus compatible.')
-      for (let purchase = 0; purchase < selection.quantity; purchase += 1) effects.push(...modification.effets)
+      for (let purchase = 0; purchase < selection.quantity; purchase += 1) {
+        for (const effect of modification.effets) {
+          if (effect.cible === 'pointsEmportTourelles') {
+            const turretIndex = selection.turretAssignments?.[purchase]
+            if (turretIndex !== null && turretIndex !== undefined) effects.push({ ...effect, turretIndex })
+          } else effects.push(effect)
+        }
+      }
     }
     return { properties: applyAtelierEffects({ nom: item.nom, ...item.properties }, effects, kind), error: null }
   } catch (error) {
@@ -165,7 +177,15 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
 
   const availableModifications = useMemo(() => selectedItem
     ? modifications.map((modification) => ({ modification, compatibility: findAtelierCompatibility(modification, selectedItem) }))
-      .filter((entry): entry is { modification: AtelierModification; compatibility: AtelierCompatibility } => entry.compatibility !== null)
+      .filter((entry): entry is { modification: AtelierModification; compatibility: AtelierCompatibility } => {
+        if (!entry.compatibility) return false
+        if (selectedItem.kind !== 'vaisseau') return true
+        const alreadyOwnedTags = atelierShipSpecializationTags(selectedItem.properties)
+        return !entry.modification.effets.some((effect) => {
+          const tag = atelierSpecializationTagForTarget(effect.cible)
+          return tag !== null && alreadyOwnedTags.includes(tag)
+        })
+      })
     : [], [selectedItem, modifications])
   const quote = useMemo(() => {
     try {
@@ -186,7 +206,18 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
   const modificationCost = quote.price
   const totalPrice = selectedItem ? exactAdd(selectedItem.prix, modificationCost) : 0
   const remainingPoints = selectedItem ? selectedItem.points - spentPoints : 0
-  const canFinalize = !!selectedItem && selections.length > 0 && !preview.error && !quote.error && spentPoints <= selectedItem.points && totalPrice <= character.konis && (kind === 'vaisseau' || !!customName.trim()) && !pending
+  const hasUnassignedTurretPurchases = kind === 'vaisseau' && selections.some((selection) => {
+    const modification = modifications.find((entry) => entry.id === selection.modificationId)
+    if (!modification?.effets.some((effect) => effect.cible === 'pointsEmportTourelles')) return false
+    return !Array.isArray(selection.turretAssignments) || selection.turretAssignments.length !== selection.quantity || selection.turretAssignments.some((index) => !Number.isSafeInteger(index) || Number(index) < 1)
+  })
+  const selectedSpecializations = selections.flatMap((selection) => {
+    const modification = modifications.find((entry) => entry.id === selection.modificationId)
+    return Array.from({ length: selection.quantity }, () => modification?.effets.map((effect) => atelierSpecializationTagForTarget(effect.cible)).filter((tag): tag is string => tag !== null) ?? []).flat()
+  })
+  const hasDuplicateSpecializationPurchases = new Set(selectedSpecializations).size !== selectedSpecializations.length
+    || selections.some((selection) => selection.quantity > 1 && modifications.find((entry) => entry.id === selection.modificationId)?.effets.some((effect) => atelierSpecializationTagForTarget(effect.cible)))
+  const canFinalize = !!selectedItem && selections.length > 0 && !preview.error && !quote.error && !hasUnassignedTurretPurchases && !hasDuplicateSpecializationPurchases && spentPoints <= selectedItem.points && totalPrice <= character.konis && (kind === 'vaisseau' || !!customName.trim()) && !pending
 
   function selectItem(value: string) {
     setSelectedKey(value)
@@ -198,23 +229,68 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
 
   function updateQuantity(modificationId: number, quantity: number) {
     setSelections((current) => {
+      const existing = current.find((entry) => entry.modificationId === modificationId)
       const next = current.filter((entry) => entry.modificationId !== modificationId)
-      if (quantity > 0) next.push({ modificationId, quantity })
+      if (quantity > 0) {
+        const modification = modifications.find((entry) => entry.id === modificationId)
+        const needsAssignments = modification?.effets.some((effect) => effect.cible === 'pointsEmportTourelles') === true
+        next.push({
+          modificationId,
+          quantity,
+          ...(needsAssignments ? { turretAssignments: Array.from({ length: quantity }, (_, index) => existing?.turretAssignments?.[index] ?? null) } : {}),
+        })
+      }
       return next
     })
     setMessage(null)
   }
 
+  function updateTurretAssignment(modificationId: number, purchaseIndex: number, turretIndex: number | null) {
+    setSelections((current) => current.map((selection) => selection.modificationId === modificationId
+      ? { ...selection, turretAssignments: (selection.turretAssignments ?? Array.from({ length: selection.quantity }, () => null)).map((value, index) => index === purchaseIndex ? turretIndex : value) }
+      : selection))
+    setMessage(null)
+  }
+
+  function availableTurretChoices(modificationId: number, purchaseIndex: number): number[] {
+    if (!selectedItem || kind !== 'vaisseau') return []
+    const modification = modifications.find((entry) => entry.id === modificationId)
+    if (!modification) return []
+    try {
+      const increase = atelierTurretPointIncrease(modification.effets)
+      const withoutThisPurchase = selections.map((selection) => selection.modificationId === modificationId
+        ? { ...selection, turretAssignments: (selection.turretAssignments ?? Array.from({ length: selection.quantity }, () => null)).map((value, index) => index === purchaseIndex ? null : value) }
+        : selection)
+      const properties = createPreview(selectedItem, withoutThisPurchase, modifications, kind).properties
+      const turretCount = Number(properties.tourelles)
+      const capacities = atelierTurretCapacities(properties.pointsEmportTourelles, turretCount)
+      return capacities.flatMap((capacity, index) => capacity + increase <= 4 ? [index + 1] : [])
+    } catch {
+      return []
+    }
+  }
+
   function addBlockReason(modification: AtelierModification, compatibility: AtelierCompatibility): string | null {
     const quantity = selections.find((entry) => entry.modificationId === modification.id)?.quantity ?? 0
     if (quantity >= Number(compatibility.maximum)) return 'Nombre maximum d’achats atteint.'
+    if (modification.effets.some((effect) => atelierSpecializationTagForTarget(effect.cible)) && quantity >= 1) return 'Une spécialité ne peut être achetée qu’une fois.'
+    const newTags = modification.effets.map((effect) => atelierSpecializationTagForTarget(effect.cible)).filter((tag): tag is string => tag !== null)
+    const alreadySelectedTags = selections.filter((selection) => selection.modificationId !== modification.id).flatMap((selection) => {
+      const selectedModification = modifications.find((entry) => entry.id === selection.modificationId)
+      return selectedModification?.effets.map((effect) => atelierSpecializationTagForTarget(effect.cible)).filter((tag): tag is string => tag !== null) ?? []
+    })
+    if (newTags.some((tag) => alreadySelectedTags.includes(tag))) return 'Cette spécialité est déjà sélectionnée dans la configuration.'
+    if (modification.effets.some((effect) => effect.cible === 'pointsEmportTourelles') && availableTurretChoices(modification.id, quantity).length === 0) return 'Aucune tourelle disponible ne peut recevoir ces points d’emport.'
     if (quantity === 0 && selections.length >= 50) return 'Limite de 50 recettes par configuration atteinte.'
     try {
       const points = atelierModificationPoints(compatibility, 1)
       if (points > remainingPoints) return 'Points de modification insuffisants.'
       const nextPrice = atelierNextPurchasePrice(compatibility, quantity)
       if (exactAdd(totalPrice, nextPrice) > character.konis) return 'Konis insuffisants pour cet achat.'
-      const candidate = [...selections.filter((entry) => entry.modificationId !== modification.id), { modificationId: modification.id, quantity: quantity + 1 }]
+      const turretAssignments = modification.effets.some((effect) => effect.cible === 'pointsEmportTourelles')
+        ? [...(selections.find((entry) => entry.modificationId === modification.id)?.turretAssignments ?? []), null]
+        : undefined
+      const candidate = [...selections.filter((entry) => entry.modificationId !== modification.id), { modificationId: modification.id, quantity: quantity + 1, ...(turretAssignments ? { turretAssignments } : {}) }]
       const previewError = createPreview(selectedItem, candidate, modifications, kind).error
       if (previewError) return previewError
       return null
@@ -291,7 +367,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
         {kind === 'vaisseau' ? <div className="atelier-ship-preview">
           {selectedItem.image && <img src={selectedItem.image.url} alt={selectedItem.image.alt} />}
           <div><h3>{selectedItem.nom}</h3><p>{selectedItem.modelNom} · {selectedItem.classe?.toUpperCase()}</p>
-            <ShopItemDetailsButton name={selectedItem.modelNom ?? selectedItem.nom} category="Modèle de vaisseau" image={selectedItem.image} details={shipDetails(selectedItem, preview.properties)} />
+            <dl className="atelier-stats atelier-ship-details">{shipDetails(selectedItem, preview.properties).map((detail, index) => <div key={`${detail.label}-${index}`}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
           </div>
         </div> : <div className="atelier-personal-preview">
           {selectedItem.image && <img src={selectedItem.image.url} alt={selectedItem.image.alt} />}
@@ -314,8 +390,9 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
           <div><span>Modifications</span><strong>{money(modificationCost)}</strong></div>
           <div className="atelier-budget-total"><span>Prix final</span><strong>{money(totalPrice)}</strong></div>
         </div>
-        {selectedItem.components.length > 0 && <p className="atelier-components">Composants conservés : {selectedItem.components.join(', ')}</p>}
         {(preview.error || quote.error) && <p className="atelier-inline-error" role="alert">{preview.error ?? quote.error}</p>}
+        {hasUnassignedTurretPurchases && <p className="atelier-inline-error" role="alert">Choisissez une tourelle pour chaque achat de points d’emport.</p>}
+        {hasDuplicateSpecializationPurchases && <p className="atelier-inline-error" role="alert">Chaque spécialité ne peut être achetée qu’une fois par vaisseau.</p>}
         {totalPrice > character.konis && <p className="atelier-inline-error" role="alert">Votre solde de Konis est insuffisant pour cette configuration.</p>}
       </section>
 
@@ -341,6 +418,19 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
                 {quantity > 0 && <small className="atelier-multiplier">Coût sélectionné : {money(selectedCost)}</small>}
                 {compatibility.multiplicateurRachat && compatibility.multiplicateurRachat > 1 && <small className="atelier-multiplier">Prix multiplié par ×{compatibility.multiplicateurRachat} à chaque rachat</small>}
                 {modification.effets.length > 0 && <ul>{modification.effets.map((effect, index) => <li key={`${effect.cible}-${index}`}>{formatEffect(effect)}</li>)}</ul>}
+                {quantity > 0 && kind === 'vaisseau' && modification.effets.some((effect) => effect.cible === 'pointsEmportTourelles') && <div className="atelier-turret-assignments">
+                  {Array.from({ length: quantity }, (_, purchaseIndex) => {
+                    const assignedTurret = selections.find((entry) => entry.modificationId === modification.id)?.turretAssignments?.[purchaseIndex] ?? null
+                    const turretChoices = availableTurretChoices(modification.id, purchaseIndex)
+                    return <label key={purchaseIndex}>Achat {purchaseIndex + 1} · Tourelle
+                      <select value={assignedTurret ?? ''} disabled={pending} onChange={(event) => updateTurretAssignment(modification.id, purchaseIndex, event.target.value ? Number(event.target.value) : null)}>
+                        <option value="">Sélectionner une tourelle</option>
+                        {assignedTurret !== null && !turretChoices.includes(assignedTurret) && <option value={assignedTurret} disabled>Tourelle {assignedTurret} · capacité dépassée</option>}
+                        {turretChoices.map((turret) => <option key={turret} value={turret}>Tourelle {turret}</option>)}
+                      </select>
+                    </label>
+                  })}
+                </div>}
                 <div className="atelier-recipe-actions">
                   <button type="button" className="atelier-recipe-remove" disabled={!quantity || pending} onClick={() => updateQuantity(modification.id, quantity - 1)} aria-label={`Retirer un achat de ${modification.nom}`}>−</button>
                   <span>{quantity} achat{quantity > 1 ? 's' : ''}</span>

@@ -100,6 +100,7 @@ function shipItemSummary(ship: any, index: number, occupiedIds: Set<number>): At
     properties: {
       nom: chassis.nom, classe: chassis.classe, categorie: chassis.categorie, tourelles: chassis.tourelles,
       pointsEmportPilote: chassis.pointsEmportPilote, pointsEmportTourelles: chassis.pointsEmportTourelles,
+      specialisations: chassis.specialisations ?? [],
       blindage: chassis.blindage, modulesSupplementaires: chassis.modulesSupplementaires,
       consommables: chassis.consommables, esquiveBase: chassis.esquiveBase,
     },
