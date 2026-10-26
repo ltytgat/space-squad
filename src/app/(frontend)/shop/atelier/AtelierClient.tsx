@@ -347,6 +347,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
 
     <section className="atelier-selector" aria-labelledby="atelier-item-heading">
       <div className="atelier-section-heading"><div><h2 id="atelier-item-heading">Objet à personnaliser</h2><p>{labels(kind)}</p></div></div>
+      {kind === 'vaisseau' && <p className="atelier-ship-requirement">Le vaisseau doit être vide pour être modifié. Débarquez votre personnage et tous les membres de son équipage avant de le sélectionner.</p>}
       {items.length === 0
         ? <div className="shop-empty">Aucun objet de votre réserve ne remplit les conditions de cet Atelier.</div>
         : <label className="atelier-select-label">Sélectionner un objet

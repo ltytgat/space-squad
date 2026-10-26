@@ -6,6 +6,7 @@
 .atelier-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
 .atelier-section-heading h2, .atelier-cart h2 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; }
 .atelier-section-heading p, .atelier-cart p { margin-top: .25rem; color: var(--ss-text-muted); font-size: .84rem; }
+.atelier-ship-requirement { margin: 0 0 .85rem; padding: .7rem .85rem; border-left: 3px solid var(--ss-cyan); border-radius: 4px; background: var(--ss-cyan-dim); color: var(--ss-text); font-size: .84rem; }
 .atelier-select-label { display: grid; gap: .45rem; max-width: 680px; color: var(--ss-text-muted); font-size: .85rem; }
 .atelier-select-label select { min-height: 42px; padding: .55rem .7rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
 .atelier-ship-preview { display: flex; align-items: flex-start; gap: 1rem; padding: .85rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
