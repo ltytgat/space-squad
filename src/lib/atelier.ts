@@ -15,6 +15,7 @@ export type AtelierCompatibility = {
   typeArme?: string | null
   classeVaisseau?: string | null
   prix?: number | string | null
+  points?: number | null
   maximum?: number | null
   multiplicateurRachat?: number | null
 }

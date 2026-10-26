@@ -107,6 +107,7 @@ function modificationSnapshot(modification: any) {
       sousCategorie: compatibility.sousCategorie ?? null,
       typeArme: compatibility.typeArme ?? null,
       classeVaisseau: compatibility.classeVaisseau ?? null,
+      points: Number(compatibility.points),
     },
     effets: (modification.effets ?? []).map((effect: any) => ({
       cible: String(effect.cible), operation: String(effect.operation), valeur: String(effect.valeur),

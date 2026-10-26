@@ -87,6 +87,7 @@ export const AtelierModifications: CollectionConfig = {
               options: [
                 { label: 'Fusil', value: 'fusil-assaut' },
                 { label: 'Shotgun', value: 'shotgun' },
+                { label: 'Canon', value: 'canon' },
                 { label: 'Sniper', value: 'sniper' },
                 { label: 'Pistolet', value: 'pistolet' },
                 { label: 'Casque', value: 'tete' },
@@ -130,7 +131,16 @@ export const AtelierModifications: CollectionConfig = {
               required: true,
               min: 0,
               label: 'Prix',
-              admin: { width: '34%', description: 'Coût ajouté au prix d’achat de l’équipement custom.' },
+              admin: { width: '25%', description: 'Coût ajouté au prix d’achat de l’équipement custom.' },
+            },
+            {
+              name: 'points',
+              type: 'number',
+              required: true,
+              min: 0,
+              validate: (value: unknown) => (typeof value === 'number' && Number.isSafeInteger(value)) || 'Le coût en points doit être un entier positif ou nul.',
+              label: 'Points de modification',
+              admin: { width: '25%' },
             },
             {
               name: 'maximum',
@@ -139,7 +149,7 @@ export const AtelierModifications: CollectionConfig = {
               min: 1,
               validate: (value: unknown) => (typeof value === 'number' && Number.isSafeInteger(value)) || 'Le maximum doit être un entier positif.',
               label: 'Maximum',
-              admin: { width: '33%', description: 'Nombre maximum d’achats pour cette compatibilité.' },
+              admin: { width: '25%', description: 'Nombre maximum d’achats pour cette compatibilité.' },
             },
             {
               name: 'multiplicateurRachat',
@@ -147,7 +157,7 @@ export const AtelierModifications: CollectionConfig = {
               validate: (value: unknown, { siblingData }: any) => siblingData?.categorieEquipement !== 'arme' || (typeof value === 'number' && Number.isSafeInteger(value)) || 'Le multiplicateur de rachat doit être un entier pour une arme.',
               label: 'Multiplicateur de rachat',
               admin: {
-                width: '33%',
+                width: '25%',
                 condition: (_: unknown, siblingData: any) => siblingData?.categorieEquipement === 'arme',
               },
             },

@@ -20,12 +20,18 @@ describe('Atelier compatibility', () => {
   it('resolves the exact compatibility row so each equipment match can have its own price', () => {
     const modification = {
       compatibilites: [
-        { categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'thermique', prix: 120, maximum: 2, multiplicateurRachat: 3 },
-        { categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'cinetique', prix: 250, maximum: 1, multiplicateurRachat: 4 },
+        { categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'thermique', prix: 120, points: 3, maximum: 2, multiplicateurRachat: 3 },
+        { categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'cinetique', prix: 250, points: 5, maximum: 1, multiplicateurRachat: 4 },
       ],
     }
-    expect(findAtelierCompatibility(modification, { kind: 'arme', categorie: 'fusil-assaut', type: ['cinetique'] })).toMatchObject({ prix: 250, maximum: 1, multiplicateurRachat: 4 })
+    expect(findAtelierCompatibility(modification, { kind: 'arme', categorie: 'fusil-assaut', type: ['cinetique'] })).toMatchObject({ prix: 250, points: 5, maximum: 1, multiplicateurRachat: 4 })
     expect(atelierCost(1000, [findAtelierCompatibility(modification, { kind: 'arme', categorie: 'fusil-assaut', type: ['thermique'] })?.prix])).toBe(1120)
+  })
+
+  it('matches the canon weapon subcategory', () => {
+    expect(atelierModificationMatches({
+      compatibilites: [{ categorieEquipement: 'arme', sousCategorie: 'canon', typeArme: 'thermique' }],
+    }, { kind: 'arme', categorie: 'canon', type: ['thermique'] })).toBe(true)
   })
 
   it('rejects duplicate compatibility keys but allows separate weapon variants', () => {

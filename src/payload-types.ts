@@ -1325,13 +1325,16 @@ export interface AtelierModification {
   description?: string | null;
   compatibilites: {
     categorieEquipement: 'arme' | 'armure' | 'vaisseau';
-    sousCategorie?: ('fusil-assaut' | 'shotgun' | 'sniper' | 'pistolet' | 'tete' | 'torse' | 'bras' | 'jambes') | null;
+    sousCategorie?:
+      | ('fusil-assaut' | 'shotgun' | 'canon' | 'sniper' | 'pistolet' | 'tete' | 'torse' | 'bras' | 'jambes')
+      | null;
     typeArme?: ('thermique' | 'cinetique') | null;
     classeVaisseau?: ('alpha' | 'beta' | 'gamma' | 'delta') | null;
     /**
      * Coût ajouté au prix d’achat de l’équipement custom.
      */
     prix: number;
+    points: number;
     /**
      * Nombre maximum d’achats pour cette compatibilité.
      */
@@ -2400,6 +2403,7 @@ export interface AtelierModificationsSelect<T extends boolean = true> {
         typeArme?: T;
         classeVaisseau?: T;
         prix?: T;
+        points?: T;
         maximum?: T;
         multiplicateurRachat?: T;
         id?: T;
