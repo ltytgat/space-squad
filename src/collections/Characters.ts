@@ -746,7 +746,7 @@ export const Characters: CollectionConfig = {
                   filterOptions: ({ siblingData }) => {
                     return {
                       categoriePrincipale: { equals: 'armes' },
-                      or: [{ sousCategorieArme: { equals: 'toutes' } }, { sousCategorieArme: { equals: 'melee' } }],
+                      sousCategorieArme: { equals: 'melee' },
                     }
                   },
                 },

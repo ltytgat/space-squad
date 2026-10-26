@@ -35,8 +35,10 @@ describe('shop Mod rules', () => {
 
   it('reuses the personal weapon category rules for Mod compatibility', () => {
     expect(isWeaponModCompatible({ categorie: 'shotgun' }, { categoriePrincipale: 'armes', sousCategorieArme: 'fusils-pistolets' })).toBe(true)
+    expect(isWeaponModCompatible({ categorie: 'shotgun' }, { categoriePrincipale: 'armes', sousCategorieArme: 'toutes' })).toBe(true)
     expect(isWeaponModCompatible({ categorie: 'melee' }, { categoriePrincipale: 'armes', sousCategorieArme: 'fusils-pistolets' })).toBe(false)
     expect(isWeaponModCompatible({ categorie: 'melee' }, { categoriePrincipale: 'armes', sousCategorieArme: 'melee' })).toBe(true)
+    expect(isWeaponModCompatible({ categorie: 'melee' }, { categoriePrincipale: 'armes', sousCategorieArme: 'toutes' })).toBe(false)
     expect(isWeaponModCompatible({ categorie: 'shotgun' }, { categoriePrincipale: 'armures', sousCategorieArme: 'toutes' })).toBe(false)
   })
 

@@ -85,6 +85,7 @@ export function isWeaponModCompatible(weapon: { categorie?: string }, mod: {
 }): boolean {
   if (mod.categoriePrincipale !== 'armes') return false
   const category = mod.sousCategorieArme
+  if (weapon.categorie === 'melee') return category === 'melee'
   if (category === 'toutes') return true
   if (category === 'fusils-pistolets')
     return ['fusil-assaut', 'shotgun', 'sniper', 'pistolet', 'lourde'].includes(weapon.categorie ?? '')
