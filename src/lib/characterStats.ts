@@ -280,11 +280,10 @@ export function calculateStats(character: any) {
   const asMods = (v: any): Mod[] => {
     if (!v) return []
     let mods = []
-    if (typeof v === 'object' && v.customItem && typeof v.customItem === 'object') {
-      mods = v.customItem.mods ?? []
-    } else
     if (typeof v === 'object' && 'mods' in v) {
       mods = v.mods ?? []
+    } else if (typeof v === 'object' && v.customItem && typeof v.customItem === 'object') {
+      mods = v.customItem.mods ?? []
     } else if (Array.isArray(v)) {
       mods = v
     }

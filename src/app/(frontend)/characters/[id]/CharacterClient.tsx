@@ -48,10 +48,31 @@ const ARMOR_SLOT_CATEGORIES: Record<string, string> = {
   armureJambes: 'jambes',
   armureBackpack: 'backpack',
 }
+const CUSTOM_EQUIPMENT_CHARACTER_SLOTS = [
+  'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
+  'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
+]
 
 function getArmorCategory(armorGroup: any): string | undefined {
-  const armor = armorGroup?.item || armorGroup
-  return typeof armor === 'object' && armor !== null ? armor.categorie : undefined
+  return armorFromGroup(armorGroup)?.categorie
+}
+
+function armorFromGroup(armorGroup: any) {
+  if (!armorGroup || typeof armorGroup !== 'object') return null
+  if (armorGroup.customItem && typeof armorGroup.customItem === 'object') {
+    const custom = armorGroup.customItem
+    const properties = custom.proprietesFigees
+    if (!properties || typeof properties !== 'object') return null
+    return {
+      ...properties,
+      id: custom.id,
+      nom: custom.nom ?? properties.nom,
+      categorie: custom.categorie ?? properties.categorie,
+      set: custom.set ?? properties.set,
+    }
+  }
+  if ('item' in armorGroup) return typeof armorGroup.item === 'object' ? armorGroup.item : null
+  return armorGroup
 }
 
 function relationId(value: any): string | null {
@@ -72,6 +93,17 @@ function asCustomWeaponGroup(customItem: any) {
   }
 }
 
+function asCustomArmorGroup(customItem: any) {
+  const item = armorFromGroup({ customItem })
+  if (!item) return null
+  return {
+    item,
+    customItem,
+    mods: customItem.mods ?? [],
+    customReserve: true,
+  }
+}
+
 function addWeaponToInventory(character: any, weaponGroup: any) {
   if (!weaponGroup) return
   if (weaponGroup.customItem) {
@@ -83,6 +115,19 @@ function addWeaponToInventory(character: any, weaponGroup: any) {
     return
   }
   character.inventaireArmes = [...(character.inventaireArmes ?? []), weaponGroup]
+}
+
+function addArmorToInventory(character: any, armorGroup: any) {
+  if (!armorGroup) return
+  if (armorGroup.customItem) {
+    const customId = relationId(armorGroup.customItem)
+    const existingIds = (character.inventaireEquipementsCustom ?? []).map(relationId)
+    if (customId && !existingIds.includes(customId)) {
+      character.inventaireEquipementsCustom = [...(character.inventaireEquipementsCustom ?? []), armorGroup.customItem]
+    }
+    return
+  }
+  character.inventaireArmures = [...(character.inventaireArmures ?? []), armorGroup]
 }
 
 function isHeavyMachineGun(weapon: any): boolean {
@@ -409,7 +454,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           // Ici on va essayer d'envoyer les données telles qu'elles sont dans l'état local
           // Payload gérera la conversion si nécessaire (ex: objet vers ID)
           const item = character[field]
-          if (['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(field) && item?.customItem) {
+          if (CUSTOM_EQUIPMENT_CHARACTER_SLOTS.includes(field) && item?.customItem) {
             saveData[field] = { ...item, item: null, customItem: Number(relationId(item.customItem)) }
           } else {
             saveData[field] = item
@@ -421,7 +466,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         managerChangedFields.forEach((field) => {
           if (character[field] !== undefined) {
             const item = character[field]
-            saveData[field] = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(field) && item?.customItem
+            saveData[field] = CUSTOM_EQUIPMENT_CHARACTER_SLOTS.includes(field) && item?.customItem
               ? { ...item, item: null, customItem: Number(relationId(item.customItem)) }
               : item
           }
@@ -463,12 +508,18 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const inventoryData = useMemo(() => {
     const equippedCustomIds = new Set(['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
       .map((slot) => relationId(character[slot]?.customItem)).filter(Boolean))
+    const equippedCustomArmorIds = new Set(['armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack']
+      .map((slot) => relationId(character[slot]?.customItem)).filter(Boolean))
     const customWeapons = (character.inventaireEquipementsCustom || [])
       .filter((item: any) => item && typeof item === 'object' && item.categorieEquipement === 'arme' && !equippedCustomIds.has(relationId(item)))
       .map(asCustomWeaponGroup)
       .filter(Boolean)
+    const customArmors = (character.inventaireEquipementsCustom || [])
+      .filter((item: any) => item && typeof item === 'object' && item.categorieEquipement === 'armure' && !equippedCustomArmorIds.has(relationId(item)))
+      .map(asCustomArmorGroup)
+      .filter(Boolean)
     const weapons = [...(character.inventaireArmes || []), ...customWeapons]
-    const armors = character.inventaireArmures || []
+    const armors = [...(character.inventaireArmures || []), ...customArmors]
     const puces = character.inventairePuces || []
     const consumables = character.inventaire || []
     const mods = character.inventaireMods || []
@@ -483,7 +534,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }, [character])
 
   // Valeur de stockage pour les consommables équipés
-  const backpackItem = character.armureBackpack?.item || character.armureBackpack
+  const backpackItem = armorFromGroup(character.armureBackpack)
   const storageCapacity = (typeof backpackItem === 'object' ? backpackItem?.stockage : 0) || 0
   const maxStorageUnits = storageCapacity * 2
 
@@ -494,9 +545,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     
     slots.forEach(slotKey => {
       const armorGroup = character[slotKey]
-      if (armorGroup?.mods) {
+      const equippedMods = Array.isArray(armorGroup?.mods) ? armorGroup.mods : armorGroup?.customItem?.mods ?? []
+      if (equippedMods.length) {
         const bonuses: { category: string, quantity: number, modName: string }[] = []
-        armorGroup.mods.forEach((mod: any) => {
+        equippedMods.forEach((mod: any) => {
           if (mod.bonusConsommables) {
             mod.bonusConsommables.forEach((b: any) => {
               bonuses.push({ category: b.categorie, quantity: b.quantite, modName: mod.nom })
@@ -1012,8 +1064,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   // Helper rendu armure
-  const renderArmorSlot = (label: string, armor: any, mods: any[] = [], slotKey: string, category: string) => {
-    const armorPiece = armor?.item || armor
+  const renderArmorSlot = (label: string, armor: any, mods: any[] | undefined, slotKey: string, category: string) => {
+    const armorPiece = armorFromGroup(armor)
+    const equippedMods = Array.isArray(mods) ? mods : armor?.customItem?.mods ?? []
     const isEquipped = !!armorPiece && typeof armorPiece !== 'string'
     
     return (
@@ -1030,7 +1083,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             🔄
           </button>
         </div>
-        {isEquipped ? renderArmorInner(armorPiece, mods) : (
+        {isEquipped ? renderArmorInner(armorPiece, equippedMods) : (
           <div className="char-equip-empty">
             <span className="char-equip-empty-icon">🛡️</span>
             <span className="char-equip-empty-text">Non équipé</span>
@@ -1039,18 +1092,18 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         {/* Affichage des mods d'armure interactifs */}
         {isEquipped && (
           <div className="char-equip-mods-edit">
-            {[0].map(idx => {
-              const mod = mods[idx]
+            {Array.from({ length: Math.max(1, Math.floor(Number(armorPiece.mods) || 1)) }, (_, idx) => {
+              const mod = equippedMods[idx]
               return (
                 <div key={idx} className="char-equip-mod-slot">
                   {mod ? (
                     <div className="char-equip-mod-filled">
                       <span title={mod.effet}>🔧 {mod.nom}</span>
-                      <button onClick={() => handleOpenSelector({ slot: 'armorMod', label: `Mod ${label}`, type: 'armorMod', category, armorSlot: slotKey, modIndex: idx })}>🔄</button>
+                      <button onClick={() => handleOpenSelector({ slot: 'armorMod', label: `Mod ${idx + 1} ${label}`, type: 'armorMod', category, armorSlot: slotKey, modIndex: idx })}>🔄</button>
                     </div>
                   ) : (
-                    <button className="char-equip-mod-empty" onClick={() => handleOpenSelector({ slot: 'armorMod', label: `Mod ${label}`, type: 'armorMod', category, armorSlot: slotKey, modIndex: idx })}>
-                      + Ajouter Mod
+                    <button className="char-equip-mod-empty" disabled={idx > equippedMods.length} onClick={() => handleOpenSelector({ slot: 'armorMod', label: `Mod ${idx + 1} ${label}`, type: 'armorMod', category, armorSlot: slotKey, modIndex: idx })}>
+                      {idx > equippedMods.length ? 'Ajoutez d’abord le mod précédent' : '+ Ajouter Mod'}
                     </button>
                   )}
                 </div>
@@ -1292,9 +1345,16 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     }
     
     if (type === 'armor') {
-      const inventory = (character.inventaireArmures || [])
+      const standardInventory = (character.inventaireArmures || [])
         .map((a: any, idx: number) => ({ ...a, fromInventory: true, inventoryIndex: idx }))
         .filter((a: any) => getArmorCategory(a) === category)
+      const equippedCustomArmorIds = new Set(['armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack']
+        .map((armorSlot) => relationId(character[armorSlot]?.customItem)).filter(Boolean))
+      const customInventory = (character.inventaireEquipementsCustom || [])
+        .filter((item: any) => item && typeof item === 'object' && item.categorieEquipement === 'armure' && !equippedCustomArmorIds.has(relationId(item)))
+        .map(asCustomArmorGroup)
+        .filter((group: any) => group && getArmorCategory(group) === category)
+        .map((group: any) => ({ ...group, fromInventory: true }))
       
       // Pour les armures, peu de chances de vouloir swap car elles sont par slot strict,
       // mais on respecte l'énoncé.
@@ -1305,7 +1365,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         .filter(a => getArmorCategory(a) === category)
         .map(a => ({ ...a, fromSlot: equippedSlots.find(s => character[s] === a) }))
 
-      return [...equipped, ...inventory]
+      return [...equipped, ...standardInventory, ...customInventory]
     }
 
     if (type === 'consumable') {
@@ -1512,12 +1572,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         }
         addWeaponToInventory(newCharacter, currentItem)
       } else if (type === 'armor') {
-        if (inventoryIndex !== undefined) {
+        if (newItem.customItem) {
+          const customId = relationId(newItem.customItem)
+          newCharacter.inventaireEquipementsCustom = (newCharacter.inventaireEquipementsCustom || []).filter((item: any) => relationId(item) !== customId)
+        } else if (inventoryIndex !== undefined) {
           newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((_: any, idx: number) => idx !== inventoryIndex)
         } else {
           newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((i: any) => (i.id || i) !== newItemId)
         }
-        if (currentItem) newCharacter.inventaireArmures = [...newCharacter.inventaireArmures, currentItem]
+        addArmorToInventory(newCharacter, currentItem)
       } else if (type === 'armorMod') {
         if (inventoryIndex !== undefined) {
           newCharacter.inventaireMods = (newCharacter.inventaireMods || []).filter((_: any, idx: number) => idx !== inventoryIndex)
@@ -1536,7 +1599,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       // Si on remplace par quelque chose qui n'est ni du slot ni de l'inventaire
       // (théoriquement non possible avec l'UI, mais on gère par sécurité)
       if (type === 'weapon') addWeaponToInventory(newCharacter, currentItem)
-      if (type === 'armor') newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
+      if (type === 'armor') addArmorToInventory(newCharacter, currentItem)
       if (type === 'chip') newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
     }
 
@@ -1609,7 +1672,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         if (type === 'weapon') {
           addWeaponToInventory(newCharacter, currentItem)
         } else if (type === 'armor') {
-          newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
+          addArmorToInventory(newCharacter, currentItem)
         } else if (type === 'chip') {
           newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
         }

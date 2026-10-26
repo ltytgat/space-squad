@@ -37,7 +37,7 @@ const TARGETS: Record<AtelierEquipmentKind, ReadonlySet<string>> = {
   ]),
   armure: new Set([
     'nom', 'categorie', 'valeurArmurePhysique', 'valeurBouclier', 'valeurRupture', 'poids',
-    'modificateur', 'rang', 'prix', 'stockage', 'set', 'image',
+    'modificateur', 'caracteristiqueBonus', 'mods', 'rang', 'prix', 'stockage', 'set', 'image',
   ]),
   vaisseau: new Set([
     'nom', 'classe', 'categorie', 'tourelles', 'pointsEmportPilote', 'pointsEmportTourelles',
@@ -204,6 +204,26 @@ export function applyAtelierEffects<T extends Record<string, any>>(
       result[effect.cible] = addEncodedSlots(current, effect.valeur, kind === 'vaisseau')
     } else if (effect.operation === 'add') {
       const increment = finiteValue(effect.valeur, 'La valeur ajoutée')
+      if (kind === 'armure' && effect.cible === 'caracteristiqueBonus') {
+        const armorModifier = result.modificateur
+        if (typeof armorModifier !== 'string' || !armorModifier.trim()) continue
+        const match = armorModifier.match(/^(.*?)([+-])\s*(\d+)\s*$/)
+        if (!match || !match[1].trim()) {
+          throw new Error('Le modificateur de cette armure doit utiliser le format caractéristique+N.')
+        }
+        const previousValue = Number(`${match[2]}${match[3]}`)
+        const nextValue = exactAdd(previousValue, increment)
+        if (!Number.isSafeInteger(nextValue)) throw new Error('Le bonus de caractéristique doit rester un entier valide.')
+        result.modificateur = `${match[1]}${nextValue < 0 ? '-' : '+'}${Math.abs(nextValue)}`
+        continue
+      }
+      if (kind === 'armure' && effect.cible === 'mods') {
+        if (increment !== 1) throw new Error('Chaque achat de cette modification doit ajouter exactement un emplacement de mods.')
+        const nextValue = exactAdd(Number(current ?? 1), 1)
+        if (!Number.isSafeInteger(nextValue) || nextValue < 1) throw new Error('La capacité d’emplacements de mods est invalide.')
+        result.mods = nextValue
+        continue
+      }
       if (kind === 'arme' && effect.cible === 'modMoyennePortee' && result.categorie === 'sniper') {
         const stages = result.paliersSniper
         if (!Array.isArray(stages) || !stages[1] || typeof stages[1].modificateur !== 'number') {
