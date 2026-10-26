@@ -8,28 +8,25 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
-import { atelierCost, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect } from '@/lib/atelier'
+import { atelierCost, atelierModificationPoints, atelierPointsForPersonalItem, atelierPointsForShip, atelierPurchasePrice, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect, type AtelierPurchase } from '@/lib/atelier'
 import { exactAdd, exactMultiply, exactSubtract, readShopPrice } from '@/lib/shop'
 import { computeShipAccess } from '@/lib/shipAccess'
-import { assignedCrew } from '@/lib/shipCrewSync'
 import { validateShipConfiguration } from '@/lib/shipStats'
-import { ownsFactionAtelierAccess } from '@/lib/factionRewards'
+import { factionKey, ownsFactionAtelierAccess } from '@/lib/factionRewards'
 
-type PersonalLocation =
-  | { location: 'inventory'; index: number }
-  | { location: 'equipped'; slot: 'armePrincipale' | 'armeSecondaire' | 'armeLourde' | 'armeDeMelee' | 'armureTete' | 'armureTorse' | 'armureBras' | 'armureJambes' }
+type PersonalLocation = { location: 'inventory'; index: number; itemId: number }
 
 type CustomizePersonalInput = {
   transactionId: string
   kind: 'arme' | 'armure'
   source: PersonalLocation
-  modificationIds: number[]
+  modifications: AtelierPurchase[]
 }
 
 type ShipCustomizationInput = {
   transactionId: string
   shipId: number
-  modificationIds: number[]
+  modifications: AtelierPurchase[]
 }
 
 class AtelierError extends Error {}
@@ -51,10 +48,13 @@ async function getContext() {
   if (numericId((character as any).user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
   const affiliation = (character as any).affiliation
   const factionName = String(affiliation && typeof affiliation === 'object' ? affiliation.nom ?? '' : '').trim()
+  const faction = factionKey(factionName)
+  const workshopKind: AtelierEquipmentKind | null = faction === 'alliance' ? 'arme' : faction === 'union' ? 'armure' : faction === 'guilde' ? 'vaisseau' : null
+  if (!workshopKind) fail('Aucun Atelier n’est défini pour cette organisation.')
   if (!ownsFactionAtelierAccess((character as any).inventaireRecompensesFaction, factionName)) {
     fail('Un permis Accès Atelier valide pour votre organisation est nécessaire.')
   }
-  return { payload, user, character: character as any }
+  return { payload, user, character: character as any, workshopKind }
 }
 
 async function beginTransaction(payload: any) {
@@ -89,15 +89,20 @@ async function recordTransaction(payload: any, transactionDb: any, values: {
   })
 }
 
-async function getActiveModifications(payload: any, ids: number[], req: any) {
-  if (!Array.isArray(ids) || ids.length < 1 || ids.length > 50 || ids.some((id) => !isId(id))) fail('Sélectionnez entre une et cinquante modifications valides.')
-  const modifications = []
-  for (const id of ids) {
-    const modification = await payload.findByID({ collection: 'atelier-modifications', id, depth: 0, overrideAccess: true, req }).catch(() => null) as any
+async function getActiveModifications(payload: any, purchases: AtelierPurchase[], req: any) {
+  if (!Array.isArray(purchases) || purchases.length < 1 || purchases.length > 50) fail('Sélectionnez au moins une modification valide.')
+  const seen = new Set<number>()
+  const resolved = []
+  for (const purchase of purchases) {
+    if (!purchase || !isId(purchase.modificationId) || !Number.isSafeInteger(purchase.quantity) || purchase.quantity < 1 || seen.has(purchase.modificationId)) {
+      fail('La sélection de modifications est invalide.')
+    }
+    seen.add(purchase.modificationId)
+    const modification = await payload.findByID({ collection: 'atelier-modifications', id: purchase.modificationId, depth: 0, overrideAccess: true, req }).catch(() => null) as any
     if (!modification || modification.active === false) fail('Une modification sélectionnée est indisponible.')
-    modifications.push(modification)
+    resolved.push({ modification, quantity: purchase.quantity })
   }
-  return modifications
+  return resolved
 }
 
 function modificationSnapshot(modification: any) {
@@ -121,40 +126,35 @@ function modificationSnapshot(modification: any) {
   }
 }
 
-function applyModifications(base: Record<string, any>, modifications: any[], kind: AtelierEquipmentKind, item: any) {
+function applyModifications(base: Record<string, any>, selections: { modification: any; quantity: number }[], kind: AtelierEquipmentKind, item: any) {
   const effects: AtelierEffect[] = []
-  const selectedModifications = modifications.map((modification) => {
+  const selectedModifications = selections.map(({ modification, quantity }) => {
     const compatibility = findAtelierCompatibility(modification, item)
     if (!compatibility) fail(`La modification « ${modification.nom} » n’est pas compatible avec cet équipement.`)
-    return { ...modification, atelierCompatibilite: compatibility }
+    if (!Number.isSafeInteger(compatibility.maximum) || quantity > Number(compatibility.maximum)) fail(`La modification « ${modification.nom} » dépasse son nombre maximum d’achats.`)
+    return { ...modification, atelierCompatibilite: compatibility, atelierQuantite: quantity }
   })
   for (const modification of selectedModifications) {
-    for (const effect of modification.effets ?? []) {
-      effects.push({ cible: String(effect.cible), operation: String(effect.operation) as AtelierEffect['operation'], valeur: String(effect.valeur) })
+    for (let purchase = 0; purchase < modification.atelierQuantite; purchase += 1) {
+      for (const effect of modification.effets ?? []) {
+        effects.push({ cible: String(effect.cible), operation: String(effect.operation) as AtelierEffect['operation'], valeur: String(effect.valeur) })
+      }
     }
   }
-  return { properties: applyAtelierEffects(base, effects, kind), modifications: selectedModifications }
-}
-
-function validatePersonalLocation(input: CustomizePersonalInput) {
-  if (!input || !['arme', 'armure'].includes(input.kind) || !input.source) fail('Type ou emplacement d’équipement invalide.')
-  if (input.source?.location === 'inventory') {
-    if (!Number.isSafeInteger(input.source.index) || input.source.index < 0) fail('Position d’inventaire invalide.')
-    return
+  return {
+    properties: applyAtelierEffects(base, effects, kind),
+    selections: selectedModifications,
+    modifications: selectedModifications.flatMap((modification) => Array.from({ length: modification.atelierQuantite }, () => modification)),
   }
-  const weaponSlots = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
-  const armorSlots = ['armureTete', 'armureTorse', 'armureBras', 'armureJambes']
-  const allowed = input.kind === 'arme' ? weaponSlots : armorSlots
-  if (input.source?.location !== 'equipped' || !allowed.includes(input.source.slot)) fail('Emplacement équipé invalide.')
 }
 
 export async function customizePersonalEquipment(input: CustomizePersonalInput) {
-  const { payload, user, character } = await getContext()
+  const { payload, user, character, workshopKind } = await getContext()
   if (!isUuid(input?.transactionId)) fail('Identifiant de transaction invalide.')
-  validatePersonalLocation(input)
-  const modificationIds = input.modificationIds
-  if (!Array.isArray(modificationIds) || modificationIds.some((id) => !isId(id))) fail('Liste de modifications invalide.')
-  const fingerprint = JSON.stringify(['atelier-customize', input.kind, input.source.location, 'index' in input.source ? input.source.index : input.source.slot, modificationIds])
+  if (!['arme', 'armure'].includes(input?.kind) || input.kind !== workshopKind) fail('Cet Atelier n’autorise pas la modification de cet équipement.')
+  if (input.source?.location !== 'inventory' || !Number.isSafeInteger(input.source.index) || input.source.index < 0 || !isId(input.source.itemId)) fail('Seul un objet présent dans la réserve peut être sélectionné.')
+  const purchases = input.modifications
+  const fingerprint = JSON.stringify(['atelier-customize', input.kind, input.source.index, input.source.itemId, purchases])
   const { transactionID, transactionDb, req } = await beginTransaction(payload)
   try {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
@@ -164,22 +164,18 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
       return { success: true, alreadyApplied: true, amount: already }
     }
     const current = await payload.findByID({ collection: 'characters', id: character.id, depth: 2, overrideAccess: true, req }) as any
-    const modifications = await getActiveModifications(payload, modificationIds, req)
+    const modifications = await getActiveModifications(payload, purchases, req)
     const inventoryField = input.kind === 'arme' ? 'inventaireArmes' : 'inventaireArmures'
     const sourceCollection = input.kind === 'arme' ? 'weapons' : 'armors'
     const rows = Array.isArray(current[inventoryField]) ? [...current[inventoryField]] : []
-    let sourceEntry: any
-    let sourceId: number | null
-    if (input.source.location === 'inventory') {
-      sourceEntry = rows[input.source.index]
-      sourceId = numericId(sourceEntry?.item)
-    } else {
-      sourceEntry = current[input.source.slot]
-      sourceId = numericId(sourceEntry?.item)
-    }
+    const sourceEntry: any = rows[input.source.index]
+    const sourceId = numericId(sourceEntry?.item)
+    if (sourceId !== input.source.itemId) fail('L’objet sélectionné a changé dans la réserve. Rechargez la page avant de confirmer.')
     if (!sourceId || sourceEntry?.customItem) fail('Seul un équipement standard possédé peut être personnalisé.')
-    const sourceItem = await payload.findByID({ collection: sourceCollection, id: sourceId, depth: 0, overrideAccess: true, req }).catch(() => null) as any
+    const sourceItem = await payload.findByID({ collection: sourceCollection, id: sourceId, depth: input.kind === 'armure' ? 1 : 0, overrideAccess: true, req }).catch(() => null) as any
     if (!sourceItem) fail('Équipement source introuvable.')
+    const pointsAvailable = atelierPointsForPersonalItem(input.kind, sourceItem)
+    if (pointsAvailable === null) fail('Cet équipement ne remplit pas les conditions de cet Atelier.')
     const baseSnapshot = input.kind === 'arme' ? snapshotWeapon(sourceItem) : snapshotArmor(sourceItem)
     const type: AtelierEquipmentKind = input.kind
     const applied = applyModifications(baseSnapshot, modifications, type, {
@@ -187,7 +183,9 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     })
     const customProperties = applied.properties
     const selectedModifications = applied.modifications
-    const cost = atelierCost(sourceItem.prix, selectedModifications.map((modification) => modification.atelierCompatibilite.prix))
+    const pointsSpent = applied.selections.reduce((total: number, modification: any) => total + atelierModificationPoints(modification.atelierCompatibilite, modification.atelierQuantite), 0)
+    if (!Number.isSafeInteger(pointsSpent) || pointsSpent > pointsAvailable) fail('Le total des points dépasse le budget de cet équipement.')
+    const cost = atelierCost(sourceItem.prix, applied.selections.map((modification: any) => atelierPurchasePrice(modification.atelierCompatibilite, modification.atelierQuantite)))
     const balance = Number(current.konis ?? 0)
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)
@@ -215,28 +213,22 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     }) as any
 
     const customInventory = (current.inventaireEquipementsCustom ?? []).map(numericId).filter(Boolean)
-    if (input.source.location === 'inventory') customInventory.push(Number(created.id))
+    customInventory.push(Number(created.id))
     const update: Record<string, any> = { inventaireEquipementsCustom: customInventory, konis: nextBalance }
-    if (input.source.location === 'inventory') {
-      rows.splice(input.source.index, 1)
-      update[inventoryField] = rows.map((row) => ({
-        item: numericId(row.item), mods: (row.mods ?? []).map(numericId).filter(Boolean),
-        ...(input.kind === 'arme' ? { munitionsActuelles: Number(row.munitionsActuelles) || 0, chargeurRelie: numericId(row.chargeurRelie) } : {}),
-      }))
-    } else {
-      update[input.source.slot] = {
-        ...sourceEntry, item: null, customItem: Number(created.id), mods: [],
-        ...(input.kind === 'arme' ? { munitionsActuelles: Number(sourceEntry.munitionsActuelles) || 0, chargeurRelie: numericId(sourceEntry.chargeurRelie) } : {}),
-      }
-    }
+    rows.splice(input.source.index, 1)
+    update[inventoryField] = rows.map((row) => ({
+      item: numericId(row.item), mods: (row.mods ?? []).map(numericId).filter(Boolean),
+      ...(input.kind === 'arme' ? { munitionsActuelles: Number(row.munitionsActuelles) || 0, chargeurRelie: numericId(row.chargeurRelie) } : {}),
+    }))
     await payload.update({ collection: 'characters', id: current.id, data: update, depth: 0, overrideAccess: true, user, req })
     await recordTransaction(payload, transactionDb, {
       transactionId: input.transactionId, fingerprint, operation: 'atelier-customize-equipment',
       actorId: Number(user.id), characterId: Number(current.id), amount: -cost,
-      details: { kind: input.kind, sourceId, customEquipmentId: Number(created.id), modificationIds, price: cost },
+      details: { kind: input.kind, sourceId, customEquipmentId: Number(created.id), modifications: purchases, pointsSpent, price: cost },
     })
     await payload.db.commitTransaction?.(transactionID)
     revalidatePath('/shop')
+    revalidatePath('/shop/atelier')
     revalidatePath(`/characters/${current.id}`)
     return { success: true, alreadyApplied: false, amount: cost, customEquipmentId: Number(created.id) }
   } catch (error) {
@@ -368,9 +360,9 @@ function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number
     blindageActuel: ship.blindageActuel,
     bouclierActuel: ship.bouclierActuel,
     esquiveActuelle: ship.esquiveActuelle,
-    pilote: relation(ship.pilote),
-    copilote: relation(ship.copilote),
-    canonniers: (ship.canonniers ?? []).map((entry: any) => ({ personnage: relation(entry.personnage), tourelle: entry.tourelle })),
+    pilote: null,
+    copilote: null,
+    canonniers: [],
     moduleGenerateur: relation(ship.moduleGenerateur),
     modulePropulseurs: relation(ship.modulePropulseurs),
     moduleBoucliers: relation(ship.moduleBoucliers),
@@ -393,9 +385,10 @@ function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number
 
 
 export async function customizeShip(input: ShipCustomizationInput) {
-  const { payload, user, character } = await getContext()
-  if (!isUuid(input?.transactionId) || !isId(input.shipId) || !Array.isArray(input.modificationIds)) fail('Données de personnalisation du vaisseau invalides.')
-  const fingerprint = JSON.stringify(['atelier-customize-ship', input.shipId, input.modificationIds])
+  const { payload, user, character, workshopKind } = await getContext()
+  if (workshopKind !== 'vaisseau') fail('Cet Atelier n’autorise pas la modification des vaisseaux.')
+  if (!isUuid(input?.transactionId) || !isId(input.shipId) || !Array.isArray(input.modifications)) fail('Données de personnalisation du vaisseau invalides.')
+  const fingerprint = JSON.stringify(['atelier-customize-ship', input.shipId, input.modifications])
   const { transactionID, transactionDb, req } = await beginTransaction(payload)
   try {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
@@ -409,28 +402,38 @@ export async function customizeShip(input: ShipCustomizationInput) {
     const source = await payload.findByID({ collection: 'ships', id: input.shipId, depth: 4, overrideAccess: true, req }).catch(() => null) as any
     if (!source || numericId(source.proprietaire) !== Number(current.id)) fail('Seul le propriétaire peut personnaliser ce vaisseau.')
     if (numericId(current.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    if (source.atelierPersonnalise) fail('Un vaisseau déjà personnalisé en Atelier ne peut pas être modifié à nouveau.')
+    if (numericId(current.vaisseau) === Number(source.id)) fail('Un vaisseau actuellement utilisé ne peut pas être personnalisé.')
     const rights = computeShipAccess({ ship: source, character: current, isAdmin: user.role === 'admin' })
     if (!rights.canManageCrew) fail('Seul le propriétaire du vaisseau peut le personnaliser.')
+    const aboard = await payload.find({ collection: 'characters', where: { vaisseau: { equals: source.id } }, depth: 0, pagination: false, overrideAccess: true, req })
+    if (aboard.docs.length > 0 || source.pilote || source.copilote || (source.canonniers ?? []).some((entry: any) => entry.personnage)) {
+      fail('Un vaisseau occupé ne peut pas être personnalisé.')
+    }
     const sourceSaleModelId = numericId(source.modele)
     if (!sourceSaleModelId) fail('Le modèle de vente du vaisseau est introuvable.')
     const model = await payload.findByID({ collection: 'ship-sale-models', id: sourceSaleModelId, depth: 2, overrideAccess: true, req }) as any
+    if (!model || model.atelierPrive || (model.atelierModifications ?? []).length > 0) fail('Un vaisseau déjà personnalisé en Atelier ne peut pas être modifié à nouveau.')
     const chassis = model.chassis && typeof model.chassis === 'object'
       ? model.chassis
       : await payload.findByID({ collection: 'ship-models', id: numericId(model.chassis)!, depth: 0, overrideAccess: true, req }) as any
     if (!chassis) fail('Le châssis source est introuvable.')
-    const modifications = await getActiveModifications(payload, input.modificationIds, req)
+    const pointsAvailable = atelierPointsForShip(chassis.classe)
+    if (pointsAvailable === null) fail('La classe de ce vaisseau ne donne pas accès aux points de modification.')
+    const modifications = await getActiveModifications(payload, input.modifications, req)
     const baseChassis = { ...chassis }
     delete baseChassis.id; delete baseChassis.createdAt; delete baseChassis.updatedAt
     const applied = applyModifications(baseChassis, modifications, 'vaisseau', { kind: 'vaisseau', classe: chassis.classe })
     const customChassis = applied.properties
     const selectedModifications = applied.modifications
+    const pointsSpent = applied.selections.reduce((total: number, modification: any) => total + atelierModificationPoints(modification.atelierCompatibilite, modification.atelierQuantite), 0)
+    if (!Number.isSafeInteger(pointsSpent) || pointsSpent > pointsAvailable) fail('Le total des points dépasse le budget de ce vaisseau.')
     try {
       validateShipConfiguration({ ...source, modele: { ...model, chassis: customChassis } })
     } catch (error) {
       fail(error instanceof Error ? error.message : 'Les composants du vaisseau ne sont pas compatibles avec le nouveau châssis.')
     }
-    const sourcePrice = model.atelierPrive && model.atelierPrixAchat != null ? model.atelierPrixAchat : model.prix
-    const cost = atelierCost(sourcePrice, selectedModifications.map((modification) => modification.atelierCompatibilite.prix))
+    const cost = atelierCost(model.prix, applied.selections.map((modification: any) => atelierPurchasePrice(modification.atelierCompatibilite, modification.atelierQuantite)))
     const balance = Number(current.konis ?? 0)
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)
@@ -476,23 +479,15 @@ export async function customizeShip(input: ShipCustomizationInput) {
       context: { atelierPreserveShipState: true },
     }) as any
     await payload.update({ collection: 'characters', id: current.id, data: { konis: nextBalance }, overrideAccess: true, user, req })
-    const aboard = await payload.find({ collection: 'characters', where: { vaisseau: { equals: source.id } }, depth: 0, pagination: false, overrideAccess: true, req })
-    const assigned = assignedCrew(source)
-    for (const member of aboard.docs as any[]) {
-      await payload.update({
-        collection: 'characters', id: member.id,
-        data: { vaisseau: Number(createdShip.id), roleVaisseau: assigned.get(Number(member.id)) ?? 'passager' },
-        depth: 0, overrideAccess: true, user, req,
-      })
-    }
     await payload.delete({ collection: 'ships', id: source.id, overrideAccess: true, user, req })
     await recordTransaction(payload, transactionDb, {
       transactionId: input.transactionId, fingerprint, operation: 'atelier-customize-ship',
       actorId: Number(user.id), characterId: Number(current.id), shipId: Number(createdShip.id), amount: -cost,
-      details: { sourceShipId: Number(source.id), customShipId: Number(createdShip.id), chassisId: Number(newChassis.id), saleModelId: Number(newSaleModel.id), modificationIds: input.modificationIds, price: cost },
+      details: { sourceShipId: Number(source.id), customShipId: Number(createdShip.id), chassisId: Number(newChassis.id), saleModelId: Number(newSaleModel.id), modifications: input.modifications, pointsSpent, price: cost },
     })
     await payload.db.commitTransaction?.(transactionID)
     revalidatePath('/shop/chantier-naval')
+    revalidatePath('/shop/atelier')
     revalidatePath('/ships')
     revalidatePath('/ship')
     return { success: true, alreadyApplied: false, amount: cost, shipId: Number(createdShip.id) }

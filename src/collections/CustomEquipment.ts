@@ -27,7 +27,7 @@ export const CustomEquipment: CollectionConfig = {
   admin: {
     useAsTitle: 'nom',
     defaultColumns: ['nom', 'categorieEquipement', 'proprietaireActuel', 'prixAchat'],
-    group: 'Équipement',
+    group: 'Ateliers',
   },
   access: {
     read: async ({ req }) => {

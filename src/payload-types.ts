@@ -1339,6 +1339,9 @@ export interface AtelierModification {
      * Nombre maximum d’achats pour cette compatibilité.
      */
     maximum: number;
+    /**
+     * Le prix du prochain achat est multiplié par cette valeur.
+     */
     multiplicateurRachat?: number | null;
     id?: string | null;
   }[];

@@ -1,0 +1,70 @@
+.atelier-page { display: flex; flex-direction: column; gap: 1.2rem; }
+.atelier-intro { display: grid; gap: .25rem; }
+.atelier-intro strong { color: var(--ss-text); }
+.atelier-intro p { color: var(--ss-text-muted); }
+.atelier-selector, .atelier-item-panel, .atelier-recipes, .atelier-cart { padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: var(--ss-bg-alt); }
+.atelier-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
+.atelier-section-heading h2, .atelier-cart h2 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; }
+.atelier-section-heading p, .atelier-cart p { margin-top: .25rem; color: var(--ss-text-muted); font-size: .84rem; }
+.atelier-select-label { display: grid; gap: .45rem; max-width: 680px; color: var(--ss-text-muted); font-size: .85rem; }
+.atelier-select-label select { min-height: 42px; padding: .55rem .7rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
+.atelier-ship-preview { display: flex; align-items: center; gap: 1rem; padding: .85rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+.atelier-ship-preview > img { width: min(32%, 220px); height: 120px; border-radius: 7px; background: rgba(0, 0, 0, .16); object-fit: contain; }
+.atelier-ship-preview h3, .atelier-personal-heading h3 { margin: .2rem 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1rem; }
+.atelier-ship-preview p, .atelier-personal-heading p { color: var(--ss-text-muted); font-size: .82rem; }
+.atelier-ship-preview .shop-item-details-trigger { margin-top: .55rem; }
+.atelier-personal-preview { display: grid; grid-template-columns: minmax(140px, 220px) minmax(0, 1fr); gap: 1rem; padding: .85rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+.atelier-personal-preview > img { grid-row: span 2; width: 100%; max-height: 220px; border-radius: 7px; background: rgba(0, 0, 0, .16); object-fit: contain; }
+.atelier-personal-heading { align-self: end; }
+.atelier-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: 0; }
+.atelier-stats > div { min-width: 0; padding: .55rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: rgba(255, 255, 255, .02); }
+.atelier-stats dt { color: var(--ss-text-muted); font-size: .72rem; }
+.atelier-stats dd { margin: .15rem 0 0; color: var(--ss-text); font-size: .82rem; overflow-wrap: anywhere; }
+.atelier-budget { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; margin-top: .85rem; }
+.atelier-budget > div { display: flex; justify-content: space-between; gap: .5rem; padding: .65rem .75rem; border: 1px solid var(--ss-border); border-radius: 7px; color: var(--ss-text-muted); font-size: .78rem; }
+.atelier-budget strong { color: var(--ss-text); font-family: var(--ss-font-mono); text-align: right; }
+.atelier-budget .atelier-budget-total { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); }
+.atelier-budget-total strong { color: var(--ss-cyan); }
+.atelier-components { margin-top: .75rem; color: var(--ss-text-muted); font-size: .8rem; }
+.atelier-inline-error { margin-top: .7rem; color: #ffb6b6; font-size: .84rem; }
+.atelier-recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: .75rem; }
+.atelier-recipe { display: flex; flex-direction: column; gap: .65rem; padding: .9rem; border: 1px solid var(--ss-border); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+.atelier-recipe-selected { border-color: var(--ss-cyan); }
+.atelier-recipe-title { display: flex; justify-content: space-between; gap: .7rem; }
+.atelier-recipe-title h3 { margin: 0; color: var(--ss-text); font-size: .92rem; }
+.atelier-recipe-title p { margin-top: .35rem; color: var(--ss-text-muted); font-size: .8rem; line-height: 1.4; }
+.atelier-recipe-count { flex: 0 0 auto; color: var(--ss-cyan); font-family: var(--ss-font-mono); font-size: .75rem; }
+.atelier-recipe-cost { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem .75rem; color: var(--ss-text-muted); font-size: .75rem; }
+.atelier-multiplier, .atelier-disabled-reason { color: var(--ss-text-muted); font-size: .73rem; }
+.atelier-recipe ul { display: grid; gap: .25rem; margin: 0; padding-left: 1.1rem; color: var(--ss-text-muted); font-size: .75rem; }
+.atelier-recipe-actions { display: flex; align-items: center; gap: .6rem; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--ss-border); color: var(--ss-text-muted); font-size: .8rem; }
+.atelier-recipe-actions button { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); font-size: 1.1rem; cursor: pointer; }
+.atelier-recipe-actions button:disabled { border-color: var(--ss-border); background: transparent; color: var(--ss-text-muted); cursor: not-allowed; }
+.atelier-recipe-actions span { min-width: 5.4rem; text-align: center; }
+.atelier-cart { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-color: var(--ss-cyan); }
+.atelier-cart-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
+.atelier-cart-actions button, .atelier-confirm button { padding: .65rem .85rem; border: 1px solid var(--ss-cyan); border-radius: 7px; background: var(--ss-cyan-dim); color: var(--ss-cyan); font-weight: 650; cursor: pointer; }
+.atelier-cart-actions button:disabled, .atelier-confirm button:disabled { opacity: .45; cursor: not-allowed; }
+.atelier-cart-actions .atelier-reset-button, .atelier-confirm .shop-cancel-button { border-color: var(--ss-border); background: transparent; color: var(--ss-text-muted); }
+.atelier-confirm ul { display: grid; gap: .35rem; margin: .8rem 0; padding-left: 1.1rem; color: var(--ss-text-muted); font-size: .85rem; }
+.atelier-confirm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; max-height: 30vh; overflow: auto; margin: .8rem 0; }
+.atelier-confirm-stats > div { min-width: 0; padding: .45rem .55rem; border: 1px solid var(--ss-border); border-radius: 6px; }
+.atelier-confirm-stats dt { color: var(--ss-text-muted); font-size: .68rem; }
+.atelier-confirm-stats dd { margin: .1rem 0 0; color: var(--ss-text); font-size: .75rem; overflow-wrap: anywhere; }
+.atelier-confirm-total { display: flex; justify-content: space-between; gap: 1rem; padding-top: .75rem; border-top: 1px solid var(--ss-border); color: var(--ss-text-muted); font-size: .82rem; }
+.atelier-confirm-total strong { color: var(--ss-cyan); font-family: var(--ss-font-mono); }
+
+@media (max-width: 760px) {
+  .atelier-personal-preview { grid-template-columns: 1fr; }
+  .atelier-personal-preview > img { grid-row: auto; max-height: 170px; }
+  .atelier-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .atelier-budget { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .atelier-cart { align-items: stretch; flex-direction: column; }
+  .atelier-cart-actions { justify-content: stretch; }
+  .atelier-cart-actions button { flex: 1 1 auto; }
+}
+@media (max-width: 480px) {
+  .atelier-ship-preview { align-items: flex-start; flex-direction: column; }
+  .atelier-ship-preview > img { width: 100%; }
+  .atelier-budget { grid-template-columns: 1fr; }
+}

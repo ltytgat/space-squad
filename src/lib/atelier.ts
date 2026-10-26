@@ -1,4 +1,5 @@
-import { exactAdd, readShopPrice, relationId } from './shop'
+import { exactAdd, exactMultiply, readShopPrice, relationId } from './shop'
+import { weaponMinimumRank } from './factionRewards'
 
 export type AtelierEquipmentKind = 'arme' | 'armure' | 'vaisseau'
 export type AtelierOperation = 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add'
@@ -7,6 +8,11 @@ export type AtelierEffect = {
   cible: string
   operation: AtelierOperation
   valeur: string
+}
+
+export type AtelierPurchase = {
+  modificationId: number
+  quantity: number
 }
 
 export type AtelierCompatibility = {
@@ -149,7 +155,7 @@ export function applyAtelierEffects<T extends Record<string, any>>(
 
 export function findAtelierCompatibility(
   modification: { compatibilites?: AtelierCompatibility[]; active?: boolean },
-  item: { kind: AtelierEquipmentKind; categorie?: string; type?: string[]; classe?: string },
+  item: { kind: AtelierEquipmentKind; categorie?: string | null; type?: string[]; classe?: string | null },
 ): AtelierCompatibility | null {
   if (modification.active === false) return null
   return (modification.compatibilites ?? []).find((compatibility) => {
@@ -166,7 +172,7 @@ export function findAtelierCompatibility(
 
 export function atelierModificationMatches(
   modification: { compatibilites?: AtelierCompatibility[]; active?: boolean },
-  item: { kind: AtelierEquipmentKind; categorie?: string; type?: string[]; classe?: string },
+  item: { kind: AtelierEquipmentKind; categorie?: string | null; type?: string[]; classe?: string | null },
 ): boolean {
   return findAtelierCompatibility(modification, item) !== null
 }
@@ -208,6 +214,62 @@ export function atelierCost(basePrice: unknown, modificationPrices: unknown[]): 
     if (price === null) throw new Error('Une modification Atelier a un prix invalide.')
     return exactAdd(total, price)
   }, base)
+}
+
+export function atelierPointsForPersonalItem(
+  kind: 'arme' | 'armure',
+  item: { nom?: unknown; categorie?: unknown; type?: unknown; rang?: unknown; set?: unknown },
+): number | null {
+  let rank: number | null = null
+  if (kind === 'arme') {
+    const types = Array.isArray(item.type) ? item.type : []
+    const supportedType = types.length > 0 && types.every((type) => type === 'thermique' || type === 'cinetique')
+    if (item.categorie === 'lourde' || !supportedType || !/\balliance\b/i.test(String(item.nom ?? ''))) return null
+    rank = weaponMinimumRank(item.nom)
+  } else {
+    const set = item.set && typeof item.set === 'object' ? item.set as { nom?: unknown } : null
+    if (!String(set?.nom ?? '').toLocaleLowerCase('fr').includes('starlancer')) return null
+    const parsed = Number(item.rang)
+    rank = Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
+  }
+  return rank === null ? null : rank * 10
+}
+
+export function atelierPointsForShip(shipClass: unknown): number | null {
+  const points: Record<string, number> = { alpha: 100, beta: 200, gamma: 300, delta: 400 }
+  return typeof shipClass === 'string' ? points[shipClass] ?? null : null
+}
+
+export function atelierPurchasePrice(compatibility: AtelierCompatibility, quantity: number): number {
+  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > Number(compatibility.maximum)) {
+    throw new Error('La quantité de modifications dépasse la limite autorisée.')
+  }
+  const basePrice = readShopPrice(compatibility.prix)
+  if (basePrice === null) throw new Error('Une modification Atelier a un prix invalide.')
+  const multiplier = compatibility.multiplicateurRachat == null ? 1 : Number(compatibility.multiplicateurRachat)
+  if (!Number.isSafeInteger(multiplier) || multiplier < 1) throw new Error('Le multiplicateur de rachat doit être un entier positif.')
+  let unitPrice = basePrice
+  let total = 0
+  for (let purchase = 0; purchase < quantity; purchase += 1) {
+    total = exactAdd(total, unitPrice)
+    if (!Number.isFinite(total)) throw new Error('Le prix de cette configuration dépasse la limite autorisée.')
+    if (purchase + 1 < quantity) unitPrice = exactMultiply(unitPrice, multiplier)
+    if (!Number.isFinite(unitPrice)) throw new Error('Le prix de cette configuration dépasse la limite autorisée.')
+  }
+  return total
+}
+
+export function atelierModificationPoints(compatibility: AtelierCompatibility, quantity: number): number {
+  if (compatibility.points === null || compatibility.points === undefined) {
+    throw new Error('Le coût en points de cette modification est invalide.')
+  }
+  const perPurchase = Number(compatibility.points)
+  if (!Number.isSafeInteger(perPurchase) || perPurchase < 0 || !Number.isSafeInteger(quantity) || quantity < 0) {
+    throw new Error('Le coût en points de cette modification est invalide.')
+  }
+  const total = perPurchase * quantity
+  if (!Number.isSafeInteger(total)) throw new Error('Le total des points de modification dépasse la limite autorisée.')
+  return total
 }
 
 export function atelierRelationId(value: unknown): number | null {

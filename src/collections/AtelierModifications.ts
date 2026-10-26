@@ -159,12 +159,10 @@ export const AtelierModifications: CollectionConfig = {
             {
               name: 'multiplicateurRachat',
               type: 'number',
-              validate: (value: unknown, { siblingData }: any) => siblingData?.categorieEquipement !== 'arme' || (typeof value === 'number' && Number.isSafeInteger(value)) || 'Le multiplicateur de rachat doit être un entier pour une arme.',
+              min: 1,
+              validate: (value: unknown) => value == null || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 1) || 'Le multiplicateur de rachat doit être un entier positif.',
               label: 'Multiplicateur de rachat',
-              admin: {
-                width: '25%',
-                condition: (_: unknown, siblingData: any) => siblingData?.categorieEquipement === 'arme',
-              },
+              admin: { width: '25%', description: 'Le prix du prochain achat est multiplié par cette valeur.' },
             },
           ],
         },
