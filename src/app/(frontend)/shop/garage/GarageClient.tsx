@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { readShopPrice } from '@/lib/shop'
-import { groupVehicleCatalog, minimumRankForVehicleClass, vehicleSalePrice, type VehicleCatalogEntry } from '@/lib/vehicleGarage'
+import { normalizeShopCatalogText, ShopCatalogFilters } from '../ShopCatalogFilters'
+import { groupVehicleCatalog, minimumRankForVehicleClass, vehicleCatalogClasses, vehicleSalePrice, type VehicleCatalogEntry } from '@/lib/vehicleGarage'
 import { executeVehicleGarageTransaction } from '../vehicle-garage-actions'
 
 type VehicleModel = VehicleCatalogEntry & {
@@ -57,9 +58,31 @@ export function GarageClient({
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [retryRequest, setRetryRequest] = useState<Confirmation | null>(null)
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const [catalogQuery, setCatalogQuery] = useState('')
+  const [catalogClass, setCatalogClass] = useState('all')
+  const [catalogVariant, setCatalogVariant] = useState('all')
+  const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(() => new Set())
   const submitting = useRef(false)
 
   const catalogSections = useMemo(() => groupVehicleCatalog(models), [models])
+  const variantOptions = useMemo(() => [...new Map(catalogSections.flatMap((vehicleClass) => vehicleClass.variants.map(({ value, label }) => [value, { value, label }] as const))).values()], [catalogSections])
+  const hasCatalogFilters = Boolean(catalogQuery.trim()) || catalogClass !== 'all' || catalogVariant !== 'all'
+  const filteredCatalogSections = useMemo(() => {
+    const query = normalizeShopCatalogText(catalogQuery.trim())
+    return catalogSections
+      .filter((vehicleClass) => catalogClass === 'all' || vehicleClass.value === catalogClass)
+      .map((vehicleClass) => ({
+        ...vehicleClass,
+        variants: vehicleClass.variants
+          .filter((variant) => catalogVariant === 'all' || variant.value === catalogVariant)
+          .map((variant) => ({
+            ...variant,
+            models: variant.models.filter((model) => !query || normalizeShopCatalogText(model.nom).includes(query)),
+          }))
+          .filter((variant) => variant.models.length > 0),
+      }))
+      .filter((vehicleClass) => vehicleClass.variants.length > 0)
+  }, [catalogClass, catalogQuery, catalogSections, catalogVariant])
   const selectedVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId)
   const salePrice = selectedVehicle ? vehicleSalePrice(selectedVehicle.modelPrice) : null
   const armedVehicle = Boolean(selectedVehicle?.weaponName)
@@ -132,10 +155,33 @@ export function GarageClient({
 
     {tab === 'buy' && <section className="shop-catalog-groups garage-purchase-catalog">
       <div><h2>Modèles disponibles</h2><p>Le rang requis dépend de la classe du véhicule : rang 1 pour les Légers, 3 pour les Intermédiaires, 5 pour les Poids Lourds et 7 pour les Blindés.</p></div>
+      {!!models.length && <ShopCatalogFilters
+        query={catalogQuery}
+        onQueryChange={setCatalogQuery}
+        classValue={catalogClass}
+        onClassChange={setCatalogClass}
+        classOptions={vehicleCatalogClasses.map(({ value, label }) => ({ value, label }))}
+        typeValue={catalogVariant}
+        onTypeChange={setCatalogVariant}
+        typeLabel="Variante"
+        allTypesLabel="Toutes les variantes"
+        typeOptions={variantOptions}
+        hasFilters={hasCatalogFilters}
+        onReset={() => { setCatalogQuery(''); setCatalogClass('all'); setCatalogVariant('all') }}
+      />}
       {!models.length && <p className="shop-empty">Aucun modèle de vente n’est disponible.</p>}
-      {catalogSections.map((vehicleClass) => <section className="shipyard-class-section" key={vehicleClass.value}>
-        <header className="shipyard-class-heading"><h2>{vehicleClass.label}</h2></header>
-        {!vehicleClass.variants.length && <p className="shop-empty">Aucun modèle de cette classe n’est disponible.</p>}
+      {!!models.length && !filteredCatalogSections.length && <div className="shop-empty shop-catalog-no-results" role="status">Aucun modèle ne correspond à ces filtres. <button type="button" onClick={() => { setCatalogQuery(''); setCatalogClass('all'); setCatalogVariant('all') }}>Effacer les filtres</button></div>}
+      {filteredCatalogSections.map((vehicleClass) => {
+        const collapsed = !hasCatalogFilters && collapsedClasses.has(vehicleClass.value)
+        const contentId = `garage-class-content-${vehicleClass.value}`
+        return <section className="shipyard-class-section" key={vehicleClass.value}>
+        <header className="shipyard-class-heading"><h2>{vehicleClass.label}</h2><button type="button" className="shipyard-class-toggle" aria-expanded={!collapsed} aria-controls={contentId} disabled={hasCatalogFilters} title={hasCatalogFilters ? 'Les classes avec des résultats restent ouvertes pendant le filtrage.' : undefined} onClick={() => setCollapsedClasses((current) => {
+          const next = new Set(current)
+          if (next.has(vehicleClass.value)) next.delete(vehicleClass.value)
+          else next.add(vehicleClass.value)
+          return next
+        })}>{collapsed ? 'Déplier' : 'Replier'}</button></header>
+        <div id={contentId} className="shipyard-class-content" hidden={collapsed}>
         {vehicleClass.variants.map((variant) => <section className="garage-variant-section" key={variant.value}>
           <h3>{variant.label}</h3>
           <div className="shipyard-model-grid">{variant.models.map((model) => {
@@ -162,7 +208,9 @@ export function GarageClient({
             </article>
           })}</div>
         </section>)}
-      </section>)}
+        </div>
+      </section>
+      })}
     </section>}
 
     {tab === 'sell' && <section className="shop-catalog-groups garage-sale-section">

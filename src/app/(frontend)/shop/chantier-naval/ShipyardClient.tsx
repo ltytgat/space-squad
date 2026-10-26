@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShopItemDetailsButton, type ShopItemDetail } from '../ShopItemDetails'
+import { normalizeShopCatalogText, ShopCatalogFilters } from '../ShopCatalogFilters'
 import { readShopPrice, resalePrice } from '@/lib/shop'
-import { groupShipCatalog, listShipTransferItems, minimumRankForShipClass, shipPurchasePrice, shipSalePrice, type ShipCatalogEntry, type ShipSaleComponent, type ShipTransferItem } from '@/lib/shipyard'
+import { groupShipCatalog, listShipTransferItems, minimumRankForShipClass, shipCatalogCategories, shipCatalogClasses, shipPurchasePrice, shipSalePrice, type ShipCatalogEntry, type ShipSaleComponent, type ShipTransferItem } from '@/lib/shipyard'
 import { executeShipyardTransaction } from '../shipyard-actions'
 
 type ShipModel = ShipCatalogEntry & {
@@ -77,6 +78,10 @@ export function ShipyardClient({
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [retryRequest, setRetryRequest] = useState<Confirmation | null>(null)
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const [catalogQuery, setCatalogQuery] = useState('')
+  const [catalogClass, setCatalogClass] = useState('all')
+  const [catalogCategory, setCatalogCategory] = useState('all')
+  const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(() => new Set())
   const submitting = useRef(false)
 
   const sellShip = ownedShips.find((ship) => ship.id === sellShipId)
@@ -109,6 +114,23 @@ export function ShipyardClient({
   const chassisOnly = (model: ShipModel) => shipPurchasePrice(model.prix, true)
   const fullPrice = (model: ShipModel) => shipPurchasePrice(model.prix, false)
   const catalogSections = useMemo(() => groupShipCatalog(models), [models])
+  const hasCatalogFilters = Boolean(catalogQuery.trim()) || catalogClass !== 'all' || catalogCategory !== 'all'
+  const filteredCatalogSections = useMemo(() => {
+    const query = normalizeShopCatalogText(catalogQuery.trim())
+    return catalogSections
+      .filter((shipClass) => catalogClass === 'all' || shipClass.value === catalogClass)
+      .map((shipClass) => ({
+        ...shipClass,
+        categories: shipClass.categories
+          .filter((category) => catalogCategory === 'all' || category.value === catalogCategory)
+          .map((category) => ({
+            ...category,
+            models: category.models.filter((model) => !query || normalizeShopCatalogText(model.nom).includes(query)),
+          }))
+          .filter((category) => category.models.length > 0),
+      }))
+      .filter((shipClass) => shipClass.categories.length > 0)
+  }, [catalogCategory, catalogClass, catalogQuery, catalogSections])
   const saleTotal = sellShip?.modele
     ? shipSalePrice(sellShip.modele.prix, sellShip.components.filter((component) => selectedComponents.includes(component.key)).map((component) => component.prix))
     : null
@@ -190,10 +212,33 @@ export function ShipyardClient({
 
     {tab === 'buy' && <section className="shop-catalog-groups shipyard-purchase-catalog">
       <div><h2>Modèles disponibles</h2><p>Les classes supérieures se débloquent au rang 3 (Beta), 5 (Gamma) et 7 (Delta). Le modèle complet reprend le châssis, les modules et les armes définis dans sa fiche. L’achat du châssis seul n’inclut aucun de ces équipements.</p></div>
+      {!!models.length && <ShopCatalogFilters
+        query={catalogQuery}
+        onQueryChange={setCatalogQuery}
+        classValue={catalogClass}
+        onClassChange={setCatalogClass}
+        classOptions={shipCatalogClasses.map(({ value, label }) => ({ value, label }))}
+        typeValue={catalogCategory}
+        onTypeChange={setCatalogCategory}
+        typeLabel="Catégorie"
+        allTypesLabel="Toutes les catégories"
+        typeOptions={shipCatalogCategories.map(({ value, label }) => ({ value, label }))}
+        hasFilters={hasCatalogFilters}
+        onReset={() => { setCatalogQuery(''); setCatalogClass('all'); setCatalogCategory('all') }}
+      />}
       {!models.length && <p className="shop-empty">Aucun modèle de vente n’est disponible.</p>}
-      {catalogSections.map((shipClass) => <section className="shipyard-class-section" key={shipClass.value}>
-        <header className="shipyard-class-heading"><h2>Classe {shipClass.label}</h2><span>Taille {shipClass.size}</span></header>
-        {!shipClass.categories.length && <p className="shop-empty">Aucun modèle de cette classe n’est disponible.</p>}
+      {!!models.length && !filteredCatalogSections.length && <div className="shop-empty shop-catalog-no-results" role="status">Aucun modèle ne correspond à ces filtres. <button type="button" onClick={() => { setCatalogQuery(''); setCatalogClass('all'); setCatalogCategory('all') }}>Effacer les filtres</button></div>}
+      {filteredCatalogSections.map((shipClass) => {
+        const collapsed = !hasCatalogFilters && collapsedClasses.has(shipClass.value)
+        const contentId = `shipyard-class-content-${shipClass.value}`
+        return <section className="shipyard-class-section" key={shipClass.value}>
+        <header className="shipyard-class-heading"><h2>Classe {shipClass.label}</h2><span>Taille {shipClass.size}</span><button type="button" className="shipyard-class-toggle" aria-expanded={!collapsed} aria-controls={contentId} disabled={hasCatalogFilters} title={hasCatalogFilters ? 'Les classes avec des résultats restent ouvertes pendant le filtrage.' : undefined} onClick={() => setCollapsedClasses((current) => {
+          const next = new Set(current)
+          if (next.has(shipClass.value)) next.delete(shipClass.value)
+          else next.add(shipClass.value)
+          return next
+        })}>{collapsed ? 'Déplier' : 'Replier'}</button></header>
+        <div id={contentId} className="shipyard-class-content" hidden={collapsed}>
         {shipClass.categories.map((category) => <section className="shipyard-category-section" key={category.value}>
           <h3><span className={`shipyard-category-label shipyard-category-${category.value}`}>{category.label}</span></h3>
           <div className="shipyard-model-grid">{category.models.map((model) => {
@@ -216,7 +261,9 @@ export function ShipyardClient({
             </article>
           })}</div>
         </section>)}
-      </section>)}
+        </div>
+      </section>
+      })}
     </section>}
 
     {tab === 'sell' && <section className="shop-catalog-groups shipyard-operation">

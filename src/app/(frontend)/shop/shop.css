@@ -73,6 +73,12 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
 .shop-filters input, .shop-filters select, .shop-mod-flow select, .shop-quantity input { min-height: 40px; padding: .5rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: var(--ss-bg); color: var(--ss-text); }
 .shop-filters input { min-width: min(280px, 70vw); }
 .shop-filters select { min-width: 180px; }
+.shop-catalog-filters { align-items: end; }
+.shop-catalog-filter-reset, .shop-catalog-no-results button { min-height: 40px; padding: .5rem .75rem; border: 1px solid var(--ss-border); border-radius: 7px; background: transparent; color: var(--ss-cyan); cursor: pointer; }
+.shop-catalog-filter-reset:hover, .shop-catalog-no-results button:hover { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); }
+.shop-catalog-filter-reset:focus-visible, .shop-catalog-no-results button:focus-visible, .shipyard-class-toggle:focus-visible { outline: 2px solid var(--ss-cyan); outline-offset: 2px; }
+.shop-catalog-no-results { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.shop-catalog-no-results button { flex: 0 0 auto; }
 .shop-catalog-groups { display: flex; flex-direction: column; gap: 2rem; }
 .shop-catalog-groups section h2 { margin-bottom: .9rem; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; letter-spacing: .04em; }
 .shop-catalog-groups section > p { margin: -.3rem 0 1rem; color: var(--ss-text-muted); font-size: .9rem; }
@@ -149,9 +155,14 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
 .chip-owned > h2 { margin-bottom: .25rem; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.05rem; }
 .shipyard-purchase-catalog > div:first-child, .shipyard-purchase-catalog > .shop-empty { width: 100%; }
 .shipyard-class-section { display: flex; flex-direction: column; gap: 1.1rem; padding: 1.1rem; border: 1px solid var(--ss-border); border-radius: 12px; background: rgba(255, 255, 255, .015); }
-.shipyard-class-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: .7rem; border-bottom: 1px solid var(--ss-border); }
+.shipyard-class-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: .7rem; border-bottom: 1px solid var(--ss-border); }
 .shipyard-class-heading h2 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: 1.2rem; letter-spacing: .04em; }
 .shipyard-class-heading > span { color: var(--ss-text-muted); font-size: .85rem; }
+.shop-catalog-groups .shipyard-class-heading h2 { margin: 0; }
+.shipyard-class-toggle { flex: 0 0 auto; padding: .4rem .65rem; border: 1px solid var(--ss-border); border-radius: 7px; background: transparent; color: var(--ss-cyan); font-size: .8rem; cursor: pointer; }
+.shipyard-class-toggle:hover:not(:disabled) { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); }
+.shipyard-class-toggle:disabled { opacity: .65; cursor: not-allowed; }
+.shipyard-class-content[hidden] { display: none; }
 .shipyard-category-section { display: flex; flex-direction: column; gap: .75rem; }
 .shipyard-category-section > h3 { margin: 0; }
 .shipyard-category-label { display: inline-flex; align-items: center; min-height: 28px; padding: .25rem .65rem; border: 1px solid currentColor; border-radius: 999px; font-size: .78rem; font-weight: 700; letter-spacing: .04em; }
