@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier, GRAVITY_OPTIONS, GRAVITY_CATEGORY_LABELS } from '@/lib/characterStats'
 import type { GravityLevel } from '@/lib/characterStats'
 import { minimumRankForChipSlot } from '@/lib/rankSystem'
+import { weaponRangeRows } from '@/lib/weaponRanges'
+import { weaponAllowedInSlot, weaponFromGroup, type CharacterWeaponSlot } from '@/lib/characterWeapons'
 import { searchCharacterEditCatalog, updateCharacter, updateCharacterInEditMode, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
@@ -23,9 +25,7 @@ type CharacterProps = {
   relatedVehicles: any[]
 }
 
-const WEAPON_HEAT_SEGMENT_PERCENT = 100
 const WEAPON_HEAT_SEGMENT_COUNT = 4
-const MAX_WEAPON_HEAT_PERCENT = WEAPON_HEAT_SEGMENT_PERCENT * WEAPON_HEAT_SEGMENT_COUNT
 
 const SHIP_CLASS_LABEL: Record<string, string> = {
   alpha: 'Alpha',
@@ -59,6 +59,32 @@ function relationId(value: any): string | null {
   return id == null ? null : String(id)
 }
 
+function asCustomWeaponGroup(customItem: any) {
+  const item = weaponFromGroup({ customItem })
+  if (!item) return null
+  return {
+    item,
+    customItem,
+    mods: customItem.mods ?? [],
+    munitionsActuelles: customItem.munitionsActuelles ?? 0,
+    chargeurRelie: customItem.chargeurRelie ?? null,
+    customReserve: true,
+  }
+}
+
+function addWeaponToInventory(character: any, weaponGroup: any) {
+  if (!weaponGroup) return
+  if (weaponGroup.customItem) {
+    const customId = relationId(weaponGroup.customItem)
+    const existingIds = (character.inventaireEquipementsCustom ?? []).map(relationId)
+    if (customId && !existingIds.includes(customId)) {
+      character.inventaireEquipementsCustom = [...(character.inventaireEquipementsCustom ?? []), weaponGroup.customItem]
+    }
+    return
+  }
+  character.inventaireArmes = [...(character.inventaireArmes ?? []), weaponGroup]
+}
+
 function isHeavyMachineGun(weapon: any): boolean {
   const name = String(weapon?.nom ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   return weapon?.categorie === 'lourde' && name.includes('mitrailleuse')
@@ -70,7 +96,7 @@ function isHeavyBulletMagazine(item: any): boolean {
 }
 
 function getReloadPlan(weaponGroup: any, magazine: any, availableQuantity: number) {
-  const weapon = weaponGroup?.item ?? {}
+  const weapon = weaponFromGroup(weaponGroup) ?? {}
   const mods = getStructuredMods(weaponGroup?.mods || [])
   const magMods = magazine?.effet ? parseModifier(magazine.effet) : {}
   const bonusChargeur = (mods['chargeur'] || 0) + (magMods['chargeur'] || 0)
@@ -382,13 +408,23 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           // Pour les relations, Payload attend souvent des IDs ou des objets simplifiés
           // Ici on va essayer d'envoyer les données telles qu'elles sont dans l'état local
           // Payload gérera la conversion si nécessaire (ex: objet vers ID)
-          saveData[field] = character[field]
+          const item = character[field]
+          if (['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(field) && item?.customItem) {
+            saveData[field] = { ...item, item: null, customItem: Number(relationId(item.customItem)) }
+          } else {
+            saveData[field] = item
+          }
         }
       })
 
       if (editMode) {
         managerChangedFields.forEach((field) => {
-          if (character[field] !== undefined) saveData[field] = character[field]
+          if (character[field] !== undefined) {
+            const item = character[field]
+            saveData[field] = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'].includes(field) && item?.customItem
+              ? { ...item, item: null, customItem: Number(relationId(item.customItem)) }
+              : item
+          }
         })
         await updateCharacterInEditMode(character.id, saveData)
       } else {
@@ -425,7 +461,13 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   // Données d'inventaire
   const inventoryData = useMemo(() => {
-    const weapons = character.inventaireArmes || []
+    const equippedCustomIds = new Set(['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
+      .map((slot) => relationId(character[slot]?.customItem)).filter(Boolean))
+    const customWeapons = (character.inventaireEquipementsCustom || [])
+      .filter((item: any) => item && typeof item === 'object' && item.categorieEquipement === 'arme' && !equippedCustomIds.has(relationId(item)))
+      .map(asCustomWeaponGroup)
+      .filter(Boolean)
+    const weapons = [...(character.inventaireArmes || []), ...customWeapons]
     const armors = character.inventaireArmures || []
     const puces = character.inventairePuces || []
     const consumables = character.inventaire || []
@@ -551,7 +593,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const isThermique = weapon.type?.includes('thermique')
     weapon.type?.includes('cinetique');
     const isPlasma = weapon.type?.includes('plasma')
-    const structuredMods = getStructuredMods(mods)
+    const structuredMods = getStructuredMods(mods.length ? mods : weaponGroup?.customItem?.mods || [])
 
     // Bonus des chargeurs
     const magEffet = weaponGroup?.chargeurRelie?.effet
@@ -567,10 +609,14 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const munitionsActuelles = weaponGroup?.munitionsActuelles ?? 0
     const heatKey = slotKey ?? `preview:${weapon.id}`
     const currentHeat = weaponHeat[heatKey] ?? 0
-    const heatLevel = Math.min(WEAPON_HEAT_SEGMENT_COUNT, Math.max(1, Math.ceil(currentHeat / WEAPON_HEAT_SEGMENT_PERCENT)))
+    const heatSegmentPercent = Number.isFinite(Number(weapon.weaponHeatSegment)) && Number(weapon.weaponHeatSegment) >= 1
+      ? Number(weapon.weaponHeatSegment)
+      : 100
+    const maxWeaponHeatPercent = heatSegmentPercent * WEAPON_HEAT_SEGMENT_COUNT
+    const heatLevel = Math.min(WEAPON_HEAT_SEGMENT_COUNT, Math.max(1, Math.ceil(currentHeat / heatSegmentPercent)))
     const heatFillPercent = currentHeat <= 0
       ? 0
-      : Math.min(100, ((currentHeat - (heatLevel - 1) * WEAPON_HEAT_SEGMENT_PERCENT) / WEAPON_HEAT_SEGMENT_PERCENT) * 100)
+      : Math.min(100, ((currentHeat - (heatLevel - 1) * heatSegmentPercent) / heatSegmentPercent) * 100)
     
     const bonusChargeur = (structuredMods['chargeur'] || 0) + (magMods['chargeur'] || 0)
     const bonusChargeurPct = structuredMods['chargeur_pct'] || 0
@@ -581,7 +627,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       let newData: any = {}
       if (isThermique) {
         const value = weapon.valeurChauffe ?? 10
-        setWeaponHeat((current) => ({ ...current, [heatKey]: Math.min(MAX_WEAPON_HEAT_PERCENT, (current[heatKey] ?? 0) + value) }))
+        setWeaponHeat((current) => ({ ...current, [heatKey]: Math.min(maxWeaponHeatPercent, (current[heatKey] ?? 0) + value) }))
         return
       } else {
         const cost = totalProjectiles || 1
@@ -695,8 +741,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       const baseDamage = weapon.valeurDegats
       if (!baseDamage) return null
       let bonus = 0
-      const multiplier = baseDamage.endsWith('*') ? 2 : 1
-      const cleanDamage = baseDamage.replace('*', '').replace('!', '')
+      const suffix = baseDamage.match(/[*!]+$/)?.[0] ?? ''
+      const multiplier = suffix.includes('*') ? 2 : 1
+      const cleanDamage = baseDamage.slice(0, baseDamage.length - suffix.length)
 
       if (isMelee) bonus = stats.forceDieMod * multiplier
       else if (!isHeavy && !isPlasma) bonus = stats.perceptionDieMod * multiplier
@@ -705,10 +752,10 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       if (isMelee) bonus += (structuredMods['degats_mod_fo_x1'] || 0) * stats.forceDieMod
       if (weapon.categorie === 'shotgun') bonus += (structuredMods['degats_mod_pe_x1'] || 0) * stats.perceptionDieMod
 
-      const finalDamageStr = bonus === 0 ? baseDamage : `${cleanDamage}${bonus > 0 ? '+' : ''}${bonus}${baseDamage.endsWith('!') ? '!' : ''}`
+      const finalDamageStr = bonus === 0 ? baseDamage : `${cleanDamage}${bonus > 0 ? '+' : ''}${bonus}${suffix}`
       const diceMatch = cleanDamage.match(/(\d+)d(\d+)(?:([+-]\d+))?/)
       let min = 0, avg = 0, max: number | null = 0
-      const isExplosive = baseDamage.endsWith('!')
+      const isExplosive = suffix.includes('!')
       if (diceMatch) {
         const count = parseInt(diceMatch[1])
         const faces = parseInt(diceMatch[2])
@@ -729,49 +776,17 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     const damageData = getFinalDamageData()
 
     const renderRangeTable = () => {
-      const rows: { label: string; distance?: number; mod: number; optimalRange?: boolean }[] = []
       const bonusPC = structuredMods['mod_portee_courte'] || 0
       const bonusPM = structuredMods['mod_portee_moyenne'] || 0
       const addPC = (structuredMods['portee_courte'] || 0) + (magMods['portee_flat'] || 0)
       const addPM = (structuredMods['portee_moyenne'] || 0) + (magMods['portee_flat'] || 0)
-
-      if (isMelee) rows.push({ label: `< ${weapon.porteeFixe ?? 1}m`, mod: 0 })
-      else if (isHeavy) rows.push({ label: `Max ${weapon.porteeFixe ?? 50}m`, mod: 0 })
-      else if (isSniper) {
-        const cpVal = (weapon.courtePortee ?? 0) + addPC
-        const cpMod = (weapon.modCourtePortee ?? 0) + bonusPC
-        rows.push({ label: `< ${cpVal}m`, distance: cpVal, mod: cpMod, optimalRange: true })
-        weapon.paliersSniper?.forEach((p: any) => {
-          const pMod = (p.modificateur ?? 0) + bonusPC
-          rows.push({ label: `< ${p.distanceMax}m`, distance: p.distanceMax, mod: pMod, optimalRange: true })
-        })
-      } else {
-        if (weapon.courtePortee != null) {
-          const cpVal = weapon.courtePortee + addPC
-          const cpMod = (weapon.modCourtePortee ?? 0) + bonusPC
-          rows.push({ label: `< ${cpVal}m`, distance: cpVal, mod: cpMod, optimalRange: true })
-        }
-        if (weapon.moyennePortee != null) {
-          const mpVal = weapon.moyennePortee + addPM
-          const mpMod = (weapon.modMoyennePortee ?? 0) + bonusPM
-          rows.push({ label: `< ${mpVal}m`, distance: mpVal, mod: mpMod, optimalRange: true })
-        }
-      }
-      const rangeRows = rows.filter((row) => row.optimalRange)
-      const bestRangeBonus = rangeRows.length ? Math.max(...rangeRows.map((row) => row.mod)) : null
-      const gravityRangeMultiplier = stats.weaponGravity.optimalRangeMultiplier
-      const visibleRows = rows.map((row) => {
-        const isOptimal = row.optimalRange && row.mod === bestRangeBonus && gravityRangeMultiplier !== 1
-        const distance = isOptimal
-          ? (gravityRangeMultiplier === Infinity ? Infinity : (row.distance ?? 0) * gravityRangeMultiplier)
-          : row.distance
-        const rangeLabel = distance === undefined ? row.label : distance === Infinity ? '< ∞m' : `< ${distance}m`
-        return { label: rangeLabel, mod: row.mod >= 0 ? `+${row.mod}` : `${row.mod}` }
+      const visibleRows = weaponRangeRows(weapon, {
+        shortRangeBonus: bonusPC,
+        mediumRangeBonus: bonusPM,
+        shortRangeAdjustment: addPC,
+        mediumRangeAdjustment: addPM,
+        optimalRangeMultiplier: stats.weaponGravity.optimalRangeMultiplier,
       })
-      if (!isMelee && !isHeavy && weapon.trancheMalusLonguePortee) {
-        const longRangeMod = weapon.malusParTranche ?? -1
-        visibleRows.push({ label: `+${weapon.trancheMalusLonguePortee}m`, mod: longRangeMod >= 0 ? `+${longRangeMod}` : `${longRangeMod}` })
-      }
       if (visibleRows.length === 0) return null
       return (
         <table className="weapon-range-table">
@@ -845,7 +860,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     <button 
                       className="ammo-btn heat-btn fire" 
                       onClick={handleFire} 
-                      disabled={currentHeat >= MAX_WEAPON_HEAT_PERCENT}
+                      disabled={currentHeat >= maxWeaponHeatPercent}
                       title="Tirer (chauffe)"
                     >
                       🔥
@@ -1092,8 +1107,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   // Helper rendu arme
   const renderWeaponSlot = (label: string, weaponGroup: any, slotKey: string, categoryConstraint: string) => {
-    const weapon = weaponGroup?.item
-    const mods = weaponGroup?.mods || []
+    const weapon = weaponFromGroup(weaponGroup)
+    const mods = weaponGroup?.mods || weaponGroup?.customItem?.mods || []
     const isEquipped = !!weapon && typeof weapon !== 'string'
     
     return (
@@ -1198,8 +1213,14 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     let mods: any[] = []
     
     if (type === 'weapons' || type === 'armors') {
-      item = itemObj.item
-      mods = itemObj.mods || []
+      if (type === 'weapons') {
+        const weaponGroup = itemObj?.customItem ? { ...itemObj, ...asCustomWeaponGroup(itemObj.customItem) } : itemObj
+        item = weaponFromGroup(weaponGroup)
+        mods = weaponGroup?.mods || []
+      } else {
+        item = itemObj.item
+        mods = itemObj.mods || []
+      }
     } else if (type === 'consumables') {
       item = itemObj.consommable
     }
@@ -1243,26 +1264,31 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
     if (type === 'weapon') {
       const filterFn = (w: any) => {
-        if (!w || !w.item) return false
-        const item = w.item
-        if (category === 'lourde') return item.categorie === 'lourde'
-        if (category === 'melee') return item.categorie === 'melee'
-        return !['lourde', 'melee'].includes(item.categorie)
+        if (!w) return false
+        const item = weaponFromGroup(w)
+        if (!item || typeof item !== 'object') return false
+        return weaponAllowedInSlot(item.categorie, slot as CharacterWeaponSlot)
       }
 
       const inventory = (character.inventaireArmes || [])
         .map((w: any, idx: number) => ({ ...w, fromInventory: true, inventoryIndex: idx }))
         .filter(filterFn)
+      const equippedCustomIds = new Set(['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
+        .map((weaponSlot) => relationId(character[weaponSlot]?.customItem)).filter(Boolean))
+      const customInventory = (character.inventaireEquipementsCustom || [])
+        .filter((item: any) => item && typeof item === 'object' && item.categorieEquipement === 'arme' && !equippedCustomIds.has(relationId(item)))
+        .map(asCustomWeaponGroup)
+        .filter(Boolean)
+        .map((group: any) => ({ ...group, fromInventory: true }))
       
       // Ajouter les armes équipées compatibles (sauf celle du slot actuel)
       const equippedSlots = ['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee']
       const equipped = equippedSlots
         .filter(s => s !== slot)
-        .map(s => character[s])
+        .map(s => ({ ...character[s], item: weaponFromGroup(character[s]), fromSlot: s }))
         .filter(filterFn)
-        .map(w => ({ ...w, fromSlot: equippedSlots.find(s => character[s] === w) }))
 
-      return [...equipped, ...inventory]
+      return [...equipped, ...inventory, ...customInventory]
     }
     
     if (type === 'armor') {
@@ -1474,12 +1500,17 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
       // Retirer de l'inventaire
       if (type === 'weapon') {
-        if (inventoryIndex !== undefined) {
-          newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((_: any, idx: number) => idx !== inventoryIndex)
+        if (newItem.customItem) {
+          const customId = relationId(newItem.customItem)
+          newCharacter.inventaireEquipementsCustom = (newCharacter.inventaireEquipementsCustom || []).filter((item: any) => relationId(item) !== customId)
         } else {
-          newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((i: any) => (i.id || i) !== newItemId)
+          if (inventoryIndex !== undefined) {
+            newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((_: any, idx: number) => idx !== inventoryIndex)
+          } else {
+            newCharacter.inventaireArmes = (newCharacter.inventaireArmes || []).filter((i: any) => (i.id || i) !== newItemId)
+          }
         }
-        if (currentItem) newCharacter.inventaireArmes = [...newCharacter.inventaireArmes, currentItem]
+        addWeaponToInventory(newCharacter, currentItem)
       } else if (type === 'armor') {
         if (inventoryIndex !== undefined) {
           newCharacter.inventaireArmures = (newCharacter.inventaireArmures || []).filter((_: any, idx: number) => idx !== inventoryIndex)
@@ -1504,7 +1535,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     } else if (currentItem) {
       // Si on remplace par quelque chose qui n'est ni du slot ni de l'inventaire
       // (théoriquement non possible avec l'UI, mais on gère par sécurité)
-      if (type === 'weapon') newCharacter.inventaireArmes = [...(newCharacter.inventaireArmes || []), currentItem]
+      if (type === 'weapon') addWeaponToInventory(newCharacter, currentItem)
       if (type === 'armor') newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
       if (type === 'chip') newCharacter.inventairePuces = [...(newCharacter.inventairePuces || []), currentItem]
     }
@@ -1514,6 +1545,13 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     delete cleanItem.fromSlot
     delete cleanItem.fromInventory
     delete cleanItem.inventoryIndex
+    delete cleanItem.customReserve
+    if (type === 'weapon' && cleanItem.customItem) {
+      delete cleanItem.item
+      cleanItem.mods = cleanItem.mods ?? cleanItem.customItem.mods ?? []
+      cleanItem.munitionsActuelles = cleanItem.munitionsActuelles ?? cleanItem.customItem.munitionsActuelles ?? 0
+      cleanItem.chargeurRelie = cleanItem.chargeurRelie ?? cleanItem.customItem.chargeurRelie ?? null
+    }
 
     if (type === 'weapon') {
       newCharacter[currentSlot] = cleanItem
@@ -1569,7 +1607,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       newCharacter[slot] = null
       if (currentItem) {
         if (type === 'weapon') {
-          newCharacter.inventaireArmes = [...(newCharacter.inventaireArmes || []), currentItem]
+          addWeaponToInventory(newCharacter, currentItem)
         } else if (type === 'armor') {
           newCharacter.inventaireArmures = [...(newCharacter.inventaireArmures || []), currentItem]
         } else if (type === 'chip') {
@@ -2101,18 +2139,18 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                                   onMouseMove={editMode ? undefined : handleMouseMove}
                                   onMouseLeave={editMode ? undefined : handleMouseLeave}
                                 >
-                                  <td><strong>{item.nom}</strong></td>
+                                  <td><strong>{item.nom}</strong>{itemObj.customReserve && <span className="ss-tag">Custom</span>}</td>
                                   <td>{subLabel}</td>
                                   {cat.id === 'consumables' && <td>{editMode
                                     ? <input aria-label="Quantité" className="char-inventory-quantity" type="number" min="1" step="1" value={itemObj.quantite ?? 1} onChange={(event) => handleInventoryRowChange('consumables', idx, 'quantite', Math.max(1, Number(event.target.value) || 1))} />
                                     : itemObj.quantite}</td>}
-                                  {cat.id === 'weapons' && <td>{editMode
+                                  {cat.id === 'weapons' && <td>{editMode && !itemObj.customReserve
                                     ? <input aria-label="Munitions" className="char-inventory-quantity" type="number" min="0" step="1" value={itemObj.munitionsActuelles ?? 0} onChange={(event) => handleInventoryRowChange('weapons', idx, 'munitionsActuelles', Math.max(0, Number(event.target.value) || 0))} />
                                     : itemObj.munitionsActuelles ?? 0}</td>}
-                                  {editMode && <td className="char-inventory-actions">
+                                  {editMode && <td className="char-inventory-actions">{!itemObj.customReserve && <>
                                     <button type="button" className="char-inventory-action-button" onClick={() => handleOpenInventoryEditor(cat.id as NonNullable<typeof inventoryEditor>['section'], idx)}>Remplacer</button>
                                     <button type="button" className="char-inventory-action-remove" onClick={() => handleRemoveInventoryItem(cat.id as NonNullable<typeof inventoryEditor>['section'], idx)}>Retirer</button>
-                                  </td>}
+                                  </>}</td>}
                                 </tr>
                               )
                             })}

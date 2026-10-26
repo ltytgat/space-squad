@@ -19,6 +19,7 @@ import { validateTemporaryCharacterUpdate } from '@/lib/temporaryCharacterRules'
 import { canMJManageCharacter } from '@/lib/mjAccess'
 import { getActiveMode } from '@/lib/activeMode'
 import { reconcileCustomEquipmentInventory } from '@/lib/atelier'
+import { weaponAllowedInSlot, type CharacterWeaponSlot } from '@/lib/characterWeapons'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
@@ -116,10 +117,35 @@ async function syncCustomEquipmentOwnership(payload: any, character: any, update
   // This relationship is managed by the Atelier actions so clients cannot grant themselves items.
   delete updateData.inventaireEquipementsCustom
 
-  const inventory = character.inventaireEquipementsCustom ?? []
+  const inventory = (character.inventaireEquipementsCustom ?? [])
+    .map(relationNumericId)
+    .filter((id: number | null): id is number => id !== null)
   const currentEquipped = new Map<string, number>()
   const finalEquipped = new Map<string, number>()
   const requestedIds = new Set<number>()
+
+  const standardWeaponSelections = new Map<string, number>()
+  for (const slot of CHARACTER_WEAPON_SLOTS) {
+    if (!Object.prototype.hasOwnProperty.call(updateData, slot)) continue
+    const target = updateData[slot]
+    if (relationNumericId(target?.customItem)) continue
+    const itemId = relationNumericId(target?.item)
+    if (itemId) standardWeaponSelections.set(slot, itemId)
+  }
+  if (standardWeaponSelections.size) {
+    const weaponIds = [...new Set(standardWeaponSelections.values())]
+    const { docs } = await payload.find({
+      collection: 'weapons', where: { id: { in: weaponIds } }, depth: 0,
+      limit: weaponIds.length, overrideAccess: true,
+    })
+    const weaponsById = new Map((docs as any[]).map((weapon) => [Number(weapon.id), weapon]))
+    for (const [slot, itemId] of standardWeaponSelections) {
+      const weapon = weaponsById.get(itemId)
+      if (!weapon || !weaponAllowedInSlot(weapon.categorie, slot as CharacterWeaponSlot)) {
+        throw new Error('La catÃ©gorie de cette arme ne correspond pas Ã  cet emplacement.')
+      }
+    }
+  }
 
   for (const [slot, kind] of Object.entries(CUSTOM_EQUIPMENT_SLOTS)) {
     const currentId = relationNumericId(character[slot]?.customItem)
@@ -148,6 +174,18 @@ async function syncCustomEquipmentOwnership(payload: any, character: any, update
     if (!slot || item.categorieEquipement !== CUSTOM_EQUIPMENT_SLOTS[slot as keyof typeof CUSTOM_EQUIPMENT_SLOTS]) {
       throw new Error('Cet équipement personnalisé ne correspond pas à cet emplacement.')
     }
+    if (item.categorieEquipement === 'arme') {
+      const category = String(item.categorie ?? '')
+      const validCategory = weaponAllowedInSlot(category, slot as CharacterWeaponSlot)
+      if (!validCategory) throw new Error('La catégorie de cette arme personnalisée ne correspond pas à cet emplacement.')
+    }
+  }
+
+  const nextEquippedIds = new Set(equippedIds)
+  for (const [slot, id] of currentEquipped) {
+    if (!nextEquippedIds.has(id) && CUSTOM_EQUIPMENT_SLOTS[slot as keyof typeof CUSTOM_EQUIPMENT_SLOTS] === 'arme') {
+      await syncCustomWeaponState(payload, Number(character.id), character[slot])
+    }
   }
 
   const nextInventory = reconcileCustomEquipmentInventory(inventory, [...currentEquipped.values()], equippedIds)
@@ -159,6 +197,24 @@ async function syncCustomEquipmentOwnership(payload: any, character: any, update
   for (const field of ['inventaireArmes', 'inventaireArmures']) {
     if (Array.isArray(updateData[field])) updateData[field] = updateData[field].filter((row: any) => !row?.customItem)
   }
+}
+
+async function syncCustomWeaponState(payload: any, characterId: number, weaponGroup: any) {
+  const customId = relationNumericId(weaponGroup?.customItem)
+  if (!customId) return
+  const customItem = await payload.findByID({ collection: 'custom-equipment', id: customId, depth: 0, overrideAccess: true }).catch(() => null) as any
+  if (!customItem || customItem.categorieEquipement !== 'arme' || relationNumericId(customItem.proprietaireActuel) !== characterId) {
+    throw new Error('Cette arme personnalisée ne vous appartient pas.')
+  }
+  await payload.update({
+    collection: 'custom-equipment',
+    id: customId,
+    data: {
+      munitionsActuelles: Math.max(0, Number(weaponGroup.munitionsActuelles) || 0),
+      chargeurRelie: relationNumericId(weaponGroup.chargeurRelie),
+    },
+    overrideAccess: true,
+  })
 }
 
 /**
@@ -526,6 +582,8 @@ export async function updateWeaponStatus(
     ...data
   }
 
+  await syncCustomWeaponState(payload, characterId, updatedWeaponGroup)
+
   await payload.update({
     collection: 'characters',
     id: characterId,
@@ -605,6 +663,8 @@ export async function reloadWeapon(
     }).filter((item: any) => Number(item.quantite ?? 1) > 0)
     updateData.inventaire = updatedInventory
   }
+
+  await syncCustomWeaponState(payload, characterId, updatedWeaponGroup)
 
   await payload.update({
     collection: 'characters',

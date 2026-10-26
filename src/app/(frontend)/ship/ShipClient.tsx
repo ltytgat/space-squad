@@ -1095,6 +1095,7 @@ export function ShipClient({
               <span className="ship-tag">{object(ship.modele)?.nom ?? 'Modèle indéfini'}</span>
               <span className="ship-tag ship-tag-class">Classe {chassis?.classe ?? '—'}</span>
               <span className="ship-tag">{chassis?.categorie ?? '—'}</span>
+              {ship.atelierPersonnalise && <span className="ship-tag">Custom</span>}
             </div>
             <dl className="ship-dl">
               <div className="ship-dl-row">

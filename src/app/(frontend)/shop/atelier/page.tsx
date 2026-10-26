@@ -10,6 +10,7 @@ import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { factionKey, ownsFactionAtelierAccess } from '@/lib/factionRewards'
 import { atelierPointsForPersonalItem, atelierPointsForShip, atelierRelationId } from '@/lib/atelier'
 import { readShopPrice } from '@/lib/shop'
+import { getStructuredMods, parseModifier } from '@/lib/characterStats'
 import { AtelierClient, type AtelierItem, type AtelierModification } from './AtelierClient'
 import '../shop.css'
 import './atelier.css'
@@ -31,6 +32,8 @@ function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure'): 
   const price = readShopPrice(item.prix)
   if (points === null || price === null) return null
   const set = item.set && typeof item.set === 'object' ? item.set : null
+  const weaponMods = kind === 'arme' ? getStructuredMods(row.mods ?? []) : {}
+  const magazineMods = kind === 'arme' && row.chargeurRelie?.effet ? parseModifier(row.chargeurRelie.effet) : {}
   return {
     id: Number(item.id),
     index,
@@ -55,6 +58,7 @@ function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure'): 
           paliersSniper: item.paliersSniper, trancheMalusLonguePortee: item.trancheMalusLonguePortee,
           malusParTranche: item.malusParTranche, tailleChargeur: item.tailleChargeur,
           valeurChauffe: item.valeurChauffe, tempsRefroidissement: item.tempsRefroidissement,
+          weaponHeatSegment: item.weaponHeatSegment,
           details: item.details, prix: item.prix,
         }
       : {
@@ -63,6 +67,10 @@ function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure'): 
           poids: item.poids, modificateur: item.modificateur, rang: item.rang,
           stockage: item.stockage, prix: item.prix,
         },
+    rangeBonuses: kind === 'arme' ? {
+      ...weaponMods,
+      portee_flat: (weaponMods.portee_flat ?? 0) + (magazineMods.portee_flat ?? 0),
+    } : undefined,
     components: (row.mods ?? []).map((mod: any) => typeof mod === 'object' ? String(mod.nom ?? '') : '').filter(Boolean),
   }
 }

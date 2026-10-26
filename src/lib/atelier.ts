@@ -31,7 +31,7 @@ const TARGETS: Record<AtelierEquipmentKind, ReadonlySet<string>> = {
     'nom', 'fabricant', 'categorie', 'type', 'poids', 'prix', 'forceMinimum', 'valeurDegats', 'zoneEffet',
     'projectilesParTir', 'tempsRechargement', 'porteeFixe', 'courtePortee', 'modCourtePortee',
     'moyennePortee', 'modMoyennePortee', 'paliersSniper', 'trancheMalusLonguePortee', 'malusParTranche',
-    'tailleChargeur', 'valeurChauffe', 'tempsRefroidissement', 'zoneEffet',
+    'tailleChargeur', 'valeurChauffe', 'tempsRefroidissement', 'weaponHeatSegment', 'zoneEffet',
   ]),
   armure: new Set([
     'nom', 'categorie', 'valeurArmurePhysique', 'valeurBouclier', 'valeurRupture', 'poids',
@@ -55,16 +55,16 @@ function finiteValue(value: string, label: string): number {
   return parsed
 }
 
-function parseDamageExpression(current: unknown): { count: number; size: number; flatBonus: string } {
-  if (typeof current !== 'string') throw new Error('Les dés ne peuvent être modifiés qu’avec une expression de dégâts au format kdn±x.')
-  const match = current.trim().match(/^(\d+)\s*[dD]\s*(\d+)\s*((?:[+-]\s*\d+))?$/)
-  if (!match) throw new Error('Les dés ne peuvent être modifiés qu’avec une expression de dégâts au format kdn±x.')
+function parseDamageExpression(current: unknown): { count: number; size: number; flatBonus: string; suffix: string } {
+  if (typeof current !== 'string') throw new Error('Les dés ne peuvent être modifiés qu’avec une expression kdn±x, avec suffixe sniper optionnel (*).')
+  const match = current.trim().match(/^(\d+)\s*[dD]\s*(\d+)\s*((?:[+-]\s*\d+))?([*!]*)$/)
+  if (!match) throw new Error('Les dés ne peuvent être modifiés qu’avec une expression kdn±x, avec suffixe sniper optionnel (*).')
   const count = Number(match[1])
   const size = Number(match[2])
   if (!Number.isSafeInteger(count) || !Number.isSafeInteger(size)) {
     throw new Error('Le nombre ou la taille des dés de dégâts est invalide.')
   }
-  return { count, size, flatBonus: (match[3] ?? '').replace(/\s+/g, '') }
+  return { count, size, flatBonus: (match[3] ?? '').replace(/\s+/g, ''), suffix: match[4] ?? '' }
 }
 
 function addDamageDice(current: unknown, value: string): string {
@@ -75,7 +75,7 @@ function addDamageDice(current: unknown, value: string): string {
   }
   const count = damage.count + increment
   if (!Number.isSafeInteger(count)) throw new Error('Le nombre de dés de dégâts dépasse la limite autorisée.')
-  return `${count}d${damage.size}${damage.flatBonus}`
+  return `${count}d${damage.size}${damage.flatBonus}${damage.suffix}`
 }
 
 function increaseDamageDieSize(current: unknown, value: string): string {
@@ -85,7 +85,7 @@ function increaseDamageDieSize(current: unknown, value: string): string {
   const sizeIndex = DAMAGE_DIE_SIZES.indexOf(damage.size as (typeof DAMAGE_DIE_SIZES)[number])
   if (sizeIndex === -1) throw new Error('La taille du dé de dégâts ne figure pas dans la progression Atelier.')
   if (sizeIndex === DAMAGE_DIE_SIZES.length - 1) throw new Error('La taille du dé de dégâts est déjà au maximum (d20).')
-  return `${damage.count}d${DAMAGE_DIE_SIZES[sizeIndex + 1]}${damage.flatBonus}`
+  return `${damage.count}d${DAMAGE_DIE_SIZES[sizeIndex + 1]}${damage.flatBonus}${damage.suffix}`
 }
 
 function addEncodedSlots(current: unknown, value: string, increaseOnly: boolean): string {
@@ -117,7 +117,7 @@ export function applyAtelierEffects<T extends Record<string, any>>(
   for (const effect of effects) {
     if (!TARGETS[kind].has(effect.cible)) throw new Error(`La propriété « ${effect.cible} » ne peut pas être personnalisée sur cet équipement.`)
     if (!['add', 'dice-count-add', 'dice-size-step', 'slot-add'].includes(effect.operation)) throw new Error('Opération Atelier inconnue.')
-    const current = result[effect.cible]
+    const current = result[effect.cible] ?? (kind === 'arme' && effect.cible === 'weaponHeatSegment' ? 100 : undefined)
     if (kind === 'vaisseau') {
       if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
         throw new Error('Les propriétés d’un châssis Atelier ne peuvent être qu’augmentées.')
@@ -131,8 +131,23 @@ export function applyAtelierEffects<T extends Record<string, any>>(
       if (!['modulesSupplementaires', 'pointsEmportTourelles'].includes(effect.cible)) throw new Error('Cette propriété ne représente pas des emplacements codés.')
       result[effect.cible] = addEncodedSlots(current, effect.valeur, kind === 'vaisseau')
     } else if (effect.operation === 'add') {
+      const increment = finiteValue(effect.valeur, 'La valeur ajoutée')
+      if (kind === 'arme' && effect.cible === 'paliersSniper' && Array.isArray(current)) {
+        const nextStages = current.map((stage: any) => ({
+          ...stage,
+          distanceMax: exactAdd(Number(stage.distanceMax), increment),
+        }))
+        if (nextStages.some((stage: any) => !Number.isFinite(stage.distanceMax) || stage.distanceMax < 1)) {
+          throw new Error('La portée d’une arme ne peut pas être inférieure à 1 mètre.')
+        }
+        result[effect.cible] = nextStages
+        continue
+      }
       if (typeof current !== 'number') throw new Error(`La propriété « ${effect.cible} » n’est pas numérique et n’accepte pas un ajout.`)
-      result[effect.cible] = exactAdd(current, finiteValue(effect.valeur, 'La valeur ajoutée'))
+      const nextValue = exactAdd(current, increment)
+      if (kind === 'arme' && ['porteeFixe', 'courtePortee', 'moyennePortee'].includes(effect.cible) && nextValue < 1) throw new Error('La portée d’une arme ne peut pas être inférieure à 1 mètre.')
+      if (kind === 'arme' && effect.cible === 'weaponHeatSegment' && nextValue < 1) throw new Error('Un segment de chauffe invalide.')
+      result[effect.cible] = nextValue
     } else if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
       if (kind !== 'arme' || effect.cible !== 'valeurDegats') throw new Error('Les opérations sur les dés sont réservées aux dégâts des armes.')
       result[effect.cible] = effect.operation === 'dice-count-add'
@@ -257,6 +272,22 @@ export function atelierPurchasePrice(compatibility: AtelierCompatibility, quanti
     if (!Number.isFinite(unitPrice)) throw new Error('Le prix de cette configuration dépasse la limite autorisée.')
   }
   return total
+}
+
+export function atelierNextPurchasePrice(compatibility: AtelierCompatibility, quantityAlreadyPurchased: number): number {
+  if (!Number.isSafeInteger(quantityAlreadyPurchased) || quantityAlreadyPurchased < 0) {
+    throw new Error('La quantité de modifications déjà achetées est invalide.')
+  }
+  const basePrice = readShopPrice(compatibility.prix)
+  if (basePrice === null) throw new Error('Une modification Atelier a un prix invalide.')
+  const multiplier = compatibility.multiplicateurRachat == null ? 1 : Number(compatibility.multiplicateurRachat)
+  if (!Number.isSafeInteger(multiplier) || multiplier < 1) throw new Error('Le multiplicateur de rachat doit être un entier positif.')
+  let nextPrice = basePrice
+  for (let purchase = 0; purchase < quantityAlreadyPurchased; purchase += 1) {
+    nextPrice = exactMultiply(nextPrice, multiplier)
+    if (!Number.isFinite(nextPrice)) throw new Error('Le prix de cette configuration dépasse la limite autorisée.')
+  }
+  return nextPrice
 }
 
 export function atelierModificationPoints(compatibility: AtelierCompatibility, quantity: number): number {

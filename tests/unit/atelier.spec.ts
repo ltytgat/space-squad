@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { applyAtelierEffects, atelierCost, atelierModificationMatches, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
+import { applyAtelierEffects, atelierCost, atelierModificationMatches, atelierNextPurchasePrice, atelierPurchasePrice, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
+import { weaponRangeRows } from '@/lib/weaponRanges'
+import { weaponAllowedInSlot, weaponFromGroup } from '@/lib/characterWeapons'
 
 describe('Atelier compatibility', () => {
   it('requires an exact weapon subcategory and thermal or kinetic type', () => {
@@ -59,6 +61,27 @@ describe('Atelier frozen effects and prices', () => {
       { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
     ], 'arme')
     expect(custom.valeurDegats).toBe('3d10-2')
+  })
+
+  it('preserves sniper star notation while applying dice changes', () => {
+    expect(applyAtelierEffects({ valeurDegats: '2d8*' }, [
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('3d8*')
+    expect(applyAtelierEffects({ valeurDegats: '2d8+3*' }, [
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('2d10+3*')
+  })
+
+  it('adds weapon heat segment bonuses to the default 100 percent segment', () => {
+    expect(applyAtelierEffects({} as Record<string, number>, [
+      { cible: 'weaponHeatSegment', operation: 'add', valeur: '50' },
+    ], 'arme').weaponHeatSegment).toBe(150)
+    expect(applyAtelierEffects({ weaponHeatSegment: 150 }, [
+      { cible: 'weaponHeatSegment', operation: 'add', valeur: '25' },
+    ], 'arme').weaponHeatSegment).toBe(175)
+    expect(() => applyAtelierEffects({}, [
+      { cible: 'weaponHeatSegment', operation: 'add', valeur: '-100' },
+    ], 'arme')).toThrow()
   })
 
   it('applies repeated modification effects in sequence', () => {
@@ -135,5 +158,52 @@ describe('Atelier equipped-item inventory', () => {
     expect(reconcileCustomEquipmentInventory([1, { id: 2 }, 2], [3], [1])).toEqual([2, 3])
     expect(reconcileCustomEquipmentInventory([], [3], [])).toEqual([3])
     expect(reconcileCustomEquipmentInventory([3], [3], [3])).toEqual([])
+  })
+})
+
+describe('Character weapon slot normalization', () => {
+  it('does not turn empty weapon groups into equipable weapons', () => {
+    expect(weaponFromGroup({ item: null, customItem: null, mods: [] })).toBeNull()
+    expect(weaponFromGroup({ item: 42, mods: [] })).toBeNull()
+    expect(weaponFromGroup({})).toBeNull()
+    expect(weaponFromGroup({ item: { id: 42, nom: 'Fusil', categorie: 'fusil-assaut' } })).toMatchObject({ nom: 'Fusil' })
+  })
+
+  it('keeps weapons in slots matching their categories', () => {
+    expect(weaponAllowedInSlot('fusil-assaut', 'armePrincipale')).toBe(true)
+    expect(weaponAllowedInSlot('fusil-assaut', 'armeLourde')).toBe(false)
+    expect(weaponAllowedInSlot('lourde', 'armeLourde')).toBe(true)
+    expect(weaponAllowedInSlot('melee', 'armeDeMelee')).toBe(true)
+    expect(weaponAllowedInSlot(undefined, 'armePrincipale')).toBe(false)
+  })
+})
+
+describe('Atelier weapon range previews and repurchase prices', () => {
+  it('shows the next repeated purchase price using the configured multiplier', () => {
+    const compatibility = { prix: 100, maximum: 4, multiplicateurRachat: 2 }
+    expect(atelierNextPurchasePrice(compatibility, 0)).toBe(100)
+    expect(atelierNextPurchasePrice(compatibility, 1)).toBe(200)
+    expect(atelierNextPurchasePrice(compatibility, 2)).toBe(400)
+    expect(atelierPurchasePrice(compatibility, 3)).toBe(700)
+  })
+
+  it('prevents weapon ranges and sniper stages from falling below one metre', () => {
+    expect(() => applyAtelierEffects({ courtePortee: 2 }, [
+      { cible: 'courtePortee', operation: 'add', valeur: '-2' },
+    ], 'arme')).toThrow('ne peut pas être inférieure à 1 mètre')
+    expect(() => applyAtelierEffects({ paliersSniper: [{ distanceMax: 4, modificateur: -2 }] }, [
+      { cible: 'paliersSniper', operation: 'add', valeur: '-4' },
+    ], 'arme')).toThrow('ne peut pas être inférieure à 1 mètre')
+  })
+
+  it('lists sniper stages with their corresponding modifiers', () => {
+    expect(weaponRangeRows({
+      categorie: 'sniper', courtePortee: 30, modCourtePortee: -1,
+      paliersSniper: [{ distanceMax: 50, modificateur: -2 }, { distanceMax: 100, modificateur: -4 }],
+    }, { shortRangeBonus: 1 })).toEqual([
+      { label: '< 30m', mod: '+0' },
+      { label: '< 50m', mod: '-1' },
+      { label: '< 100m', mod: '-3' },
+    ])
   })
 })

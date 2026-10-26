@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { applyAtelierEffects, atelierModificationPoints, atelierPurchasePrice, findAtelierCompatibility, type AtelierCompatibility, type AtelierEffect, type AtelierEquipmentKind, type AtelierPurchase } from '@/lib/atelier'
+import { applyAtelierEffects, atelierModificationPoints, atelierNextPurchasePrice, atelierPurchasePrice, findAtelierCompatibility, type AtelierCompatibility, type AtelierEffect, type AtelierEquipmentKind, type AtelierPurchase } from '@/lib/atelier'
 import { exactAdd } from '@/lib/shop'
+import { weaponRangeRows } from '@/lib/weaponRanges'
 import type { ShopItemDetail } from '../ShopItemDetails'
 import { ShopItemDetailsButton } from '../ShopItemDetails'
 import { customizePersonalEquipment, customizeShip } from '../atelier-actions'
@@ -24,6 +25,7 @@ export type AtelierItem = {
   modelNom: string | null
   description: string | null
   properties: Record<string, any>
+  rangeBonuses?: Record<string, number>
   components: string[]
 }
 export type AtelierModification = {
@@ -55,6 +57,7 @@ const detailLabels: Record<string, string> = {
   modCourtePortee: 'Modificateur courte portée', moyennePortee: 'Portée moyenne', modMoyennePortee: 'Modificateur moyenne portée',
   paliersSniper: 'Paliers sniper', trancheMalusLonguePortee: 'Tranche malus longue portée', malusParTranche: 'Malus par tranche',
   tailleChargeur: 'Taille du chargeur', valeurChauffe: 'Valeur de chauffe', tempsRefroidissement: 'Refroidissement',
+  weaponHeatSegment: 'Seuil de chauffe',
   details: 'Détails', valeurArmurePhysique: 'Armure physique', valeurBouclier: 'Bouclier', valeurRupture: 'Rupture',
   modificateur: 'Modificateur', rang: 'Rang requis', stockage: 'Stockage', prix: 'Prix catalogue',
   blindage: 'Blindage', esquiveBase: 'Esquive de base', tourelles: 'Tourelles', pointsEmportPilote: 'Points d’emport pilote',
@@ -69,16 +72,48 @@ function propertyValue(key: string, value: any): string {
   if (Array.isArray(value)) {
     return value.map((entry) => typeof entry === 'object' ? Object.entries(entry).filter(([, child]) => child != null && child !== '').map(([name, child]) => `${name} ${child}`).join(' · ') : String(entry)).filter(Boolean).join(' · ')
   }
-  if (typeof value === 'object') return value.nom ?? JSON.stringify(value)
+  if (typeof value === 'object') {
+    if (value.nom) return String(value.nom)
+    const meaningfulEntries = Object.entries(value).filter(([, child]) => child !== null && child !== undefined && child !== '')
+    return meaningfulEntries.length ? JSON.stringify(Object.fromEntries(meaningfulEntries)) : ''
+  }
   return String(value)
 }
 
 function personalDetails(item: AtelierItem, properties: Record<string, any>): ShopItemDetail[] {
+  const rangeFields = new Set(['porteeFixe', 'courtePortee', 'modCourtePortee', 'moyennePortee', 'modMoyennePortee', 'paliersSniper', 'trancheMalusLonguePortee', 'malusParTranche'])
   const entries = Object.entries(properties)
-    .filter(([key, value]) => key !== 'nom' && key !== 'id' && key !== 'image' && value !== null && value !== undefined && value !== '')
+    .filter(([key, value]) => key !== 'nom' && key !== 'id' && key !== 'image' && !(item.kind === 'arme' && rangeFields.has(key)) && value !== null && value !== undefined && value !== '')
     .map(([key, value]) => ({ label: detailLabels[key] ?? key, value: propertyValue(key, value) }))
+    .filter((entry) => entry.value !== '')
   if (item.kind === 'armure' && item.setNom) entries.push({ label: 'Set d’armure', value: item.setNom })
   return entries
+}
+
+const effectLabels: Record<string, string> = {
+  poids: 'Poids', prix: 'Prix catalogue', valeurDegats: 'Dégâts', zoneEffet: 'Zone d’effet',
+  projectilesParTir: 'Projectiles par tir', tempsRechargement: 'Temps de rechargement',
+  porteeFixe: 'Portée', courtePortee: 'Courte portée', modCourtePortee: 'Bonus courte portée',
+  moyennePortee: 'Portée moyenne', modMoyennePortee: 'Bonus portée moyenne', paliersSniper: 'Distances des paliers sniper',
+  trancheMalusLonguePortee: 'Tranche longue portée', malusParTranche: 'Malus par tranche',
+  tailleChargeur: 'Taille du chargeur', valeurChauffe: 'Valeur de chauffe', tempsRefroidissement: 'Refroidissement',
+  weaponHeatSegment: 'Seuil de chauffe', valeurArmurePhysique: 'Armure physique', valeurBouclier: 'Bouclier',
+  valeurRupture: 'Rupture', caracteristiqueBonus: 'Bonus de caractéristique', mods: 'Emplacements de Mods',
+  specializationCombat: 'Spécialisation combat', specializationExploration: 'Spécialisation exploration',
+  specializationTransport: 'Spécialisation transport', tourelles: 'Tourelles', pointsEmportPilote: 'Points d’emport pilote',
+  pointsEmportTourelles: 'Points d’emport tourelles', blindage: 'Blindage', modulesSupplementaires: 'Modules supplémentaires',
+  consommables: 'Emplacements consommables', esquiveBase: 'Esquive de base',
+}
+
+function formatEffect(effect: AtelierEffect): string {
+  const label = effectLabels[effect.cible] ?? effect.cible
+  if (effect.operation === 'dice-count-add') return `${label} : +${effect.valeur} dé${Number(effect.valeur) === 1 ? '' : 's'}`
+  if (effect.operation === 'dice-size-step') return `${label} : +1 rang de dé`
+  if (effect.operation === 'slot-add') return `${label} : ${effect.valeur} emplacement(s)`
+  const amount = Number(effect.valeur)
+  const displayValue = Number.isFinite(amount) && amount > 0 ? `+${effect.valeur}` : effect.valeur
+  const unit = ['porteeFixe', 'courtePortee', 'moyennePortee', 'paliersSniper'].includes(effect.cible) ? ' m' : ''
+  return `${label} : ${displayValue}${unit}`
 }
 
 function shipDetails(item: AtelierItem, properties: Record<string, any>): ShopItemDetail[] {
@@ -113,6 +148,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
   const router = useRouter()
   const submitting = useRef(false)
   const [selectedKey, setSelectedKey] = useState('')
+  const [customName, setCustomName] = useState('')
   const [selections, setSelections] = useState<AtelierPurchase[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pending, setPending] = useState(false)
@@ -150,11 +186,13 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
   const modificationCost = quote.price
   const totalPrice = selectedItem ? exactAdd(selectedItem.prix, modificationCost) : 0
   const remainingPoints = selectedItem ? selectedItem.points - spentPoints : 0
-  const canFinalize = !!selectedItem && selections.length > 0 && !preview.error && !quote.error && spentPoints <= selectedItem.points && totalPrice <= character.konis && !pending
+  const canFinalize = !!selectedItem && selections.length > 0 && !preview.error && !quote.error && spentPoints <= selectedItem.points && totalPrice <= character.konis && (kind === 'vaisseau' || !!customName.trim()) && !pending
 
   function selectItem(value: string) {
     setSelectedKey(value)
     setSelections([])
+    const item = items.find((entry) => `${entry.id}:${entry.index}` === value)
+    setCustomName(item && item.kind !== 'vaisseau' ? `${item.nom} Custom` : '')
     setMessage(null)
   }
 
@@ -167,16 +205,22 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
     setMessage(null)
   }
 
-  function canAdd(modification: AtelierModification, compatibility: AtelierCompatibility) {
+  function addBlockReason(modification: AtelierModification, compatibility: AtelierCompatibility): string | null {
     const quantity = selections.find((entry) => entry.modificationId === modification.id)?.quantity ?? 0
-    if (quantity >= Number(compatibility.maximum)) return false
-    if (quantity === 0 && selections.length >= 50) return false
+    if (quantity >= Number(compatibility.maximum)) return 'Nombre maximum d’achats atteint.'
+    if (quantity === 0 && selections.length >= 50) return 'Limite de 50 recettes par configuration atteinte.'
     try {
-      if (atelierModificationPoints(compatibility, 1) > remainingPoints) return false
-      atelierPurchasePrice(compatibility, quantity + 1)
+      const points = atelierModificationPoints(compatibility, 1)
+      if (points > remainingPoints) return 'Points de modification insuffisants.'
+      const nextPrice = atelierNextPurchasePrice(compatibility, quantity)
+      if (exactAdd(totalPrice, nextPrice) > character.konis) return 'Konis insuffisants pour cet achat.'
       const candidate = [...selections.filter((entry) => entry.modificationId !== modification.id), { modificationId: modification.id, quantity: quantity + 1 }]
-      return !createPreview(selectedItem, candidate, modifications, kind).error
-    } catch { return false }
+      const previewError = createPreview(selectedItem, candidate, modifications, kind).error
+      if (previewError) return previewError
+      return null
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Cette modification ne peut pas être appliquée.'
+    }
   }
 
   async function finalize() {
@@ -193,6 +237,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
             kind,
             source: { location: 'inventory', index: selectedItem.index, itemId: selectedItem.id },
             modifications: selections,
+            customName: customName.trim(),
           })
       setConfirmOpen(false)
       setSelectedKey('')
@@ -208,7 +253,15 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
   }
 
   const selectedById = new Map(selections.map((selection) => [selection.modificationId, selection.quantity]))
-  const finalName = preview.properties.nom ? String(preview.properties.nom) : selectedItem?.nom ?? ''
+  const finalName = kind === 'vaisseau'
+    ? preview.properties.nom ? String(preview.properties.nom) : selectedItem?.nom ?? ''
+    : customName.trim()
+  const rangeRows = selectedItem?.kind === 'arme' ? weaponRangeRows(preview.properties, {
+    shortRangeBonus: selectedItem.rangeBonuses?.mod_portee_courte ?? 0,
+    mediumRangeBonus: selectedItem.rangeBonuses?.mod_portee_moyenne ?? 0,
+    shortRangeAdjustment: (selectedItem.rangeBonuses?.portee_courte ?? 0) + (selectedItem.rangeBonuses?.portee_flat ?? 0),
+    mediumRangeAdjustment: (selectedItem.rangeBonuses?.portee_moyenne ?? 0) + (selectedItem.rangeBonuses?.portee_flat ?? 0),
+  }) : []
 
   return <div className="atelier-page">
     <div className="atelier-intro shop-message">
@@ -242,10 +295,16 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
           </div>
         </div> : <div className="atelier-personal-preview">
           {selectedItem.image && <img src={selectedItem.image.url} alt={selectedItem.image.alt} />}
-          <div className="atelier-personal-heading"><span className="shop-item-type">{categoryLabels[selectedItem.categorie] ?? selectedItem.categorie}</span><h3>{finalName}</h3>
-            {kind === 'armure' && selectedItem.setNom && <p>Set {selectedItem.setNom}</p>}
+          <div className="atelier-personal-content">
+            <div className="atelier-personal-heading"><span className="shop-item-type">{categoryLabels[selectedItem.categorie] ?? selectedItem.categorie}</span><h3>{finalName}</h3>
+              {kind === 'armure' && selectedItem.setNom && <p>Set {selectedItem.setNom}</p>}
+            </div>
+            {kind === 'arme' && rangeRows.length > 0 && <table className="weapon-range-table atelier-range-table">
+              <thead><tr>{rangeRows.map((row, index) => <th key={`${row.label}-${index}`}>{row.label}</th>)}</tr></thead>
+              <tbody><tr>{rangeRows.map((row, index) => <td key={`${row.label}-${index}`}>{row.mod}</td>)}</tr></tbody>
+            </table>}
+            <dl className="atelier-stats">{personalDetails(selectedItem, preview.properties).map((detail, index) => <div key={`${detail.label}-${index}`}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
           </div>
-          <dl className="atelier-stats">{personalDetails(selectedItem, preview.properties).map((detail, index) => <div key={`${detail.label}-${index}`}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
         </div>}
         <div className="atelier-budget">
           <div><span>Points disponibles</span><strong>{selectedItem.points}</strong></div>
@@ -266,26 +325,28 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
           ? <div className="shop-empty">Aucune modification active n’est compatible avec cet objet.</div>
           : <div className="atelier-recipe-grid">{availableModifications.map(({ modification, compatibility }) => {
               const quantity = selectedById.get(modification.id) ?? 0
-              let unitPrice = Number(compatibility.prix)
-              if (quantity > 0) {
-                try { unitPrice = atelierPurchasePrice(compatibility, quantity) }
-                catch { unitPrice = Number(compatibility.prix) }
-              }
-              const addable = canAdd(modification, compatibility)
+              let nextPrice: number | null = null
+              let selectedCost = 0
+              try {
+                if (quantity < Number(compatibility.maximum)) nextPrice = atelierNextPurchasePrice(compatibility, quantity)
+                selectedCost = quantity ? atelierPurchasePrice(compatibility, quantity) : 0
+              } catch { /* The reason is shown next to the disabled control. */ }
+              const addReason = addBlockReason(modification, compatibility)
+              const addable = addReason === null
               return <article className={`atelier-recipe${quantity ? ' atelier-recipe-selected' : ''}`} key={modification.id}>
                 <div className="atelier-recipe-title"><div><h3>{modification.nom}</h3>{modification.description && <p>{modification.description}</p>}</div>
                   {quantity > 0 && <span className="atelier-recipe-count">{quantity}/{compatibility.maximum}</span>}
                 </div>
-                <div className="atelier-recipe-cost"><span>{money(Number(compatibility.prix))} le premier achat</span><span>{atelierModificationPoints(compatibility, 1)} points par achat</span></div>
-                {compatibility.multiplicateurRachat && compatibility.multiplicateurRachat > 1 && <small className="atelier-multiplier">Rachats suivants ×{compatibility.multiplicateurRachat} · total actuel {money(unitPrice)}</small>}
-                {modification.effets.length > 0 && <ul>{modification.effets.map((effect, index) => <li key={`${effect.cible}-${index}`}>{effect.cible} : {effect.valeur}</li>)}</ul>}
+                <div className="atelier-recipe-cost"><span>{nextPrice === null ? quantity >= Number(compatibility.maximum) ? 'Maximum atteint' : 'Prix indisponible' : `Prochain achat : ${money(nextPrice)}`}</span><span>{atelierModificationPoints(compatibility, 1)} points par achat</span></div>
+                {quantity > 0 && <small className="atelier-multiplier">Coût sélectionné : {money(selectedCost)}</small>}
+                {compatibility.multiplicateurRachat && compatibility.multiplicateurRachat > 1 && <small className="atelier-multiplier">Prix multiplié par ×{compatibility.multiplicateurRachat} à chaque rachat</small>}
+                {modification.effets.length > 0 && <ul>{modification.effets.map((effect, index) => <li key={`${effect.cible}-${index}`}>{formatEffect(effect)}</li>)}</ul>}
                 <div className="atelier-recipe-actions">
                   <button type="button" className="atelier-recipe-remove" disabled={!quantity || pending} onClick={() => updateQuantity(modification.id, quantity - 1)} aria-label={`Retirer un achat de ${modification.nom}`}>−</button>
                   <span>{quantity} achat{quantity > 1 ? 's' : ''}</span>
                   <button type="button" disabled={!addable || pending} onClick={() => updateQuantity(modification.id, quantity + 1)} aria-label={`Ajouter un achat de ${modification.nom}`}>+</button>
                 </div>
-                {!addable && quantity < Number(compatibility.maximum) && remainingPoints < atelierModificationPoints(compatibility, 1) && <small className="atelier-disabled-reason">Points insuffisants</small>}
-                {!addable && quantity === 0 && selections.length >= 50 && <small className="atelier-disabled-reason">Limite de 50 recettes par configuration atteinte</small>}
+                {!addable && <small className="atelier-disabled-reason">{addReason}</small>}
               </article>
             })}</div>}
       </section>
@@ -305,6 +366,9 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
       <section className="shop-confirm atelier-confirm" role="dialog" aria-modal="true" aria-labelledby="atelier-confirm-title">
         <h2 id="atelier-confirm-title">Confirmer la personnalisation</h2>
         <p><strong>{finalName}</strong> sera créé comme objet unique. L’objet de réserve sera supprimé et ses composants seront transférés.</p>
+        {kind !== 'vaisseau' && <label className="atelier-confirm-name">Nom de l’objet
+          <input type="text" value={customName} onChange={(event) => setCustomName(event.target.value)} maxLength={120} required />
+        </label>}
         <dl className="atelier-confirm-stats">{(kind === 'vaisseau' ? shipDetails(selectedItem, preview.properties) : personalDetails(selectedItem, preview.properties)).map((detail, index) => <div key={`${detail.label}-${index}`}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
         <ul>{selections.map((selection) => <li key={selection.modificationId}>{modifications.find((entry) => entry.id === selection.modificationId)?.nom} × {selection.quantity}</li>)}</ul>
         <div className="atelier-confirm-total"><span>{spentPoints} points utilisés · {remainingPoints} restants</span><strong>{money(totalPrice)}</strong></div>

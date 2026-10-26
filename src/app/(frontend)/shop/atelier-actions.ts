@@ -21,6 +21,7 @@ type CustomizePersonalInput = {
   kind: 'arme' | 'armure'
   source: PersonalLocation
   modifications: AtelierPurchase[]
+  customName: string
 }
 
 type ShipCustomizationInput = {
@@ -152,9 +153,11 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
   const { payload, user, character, workshopKind } = await getContext()
   if (!isUuid(input?.transactionId)) fail('Identifiant de transaction invalide.')
   if (!['arme', 'armure'].includes(input?.kind) || input.kind !== workshopKind) fail('Cet Atelier n’autorise pas la modification de cet équipement.')
+  const customName = typeof input.customName === 'string' ? input.customName.trim() : ''
+  if (!customName || customName.length > 120) fail('Le nom personnalisé doit contenir entre 1 et 120 caractères.')
   if (input.source?.location !== 'inventory' || !Number.isSafeInteger(input.source.index) || input.source.index < 0 || !isId(input.source.itemId)) fail('Seul un objet présent dans la réserve peut être sélectionné.')
   const purchases = input.modifications
-  const fingerprint = JSON.stringify(['atelier-customize', input.kind, input.source.index, input.source.itemId, purchases])
+  const fingerprint = JSON.stringify(['atelier-customize', input.kind, input.source.index, input.source.itemId, customName, purchases])
   const { transactionID, transactionDb, req } = await beginTransaction(payload)
   try {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
@@ -181,7 +184,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     const applied = applyModifications(baseSnapshot, modifications, type, {
       kind: type, categorie: sourceItem.categorie, type: sourceItem.type ?? [],
     })
-    const customProperties = applied.properties
+    const customProperties: Record<string, any> = { ...applied.properties, nom: customName }
     const selectedModifications = applied.modifications
     const pointsSpent = applied.selections.reduce((total: number, modification: any) => total + atelierModificationPoints(modification.atelierCompatibilite, modification.atelierQuantite), 0)
     if (!Number.isSafeInteger(pointsSpent) || pointsSpent > pointsAvailable) fail('Le total des points dépasse le budget de cet équipement.')
@@ -193,7 +196,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     const created = await payload.create({
       collection: 'custom-equipment',
       data: {
-        nom: String(customProperties.nom ?? sourceItem.nom),
+        nom: customName,
         categorieEquipement: input.kind,
         categorie: String(customProperties.categorie ?? sourceItem.categorie),
         typeArme: input.kind === 'arme' ? (sourceItem.type ?? []).filter((value: string) => ['thermique', 'cinetique'].includes(value)).join(',') : undefined,
