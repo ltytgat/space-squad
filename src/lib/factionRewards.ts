@@ -1,4 +1,4 @@
-export type FactionRewardType = 'acces-armes-ex' | 'bon-reduction'
+export type FactionRewardType = 'acces-armes-ex' | 'acces-atelier' | 'bon-reduction'
 export type FactionRewardUsage = 'arme-sol' | 'arme-espace' | 'module-espace'
 export type FactionRewardApplication = 'sol' | 'espace' | 'module'
 
@@ -21,6 +21,50 @@ export type DiscountTarget = {
 
 export function factionKey(name: unknown): string {
   return String(name ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
+}
+
+export function factionNameWithArticle(name: unknown): string {
+  const faction = String(name ?? '').trim()
+  const key = factionKey(faction)
+  if (key === 'guilde') return `la ${faction}`
+  return `l’${faction}`
+}
+
+export function factionAtelierAccessLabel(factionName: unknown, hasAccess: boolean): string {
+  const faction = String(factionName ?? '').trim()
+  if (!faction) return 'Ateliers - Accès réglementé'
+  const title = `Atelier de ${factionNameWithArticle(faction)}`
+  return hasAccess ? title : `${title} - Permis nécessaire`
+}
+
+export function ownsAnyFactionAtelierPermit(rewards: OwnedFactionReward[] | null | undefined): boolean {
+  return !!rewards?.some((reward) => reward.typeRecompense === 'acces-atelier')
+}
+
+export function ownsFactionAtelierAccess(rewards: OwnedFactionReward[] | null | undefined, factionName: unknown): boolean {
+  const key = factionKey(factionName)
+  return !!key && !!rewards?.some((reward) => reward.typeRecompense === 'acces-atelier' && factionKey(reward.faction) === key)
+}
+
+export function removeAtelierPermitOnAffiliationChange<T>(data: T, originalDoc?: unknown): T {
+  if (!data || typeof data !== 'object' || !originalDoc || typeof originalDoc !== 'object') return data
+  const updates = data as Record<string, unknown>
+  const original = originalDoc as Record<string, unknown>
+  if (!Object.prototype.hasOwnProperty.call(updates, 'affiliation')) return data
+
+  const relationKey = (value: unknown) => {
+    const id = value && typeof value === 'object' ? (value as { id?: unknown }).id : value
+    return id === null || id === undefined || id === '' ? null : String(id)
+  }
+  if (relationKey(updates.affiliation) === relationKey(original.affiliation)) return data
+
+  const inventory: unknown[] = Array.isArray(updates.inventaireRecompensesFaction)
+    ? updates.inventaireRecompensesFaction
+    : Array.isArray(original.inventaireRecompensesFaction) ? original.inventaireRecompensesFaction : []
+  updates.inventaireRecompensesFaction = inventory.filter((reward) =>
+    !reward || typeof reward !== 'object' || (reward as { typeRecompense?: unknown }).typeRecompense !== 'acces-atelier',
+  )
+  return data
 }
 
 export function factionExWeaponType(name: unknown): 'thermique' | 'cinetique' | 'lourde' | null {

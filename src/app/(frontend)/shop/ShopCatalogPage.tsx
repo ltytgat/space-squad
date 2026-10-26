@@ -112,7 +112,7 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
   const factionRewards: OwnedFactionReward[] = (character.inventaireRecompensesFaction ?? []).map((item: any) => ({
     nom: String(item.nom ?? ''), effet: String(item.effet ?? ''), faction: String(item.faction ?? ''), grade: String(item.grade ?? ''),
     id: item.id == null ? undefined : String(item.id),
-    typeRecompense: item.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : item.typeRecompense === 'bon-reduction' ? 'bon-reduction' : null,
+    typeRecompense: item.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : item.typeRecompense === 'acces-atelier' ? 'acces-atelier' : item.typeRecompense === 'bon-reduction' ? 'bon-reduction' : null,
     pourcentageReduction: item.pourcentageReduction == null ? null : Number(item.pourcentageReduction),
     usage: ['arme-sol', 'arme-espace', 'module-espace'].includes(item.usage) ? item.usage : null,
   }))

@@ -13,6 +13,7 @@ import { exactAdd, exactMultiply, exactSubtract, readShopPrice } from '@/lib/sho
 import { computeShipAccess } from '@/lib/shipAccess'
 import { assignedCrew } from '@/lib/shipCrewSync'
 import { validateShipConfiguration } from '@/lib/shipStats'
+import { ownsFactionAtelierAccess } from '@/lib/factionRewards'
 
 type PersonalLocation =
   | { location: 'inventory'; index: number }
@@ -43,11 +44,16 @@ async function getContext() {
   const { user } = await payload.auth({ headers: await getHeaders() })
   if (!user) fail('Connexion requise.')
   await assertPlayerMode(user)
-  const character = await getActiveCharacter(payload, user)
+  const character = await getActiveCharacter(payload, user, { depth: 1 })
   if (!character) fail('Aucun personnage associé à ce compte.')
   if (character.workspace) fail('Les personnages temporaires ne peuvent pas utiliser les Ateliers.')
   if (!isCharacterCreationComplete(character as any)) fail('Terminez la création du personnage avant d’utiliser les Ateliers.')
   if (numericId((character as any).user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+  const affiliation = (character as any).affiliation
+  const factionName = String(affiliation && typeof affiliation === 'object' ? affiliation.nom ?? '' : '').trim()
+  if (!ownsFactionAtelierAccess((character as any).inventaireRecompensesFaction, factionName)) {
+    fail('Un permis Accès Atelier valide pour votre organisation est nécessaire.')
+  }
   return { payload, user, character: character as any }
 }
 

@@ -8,7 +8,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { shopNavigation } from './shop-sections'
-import { factionRewardsTitle } from '@/lib/factionRewards'
+import { factionAtelierAccessLabel, factionRewardsTitle, ownsFactionAtelierAccess } from '@/lib/factionRewards'
 import './shop.css'
 
 export const metadata = { title: 'Boutique — Space Squad' }
@@ -24,6 +24,7 @@ export default async function ShopPage() {
   const faction = affiliation && typeof affiliation === 'object' ? affiliation : null
   const factionName = String(faction?.nom ?? '').trim()
   const rewardLinkLabel = factionName ? factionRewardsTitle(factionName) : null
+  const hasAtelierAccess = ownsFactionAtelierAccess(character.inventaireRecompensesFaction, factionName)
 
   return <div className="ss-root shop-root">
     <SiteHeader activePage="shop" />
@@ -40,9 +41,17 @@ export default async function ShopPage() {
         {shopNavigation.map((group) => <section className={`shop-navigation-group shop-navigation-${group.title.toLowerCase().replaceAll(' ', '-')}`} key={group.title}>
           <h2>{group.title}</h2>
           <div className="shop-navigation-grid">
-            {group.links.map((link) => <Link className="shop-navigation-card" href={link.href} key={link.href}>
-              <span>{link.label}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span>
-            </Link>)}
+            {group.links.map((link) => {
+              if (link.href === '/shop/atelier') {
+                const label = factionAtelierAccessLabel(factionName, hasAtelierAccess)
+                return hasAtelierAccess
+                  ? <Link className="shop-navigation-card" href={link.href} key={link.href}><span>{label}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span></Link>
+                  : <button type="button" className="shop-navigation-card" disabled key={link.href}><span>{label}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span></button>
+              }
+              return <Link className="shop-navigation-card" href={link.href} key={link.href}>
+                <span>{link.label}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span>
+              </Link>
+            })}
           </div>
         </section>)}
         {rewardLinkLabel && <section className="shop-navigation-group shop-navigation-recompenses"><h2>Récompenses d’Organisation</h2><div className="shop-navigation-grid"><Link className="shop-navigation-card" href="/shop/recompenses"><span>{rewardLinkLabel}</span><span className="shop-navigation-arrow" aria-hidden="true">›</span></Link></div></section>}

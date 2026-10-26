@@ -36,6 +36,7 @@ export const shopNavigation = [
     links: [
       { href: '/shop/mods/armes', label: 'Armes' },
       { href: '/shop/mods/armures', label: 'Armures' },
+      { href: '/shop/atelier', label: 'Ateliers - Accès réglementé' },
     ],
   },
   {

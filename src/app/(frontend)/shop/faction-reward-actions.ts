@@ -8,7 +8,7 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { exactSubtract, relationId } from '@/lib/shop'
 import { factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
-import { factionExWeaponType, ownsAnyFactionWeaponPermit, rewardUsageForApplication } from '@/lib/factionRewards'
+import { factionExWeaponType, ownsAnyFactionAtelierPermit, ownsAnyFactionWeaponPermit, rewardUsageForApplication } from '@/lib/factionRewards'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 
@@ -89,10 +89,14 @@ export async function performFactionRewardAction(raw: FactionRewardActionInput) 
       const factionVariant = (reward.factions ?? []).find((entry: any) => numericId(entry.faction) === factionId)
       if (!factionVariant) fail('Cette récompense n’est pas disponible pour votre faction.')
       const inventory: any[] = Array.isArray(lockedCharacter.inventaireRecompensesFaction) ? lockedCharacter.inventaireRecompensesFaction : []
-      const rewardType = reward.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : 'bon-reduction'
+      const rewardType = ['acces-armes-ex', 'acces-atelier', 'bon-reduction'].includes(reward.typeRecompense) ? reward.typeRecompense : null
+      if (!rewardType) fail('Le type de cette récompense est invalide.')
       if (rewardType === 'acces-armes-ex') {
         if (!factionExWeaponType(faction.nom)) fail('Le permis d’achat des armes de rang supérieur n’est pas défini pour cette faction.')
         if (ownsAnyFactionWeaponPermit(inventory)) fail('Vous possédez déjà un permis d’achat d’armes de rang supérieur. Il ne peut être acheté qu’une seule fois.')
+      }
+      if (rewardType === 'acces-atelier' && ownsAnyFactionAtelierPermit(inventory)) {
+        fail('Vous possédez déjà un permis Accès Atelier. Il ne peut être acheté qu’une seule fois par organisation.')
       }
       const grade = factionGrade(lockedCharacter.rangDeFaction, faction)
       const requiredGrade = Number(reward.gradeRequis)

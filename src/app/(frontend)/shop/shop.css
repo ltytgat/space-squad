@@ -26,6 +26,10 @@
 .shop-navigation-grid { display: grid; gap: .55rem; }
 .shop-navigation-card, .shop-all-link { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; border: 1px solid var(--ss-border); border-radius: 8px; color: var(--ss-text); text-decoration: none; transition: border-color .15s ease, background .15s ease; }
 .shop-navigation-card:hover, .shop-all-link:hover { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); color: var(--ss-cyan); }
+button.shop-navigation-card { width: 100%; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+button.shop-navigation-card:disabled { color: var(--ss-text-muted); cursor: not-allowed; opacity: .65; }
+button.shop-navigation-card:disabled:hover { border-color: var(--ss-border); background: transparent; color: var(--ss-text-muted); }
+button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-text-muted); }
 .shop-navigation-arrow, .shop-all-link span { color: var(--ss-cyan); font-size: 1.2rem; }
 .shop-all-link { grid-column: 1 / -1; justify-content: center; border-color: var(--ss-cyan); background: var(--ss-cyan-dim); font-weight: 700; }
 .shop-section-owned { padding-top: 1.5rem; border-top: 1px solid var(--ss-border); }

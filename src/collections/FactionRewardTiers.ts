@@ -3,6 +3,7 @@ import type { User } from '@/payload-types'
 
 const rewardTypes = [
   { label: 'Permis d’achat des armes de rang supérieur', value: 'acces-armes-ex' },
+  { label: 'Accès Atelier', value: 'acces-atelier' },
   { label: 'Bon de réduction', value: 'bon-reduction' },
 ] as const
 

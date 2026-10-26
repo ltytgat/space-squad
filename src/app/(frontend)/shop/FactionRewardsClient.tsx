@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { factionGrade } from '@/app/(frontend)/characters/session-rewards-formula'
 import { performFactionRewardAction } from './faction-reward-actions'
 import { factionPromotionQuote, factionRewardQuote, type FactionRewardCharacter, type FactionRewardOffer } from './faction-reward-pricing'
 
@@ -82,13 +81,14 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
         <h3>{offer.nom}</h3>
         <p>{offer.description}</p>
         {offer.typeRecompense === 'acces-armes-ex' && <div className="shop-item-meta">Permis d’achat des armes de rang supérieur autorisées par cette faction</div>}
+        {offer.typeRecompense === 'acces-atelier' && <div className="shop-item-meta">Permis d’accès aux Ateliers de cette organisation</div>}
         {offer.typeRecompense === 'bon-reduction' && offer.pourcentageReduction !== null && <div className="shop-item-meta">Réduction de {formatNumber.format(offer.pourcentageReduction)} % · {offer.application ? applicationLabel[offer.application] : 'Application à configurer'}</div>}
         {!unlocked && <div className="shop-item-meta">Grade {offer.gradeName} requis</div>}
       </div>
       <div className="shop-item-action">
         <strong>{costs.length ? costs.join(' · ') : 'Gratuit'}</strong>
         <button type="button" disabled={pending || !quoteForOffer.canBuy} onClick={() => requestPurchase(offer)}>Acheter</button>
-        {quoteForOffer.permitAlreadyOwned && <small>Ce permis est déjà possédé et ne peut être acheté qu’une seule fois.</small>}
+        {quoteForOffer.permitAlreadyOwned && <small>{offer.typeRecompense === 'acces-atelier' ? 'Un permis Accès Atelier est déjà possédé.' : 'Ce permis est déjà possédé et ne peut être acheté qu’une seule fois.'}</small>}
         {unlocked && !quoteForOffer.canBuy && !quoteForOffer.permitAlreadyOwned && <small>Solde insuffisant.</small>}
       </div>
     </article>
@@ -97,6 +97,7 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
   const renderInventoryItem = (item: (typeof character.inventaireRecompensesFaction)[number], index: number) => <article className="shop-item" key={item.id ?? `${item.nom}-${index}`}>
     <div className="shop-item-main"><div className="shop-item-type">{item.faction} · {item.grade}</div><h3>{item.nom}</h3><p>{item.effet}</p>
       {item.typeRecompense === 'acces-armes-ex' && <div className="shop-item-meta">Permis d’achat des armes de rang supérieur autorisées</div>}
+      {item.typeRecompense === 'acces-atelier' && <div className="shop-item-meta">Permis d’accès aux Ateliers de cette organisation</div>}
       {item.typeRecompense === 'bon-reduction' && item.pourcentageReduction != null && <div className="shop-item-meta">Bon de réduction : {formatNumber.format(item.pourcentageReduction)} % · {item.usage ? usageLabel[item.usage] : 'Usage à configurer'}</div>}
     </div>
   </article>
@@ -131,7 +132,7 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
 
     <section className="shop-catalog-groups faction-reward-catalog">
       <h2>Objets de la faction</h2>
-      {!offers.length && <p className="shop-empty">Aucune récompense n'est encore configurée pour cette faction.</p>}
+      {!offers.length && <p className="shop-empty">Aucune récompense n&apos;est encore configurée pour cette faction.</p>}
       {!!offerGroups.coupons.length && <section className="faction-reward-category">
         <h3>Bons de réduction</h3>
         <div className="shop-grid">{offerGroups.coupons.map(renderOffer)}</div>
@@ -144,7 +145,7 @@ export function FactionRewardsClient({ character, offers }: { character: Faction
 
     <section className="shop-catalog-groups faction-owned-rewards">
       <h2>Vos récompenses</h2>
-      {!character.inventaireRecompensesFaction.length && <p className="shop-empty">Vous n'avez pas encore acheté de récompense de faction.</p>}
+      {!character.inventaireRecompensesFaction.length && <p className="shop-empty">Vous n&apos;avez pas encore acheté de récompense de faction.</p>}
       {!!inventoryGroups.coupons.length && <section className="faction-reward-category">
         <h3>Bons de réduction</h3>
         <div className="shop-grid">{inventoryGroups.coupons.map(renderInventoryItem)}</div>

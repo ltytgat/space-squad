@@ -1,5 +1,5 @@
 import { factionGrade, type FactionLite } from '@/app/(frontend)/characters/session-rewards-formula'
-import { ownsAnyFactionWeaponPermit, type FactionRewardApplication, type OwnedFactionReward } from '@/lib/factionRewards'
+import { ownsAnyFactionAtelierPermit, ownsAnyFactionWeaponPermit, type FactionRewardApplication, type OwnedFactionReward } from '@/lib/factionRewards'
 
 export type FactionRewardOffer = {
   id: number
@@ -8,7 +8,7 @@ export type FactionRewardOffer = {
   gradeRequis: number
   gradeName: string
   coutPointsFaction: number
-  typeRecompense: 'acces-armes-ex' | 'bon-reduction'
+  typeRecompense: 'acces-armes-ex' | 'acces-atelier' | 'bon-reduction'
   pourcentageReduction: number | null
   application: FactionRewardApplication | null
 }
@@ -42,7 +42,8 @@ export function factionPromotionQuote(character: FactionRewardCharacter) {
 
 export function factionRewardQuote(offer: FactionRewardOffer, character: FactionRewardCharacter) {
   const promotion = factionPromotionQuote(character)
-  const permitAlreadyOwned = offer.typeRecompense === 'acces-armes-ex' && ownsAnyFactionWeaponPermit(character.inventaireRecompensesFaction)
+  const permitAlreadyOwned = (offer.typeRecompense === 'acces-armes-ex' && ownsAnyFactionWeaponPermit(character.inventaireRecompensesFaction)) ||
+    (offer.typeRecompense === 'acces-atelier' && ownsAnyFactionAtelierPermit(character.inventaireRecompensesFaction))
   const costsValid = Number.isSafeInteger(offer.coutPointsFaction) && offer.coutPointsFaction >= 0 &&
     Number.isSafeInteger(offer.gradeRequis) && offer.gradeRequis >= 1
   const canBuy = costsValid && !permitAlreadyOwned && promotion.grade >= offer.gradeRequis && Number(character.pointsDeFaction) >= offer.coutPointsFaction

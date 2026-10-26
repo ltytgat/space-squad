@@ -3,6 +3,7 @@ import type { User } from '@/payload-types'
 import { syncCharacterShip } from '@/lib/shipCrewSync'
 import { getMJGroupIds } from '@/lib/mjAccess'
 import { isMJMode } from '@/lib/activeMode'
+import { removeAtelierPermitOnAffiliationChange } from '@/lib/factionRewards'
 
 export const COMPETENCES_BASE = [
   'Chasseur',
@@ -33,6 +34,9 @@ const validateCharacterOwner: CollectionBeforeChangeHook = ({ data, originalDoc 
   if (hasUser === hasWorkspace) throw new Error('Une fiche doit appartenir à un compte ou à un workspace temporaire, jamais aux deux.')
   return data
 }
+
+const invalidateAtelierPermitOnAffiliationChange: CollectionBeforeChangeHook = ({ data, originalDoc }) =>
+  removeAtelierPermitOnAffiliationChange(data, originalDoc)
 
 export const Characters: CollectionConfig = {
   slug: 'characters',
@@ -65,7 +69,7 @@ export const Characters: CollectionConfig = {
     },
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
-  hooks: { beforeChange: [validateCharacterOwner, syncCharacterShip] },
+  hooks: { beforeChange: [validateCharacterOwner, invalidateAtelierPermitOnAffiliationChange, syncCharacterShip] },
   fields: [
     // ── Identité ──────────────────────────────────────
     {
@@ -1000,6 +1004,7 @@ export const Characters: CollectionConfig = {
             { name: 'grade', type: 'text', required: true, label: 'Grade au moment de l’achat' },
             { name: 'typeRecompense', type: 'select', label: 'Type de récompense', options: [
               { label: 'Permis d’achat des armes de rang supérieur', value: 'acces-armes-ex' },
+              { label: 'Accès Atelier', value: 'acces-atelier' },
               { label: 'Bon de réduction', value: 'bon-reduction' },
             ] },
             { name: 'pourcentageReduction', type: 'number', label: 'Pourcentage de réduction', min: 0.01, max: 100 },

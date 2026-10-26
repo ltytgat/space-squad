@@ -40,7 +40,7 @@ export default async function FactionRewardsPage() {
       gradeRequis,
       gradeName: String(faction.rangs?.[gradeRequis - 1]?.nom ?? 'Grade non configuré'),
       coutPointsFaction: Number(reward.coutPointsFaction ?? 0),
-      typeRecompense: reward.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : 'bon-reduction',
+      typeRecompense: reward.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : reward.typeRecompense === 'acces-atelier' ? 'acces-atelier' : 'bon-reduction',
       pourcentageReduction: reward.pourcentageReduction == null ? null : Number(reward.pourcentageReduction),
       application: ['sol', 'espace', 'module'].includes(variant.application) ? variant.application : null,
     }]
@@ -59,7 +59,7 @@ export default async function FactionRewardsPage() {
     inventaireRecompensesFaction: (rawCharacter.inventaireRecompensesFaction ?? []).map((item: any) => ({
       nom: String(item.nom), effet: String(item.effet), faction: String(item.faction), grade: String(item.grade),
       id: item.id == null ? undefined : String(item.id),
-      typeRecompense: item.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : item.typeRecompense === 'bon-reduction' ? 'bon-reduction' : null,
+      typeRecompense: item.typeRecompense === 'acces-armes-ex' ? 'acces-armes-ex' : item.typeRecompense === 'acces-atelier' ? 'acces-atelier' : item.typeRecompense === 'bon-reduction' ? 'bon-reduction' : null,
       pourcentageReduction: item.pourcentageReduction == null ? null : Number(item.pourcentageReduction),
       usage: ['arme-sol', 'arme-espace', 'module-espace'].includes(item.usage) ? item.usage : null,
     })),

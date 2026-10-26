@@ -665,7 +665,7 @@ export interface Character {
         effet: string;
         faction: string;
         grade: string;
-        typeRecompense?: ('acces-armes-ex' | 'bon-reduction') | null;
+        typeRecompense?: ('acces-armes-ex' | 'acces-atelier' | 'bon-reduction') | null;
         pourcentageReduction?: number | null;
         usage?: ('arme-sol' | 'arme-espace' | 'module-espace') | null;
         id?: string | null;
@@ -1393,7 +1393,7 @@ export interface AtelierModification {
 export interface FactionRewardTier {
   id: number;
   nom: string;
-  typeRecompense: 'acces-armes-ex' | 'bon-reduction';
+  typeRecompense: 'acces-armes-ex' | 'acces-atelier' | 'bon-reduction';
   pourcentageReduction?: number | null;
   coutPointsFaction: number;
   gradeRequis: number;
