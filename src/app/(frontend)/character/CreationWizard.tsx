@@ -40,13 +40,15 @@ const STEPS = [
 ] as const
 
 const ABILITIES = [
-  { key: 'force', label: 'Force', die: 'forceDieMod' },
-  { key: 'habilite', label: 'Habilité', die: 'habiliteDieMod' },
-  { key: 'connaissances', label: 'Connaissances', die: 'connaissancesDieMod' },
-  { key: 'culture', label: 'Culture', die: 'cultureDieMod' },
-  { key: 'anticipation', label: 'Anticipation', die: 'anticipationDieMod' },
-  { key: 'perception', label: 'Perception', die: 'perceptionDieMod' },
+  { key: 'force', label: 'Force', die: 'forceDieMod', description: 'Utilisée dans les combats au sol, elle permet de manier des armes lourdes, renforce les points de blessure, réduit le malus des armures et augmente les dégâts au corps-à-corps.' },
+  { key: 'habilite', label: 'Habilité', die: 'habiliteDieMod', description: 'Liée au pilotage, elle permet de tenter des actions plus osées en vaisseau et de combattre au corps-à-corps.' },
+  { key: 'connaissances', label: 'Connaissances', die: 'connaissancesDieMod', description: 'Elles servent à décrypter, réparer et prodiguer les premiers soins.' },
+  { key: 'culture', label: 'Culture', die: 'cultureDieMod', description: 'Elle permet d’influencer les autres, de négocier et de reconnaître des éléments de civilisation comme les armes, les armures, les vaisseaux, les blasons ou les bâtiments.' },
+  { key: 'anticipation', label: 'Anticipation', die: 'anticipationDieMod', description: 'Liée à l’esquive et à l’initiative, au sol comme en vaisseau, elle aide à prévoir les actions et à réagir en conséquence.' },
+  { key: 'perception', label: 'Perception', die: 'perceptionDieMod', description: 'Liée à la visée, elle est utile pour tous les tirs, en vaisseau comme au fusil.' },
 ] as const
+
+const ABILITY_VALUE_DESCRIPTION = 'La valeur affichée tient compte du score de base, de l’espèce, de l’équipement et des malus. Le modificateur entre parenthèses s’applique aux jets avec le dé associé.'
 
 const SPECIES = [
   { value: 'Humain', description: 'Espèce humaine sans modificateur de caractéristique.' },
@@ -208,21 +210,21 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
       <section className="char-card creation-stat-preview">
         <h2 className="char-card-title">Caractéristiques · {currentSpecies}</h2>
         <div className="creation-stats-grid">
-          {ABILITIES.map(({ key, label, die }) => {
+          {ABILITIES.map(({ key, label, die, description }) => {
             const base = Number(character[key]) || 0
             const total = base + (previewCharacter.totalArmorMods[key] || 0) - (Number(character[`malus${key[0].toUpperCase()}${key.slice(1)}`]) || 0)
             const modifier = previewCharacter[die]
             return <div className="creation-stat" key={key}>
-              <span>{label}<CreationTooltip label={label} description="Cette valeur tient compte de votre score de base, de votre espèce, de l’équipement et des malus. Le modificateur entre parenthèses est utilisé pour les jets avec le dé associé." /></span>
+              <span>{label}<CreationTooltip label={label} description={`${description} ${ABILITY_VALUE_DESCRIPTION}`} /></span>
               <strong>{total} <small>({modifier >= 0 ? `+${modifier}` : modifier})</small></strong>
             </div>
           })}
         </div>
         <div className="creation-vitals">
-          <div><span>Points de blessure max.<CreationTooltip label="Points de blessure maximum" description="Le nombre maximal de points de blessure que votre personnage peut encaisser." /></span><strong>{previewCharacter.maxHP}</strong></div>
+          <div><span>Points de blessure max.<CreationTooltip label="Points de blessure maximum" description="Le nombre maximal de points de dégâts que votre personnage peut encaisser avant d'être blessé." /></span><strong>{previewCharacter.maxHP}</strong></div>
           <div><span>Esquive · Découvert<CreationTooltip label="Esquive à découvert" description="Votre valeur d’esquive lorsque vous n’êtes pas à couvert." /></span><strong>{previewCharacter.dodge.decouvert}</strong></div>
-          <div><span>Esquive · Dépourvue<CreationTooltip label="Esquive dépourvue" description="Votre valeur d’esquive lorsque vous ne portez pas d’armure." /></span><strong>{previewCharacter.dodge.depourvue}</strong></div>
-          <div><span>Esquive · Protégée<CreationTooltip label="Esquive protégée" description="Votre valeur d’esquive lorsque vous bénéficiez d’une protection." /></span><strong>{previewCharacter.dodge.protege}</strong></div>
+          <div><span>Esquive · Dépourvue<CreationTooltip label="Esquive dépourvue" description="Votre valeur d’esquive lorsque vous êtes pris par surprise ou de dos." /></span><strong>{previewCharacter.dodge.depourvue}</strong></div>
+          <div><span>Esquive · Protégée<CreationTooltip label="Esquive protégée" description="Votre valeur d’esquive lorsque vous bénéficiez d’une protection partielle." /></span><strong>{previewCharacter.dodge.protege}</strong></div>
           <div><span>Esquive · Couvert<CreationTooltip label="Esquive à couvert" description="Votre valeur d’esquive lorsque vous êtes à couvert." /></span><strong>{previewCharacter.dodge.couvert}</strong></div>
         </div>
       </section>
