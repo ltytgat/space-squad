@@ -98,6 +98,22 @@
   gap: 0.5rem;
 }
 
+.ships-card-image {
+  display: grid;
+  place-items: center;
+  height: 150px;
+  overflow: hidden;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: rgba(0, 0, 0, 0.18);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
 .ships-card-name {
   font-family: var(--ss-font-display);
   font-size: 0.95rem;

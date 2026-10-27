@@ -14,10 +14,19 @@ export const metadata = {
   title: 'Vaisseaux — Space Squad',
 }
 
-type ShipModel = { id: number; nom: string; classe?: string; categorie?: string }
+type ShipImage = { url?: string | null; alt?: string | null }
+type ShipModel = {
+  id: number
+  nom: string
+  classe?: string
+  categorie?: string
+  image?: ShipImage | number | null
+  chassis?: { image?: ShipImage | number | null } | number | null
+}
 type Ship = {
   id: number
   nom: string
+  image?: ShipImage | number | null
   modele?: ShipModel | number | null
   pilote?: unknown
   copilote?: unknown
@@ -128,9 +137,21 @@ export default async function ShipsPage() {
                   },
                 ]
                 const model = (ship.modele && typeof ship.modele !== 'number') ? ship.modele : null
+                const image = [
+                  ship.image,
+                  model?.image,
+                  model?.chassis && typeof model.chassis !== 'number' ? model.chassis.image : null,
+                ].find((candidate): candidate is ShipImage =>
+                  Boolean(candidate && typeof candidate === 'object' && typeof candidate.url === 'string'),
+                )
 
                 return (
                   <div key={ship.id} className="ships-card">
+                    {image?.url && (
+                      <div className="ships-card-image">
+                        <img src={image.url} alt="" loading="lazy" decoding="async" />
+                      </div>
+                    )}
                     <div className="ships-card-header">
                       <h3 className="ships-card-name"><a href={`/ships/${ship.id}`}>{ship.nom}</a></h3>
                       <div className="ships-card-tags">
