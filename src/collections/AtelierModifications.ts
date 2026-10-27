@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { User } from '@/payload-types'
-import { hasDuplicateAtelierCompatibilities } from '@/lib/atelier'
+import { atelierOptionalModuleSlotIncrease, hasDuplicateAtelierCompatibilities } from '@/lib/atelier'
 
 const effectTargetOptions = [
   { label: 'Poids', value: 'poids' },
@@ -205,8 +205,7 @@ export const AtelierModifications: CollectionConfig = {
               label: 'Valeur / donnée JSON',
               validate: (value: unknown, { siblingData }: any) => {
                 if (siblingData?.cible === 'modulesSupplementaires') {
-                  const parsed = typeof value === 'string' && /^\d+$/.test(value.trim()) ? Number(value) : Number.NaN
-                  return siblingData?.operation === 'slot-add' && Number.isSafeInteger(parsed) && parsed > 0
+                  return siblingData?.operation === 'slot-add' && atelierOptionalModuleSlotIncrease(value) !== null
                     || 'Pour les emplacements de modules optionnels, indiquez un entier positif.'
                 }
                 if (siblingData?.cible !== 'pointsEmportTourelles') return true
@@ -216,7 +215,7 @@ export const AtelierModifications: CollectionConfig = {
               },
               admin: {
                 width: '35%',
-                description: 'Pour les emplacements de modules optionnels, indiquez un entier positif ajouté à chaque achat. Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.',
+                description: 'Pour les emplacements de modules optionnels, indiquez un entier positif en JSON (ex. 1), ajouté à chaque achat. Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.',
               },
             },
           ],

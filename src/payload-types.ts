@@ -1383,7 +1383,7 @@ export interface AtelierModification {
           | 'esquiveBase';
         operation: 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add';
         /**
-         * Pour les emplacements de modules optionnels, indiquez un entier positif ajouté à chaque achat. Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.
+         * Pour les emplacements de modules optionnels, indiquez un entier positif en JSON (ex. 1), ajouté à chaque achat. Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.
          */
         valeur: string;
         id?: string | null;

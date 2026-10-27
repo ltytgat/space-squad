@@ -134,22 +134,80 @@ function increaseDamageDieSize(current: unknown, value: string): string {
   return `${damage.count}d${DAMAGE_DIE_SIZES[sizeIndex + 1]}${damage.flatBonus}${damage.suffix}`
 }
 
+export function atelierOptionalModuleSlotIncrease(value: unknown): number | null {
+  let parsed: unknown = value
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value.trim())
+    } catch {
+      parsed = value.trim()
+    }
+  }
+
+  if (typeof parsed === 'string' && /^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+]?[\d]+)?$/.test(parsed.trim())) {
+    parsed = Number(parsed)
+  }
+  return typeof parsed === 'number' && Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function parseOptionalModuleSlots(current: unknown): number[] | null {
+  if (current === null || current === undefined) return []
+
+  const parseSlotValue = (value: unknown): number | null => {
+    if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? value : null
+    if (typeof value === 'string' && /^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+]?[\d]+)?$/.test(value.trim())) {
+      const parsed = Number(value.trim())
+      return Number.isSafeInteger(parsed) ? parsed : null
+    }
+    return null
+  }
+  const parseJsonSlots = (value: unknown): number[] | null => {
+    if (Array.isArray(value)) {
+      const slots = value.map(parseSlotValue)
+      return slots.every((slot): slot is number => slot !== null) ? slots : null
+    }
+    const slot = parseSlotValue(value)
+    return slot === null ? null : [slot]
+  }
+
+  if (typeof current === 'number' || Array.isArray(current)) return parseJsonSlots(current)
+  if (typeof current !== 'string') return null
+
+  const normalizedValue = current.trim()
+  if (!normalizedValue) return []
+  if (/^\d+(?:\s*\+\s*\d+)*$/.test(normalizedValue)) return normalizedValue.split(/\s*\+\s*/).map(Number)
+  const scalarSlot = parseSlotValue(normalizedValue)
+  if (scalarSlot !== null) return [scalarSlot]
+
+  // Accept a chassis value stored as a JSON scalar or list as well as the legacy n+n text.
+  try {
+    return parseJsonSlots(JSON.parse(normalizedValue))
+  } catch {
+    // Invalid JSON is handled by the caller with the standard capacity error.
+  }
+  return null
+}
+
+function invalidOptionalModuleSlots(current: unknown): Error {
+  const type = Array.isArray(current) ? 'array' : current === null ? 'null' : typeof current
+  const value = typeof current === 'string' ? JSON.stringify(current) : String(current)
+  return new Error(`Le nombre d’emplacements de modules optionnels doit être un entier valide (valeur reçue : ${value}, type : ${type}).`)
+}
+
 function addOptionalModuleSlots(current: unknown, value: string): string {
-  const normalizedValue = value.trim()
-  const increment = /^\d+$/.test(normalizedValue) ? Number(normalizedValue) : Number.NaN
-  if (!Number.isSafeInteger(increment) || increment < 1) {
+  const increment = atelierOptionalModuleSlotIncrease(value)
+  if (increment === null) {
     throw new Error('L’augmentation des emplacements de modules optionnels doit être un entier positif.')
   }
 
-  let slots: number[]
-  if (current === null || current === undefined || current === '') slots = [0]
-  else if (typeof current === 'number' && Number.isSafeInteger(current) && current >= 0) slots = [current]
-  else if (typeof current === 'string' && /^\d+(?:\+\d+)*$/.test(current)) slots = current.split('+').map(Number)
-  else throw new Error('Le nombre d’emplacements de modules optionnels doit être un entier valide.')
+  const slots = parseOptionalModuleSlots(current)
+  if (!slots) throw invalidOptionalModuleSlots(current)
+  if (slots.length === 0) slots.push(0)
 
   if (slots.some((slot) => !Number.isSafeInteger(slot))) {
-    throw new Error('Le nombre d’emplacements de modules optionnels doit être un entier valide.')
+    throw invalidOptionalModuleSlots(current)
   }
+  // The first entry is the chassis base capacity; keep every turret entry intact.
   const nextBaseSlots = slots[0] + increment
   if (!Number.isSafeInteger(nextBaseSlots)) throw new Error('Le nombre d’emplacements de modules optionnels dépasse la limite autorisée.')
   slots[0] = nextBaseSlots
@@ -157,10 +215,8 @@ function addOptionalModuleSlots(current: unknown, value: string): string {
 }
 
 function addTurretModuleSlots(current: unknown, previousTurretCount: number, nextTurretCount: number): string {
-  let slots: number[]
-  if (current === null || current === undefined || current === '') slots = []
-  else if (typeof current === 'string' && /^\d+(?:\+\d+)*$/.test(current)) slots = current.split('+').map(Number)
-  else throw new Error('Les emplacements de modules optionnels doivent utiliser le format nombre+nombre.')
+  const slots = parseOptionalModuleSlots(current)
+  if (!slots) throw invalidOptionalModuleSlots(current)
 
   if (slots.some((slot) => !Number.isSafeInteger(slot))) {
     throw new Error('Chaque emplacement de module optionnel doit être un entier valide.')
