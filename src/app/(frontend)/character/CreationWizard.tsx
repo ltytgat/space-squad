@@ -93,6 +93,17 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
     new Set(Object.values(assigned)).size === 6
 
   useEffect(() => {
+    const creationRolls = character.creationJets as CreationRolls | undefined
+    const needsRolls = step === 'caracteristiques'
+      ? !Array.isArray(creationRolls?.caracteristiques)
+      : step === 'equipement'
+        ? !creationRolls?.competences || !creationRolls?.konis
+        : false
+
+    // Avoid opening a Payload transaction when this step doesn't need dice
+    // or the server-rendered character already has them.
+    if (!needsRolls) return
+
     let active = true
     ensureCharacterCreationRolls(character.id)
       .then((result) => {
@@ -102,7 +113,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
       })
       .catch(() => { if (active) setError('Impossible de préparer cette étape. Vérifiez votre connexion puis réessayez.') })
     return () => { active = false }
-  }, [character.id, step])
+  }, [character.id, character.creationJets, step])
 
   useEffect(() => {
     setRolls(character.creationJets ?? {})

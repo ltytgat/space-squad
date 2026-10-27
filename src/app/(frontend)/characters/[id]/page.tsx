@@ -230,6 +230,7 @@ export default async function CharacterDetailPage({
     <>
       <SiteHeader activePage={isOwner && !isMJEditor ? 'character' : (canEditAsAdmin ? 'characters' : undefined)} />
       <CharacterClient 
+        key={`${character.id}-${editMode ? 'edit' : 'read'}`}
         character={JSON.parse(JSON.stringify(character))} 
         isAdmin={canEditAsAdmin}
         isOwner={isOwner}

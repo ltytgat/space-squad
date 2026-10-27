@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { calculateStats, getStructuredMods, getBridgedArmorStats, parseModifier, GRAVITY_OPTIONS, GRAVITY_CATEGORY_LABELS } from '@/lib/characterStats'
@@ -178,7 +178,9 @@ function consumeInventoryItems(inventory: any[], consumableId: any, quantity: nu
 }
 
 export function CharacterClient({ character: initialCharacter, isAdmin, isOwner, editMode, factions, isTemporary = false, allBaseSkills, relatedShips, relatedVehicles }: CharacterProps) {
-  useRouter();
+  const router = useRouter()
+  const [isChangingMode, startModeChange] = useTransition()
+  const modeChangeInFlight = useRef(false)
   const [character, setCharacter] = useState(initialCharacter)
   const [lastSavedCharacter, setLastSavedCharacter] = useState(initialCharacter)
   const [gravityLevel, setGravityLevel] = useState<GravityLevel>('normale')
@@ -1687,8 +1689,24 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   }
 
   const handleEditModeToggle = () => {
-    window.location.assign(`/characters/${character.id}${editMode ? '' : '?edit=1'}`)
+    if (modeChangeInFlight.current || isSaving) return
+    if (isModified && !window.confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter cette fiche ?')) return
+
+    if (isModified) {
+      setCharacter(lastSavedCharacter)
+      setIsModified(false)
+      setManagerChangedFields(new Set())
+    }
+
+    modeChangeInFlight.current = true
+    startModeChange(() => {
+      router.push(`/characters/${character.id}${editMode ? '' : '?edit=1'}`)
+    })
   }
+
+  useEffect(() => {
+    modeChangeInFlight.current = false
+  }, [editMode])
 
   return (
     <div className={`ss-root char-root${isModified ? ' is-editing' : ''}${editMode ? ' char-edit-mode' : ''}`}>
@@ -1705,8 +1723,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
             <div className="char-name-container">
               <h1 className="char-name">{character.nom || 'Personnage en cours de création'}</h1>
-              {isAdmin && !isTemporary && <button className="ss-btn char-mode-toggle" type="button" onClick={handleEditModeToggle}>
-                {editMode ? 'Mode Lecture' : 'Mode Edition'}
+              {isAdmin && !isTemporary && <button className="ss-btn char-mode-toggle" type="button" onClick={handleEditModeToggle} disabled={isChangingMode || isSaving}>
+                {isChangingMode ? 'Changement…' : editMode ? 'Mode Lecture' : 'Mode Edition'}
               </button>}
               <button className="ss-btn ss-btn-outline" type="button" onClick={handleExport} disabled={isSaving || isExporting}>
                 {isExporting ? 'Exportation…' : 'Exporter'}
