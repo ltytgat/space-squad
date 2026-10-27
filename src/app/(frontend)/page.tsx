@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 
 import config from '@/payload.config'
-import { startTemporaryCharacterWorkspace } from './temporary-character/actions'
+import { TemporaryCharacterStartForm } from './temporary-character/TemporaryCharacterStartForm'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { getActiveCharacter } from '@/lib/activeCharacter'
@@ -140,7 +140,7 @@ export default async function HomePage() {
                 <p>
                   {user
                     ? 'Consultez et gérez votre fiche de personnage directement en ligne.'
-                    : 'Créez une fiche temporaire sans compte et reprenez-la depuis ce navigateur pendant 24 heures d’inactivité.'}
+                    : 'Sans compte, votre fiche est conservée dans ce navigateur. Revenez l’ouvrir au moins une fois toutes les 24 heures pour la garder ; sinon, elle sera supprimée.'}
                 </p>
                 {user ? (
                   <Link href={characterId ? `/characters/${characterId}` : '/character'} className="ss-btn ss-btn-outline">
@@ -148,9 +148,7 @@ export default async function HomePage() {
                   </Link>
                 ) : (
                   <>
-                    <form action={startTemporaryCharacterWorkspace}>
-                      <button type="submit" className="ss-btn ss-btn-outline">Créer ma fiche temporaire</button>
-                    </form>
+                    <TemporaryCharacterStartForm />
                     <a href="/docs/Fiche_de_Personnage.ods" download="Fiche_de_Personnage.ods" className="ss-card-cta">
                       Télécharger la fiche originale (.ods)
                     </a>

@@ -17,6 +17,7 @@ type CharacterRolls = {
   competences?: { dice: number[]; total: number }
   konis?: { dice: number[]; total: number }
 }
+type CreationActionResult<T> = ({ success: true } & T) | { success: false; error: string }
 
 const ABILITIES = ['force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception'] as const
 const THERMAL_WEAPONS: Record<number, { nom: string; categorie: string }> = {
@@ -25,6 +26,12 @@ const THERMAL_WEAPONS: Record<number, { nom: string; categorie: string }> = {
   53: { nom: "Sniper thermique de l'Alliance I", categorie: 'sniper' },
   70: { nom: "Pistolet thermique de l'Alliance I", categorie: 'pistolet' },
 }
+const STARTING_ARMOR_SLOTS = [
+  { slot: 'armureTete', category: 'tete', label: 'tête' },
+  { slot: 'armureTorse', category: 'torse', label: 'torse' },
+  { slot: 'armureBras', category: 'bras', label: 'bras' },
+  { slot: 'armureJambes', category: 'jambes', label: 'jambes' },
+] as const
 
 class CreationError extends Error {}
 function fail(message: string): never { throw new CreationError(message) }
@@ -73,16 +80,19 @@ async function getSession() {
   return { payload, user, workspace }
 }
 
-async function withOwnedCharacter<T>(characterId: number, operation: (context: {
+async function withOwnedCharacter<T extends Record<string, unknown>>(characterId: number, operation: (context: {
   payload: any; user: any; workspace: any; character: any; req: any
-}) => Promise<T>): Promise<T> {
-  if (!Number.isSafeInteger(characterId) || characterId <= 0) fail('Personnage invalide.')
-  const { payload, user, workspace } = await getSession()
-  const transactionID = await payload.db.beginTransaction?.()
-  if (!transactionID) fail('Les transactions de la base sont indisponibles.')
-  const req = { transactionID } as any
-
+}) => Promise<T>): Promise<CreationActionResult<T>> {
+  let transactionID: any
+  let payload: any
   try {
+    if (!Number.isSafeInteger(characterId) || characterId <= 0) fail('Personnage invalide.')
+    const session = await getSession()
+    payload = session.payload
+    const { user, workspace } = session
+    transactionID = await payload.db.beginTransaction?.()
+    if (!transactionID) fail('Les transactions de la base sont indisponibles.')
+    const req = { transactionID } as any
     const transactionDb = (payload.db as any).sessions?.[transactionID]?.db
     if (!transactionDb) fail('Impossible d’ouvrir la transaction.')
     // Le nettoyage verrouille workspace puis personnage; garder le même ordre évite les interblocages.
@@ -100,16 +110,48 @@ async function withOwnedCharacter<T>(characterId: number, operation: (context: {
 
     const result = await operation({ payload, user, workspace, character, req })
     await payload.db.commitTransaction?.(transactionID)
-    revalidatePath('/character')
-    revalidatePath(`/characters/${characterId}`)
-    revalidatePath(`/temporary-character/${characterId}`)
-    revalidatePath('/shop')
-    return result
+    transactionID = undefined
+    try {
+      revalidatePath('/character')
+      revalidatePath(`/characters/${characterId}`)
+      revalidatePath(`/temporary-character/${characterId}`)
+      revalidatePath('/shop')
+    } catch (error) {
+      console.error('Character creation cache revalidation failed', error)
+    }
+    return { success: true, ...result } as CreationActionResult<T>
   } catch (error) {
-    await payload.db.rollbackTransaction?.(transactionID).catch(() => undefined)
-    if (error instanceof CreationError) throw error
-    throw new Error(error instanceof Error ? error.message : 'La création du personnage a échoué.')
+    if (transactionID && payload?.db.rollbackTransaction) {
+      try { await payload.db.rollbackTransaction(transactionID) } catch { /* The transaction may already be closed. */ }
+    }
+    if (error instanceof CreationError) return { success: false, error: error.message }
+    console.error('Character creation transaction failed', error)
+    return { success: false, error: 'La sauvegarde a échoué. Vos choix sont conservés ; réessayez dans quelques instants.' }
   }
+}
+
+async function resolveStartingArmors(payload: any, req: any) {
+  const resolved: Record<(typeof STARTING_ARMOR_SLOTS)[number]['slot'], { item: number; mods: [] }> = {} as any
+
+  for (const { slot, category, label } of STARTING_ARMOR_SLOTS) {
+    const result = await payload.find({
+      collection: 'armors',
+      where: { categorie: { equals: category } },
+      depth: 0,
+      limit: 1,
+      sort: 'id',
+      overrideAccess: true,
+      req,
+    })
+    const armor = (result.docs as any[]).find((candidate) => candidate.categorie === category)
+    const armorId = Number(armor?.id)
+    if (!Number.isSafeInteger(armorId) || armorId <= 0) {
+      fail(`L’armure de départ pour l’emplacement ${label} est indisponible. Réessayez plus tard.`)
+    }
+    resolved[slot] = { item: armorId, mods: [] }
+  }
+
+  return resolved
 }
 
 function assertStep(character: any, expected: CreationStep) {
@@ -160,7 +202,7 @@ export async function saveCharacteristicAssignment(characterId: number, assigned
       data: { ...values, creationEtape: 'espece' },
       overrideAccess: true, user: user ?? undefined, req,
     })
-    return { success: true }
+    return { nextStep: 'espece' as const }
   })
 }
 
@@ -173,7 +215,7 @@ export async function saveCharacterSpecies(characterId: number, species: unknown
       data: { origine: species as string, creationEtape: 'equipement' },
       overrideAccess: true, user: user ?? undefined, req,
     })
-    return { success: true }
+    return { nextStep: 'equipement' as const }
   })
 }
 
@@ -202,6 +244,7 @@ export async function saveStartingEquipment(characterId: number, input: {
     const shipNameInput = typeof input.shipName === 'string' ? input.shipName.trim() : ''
     if (shipNameInput.length > 100) fail('Le nom du vaisseau ne peut pas dépasser 100 caractères.')
     const shipName = shipNameInput || model.nom
+    const startingArmors = await resolveStartingArmors(payload, req)
 
     const ship = await payload.create({
       collection: 'ships',
@@ -212,10 +255,7 @@ export async function saveStartingEquipment(characterId: number, input: {
     await payload.update({
       collection: 'characters', id: character.id,
       data: {
-        armureTete: { item: 1, mods: [] },
-        armureTorse: { item: 32, mods: [] },
-        armureBras: { item: 63, mods: [] },
-        armureJambes: { item: 94, mods: [] },
+        ...startingArmors,
         armeDeMelee: { item: 90, mods: [], munitionsActuelles: 0, chargeurRelie: null },
         armePrincipale: { item: thermalWeaponId, mods: [], munitionsActuelles: 0, chargeurRelie: null },
         vaisseau: ship.id,
@@ -225,7 +265,7 @@ export async function saveStartingEquipment(characterId: number, input: {
       },
       overrideAccess: true, user: user ?? undefined, req,
     })
-    return { success: true }
+    return { nextStep: 'identite' as const }
   })
 }
 
@@ -241,6 +281,6 @@ export async function saveCharacterIdentity(characterId: number, input: { nom?: 
       data: { nom, sexe: sexe as string, creationEtape: 'termine' },
       overrideAccess: true, user: user ?? undefined, req,
     })
-    return { success: true }
+    return { nextStep: 'termine' as const }
   })
 }

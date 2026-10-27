@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { calculateStats } from '@/lib/characterStats'
@@ -30,6 +30,7 @@ type CreationRolls = {
   competences?: { dice: number[]; total: number }
   konis?: { dice: number[]; total: number }
 }
+type SaveCreationResult = { success: true; nextStep: string } | { success: false; error: string }
 
 const STEPS = [
   ['caracteristiques', 'Caractéristiques'],
@@ -55,12 +56,21 @@ const SPECIES = [
 
 const money = (value: number) => `${new Intl.NumberFormat('fr-FR').format(value)} Konis`
 
+function CreationTooltip({ label, description }: { label: string; description: string }) {
+  const id = useId()
+  return <span className="creation-help">
+    <button type="button" className="creation-help-trigger" aria-label={`Aide : ${label}`} aria-describedby={id}>?</button>
+    <span className="creation-help-tooltip" id={id} role="tooltip">{description}</span>
+  </span>
+}
+
 export function CharacterCreationWizard({ character, ships, weapons }: {
   character: any
   ships: ShipChoice[]
   weapons: WeaponChoice[]
 }) {
   const router = useRouter()
+  const step = character.creationEtape as string
   const [rolls, setRolls] = useState<CreationRolls>(character.creationJets ?? {})
   const [assigned, setAssigned] = useState<Record<string, string>>({})
   const [species, setSpecies] = useState<string>(character.origine ?? 'Humain')
@@ -70,9 +80,9 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
   const [name, setName] = useState(character.nom ?? '')
   const [sex, setSex] = useState(character.sexe ?? '')
   const [pending, setPending] = useState(false)
+  const [pendingStep, setPendingStep] = useState<string | null>(null)
   const [error, setError] = useState('')
-
-  const step = character.creationEtape as string
+  const previousStep = useRef(step)
   const stepIndex = STEPS.findIndex(([key]) => key === step)
   const currentSpecies = SPECIES.some((option) => option.value === species) ? species : 'Humain'
   const previewCharacter = useMemo(() => calculateStats({ ...character, origine: currentSpecies }), [character, currentSpecies])
@@ -83,14 +93,27 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
   useEffect(() => {
     let active = true
     ensureCharacterCreationRolls(character.id)
-      .then((result) => { if (active) setRolls(result.rolls as CreationRolls) })
-      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : 'Impossible de préparer les jets.') })
+      .then((result) => {
+        if (!active) return
+        if (!result.success) setError(result.error)
+        else setRolls(result.rolls as CreationRolls)
+      })
+      .catch(() => { if (active) setError('Impossible de préparer cette étape. Vérifiez votre connexion puis réessayez.') })
     return () => { active = false }
   }, [character.id, step])
 
   useEffect(() => {
-    setError('')
     setRolls(character.creationJets ?? {})
+  }, [character.creationJets])
+
+  useEffect(() => {
+    const stepChanged = previousStep.current !== step
+    previousStep.current = step
+    if (stepChanged) {
+      setError('')
+      setPending(false)
+      setPendingStep(null)
+    }
     setAssigned({})
     setSaleModelId('')
     setShipName('')
@@ -98,19 +121,39 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
     setSpecies(character.origine ?? 'Humain')
     setName(character.nom ?? '')
     setSex(character.sexe ?? '')
-  }, [character.id, step, character.creationJets, character.origine, character.nom, character.sexe])
+  }, [character.id, step, character.origine, character.nom, character.sexe])
 
-  async function submit(action: () => Promise<unknown>) {
+  useEffect(() => {
+    if (pendingStep && step === pendingStep) {
+      setPending(false)
+      setPendingStep(null)
+    }
+  }, [pendingStep, step])
+
+  async function submit(action: () => Promise<SaveCreationResult>, nextStep: string) {
     if (pending) return
     setPending(true)
+    setPendingStep(nextStep)
     setError('')
     try {
-      await action()
+      const result = await action()
+      if (!result.success) {
+        setError(result.error)
+        setPending(false)
+        setPendingStep(null)
+        return
+      }
+      if (result.nextStep !== nextStep) {
+        setError('La fiche n’a pas confirmé le passage à l’étape suivante. Réessayez.')
+        setPending(false)
+        setPendingStep(null)
+        return
+      }
       router.refresh()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'La sauvegarde a échoué. Réessayez.')
-    } finally {
+    } catch {
+      setError('La sauvegarde n’a pas abouti. Vérifiez votre connexion puis réessayez.')
       setPending(false)
+      setPendingStep(null)
     }
   }
 
@@ -134,7 +177,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
       <div className="creation-assignment-grid">
         {ABILITIES.map(({ key, label }) => <label key={key}>
           <span>{label}</span>
-          <select value={assigned[key] ?? ''} onChange={(event) => setAssigned((current) => ({ ...current, [key]: event.target.value }))}>
+          <select value={assigned[key] ?? ''} disabled={pending} onChange={(event) => setAssigned((current) => ({ ...current, [key]: event.target.value }))}>
             <option value="">Affecter un résultat</option>
             {rolls.caracteristiques!.map((roll, index) => <option
               key={index}
@@ -147,7 +190,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
       <button className="creation-primary" type="button" disabled={pending || !assignmentsComplete} onClick={() => submit(() => saveCharacteristicAssignment(
         character.id,
         Object.fromEntries(Object.entries(assigned).map(([key, value]) => [key, Number(value)])),
-      ))}>
+      ), 'espece')}>
         {pending ? 'Enregistrement…' : 'Valider mes caractéristiques'}
       </button>
     </>
@@ -157,7 +200,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
     return <>
       <p className="creation-intro">Choisissez votre espèce. Les modificateurs et les valeurs calculées se mettent à jour avec vos caractéristiques.</p>
       <label className="creation-field creation-species-select">Espèce
-        <select value={species} onChange={(event) => setSpecies(event.target.value)}>
+        <select value={species} disabled={pending} onChange={(event) => setSpecies(event.target.value)}>
           {SPECIES.map((option) => <option value={option.value} key={option.value}>{option.value}</option>)}
         </select>
       </label>
@@ -170,19 +213,20 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
             const total = base + (previewCharacter.totalArmorMods[key] || 0) - (Number(character[`malus${key[0].toUpperCase()}${key.slice(1)}`]) || 0)
             const modifier = previewCharacter[die]
             return <div className="creation-stat" key={key}>
-              <span>{label}</span><strong>{total} <small>({modifier >= 0 ? `+${modifier}` : modifier})</small></strong>
+              <span>{label}<CreationTooltip label={label} description="Cette valeur tient compte de votre score de base, de votre espèce, de l’équipement et des malus. Le modificateur entre parenthèses est utilisé pour les jets avec le dé associé." /></span>
+              <strong>{total} <small>({modifier >= 0 ? `+${modifier}` : modifier})</small></strong>
             </div>
           })}
         </div>
         <div className="creation-vitals">
-          <div><span>Points de blessure max.</span><strong>{previewCharacter.maxHP}</strong></div>
-          <div><span>Esquive · Découvert</span><strong>{previewCharacter.dodge.decouvert}</strong></div>
-          <div><span>Esquive · Dépourvue</span><strong>{previewCharacter.dodge.depourvue}</strong></div>
-          <div><span>Esquive · Protégée</span><strong>{previewCharacter.dodge.protege}</strong></div>
-          <div><span>Esquive · Couvert</span><strong>{previewCharacter.dodge.couvert}</strong></div>
+          <div><span>Points de blessure max.<CreationTooltip label="Points de blessure maximum" description="Le nombre maximal de points de blessure que votre personnage peut encaisser." /></span><strong>{previewCharacter.maxHP}</strong></div>
+          <div><span>Esquive · Découvert<CreationTooltip label="Esquive à découvert" description="Votre valeur d’esquive lorsque vous n’êtes pas à couvert." /></span><strong>{previewCharacter.dodge.decouvert}</strong></div>
+          <div><span>Esquive · Dépourvue<CreationTooltip label="Esquive dépourvue" description="Votre valeur d’esquive lorsque vous ne portez pas d’armure." /></span><strong>{previewCharacter.dodge.depourvue}</strong></div>
+          <div><span>Esquive · Protégée<CreationTooltip label="Esquive protégée" description="Votre valeur d’esquive lorsque vous bénéficiez d’une protection." /></span><strong>{previewCharacter.dodge.protege}</strong></div>
+          <div><span>Esquive · Couvert<CreationTooltip label="Esquive à couvert" description="Votre valeur d’esquive lorsque vous êtes à couvert." /></span><strong>{previewCharacter.dodge.couvert}</strong></div>
         </div>
       </section>
-      <button className="creation-primary" type="button" disabled={pending} onClick={() => submit(() => saveCharacterSpecies(character.id, species))}>
+      <button className="creation-primary" type="button" disabled={pending} onClick={() => submit(() => saveCharacterSpecies(character.id, species), 'equipement')}>
         {pending ? 'Enregistrement…' : `Valider l’espèce ${species}`}
       </button>
     </>
@@ -194,27 +238,39 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
       <p className="creation-intro">Choisissez votre premier vaisseau et une arme thermique de rang I. Votre équipement individuel de départ est équipé sur la fiche.</p>
       {!resourceRollsReady && <p className="creation-loading">Préparation des jets de ressources…</p>}
       {resourceRollsReady && <section className="creation-resources" aria-label="Ressources de départ tirées aux dés">
-        <div><span>Points de compétence · 1d4</span><strong>{rolls.competences!.dice[0]}</strong></div>
-        <div><span>Konis · 10d1000</span><strong>{money(rolls.konis!.total)}</strong>
-          <small>{rolls.konis!.dice.join(' · ')}</small>
+        <div><span>Points de compétence · 1d4<CreationTooltip label="Points de compétence" description="Un dé à 4 faces est lancé. Son résultat donne vos points de compétence de départ." /></span><strong>{rolls.competences!.dice[0]}</strong></div>
+        <div><span>Konis · 10d1000<CreationTooltip label="Konis de départ" description="Dix dés à 1 000 faces sont lancés. Leurs résultats sont additionnés pour obtenir votre total de Konis." /></span><strong>{money(rolls.konis!.total)}</strong>
+          <details className="creation-dice-breakdown">
+            <summary>Voir le détail des 10 dés</summary>
+            <small>{rolls.konis!.dice.join(' · ')}</small>
+          </details>
         </div>
       </section>}
       <h3 className="creation-subtitle">Vaisseau de départ</h3>
       <div className="shipyard-model-grid creation-ship-grid">
-        {ships.map((ship) => <article className={`shipyard-model-card creation-ship-card${saleModelId === String(ship.id) ? ' creation-choice-selected' : ''}`} key={ship.id}>
+        {ships.map((ship) => <article
+          className={`shipyard-model-card creation-ship-card${saleModelId === String(ship.id) ? ' creation-choice-selected' : ''}`}
+          key={ship.id}
+          onClick={(event) => {
+            if (pending) return
+            const target = event.target
+            if (target instanceof Element && target.closest('details, summary, input, label, button, a')) return
+            setSaleModelId(String(ship.id))
+          }}
+        >
           {ship.image && <img className="shipyard-model-image" src={ship.image.url} alt={ship.image.alt} />}
           <div className="shipyard-model-heading"><h4>{ship.nom}</h4><strong>Offert</strong></div>
           <div className="shipyard-model-meta">{[ship.chassis, ship.classe, ship.tourelles ? `${ship.tourelles} tourelle(s)` : null].filter(Boolean).join(' · ')}</div>
           {ship.description && <p>{ship.description}</p>}
           <details className="shipyard-model-components"><summary>Équipement inclus ({ship.components.length})</summary><ul>{ship.components.map(([kind, item], index) => <li key={`${kind}-${item}-${index}`}><span>{kind}</span><strong>{item}</strong></li>)}</ul></details>
-          <label className="creation-radio-choice"><input type="radio" name="starting-ship" value={ship.id} checked={saleModelId === String(ship.id)} onChange={() => setSaleModelId(String(ship.id))} />Choisir le {ship.nom}</label>
+          <label className="creation-radio-choice"><input type="radio" name="starting-ship" value={ship.id} checked={saleModelId === String(ship.id)} disabled={pending} onChange={() => setSaleModelId(String(ship.id))} />Choisir le {ship.nom}</label>
         </article>)}
       </div>
       <label className="shipyard-name-field creation-ship-name">Nom du vaisseau
-        <input maxLength={100} value={shipName} onChange={(event) => setShipName(event.target.value)} placeholder={selectedShip?.nom ?? 'Nom de votre vaisseau'} />
+        <input maxLength={100} value={shipName} disabled={pending} onChange={(event) => setShipName(event.target.value)} placeholder={selectedShip?.nom ?? 'Nom de votre vaisseau'} />
       </label>
       <label className="creation-field">Arme thermique de rang I
-        <select value={thermalWeaponId} onChange={(event) => setThermalWeaponId(event.target.value)}>
+        <select value={thermalWeaponId} disabled={pending} onChange={(event) => setThermalWeaponId(event.target.value)}>
           <option value="">Choisir une arme</option>
           {weapons.map((weapon) => <option value={weapon.id} key={weapon.id}>{weapon.nom}</option>)}
         </select>
@@ -227,7 +283,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
         saleModelId: Number(saleModelId),
         shipName,
         thermalWeaponId: Number(thermalWeaponId),
-      }))}>
+      }), 'identite')}>
         {pending ? 'Enregistrement…' : 'Valider mon équipement'}
       </button>
     </>
@@ -237,15 +293,15 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
     return <>
       <p className="creation-intro">Dernière étape : choisissez le nom et le sexe de votre personnage.</p>
       <label className="creation-field">Nom du personnage
-        <input autoComplete="off" maxLength={100} value={name} onChange={(event) => setName(event.target.value)} />
+        <input autoComplete="off" maxLength={100} value={name} disabled={pending} onChange={(event) => setName(event.target.value)} />
       </label>
       <label className="creation-field">Sexe
-        <select value={sex} onChange={(event) => setSex(event.target.value)}>
+        <select value={sex} disabled={pending} onChange={(event) => setSex(event.target.value)}>
           <option value="">Choisir</option><option value="M">M</option><option value="F">F</option><option value="X">X</option>
         </select>
       </label>
       <p className="creation-lore-link">Besoin d’inspiration ? <Link href="/lore/noms">Consultez l’article du lore sur les noms.</Link></p>
-      <button className="creation-primary" type="button" disabled={pending || !name.trim() || !sex} onClick={() => submit(() => saveCharacterIdentity(character.id, { nom: name, sexe: sex }))}>
+      <button className="creation-primary" type="button" disabled={pending || !name.trim() || !sex} onClick={() => submit(() => saveCharacterIdentity(character.id, { nom: name, sexe: sex }), 'termine')}>
         {pending ? 'Enregistrement…' : 'Terminer la création'}
       </button>
     </>
@@ -272,6 +328,9 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
         <section className="char-card creation-panel">
           <header><span>Étape {Math.max(stepIndex + 1, 1)} sur {STEPS.length}</span><h2>{STEPS[stepIndex]?.[1] ?? 'Création'}</h2></header>
           {error && <p className="creation-error" role="alert">{error}</p>}
+          {pending && <p className="creation-pending" role="status" aria-live="polite">
+            Enregistrement en cours{pendingStep ? ` avant l’étape « ${STEPS.find(([key]) => key === pendingStep)?.[1] ?? pendingStep} »` : ''}. La mise à jour peut prendre quelques instants.
+          </p>}
           {content}
         </section>
       </main>

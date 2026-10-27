@@ -1,5 +1,6 @@
 import { Orbitron } from 'next/font/google'
-import React from 'react'
+import React, { Suspense } from 'react'
+import { NavigationFeedback } from '@/components/NavigationFeedback'
 import './styles.css'
 
 const orbitron = Orbitron({
@@ -23,6 +24,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={orbitron.variable}>
       <body>
+        <Suspense fallback={null}>
+          <NavigationFeedback />
+        </Suspense>
         <main>{children}</main>
       </body>
     </html>
