@@ -184,6 +184,20 @@ describe('Atelier equipped-item inventory', () => {
 })
 
 describe('Atelier ship turret points and specialization tags', () => {
+  it('adds optional module slots using one integer and preserves turret-specific slots', () => {
+    expect(applyAtelierEffects({ modulesSupplementaires: '2+1' }, [
+      { cible: 'modulesSupplementaires', operation: 'slot-add', valeur: '3' },
+    ], 'vaisseau').modulesSupplementaires).toBe('5+1')
+
+    expect(applyAtelierEffects({ modulesSupplementaires: '' }, [
+      { cible: 'modulesSupplementaires', operation: 'slot-add', valeur: '2' },
+    ], 'vaisseau').modulesSupplementaires).toBe('2')
+
+    expect(() => applyAtelierEffects({ modulesSupplementaires: '2+1' }, [
+      { cible: 'modulesSupplementaires', operation: 'slot-add', valeur: '1+1' },
+    ], 'vaisseau')).toThrow(/entier positif/)
+  })
+
   it('assigns each turret point purchase to its selected turret and supports newly purchased turrets', () => {
     expect(applyAtelierEffects({ tourelles: 2, pointsEmportTourelles: '1+2' }, [
       { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '2', turretIndex: 2 },
@@ -203,6 +217,20 @@ describe('Atelier ship turret points and specialization tags', () => {
       { cible: 'tourelles', operation: 'add', valeur: '1' },
       { cible: 'pointsEmportTourelles', operation: 'slot-add', valeur: '4', turretIndex: 3 },
     ], 'vaisseau')).toThrow(/4 points d’emport/)
+  })
+
+  it('adds one optional module slot to each newly purchased turret', () => {
+    expect(applyAtelierEffects({ tourelles: 1, pointsEmportTourelles: '1', modulesSupplementaires: '2+1' }, [
+      { cible: 'tourelles', operation: 'add', valeur: '1' },
+    ], 'vaisseau').modulesSupplementaires).toBe('2+1+1')
+
+    expect(applyAtelierEffects({ tourelles: 1, pointsEmportTourelles: '1', modulesSupplementaires: '2+1' }, [
+      { cible: 'tourelles', operation: 'add', valeur: '2' },
+    ], 'vaisseau').modulesSupplementaires).toBe('2+1+1+1')
+
+    expect(applyAtelierEffects({ tourelles: 0, pointsEmportTourelles: '', modulesSupplementaires: '' }, [
+      { cible: 'tourelles', operation: 'add', valeur: '1' },
+    ], 'vaisseau').modulesSupplementaires).toBe('0+1')
   })
 
   it('requires a selected available turret and caps each turret at four points', () => {

@@ -194,7 +194,7 @@ export const AtelierModifications: CollectionConfig = {
                 { label: 'Ajout numérique', value: 'add' },
                 { label: 'Plus de dés de dégâts', value: 'dice-count-add' },
                 { label: 'Augmenter la taille du dé', value: 'dice-size-step' },
-                { label: 'Augmenter des emplacements codés', value: 'slot-add' },
+                { label: 'Ajouter des emplacements', value: 'slot-add' },
               ],
               admin: { width: '30%' },
             },
@@ -204,6 +204,11 @@ export const AtelierModifications: CollectionConfig = {
               required: true,
               label: 'Valeur / donnée JSON',
               validate: (value: unknown, { siblingData }: any) => {
+                if (siblingData?.cible === 'modulesSupplementaires') {
+                  const parsed = typeof value === 'string' && /^\d+$/.test(value.trim()) ? Number(value) : Number.NaN
+                  return siblingData?.operation === 'slot-add' && Number.isSafeInteger(parsed) && parsed > 0
+                    || 'Pour les emplacements de modules optionnels, indiquez un entier positif.'
+                }
                 if (siblingData?.cible !== 'pointsEmportTourelles') return true
                 const parsed = Number(value)
                 return siblingData?.operation === 'slot-add' && Number.isSafeInteger(parsed) && parsed > 0
@@ -211,7 +216,7 @@ export const AtelierModifications: CollectionConfig = {
               },
               admin: {
                 width: '35%',
-                description: 'Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.',
+                description: 'Pour les emplacements de modules optionnels, indiquez un entier positif ajouté à chaque achat. Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.',
               },
             },
           ],

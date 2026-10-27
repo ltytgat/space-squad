@@ -134,24 +134,46 @@ function increaseDamageDieSize(current: unknown, value: string): string {
   return `${damage.count}d${DAMAGE_DIE_SIZES[sizeIndex + 1]}${damage.flatBonus}${damage.suffix}`
 }
 
-function addEncodedSlots(current: unknown, value: string, increaseOnly: boolean): string {
-  if (typeof current !== 'string' || !/^\d+(?:\+\d+)*$/.test(current)) {
-    throw new Error('La propriété d’emplacements doit utiliser le format nombre+nombre.')
+function addOptionalModuleSlots(current: unknown, value: string): string {
+  const normalizedValue = value.trim()
+  const increment = /^\d+$/.test(normalizedValue) ? Number(normalizedValue) : Number.NaN
+  if (!Number.isSafeInteger(increment) || increment < 1) {
+    throw new Error('L’augmentation des emplacements de modules optionnels doit être un entier positif.')
   }
-  const slots = current.split('+').map(Number)
-  let increments: number[]
-  try {
-    const parsed = JSON.parse(value)
-    increments = Array.isArray(parsed) ? parsed.map(Number) : [Number(parsed)]
-  } catch {
-    increments = [finiteValue(value, 'L’augmentation des emplacements')]
+
+  let slots: number[]
+  if (current === null || current === undefined || current === '') slots = [0]
+  else if (typeof current === 'number' && Number.isSafeInteger(current) && current >= 0) slots = [current]
+  else if (typeof current === 'string' && /^\d+(?:\+\d+)*$/.test(current)) slots = current.split('+').map(Number)
+  else throw new Error('Le nombre d’emplacements de modules optionnels doit être un entier valide.')
+
+  if (slots.some((slot) => !Number.isSafeInteger(slot))) {
+    throw new Error('Le nombre d’emplacements de modules optionnels doit être un entier valide.')
   }
-  if (!increments.length || increments.some((increment) => !Number.isInteger(increment) || !Number.isFinite(increment))) {
-    throw new Error('L’augmentation des emplacements doit être un entier ou une liste d’entiers.')
+  const nextBaseSlots = slots[0] + increment
+  if (!Number.isSafeInteger(nextBaseSlots)) throw new Error('Le nombre d’emplacements de modules optionnels dépasse la limite autorisée.')
+  slots[0] = nextBaseSlots
+  return slots.join('+')
+}
+
+function addTurretModuleSlots(current: unknown, previousTurretCount: number, nextTurretCount: number): string {
+  let slots: number[]
+  if (current === null || current === undefined || current === '') slots = []
+  else if (typeof current === 'string' && /^\d+(?:\+\d+)*$/.test(current)) slots = current.split('+').map(Number)
+  else throw new Error('Les emplacements de modules optionnels doivent utiliser le format nombre+nombre.')
+
+  if (slots.some((slot) => !Number.isSafeInteger(slot))) {
+    throw new Error('Chaque emplacement de module optionnel doit être un entier valide.')
   }
-  if (increaseOnly && increments.some((increment) => increment < 0)) throw new Error('Une modification de châssis ne peut pas diminuer les emplacements.')
-  if (increments.length > slots.length) throw new Error('La liste d’augmentations dépasse le nombre d’emplacements existants.')
-  return slots.map((slot, index) => slot + (increments[index] ?? 0)).join('+')
+  if (slots.length > previousTurretCount + 1) {
+    throw new Error('Les emplacements de modules optionnels ne correspondent pas au nombre de tourelles du châssis.')
+  }
+
+  // The first value belongs to optional ship modules; each later value belongs to a turret.
+  if (slots.length === 0) slots.push(0)
+  while (slots.length < previousTurretCount + 1) slots.push(0)
+  for (let index = previousTurretCount; index < nextTurretCount; index += 1) slots.push(1)
+  return slots.join('+')
 }
 
 export function applyAtelierEffects<T extends Record<string, any>>(
@@ -200,8 +222,8 @@ export function applyAtelierEffects<T extends Record<string, any>>(
       slots[index] += increment
       result[effect.cible] = slots.join('+')
     } else if (effect.operation === 'slot-add') {
-      if (effect.cible !== 'modulesSupplementaires') throw new Error('Cette propriété ne représente pas des emplacements codés.')
-      result[effect.cible] = addEncodedSlots(current, effect.valeur, kind === 'vaisseau')
+      if (effect.cible !== 'modulesSupplementaires') throw new Error('Cette propriété ne peut pas recevoir des emplacements de modules optionnels.')
+      result[effect.cible] = addOptionalModuleSlots(current, effect.valeur)
     } else if (effect.operation === 'add') {
       const increment = finiteValue(effect.valeur, 'La valeur ajoutée')
       if (kind === 'armure' && effect.cible === 'caracteristiqueBonus') {
@@ -280,6 +302,13 @@ export function applyAtelierEffects<T extends Record<string, any>>(
     const capacities = atelierTurretCapacities(result.pointsEmportTourelles, finalTurretCount)
     if (Number.isSafeInteger(initialTurretCount) && initialTurretCount >= 0) {
       for (let index = initialTurretCount; index < finalTurretCount; index += 1) capacities[index] = Math.max(1, capacities[index])
+      if (finalTurretCount > initialTurretCount) {
+        result.modulesSupplementaires = addTurretModuleSlots(
+          result.modulesSupplementaires,
+          initialTurretCount,
+          finalTurretCount,
+        )
+      }
     }
     result.pointsEmportTourelles = capacities.join('+')
   }
