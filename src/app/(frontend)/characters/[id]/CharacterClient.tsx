@@ -8,7 +8,7 @@ import type { GravityLevel } from '@/lib/characterStats'
 import { minimumRankForChipSlot } from '@/lib/rankSystem'
 import { weaponRangeRows } from '@/lib/weaponRanges'
 import { weaponAllowedInSlot, weaponFromGroup, type CharacterWeaponSlot } from '@/lib/characterWeapons'
-import { searchCharacterEditCatalog, updateCharacter, updateCharacterInEditMode, updateWeaponStatus, reloadWeapon } from './actions'
+import { assignCharacterSkillPoint, searchCharacterEditCatalog, updateCharacter, updateCharacterInEditMode, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
 import { CoachingInput } from './CoachingInput'
@@ -188,7 +188,15 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const [isModified, setIsModified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isAssigningSkill, setIsAssigningSkill] = useState(false)
+  const [skillAssignmentError, setSkillAssignmentError] = useState('')
   const [showLearnNewSkill, setShowLearnNewSkill] = useState(false)
+  const [skillConfirmation, setSkillConfirmation] = useState<{
+    skillName: string
+    kind: 'improve' | 'learn'
+    currentLevel: number
+    cost: number
+  } | null>(null)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
   const [hoveredItem, setHoveredItem] = useState<{item: any, type: string, mods?: any[], x: number, y: number} | null>(null)
   const [managerChangedFields, setManagerChangedFields] = useState<Set<string>>(new Set())
@@ -263,41 +271,54 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isModified])
 
-  const handleLevelUp = (skillName: string) => {
+  const requestLevelUp = (skillName: string) => {
+    if (editMode && managerChangedFields.has('pointsDeCompetence')) return
     const currentVal = character.competences?.find((c: any) => c.competence === skillName)?.valeur ?? 0
     const cost = currentVal + 1
-    
-    if (character.pointsDeCompetence >= cost) {
-      const newCompetences = [...(character.competences ?? [])]
-      const skillIdx = newCompetences.findIndex((c: any) => c.competence === skillName)
-      
-      if (skillIdx > -1) {
-        newCompetences[skillIdx] = { ...newCompetences[skillIdx], valeur: currentVal + 1 }
-      } else {
-        newCompetences.push({ competence: skillName, valeur: 1 })
-      }
+    if ((character.pointsDeCompetence ?? 0) < cost) return
+    setSkillAssignmentError('')
+    setSkillConfirmation({ skillName, kind: 'improve', currentLevel: currentVal, cost })
+  }
 
-      setCharacter({
-        ...character,
-        competences: newCompetences,
-        pointsDeCompetence: character.pointsDeCompetence - cost
-      })
-      setIsModified(true)
+  const requestLearnNewSkill = (skillName: string) => {
+    if (editMode && managerChangedFields.has('pointsDeCompetence')) return
+    if ((character.pointsDeCompetence ?? 0) < 1 || !skillName) return
+    setShowLearnNewSkill(false)
+    setSkillAssignmentError('')
+    setSkillConfirmation({ skillName, kind: 'learn', currentLevel: 0, cost: 1 })
+  }
+
+  const confirmSkillAssignment = async () => {
+    if (!skillConfirmation) return
+    if (isAssigningSkill) return
+    setIsAssigningSkill(true)
+    setSkillAssignmentError('')
+    try {
+      const savedSkills = await assignCharacterSkillPoint(
+        character.id,
+        skillConfirmation.skillName,
+        skillConfirmation.kind,
+        skillConfirmation.currentLevel,
+        skillConfirmation.cost,
+      )
+      setCharacter((previous: any) => ({ ...previous, ...savedSkills }))
+      setLastSavedCharacter((previous: any) => ({ ...previous, ...savedSkills }))
+      setSkillConfirmation(null)
+    } catch (error) {
+      setSkillAssignmentError(error instanceof Error ? error.message : 'Impossible d’enregistrer cette dépense.')
+    } finally {
+      setIsAssigningSkill(false)
     }
   }
 
-  const handleLearnNewSkill = (skillName: string) => {
-    if (character.pointsDeCompetence >= 1) {
-      const newCompetences = [...(character.competences ?? []), { competence: skillName, valeur: 1 }]
-      setCharacter({
-        ...character,
-        competences: newCompetences,
-        pointsDeCompetence: character.pointsDeCompetence - 1
-      })
-      setIsModified(true)
-      setShowLearnNewSkill(false)
+  useEffect(() => {
+    if (!skillConfirmation || isAssigningSkill) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSkillConfirmation(null)
     }
-  }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [skillConfirmation, isAssigningSkill])
 
   useEffect(() => {
     const handlePopState = () => {
@@ -438,9 +459,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     setIsSaving(true)
     try {
       // Préparer les données à sauvegarder
-      // On inclut les compétences ET l'équipement
       const fieldsToSave = [
-        'competences', 'pointsDeCompetence',
         'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
         'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
         'puceMk1', 'puceMk2', 'puceMk3',
@@ -2006,8 +2025,8 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                     <span className="char-skill-value">{c.valeur}</span>
                     <button 
                       className="char-skill-plus" 
-                      onClick={() => handleLevelUp(c.competence)}
-                      disabled={(character.pointsDeCompetence ?? 0) < c.valeur + 1}
+                      onClick={() => requestLevelUp(c.competence)}
+                      disabled={(character.pointsDeCompetence ?? 0) < c.valeur + 1 || isAssigningSkill || (editMode && managerChangedFields.has('pointsDeCompetence'))}
                       title={`Améliorer pour ${c.valeur + 1} points`}
                     >
                       +{c.valeur + 1}
@@ -2025,13 +2044,13 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {/* Apprendre une nouvelle compétence */}
               {!showLearnNewSkill ? (
                 (character.pointsDeCompetence ?? 0) >= 1 && (
-                  <button className="char-skill-learn-new" onClick={() => setShowLearnNewSkill(true)}>
+                  <button className="char-skill-learn-new" onClick={() => setShowLearnNewSkill(true)} disabled={isAssigningSkill || (editMode && managerChangedFields.has('pointsDeCompetence'))}>
                     Apprendre une nouvelle compétence (1 pt)
                   </button>
                 )
               ) : (
                 <div className="char-skill-learn-select">
-                  <select onChange={(e) => handleLearnNewSkill(e.target.value)} defaultValue="">
+                  <select onChange={(e) => requestLearnNewSkill(e.target.value)} defaultValue="">
                     <option value="" disabled>Choisir une compétence...</option>
                     {availableSkills.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -2328,6 +2347,36 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         </div>
       )}
       {/* Sélecteur d'équipement */}
+      {skillConfirmation && (
+        <div
+          className="char-skill-confirm-overlay"
+          role="presentation"
+          onMouseDown={(event) => { if (!isAssigningSkill && event.target === event.currentTarget) setSkillConfirmation(null) }}
+        >
+          <section className="char-skill-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="char-skill-confirm-title" aria-describedby="char-skill-confirm-description">
+            <div className="char-skill-confirm-mark" aria-hidden="true">!</div>
+            <p className="char-skill-confirm-eyebrow">Dépense de points</p>
+            <h2 id="char-skill-confirm-title">
+              {skillConfirmation.kind === 'improve' ? 'Confirmer l’amélioration ?' : 'Confirmer l’apprentissage ?'}
+            </h2>
+            <p id="char-skill-confirm-description" className="char-skill-confirm-description">
+              {skillConfirmation.kind === 'improve'
+                ? <><strong>{skillConfirmation.skillName}</strong> passera du niveau {skillConfirmation.currentLevel} au niveau {skillConfirmation.currentLevel + 1}.</>
+                : <>Vous apprendrez la compétence <strong>{skillConfirmation.skillName}</strong> au niveau 1.</>}
+            </p>
+            <div className="char-skill-confirm-cost">
+              <span>Points dépensés</span><strong>{skillConfirmation.cost}</strong>
+              <span>Solde après validation</span><strong>{Math.max(0, (character.pointsDeCompetence ?? 0) - skillConfirmation.cost)}</strong>
+            </div>
+            {skillAssignmentError && <p className="char-skill-confirm-warning" role="alert">{skillAssignmentError}</p>}
+            <p className="char-skill-confirm-warning">La dépense sera enregistrée dès confirmation et ne pourra pas être annulée.</p>
+            <div className="char-skill-confirm-actions">
+              <button type="button" className="char-skill-confirm-cancel" autoFocus disabled={isAssigningSkill} onClick={() => setSkillConfirmation(null)}>Annuler</button>
+              <button type="button" className="char-skill-confirm-submit" disabled={isAssigningSkill} onClick={confirmSkillAssignment}>{isAssigningSkill ? 'Enregistrement…' : 'Confirmer la dépense'}</button>
+            </div>
+          </section>
+        </div>
+      )}
       {inventoryEditor && (
         <div className="char-selector-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setInventoryEditor(null) }}>
           <section className="char-selector-modal char-inventory-editor-modal" role="dialog" aria-modal="true" aria-labelledby="char-inventory-editor-title">

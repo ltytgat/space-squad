@@ -4,7 +4,8 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { revalidatePath } from 'next/cache'
 import { headers as getHeaders } from 'next/headers.js'
-import type { User, Character } from '@/payload-types'
+import type { User } from '@/payload-types'
+import { COMPETENCES_BASE } from '@/collections/Characters'
 import { computeRank, minimumRankForChipSlot } from '@/lib/rankSystem'
 import { calculateStats } from '@/lib/characterStats'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
@@ -678,14 +679,59 @@ export async function reloadWeapon(
   revalidatePath(`/temporary-character/${characterId}`)
   return { success: true }
 }
-export async function updateCharacterSkills(characterId: number, data: {
-  competences: Character['competences'],
-  pointsDeCompetence: number
-}) {
-  return updateCharacter(characterId, {
-    competences: data.competences,
-    pointsDeCompetence: data.pointsDeCompetence,
+export async function assignCharacterSkillPoint(
+  characterId: number,
+  skillName: string,
+  assignment: 'improve' | 'learn',
+  expectedCurrentLevel: number,
+  expectedCost: number,
+) {
+  const { payload, user, character, isManager } = await getAuthorizedCharacter(characterId)
+  if (!isManager && !isCharacterCreationComplete(character)) {
+    throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
+  }
+  if (!COMPETENCES_BASE.includes(skillName as typeof COMPETENCES_BASE[number])) {
+    throw new Error('Compétence invalide.')
+  }
+  if (assignment !== 'improve' && assignment !== 'learn') throw new Error('Affectation invalide.')
+
+  const competences = Array.isArray(character.competences) ? [...character.competences] : []
+  const skillIndex = competences.findIndex((skill: any) => skill.competence === skillName)
+  if (assignment === 'learn' && skillIndex !== -1) throw new Error('Cette compétence est déjà apprise.')
+  if (assignment === 'improve' && skillIndex === -1) throw new Error('Cette compétence ne peut pas être améliorée.')
+
+  const currentLevel = skillIndex === -1 ? 0 : Number(competences[skillIndex].valeur)
+  if (!Number.isSafeInteger(currentLevel) || currentLevel < 0) throw new Error('Niveau de compétence invalide.')
+  const cost = assignment === 'learn' ? 1 : currentLevel + 1
+  if (currentLevel !== expectedCurrentLevel || cost !== expectedCost) {
+    throw new Error('Cette compétence a changé depuis l’ouverture de la confirmation. Fermez le popup et réessayez.')
+  }
+  const availablePoints = Number(character.pointsDeCompetence) || 0
+  if (!Number.isSafeInteger(availablePoints) || availablePoints < cost) {
+    throw new Error('Vous n’avez pas assez de points de compétence.')
+  }
+
+  if (assignment === 'learn') competences.push({ competence: skillName, valeur: 1 })
+  else competences[skillIndex] = { ...competences[skillIndex], valeur: currentLevel + 1 }
+
+  const updatedCharacter = await payload.update({
+    collection: 'characters',
+    id: characterId,
+    data: {
+      competences,
+      pointsDeCompetence: availablePoints - cost,
+    },
+    depth: 0,
+    user: user ?? undefined,
+    overrideAccess: true,
   })
+
+  revalidatePath(`/characters/${characterId}`)
+  revalidatePath(`/temporary-character/${characterId}`)
+  return {
+    competences: updatedCharacter.competences ?? competences,
+    pointsDeCompetence: Number(updatedCharacter.pointsDeCompetence) || 0,
+  }
 }
 
 export async function updateMalus(characterId: number, field: string, value: number) {
