@@ -1745,6 +1745,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               {isAdmin && !isTemporary && <button className="ss-btn char-mode-toggle" type="button" onClick={handleEditModeToggle} disabled={isChangingMode || isSaving}>
                 {isChangingMode ? 'Changement…' : editMode ? 'Mode Lecture' : 'Mode Edition'}
               </button>}
+              {isTemporary && <Link className="ss-btn ss-btn-outline" href="/register">Créer un compte pour conserver ma fiche</Link>}
               <button className="ss-btn ss-btn-outline" type="button" onClick={handleExport} disabled={isSaving || isExporting}>
                 {isExporting ? 'Exportation…' : 'Exporter'}
               </button>

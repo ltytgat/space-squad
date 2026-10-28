@@ -1,0 +1,16 @@
+.temporary-choice-root .login-layout {
+  padding-top: 3rem;
+}
+
+.temporary-choice-box {
+  max-width: 520px;
+  text-align: center;
+}
+
+.temporary-choice-box .login-title {
+  line-height: 1.5;
+}
+
+.temporary-choice-box form {
+  width: 100%;
+}

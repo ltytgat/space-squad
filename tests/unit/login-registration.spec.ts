@@ -28,12 +28,14 @@ describe('login registration flow', () => {
     render(createElement(LoginClient))
     fireEvent.click(screen.getByRole('button', { name: 'Créer un compte' }))
     fireEvent.change(screen.getByLabelText('Adresse e-mail'), { target: { value: '  Joueur@Example.fr ' } })
-    fireEvent.change(screen.getByLabelText('Mot de passe (12 caractères minimum)'), {
-      target: { value: 'a-secure-password' },
+    fireEvent.change(screen.getByLabelText('Mot de passe (10 caractères minimum)'), {
+      target: { value: '1234567890' },
     })
+    expect(screen.getByLabelText('Mot de passe (10 caractères minimum)')).toHaveProperty('minLength', 10)
     fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), {
-      target: { value: 'a-secure-password' },
+      target: { value: '1234567890' },
     })
+    expect(screen.getByLabelText('Confirmer le mot de passe')).toHaveProperty('minLength', 10)
     fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }))
 
     await waitFor(() => expect(routerMocks.push).toHaveBeenCalledWith('/character'))
@@ -41,14 +43,14 @@ describe('login registration flow', () => {
       method: 'POST',
       body: JSON.stringify({
         email: 'joueur@example.fr',
-        password: 'a-secure-password',
-        passwordConfirmation: 'a-secure-password',
+        password: '1234567890',
+        passwordConfirmation: '1234567890',
         website: '',
       }),
     }))
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/users/login', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ email: 'joueur@example.fr', password: 'a-secure-password' }),
+      body: JSON.stringify({ email: 'joueur@example.fr', password: '1234567890' }),
     }))
   })
 })

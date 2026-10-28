@@ -6,7 +6,7 @@ import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
 
 type ForgotStatus = 'idle' | 'loading' | 'sent' | 'error'
 
-export function LoginClient() {
+export function LoginClient({ initialMode = 'login' }: { initialMode?: 'login' | 'register' }) {
   const router = useRouter()
 
   const [email, setEmail] = useState('')
@@ -14,7 +14,7 @@ export function LoginClient() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [error, setError] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [showRegister, setShowRegister] = useState(false)
+  const [showRegister, setShowRegister] = useState(initialMode === 'register')
   const [forgotStatus, setForgotStatus] = useState<ForgotStatus>('idle')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'error'>('idle')
@@ -107,6 +107,7 @@ export function LoginClient() {
         setRegistrationError(data?.error ?? 'La création du compte a échoué. Veuillez réessayer.')
         return
       }
+      const registrationData = await registerResponse.json().catch(() => null)
 
       const loginResponse = await fetch('/api/users/login', {
         method: 'POST',
@@ -120,7 +121,7 @@ export function LoginClient() {
         return
       }
 
-      router.push('/character')
+      router.push(registrationData?.hasTemporaryCharacter ? '/character/temporary-choice' : '/character')
       router.refresh()
     } catch {
       setRegistrationStatus('error')
@@ -210,7 +211,7 @@ export function LoginClient() {
           />
         </div>
         <div className="login-field">
-          <label htmlFor="register-password">Mot de passe (12 caractères minimum)</label>
+          <label htmlFor="register-password">Mot de passe ({MIN_PASSWORD_LENGTH} caractères minimum)</label>
           <input
             id="register-password"
             type="password"

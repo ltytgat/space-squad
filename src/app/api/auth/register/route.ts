@@ -4,6 +4,12 @@ import config from '@/payload.config'
 import { meetsPasswordLength, PASSWORD_LENGTH_ERROR } from '@/lib/passwordPolicy'
 import { envLimit } from '@/lib/envLimit'
 import { normalizeEmail } from '@/lib/emailPolicy'
+import {
+  createTemporaryCharacterOfferToken,
+  findTemporaryCharacterForCurrentWorkspace,
+  TEMP_CHARACTER_OFFER_COOKIE,
+  temporaryCharacterOfferCookieOptions,
+} from '@/lib/temporaryCharacterOffer'
 
 type RegistrationBody = {
   email?: unknown
@@ -73,13 +79,47 @@ export async function POST(request: Request) {
       return jsonError('Trop d’inscriptions récentes. Réessayez dans une heure.', 429)
     }
 
-    await payload.create({
+    const user = await payload.create({
       collection: 'users',
       data: { email, password: body.password, role: 'player', isMJ: false },
       overrideAccess: true,
     })
 
-    return NextResponse.json({ message: CREATED_MESSAGE }, { status: 201 })
+    let temporaryOfferToken: string | null = null
+    try {
+      const temporary = await findTemporaryCharacterForCurrentWorkspace(payload)
+      if (temporary) {
+        const { docs: initialCharacters } = await payload.find({
+          collection: 'characters',
+          where: { user: { equals: user.id } },
+          depth: 0,
+          limit: 10,
+          sort: 'id',
+          overrideAccess: true,
+        })
+        const initialCharacterId = Number(initialCharacters[0]?.id)
+        temporaryOfferToken = createTemporaryCharacterOfferToken({
+          userId: String(user.id),
+          workspaceId: Number(temporary.workspace.id),
+          characterId: Number(temporary.character.id),
+          initialCharacterId: Number.isSafeInteger(initialCharacterId) && initialCharacterId > 0 ? initialCharacterId : null,
+        })
+      }
+    } catch (error) {
+      // Registration still succeeds if temporary-session discovery is unavailable.
+      console.error('[Registration] Impossible de vérifier la fiche temporaire', error)
+    }
+
+    const response = NextResponse.json({
+      message: CREATED_MESSAGE,
+      hasTemporaryCharacter: temporaryOfferToken !== null,
+    }, { status: 201 })
+    if (temporaryOfferToken) {
+      response.cookies.set(TEMP_CHARACTER_OFFER_COOKIE, temporaryOfferToken, temporaryCharacterOfferCookieOptions())
+    } else {
+      response.cookies.delete(TEMP_CHARACTER_OFFER_COOKIE)
+    }
+    return response
   } catch (error) {
     // A concurrent registration may pass the lookup before the unique index rejects it.
     try {

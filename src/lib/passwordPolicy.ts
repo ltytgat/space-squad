@@ -1,4 +1,4 @@
-export const MIN_PASSWORD_LENGTH = 12
+export const MIN_PASSWORD_LENGTH = 10
 // Borne haute pour éviter de hacher des mots de passe démesurés.
 export const MAX_PASSWORD_LENGTH = 256
 

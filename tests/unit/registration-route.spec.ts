@@ -32,8 +32,8 @@ describe('POST /api/auth/register', () => {
   it('creates a player account and ignores privilege fields supplied by the caller', async () => {
     const response = await POST(registrationRequest({
       email: '  PLAYER@EXAMPLE.FR ',
-      password: 'a-secure-password',
-      passwordConfirmation: 'a-secure-password',
+      password: '1234567890',
+      passwordConfirmation: '1234567890',
       role: 'admin',
       isMJ: true,
     }))
@@ -43,7 +43,7 @@ describe('POST /api/auth/register', () => {
       collection: 'users',
       data: {
         email: 'player@example.fr',
-        password: 'a-secure-password',
+        password: '1234567890',
         role: 'player',
         isMJ: false,
       },
@@ -52,7 +52,7 @@ describe('POST /api/auth/register', () => {
   })
 
   it.each([
-    { email: 'player@example.fr', password: 'short', passwordConfirmation: 'short' },
+    { email: 'player@example.fr', password: '123456789', passwordConfirmation: '123456789' },
     { email: 'player@example.fr', password: 'a-secure-password', passwordConfirmation: 'different-password' },
     { email: 'invalid-email', password: 'a-secure-password', passwordConfirmation: 'a-secure-password' },
     { email: `${'a'.repeat(250)}@example.fr`, password: 'a-secure-password', passwordConfirmation: 'a-secure-password' },
