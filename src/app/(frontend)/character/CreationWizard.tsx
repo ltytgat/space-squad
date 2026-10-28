@@ -56,6 +56,12 @@ const SPECIES = [
   { value: 'Vada', description: 'Force +2, Perception −2.' },
 ] as const
 
+const SPECIES_NAME_ANCHORS: Record<string, string> = {
+  Humain: 'noms-humains',
+  Strani: 'noms-stranis',
+  Vada: 'noms-vadas',
+}
+
 const money = (value: number) => `${new Intl.NumberFormat('fr-FR').format(value)} Konis`
 
 function CreationTooltip({ label, description }: { label: string; description: string }) {
@@ -313,7 +319,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
           <option value="">Choisir</option><option value="M">M</option><option value="F">F</option><option value="X">X</option>
         </select>
       </label>
-      <p className="creation-lore-link">Besoin d’inspiration ? <Link href="/lore/noms">Consultez l’article du lore sur les noms.</Link></p>
+      <p className="creation-lore-link">Besoin d’inspiration ? <Link href={`/lore/noms#${SPECIES_NAME_ANCHORS[currentSpecies] ?? ''}`}>Consultez l’article du lore sur les noms {currentSpecies}.</Link></p>
       <button className="creation-primary" type="button" disabled={pending || !name.trim() || !sex} onClick={() => submit(() => saveCharacterIdentity(character.id, { nom: name, sexe: sex }), 'termine')}>
         {pending ? 'Enregistrement…' : 'Terminer la création'}
       </button>
@@ -345,6 +351,7 @@ export function CharacterCreationWizard({ character, ships, weapons }: {
             Enregistrement en cours{pendingStep ? ` avant l’étape « ${STEPS.find(([key]) => key === pendingStep)?.[1] ?? pendingStep} »` : ''}. La mise à jour peut prendre quelques instants.
           </p>}
           {content}
+          <p className="creation-lore-link"><a href="/docs/R%C3%A8gles.pdf" download="Règles.pdf">Télécharger les règles (PDF)</a></p>
         </section>
       </main>
   </div>
