@@ -1921,6 +1921,45 @@
   background: rgba(107, 33, 255, 0.05);
 }
 
+.char-epreuve-item-special {
+  border-color: rgba(107, 33, 255, 0.25);
+  background: rgba(107, 33, 255, 0.05);
+}
+
+.char-special-skill-editor {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.char-special-skill-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--ss-text-muted);
+  font-size: 0.7rem;
+}
+
+.char-special-skill-editor input,
+.char-special-skill-editor select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  color: var(--ss-text);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+}
+
+.char-special-skill-remove {
+  align-self: flex-start;
+  padding: 0.35rem 0.6rem;
+  color: var(--ss-red, #ef4444);
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--ss-radius);
+  cursor: pointer;
+}
+
 .char-skill-name {
   font-size: 0.8rem;
   color: var(--ss-text-dim);

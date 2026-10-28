@@ -359,6 +359,26 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     setIsModified(true)
   }
 
+  const handleSpecialSkillChange = (index: number, key: string, value: string | number) => {
+    setCharacter((previous: any) => {
+      const skills = [...(previous.competencesSpeciales ?? [])]
+      skills[index] = { ...skills[index], [key]: value }
+      return { ...previous, competencesSpeciales: skills }
+    })
+    setManagerChangedFields((previous) => new Set(previous).add('competencesSpeciales'))
+    setIsModified(true)
+  }
+
+  const handleAddSpecialSkill = () => {
+    const skills = character.competencesSpeciales ?? []
+    if (skills.length >= 10) return
+    handleEditFieldChange('competencesSpeciales', [...skills, { nom: '', valeur: 0, caracteristique: '', categorieEpreuve: '' }])
+  }
+
+  const handleRemoveSpecialSkill = (index: number) => {
+    handleEditFieldChange('competencesSpeciales', (character.competencesSpeciales ?? []).filter((_: any, rowIndex: number) => rowIndex !== index))
+  }
+
   const handleEditFactionChange = (value: string) => {
     const faction = factions.find((entry) => String(entry.id) === value) ?? null
     setCharacter((prev: any) => ({ ...prev, affiliation: faction, rangDeFaction: '' }))
@@ -1999,7 +2019,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   <h3 className="char-epreuves-subtitle">{cat === 'vaisseau' ? 'En vaisseau / véhicule' : cat === 'pacifiques' ? 'Actions pacifiques' : 'Combat au sol'}</h3>
                   <div className="char-epreuves-list">
                     {stats.epreuves[cat as keyof typeof stats.epreuves].map((e: any) => (
-                      <div key={e.label} className="char-epreuve-item">
+                      <div key={e.id ?? e.label} className={`char-epreuve-item${e.isExtra ? ' char-epreuve-item-special' : ''}`}>
                         <span className="char-epreuve-label">{e.label}</span>
                         <span className="char-epreuve-value">{e.value >= 0 ? '+' : ''}{e.value}</span>
                       </div>
@@ -2035,12 +2055,48 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                   </div>
                 </div>
               ))}
-              {character.competencesSpeciales?.map((c: any) => (
-                <div key={c.nom} className="char-skill-item char-skill-special">
+              {(character.competencesSpeciales ?? []).map((c: any, index: number) => editMode ? (
+                <div key={c.id ?? `special-${index}`} className="char-skill-item char-skill-special char-special-skill-editor">
+                  <label>Nom
+                    <input type="text" maxLength={200} value={c.nom ?? ''} onChange={(event) => handleSpecialSkillChange(index, 'nom', event.target.value)} />
+                  </label>
+                  <label>Niveau
+                    <input type="number" min="0" step="any" value={c.valeur ?? 0} onChange={(event) => handleSpecialSkillChange(index, 'valeur', Number(event.target.value) || 0)} />
+                  </label>
+                  <label>Caractéristique
+                    <select value={c.caracteristique ?? ''} onChange={(event) => handleSpecialSkillChange(index, 'caracteristique', event.target.value)}>
+                      <option value="">Choisir…</option>
+                      <option value="force">Force</option>
+                      <option value="habilite">Habilité</option>
+                      <option value="connaissances">Connaissances</option>
+                      <option value="culture">Culture</option>
+                      <option value="anticipation">Anticipation</option>
+                      <option value="perception">Perception</option>
+                    </select>
+                  </label>
+                  <label>Colonne d’épreuve
+                    <select value={c.categorieEpreuve ?? ''} onChange={(event) => handleSpecialSkillChange(index, 'categorieEpreuve', event.target.value)}>
+                      <option value="">Choisir…</option>
+                      <option value="vaisseau">En vaisseau / véhicule</option>
+                      <option value="pacifiques">Actions pacifiques</option>
+                      <option value="combat">Combat au sol</option>
+                    </select>
+                  </label>
+                  <button type="button" className="char-special-skill-remove" onClick={() => handleRemoveSpecialSkill(index)}>Supprimer</button>
+                </div>
+              ) : (
+                <div key={c.id ?? c.nom} className="char-skill-item char-skill-special">
                   <span className="char-skill-name">{c.nom}</span>
                   <span className="char-skill-value">{c.valeur}</span>
                 </div>
               ))}
+
+              {editMode && <button
+                type="button"
+                className="char-skill-learn-new"
+                onClick={handleAddSpecialSkill}
+                disabled={(character.competencesSpeciales?.length ?? 0) >= 10}
+              >Ajouter une compétence extra ({character.competencesSpeciales?.length ?? 0}/10)</button>}
 
               {/* Apprendre une nouvelle compétence */}
               {!showLearnNewSkill ? (

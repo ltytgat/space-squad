@@ -462,7 +462,7 @@ export function calculateStats(character: any) {
   const getTirEpreuveMod = (attrBonus: number, competenceName: string | null, modCible: string) =>
     getEpreuveMod(attrBonus, competenceName, modCible) + gravity.shotPenalty
 
-  const epreuves = {
+  const epreuves: Record<'vaisseau' | 'pacifiques' | 'combat', { label: string; value: number; id?: string; isExtra?: boolean }[]> = {
     vaisseau: [
       { label: 'Pilotage – Chasseur/Léger', value: getEpreuveMod(habiliteDieMod, 'Chasseur', 'epreuve_pilotage_leger') },
       { label: 'Pilotage – Bombardier/Intermédiaire', value: getEpreuveMod(habiliteDieMod, 'Bombardier', 'epreuve_pilotage_intermediaire') - 5 },
@@ -487,6 +487,31 @@ export function calculateStats(character: any) {
       { label: 'Frapper au CàC', value: getEpreuveMod(habiliteDieMod, 'Combat rapproché', 'epreuve_cac') },
       { label: 'Premiers soins', value: getEpreuveMod(connaissancesDieMod, 'Médecine de terrain', 'epreuve_soins') },
     ],
+  }
+
+  const specialSkillAttributeMods: Record<string, number> = {
+    force: forceDieMod,
+    habilite: habiliteDieMod,
+    connaissances: connaissancesDieMod,
+    culture: cultureDieMod,
+    anticipation: anticipationDieMod,
+    perception: perceptionDieMod,
+  }
+  for (const skill of Array.isArray(character.competencesSpeciales) ? character.competencesSpeciales : []) {
+    const categoryValue = skill?.categorieEpreuve
+    const characteristic = typeof skill?.caracteristique === 'string' ? skill.caracteristique : ''
+    if (typeof categoryValue !== 'string' || !['vaisseau', 'pacifiques', 'combat'].includes(categoryValue)) continue
+    const category = categoryValue as keyof typeof epreuves
+    const attributeMod = specialSkillAttributeMods[characteristic]
+    const label = typeof skill?.nom === 'string' ? skill.nom.trim() : ''
+    const level = Number(skill?.valeur)
+    if (!category || !epreuves[category] || !Number.isFinite(attributeMod) || !label || !Number.isFinite(level)) continue
+    epreuves[category].push({
+      id: skill.id ? String(skill.id) : `${category}-${label}-${epreuves[category].length}`,
+      label,
+      value: attributeMod + 2 * level,
+      isExtra: true,
+    })
   }
 
   const ba = anticipationDieMod

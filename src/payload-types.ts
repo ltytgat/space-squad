@@ -701,12 +701,14 @@ export interface Character {
       }[]
     | null;
   /**
-   * Compétences uniques, hors liste standard, propres à ce personnage.
+   * Compétences extra du personnage. Les nouvelles compétences doivent être rattachées à une caractéristique et une colonne d’épreuve. Les anciennes lignes sans rattachement restent conservées jusqu’à leur édition.
    */
   competencesSpeciales?:
     | {
         nom: string;
         valeur: number;
+        caracteristique?: ('force' | 'habilite' | 'connaissances' | 'culture' | 'anticipation' | 'perception') | null;
+        categorieEpreuve?: ('vaisseau' | 'pacifiques' | 'combat') | null;
         id?: string | null;
       }[]
     | null;
@@ -2325,6 +2327,8 @@ export interface CharactersSelect<T extends boolean = true> {
     | {
         nom?: T;
         valeur?: T;
+        caracteristique?: T;
+        categorieEpreuve?: T;
         id?: T;
       };
   updatedAt?: T;

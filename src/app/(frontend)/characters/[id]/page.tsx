@@ -132,7 +132,13 @@ type Character = {
   roleVaisseau?: string | null
   groupe?: Group | string | null
   competences?: { competence: string; valeur: number; id?: string }[]
-  competencesSpeciales?: { nom: string; valeur: number; id?: string }[]
+  competencesSpeciales?: {
+    nom: string
+    valeur: number
+    caracteristique?: 'force' | 'habilite' | 'connaissances' | 'culture' | 'anticipation' | 'perception' | null
+    categorieEpreuve?: 'vaisseau' | 'pacifiques' | 'combat' | null
+    id?: string
+  }[]
   inventaireArmes?: { item: Weapon | number; mods?: (Mod | number)[] | null }[] | null
   inventaireArmures?: { item: Armor | number; mods?: (Mod | number)[] | null }[] | null
   inventaireMods?: (Mod | number)[] | null

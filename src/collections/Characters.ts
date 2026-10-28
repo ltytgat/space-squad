@@ -38,6 +38,45 @@ const validateCharacterOwner: CollectionBeforeChangeHook = ({ data, originalDoc 
 const invalidateAtelierPermitOnAffiliationChange: CollectionBeforeChangeHook = ({ data, originalDoc }) =>
   removeAtelierPermitOnAffiliationChange(data, originalDoc)
 
+const SPECIAL_SKILL_ATTRIBUTES = ['force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception'] as const
+const SPECIAL_SKILL_EPREUVE_CATEGORIES = ['vaisseau', 'pacifiques', 'combat'] as const
+
+const validateSpecialSkills: CollectionBeforeChangeHook = ({ data, originalDoc }) => {
+  if (!Object.prototype.hasOwnProperty.call(data, 'competencesSpeciales')) return data
+  const skills = data.competencesSpeciales
+  if (!Array.isArray(skills)) throw new Error('La liste des compétences extra est invalide.')
+  if (skills.length > 10) throw new Error('Un personnage ne peut pas avoir plus de 10 compétences extra.')
+
+  const originalSkills = Array.isArray(originalDoc?.competencesSpeciales) ? originalDoc.competencesSpeciales : []
+  for (const skill of skills) {
+    const name = typeof skill?.nom === 'string' ? skill.nom.trim() : ''
+    const level = Number(skill?.valeur)
+    if (!name || !Number.isFinite(level) || level < 0) {
+      throw new Error('Chaque compétence extra doit avoir un nom et un niveau valides.')
+    }
+
+    const attribute = typeof skill?.caracteristique === 'string' ? skill.caracteristique : ''
+    const category = typeof skill?.categorieEpreuve === 'string' ? skill.categorieEpreuve : ''
+    const hasAttribute = attribute.length > 0
+    const hasCategory = category.length > 0
+    const original = skill?.id
+      ? originalSkills.find((entry: any) => String(entry.id) === String(skill.id))
+      : null
+    const isUnchangedLegacy = original
+      && !original.caracteristique && !original.categorieEpreuve
+      && !hasAttribute && !hasCategory
+      && original.nom === skill.nom && Number(original.valeur) === level
+
+    if (!hasAttribute && !hasCategory && isUnchangedLegacy) continue
+    if (!hasAttribute || !hasCategory
+      || !(SPECIAL_SKILL_ATTRIBUTES as readonly string[]).includes(attribute)
+      || !(SPECIAL_SKILL_EPREUVE_CATEGORIES as readonly string[]).includes(category)) {
+      throw new Error('Chaque nouvelle compétence extra doit être rattachée à une caractéristique et une colonne d’épreuve.')
+    }
+  }
+  return data
+}
+
 export const Characters: CollectionConfig = {
   slug: 'characters',
   labels: { singular: 'Personnage', plural: 'Personnages' },
@@ -69,7 +108,7 @@ export const Characters: CollectionConfig = {
     },
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
-  hooks: { beforeChange: [validateCharacterOwner, invalidateAtelierPermitOnAffiliationChange, syncCharacterShip] },
+  hooks: { beforeChange: [validateCharacterOwner, invalidateAtelierPermitOnAffiliationChange, validateSpecialSkills, syncCharacterShip] },
   fields: [
     // ── Identité ──────────────────────────────────────
     {
@@ -1048,8 +1087,9 @@ export const Characters: CollectionConfig = {
       name: 'competencesSpeciales',
       type: 'array',
       label: 'Compétences spéciales',
+      maxRows: 10,
       admin: {
-        description: 'Compétences uniques, hors liste standard, propres à ce personnage.',
+        description: 'Compétences extra du personnage. Les nouvelles compétences doivent être rattachées à une caractéristique et une colonne d’épreuve. Les anciennes lignes sans rattachement restent conservées jusqu’à leur édition.',
       },
       fields: [
         {
@@ -1065,6 +1105,29 @@ export const Characters: CollectionConfig = {
           required: true,
           defaultValue: 0,
           min: 0,
+        },
+        {
+          name: 'caracteristique',
+          type: 'select',
+          label: 'Caractéristique liée',
+          options: [
+            { label: 'Force', value: 'force' },
+            { label: 'Habilité', value: 'habilite' },
+            { label: 'Connaissances', value: 'connaissances' },
+            { label: 'Culture', value: 'culture' },
+            { label: 'Anticipation', value: 'anticipation' },
+            { label: 'Perception', value: 'perception' },
+          ],
+        },
+        {
+          name: 'categorieEpreuve',
+          type: 'select',
+          label: 'Colonne de l’épreuve',
+          options: [
+            { label: 'En vaisseau / véhicule', value: 'vaisseau' },
+            { label: 'Actions pacifiques', value: 'pacifiques' },
+            { label: 'Combat au sol', value: 'combat' },
+          ],
         },
       ],
     },

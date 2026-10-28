@@ -344,7 +344,7 @@ const EDIT_MODE_FIELDS = new Set([
   'origine', 'sexe', 'affiliation', 'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
   'force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception',
   'reputation', 'pointsDeFaction', 'rangDeFaction',
-  'competences', 'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
+  'competences', 'competencesSpeciales', 'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
   'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
   'puceMk1', 'puceMk2', 'puceMk3', 'consommableEquipe1', 'consommableEquipe2', 'consommableEquipe3',
   'consommablesEquipes', 'inventaireArmes', 'inventaireArmures', 'inventaire', 'inventaireMods', 'inventairePuces',
@@ -510,6 +510,39 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
         const valeur = Number(row?.valeur)
         if (!categorie || !Number.isFinite(valeur)) throw new Error('Chaque renommée doit avoir une catégorie et une valeur valides.')
         return { ...(row.id ? { id: row.id } : {}), categorie, valeur }
+      })
+      continue
+    }
+    if (key === 'competencesSpeciales') {
+      const rows = requireEditArray(value, 'Compétences extra')
+      if (rows.length > 10) throw new Error('Un personnage ne peut pas avoir plus de 10 compétences extra.')
+      const originalRows = Array.isArray(character.competencesSpeciales) ? character.competencesSpeciales : []
+      updateData[key] = rows.map((row) => {
+        const nom = typeof row?.nom === 'string' ? row.nom.trim() : ''
+        const valeur = Number(row?.valeur)
+        if (!nom || !Number.isFinite(valeur) || valeur < 0) throw new Error('Chaque compétence extra doit avoir un nom et un niveau valides.')
+        const caracteristique = String(row?.caracteristique ?? '')
+        const categorieEpreuve = String(row?.categorieEpreuve ?? '')
+        const original = row?.id
+          ? originalRows.find((entry: any) => String(entry.id) === String(row.id))
+          : null
+        const isUnchangedLegacy = original
+          && !original.caracteristique && !original.categorieEpreuve
+          && !caracteristique && !categorieEpreuve
+          && original.nom === row.nom && Number(original.valeur) === valeur
+        if (!isUnchangedLegacy && (
+          !['force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception'].includes(caracteristique)
+          || !['vaisseau', 'pacifiques', 'combat'].includes(categorieEpreuve)
+        )) {
+          throw new Error('Chaque nouvelle compétence extra doit être rattachée à une caractéristique et une colonne d’épreuve.')
+        }
+        return {
+          ...(row.id ? { id: row.id } : {}),
+          nom,
+          valeur,
+          ...(caracteristique ? { caracteristique } : {}),
+          ...(categorieEpreuve ? { categorieEpreuve } : {}),
+        }
       })
       continue
     }
