@@ -110,6 +110,43 @@ export async function renameShip(shipId: number, submittedName: string) {
   return { success: true, nom }
 }
 
+/** Transfère la propriété du vaisseau à un personnage de la même escouade. */
+export async function transferShipOwnership(shipId: number, recipientCharacterId: number) {
+  if (!Number.isSafeInteger(shipId) || shipId <= 0) throw new Error('Vaisseau invalide')
+  if (!Number.isSafeInteger(recipientCharacterId) || recipientCharacterId <= 0)
+    throw new Error('Personnage destinataire invalide')
+
+  const { payload, user } = await context()
+  const rights = await access(payload, user, shipId, 0)
+  const ownerCharacterId = idOf(rights.character)
+  if (!rights.isOwner || ownerCharacterId == null)
+    throw new Error('Seul le propriétaire actuel peut transférer ce vaisseau')
+  if (String(ownerCharacterId) === String(recipientCharacterId))
+    throw new Error('Choisissez un autre personnage')
+
+  const groupId = idOf(rights.character.groupe)
+  if (groupId == null) throw new Error('Votre personnage ne fait partie d’aucune escouade')
+
+  const recipient = await payload.findByID({
+    collection: 'characters',
+    id: recipientCharacterId,
+    depth: 0,
+    overrideAccess: true,
+  }).catch(() => null) as any
+  if (!recipient || String(idOf(recipient.groupe)) !== String(groupId))
+    throw new Error('Le personnage destinataire doit appartenir à votre escouade')
+
+  await payload.update({
+    collection: 'ships',
+    id: shipId,
+    data: { proprietaire: recipientCharacterId },
+    user,
+    overrideAccess: true,
+  })
+  revalidateShip(shipId)
+  return { success: true }
+}
+
 export async function manageShipConsumable(shipId: number, operation: ConsumableOperation, index: number, consumableId?: number | string) {
   const { payload, user } = await context()
   const { ship } = await authorizeEdit(payload, user, shipId, 3)

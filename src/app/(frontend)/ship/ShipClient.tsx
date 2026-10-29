@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useRef, useState } from 'react'
 import { canEquipConsumable, consumableCapacity, isShipAmmunition, sameConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
 import { isAmmoCompatibleWith, sameShipAmmo, shipAmmoName } from '@/lib/shipWeaponAmmo'
@@ -26,6 +27,7 @@ import {
   updateShipTurretWeaponState,
   updateShipWeaponState,
   logShipAmmoState,
+  transferShipOwnership,
 } from './actions'
 
 const object = (value: any) => (typeof value === 'object' && value ? value : null)
@@ -115,6 +117,8 @@ function ShipEpreuveItem({ row, tooltipId }: { row: ShipEpreuveRow; tooltipId?: 
 export function ShipClient({
   ship: initialShip,
   crew: initialCrew,
+  ownershipCandidates = [],
+  canTransferOwnership = false,
   readOnly = false,
   viewerCharacterId = null,
   canManageCrew = false,
@@ -122,6 +126,8 @@ export function ShipClient({
 }: {
   ship: any
   crew: any[]
+  ownershipCandidates?: { id: number | string; nom: string }[]
+  canTransferOwnership?: boolean
   readOnly?: boolean
   /** Personnage de l'utilisateur courant, s'il en a un. */
   viewerCharacterId?: number | string | null
@@ -130,6 +136,7 @@ export function ShipClient({
   /** Vaisseau du groupe où l'utilisateur n'est pas embarqué. */
   canJoin?: boolean
 }) {
+  const router = useRouter()
   const [ship, setShip] = useState(() => withoutTransientWeaponHeat(initialShip))
   const [crew, setCrew] = useState(initialCrew)
   const [draft, setDraft] = useState(() => withoutTransientWeaponHeat(initialShip))
@@ -301,6 +308,25 @@ export function ShipClient({
     await changeSeat(self, 'passager')
   }
   const [crewBusy, setCrewBusy] = useState(false)
+  const [ownershipDialogOpen, setOwnershipDialogOpen] = useState(false)
+  const [newOwnerId, setNewOwnerId] = useState('')
+  const [ownershipBusy, setOwnershipBusy] = useState(false)
+  const [ownershipError, setOwnershipError] = useState('')
+  const selectedNewOwner = ownershipCandidates.find((candidate) => String(candidate.id) === newOwnerId)
+  const confirmOwnershipTransfer = async () => {
+    if (!canTransferOwnership || !selectedNewOwner || ownershipBusy) return
+    setOwnershipBusy(true)
+    setOwnershipError('')
+    try {
+      await transferShipOwnership(ship.id, Number(selectedNewOwner.id))
+      setOwnershipDialogOpen(false)
+      router.refresh()
+    } catch (error) {
+      setOwnershipError(error instanceof Error ? error.message : 'Impossible de transférer la propriété.')
+    } finally {
+      setOwnershipBusy(false)
+    }
+  }
   const disembark = async (member: any) => {
     if (!canManageCrew || crewBusy) return
     if (!confirm(`Débarquer ${member.nom || 'ce personnage'} du vaisseau ?`)) return
@@ -1025,11 +1051,22 @@ export function ShipClient({
       <section className="ship-card ship-crew-card">
         <div className="ship-subtitle-line">
           <h2 className="ship-card-title">Équipage · {crew.length}</h2>
-          {canJoin && (
-            <button className="ship-crew-action" disabled={crewBusy} onClick={board}>
-              Rejoindre ce vaisseau
-            </button>
-          )}
+          <div className="ship-crew-controls">
+            {canTransferOwnership && ownershipCandidates.length > 0 && (
+              <button type="button" className="ship-crew-action" disabled={ownershipBusy} onClick={() => {
+                setNewOwnerId('')
+                setOwnershipError('')
+                setOwnershipDialogOpen(true)
+              }}>
+                Transférer la propriété
+              </button>
+            )}
+            {canJoin && (
+              <button className="ship-crew-action" disabled={crewBusy} onClick={board}>
+                Rejoindre ce vaisseau
+              </button>
+            )}
+          </div>
         </div>
         <div className="ship-crew-seats">
           {seats.map((seat) => {
@@ -1390,6 +1427,37 @@ export function ShipClient({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {ownershipDialogOpen && canTransferOwnership && (
+        <div className="ship-selector-overlay" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !ownershipBusy) setOwnershipDialogOpen(false)
+        }}>
+          <section className="ship-selector-modal ship-ownership-modal" role="dialog" aria-modal="true" aria-labelledby="ship-ownership-title" aria-describedby="ship-ownership-description">
+            <div className="ship-selector-header">
+              <h3 id="ship-ownership-title">Confirmer le transfert</h3>
+              <button type="button" aria-label="Fermer" disabled={ownershipBusy} onClick={() => setOwnershipDialogOpen(false)}>×</button>
+            </div>
+            <label className="ship-field" htmlFor="ship-new-owner">
+              Personnage destinataire
+              <select id="ship-new-owner" value={newOwnerId} disabled={ownershipBusy} onChange={(event) => setNewOwnerId(event.target.value)}>
+                <option value="">Choisir un personnage</option>
+                {ownershipCandidates.map((candidate) => (
+                  <option key={candidate.id} value={String(candidate.id)}>{candidate.nom}</option>
+                ))}
+              </select>
+            </label>
+            <p id="ship-ownership-description" className="ship-muted">
+              La propriété du vaisseau sera transférée à {selectedNewOwner?.nom ?? 'ce personnage'}. Seul le propriétaire enregistré sera modifié.
+            </p>
+            {ownershipError && <p className="ship-ownership-error" role="alert">{ownershipError}</p>}
+            <div className="ship-edit-buttons">
+              <button type="button" className="ss-button secondary" disabled={ownershipBusy} onClick={() => setOwnershipDialogOpen(false)}>Annuler</button>
+              <button type="button" className="ss-button primary" disabled={ownershipBusy || !selectedNewOwner} onClick={() => void confirmOwnershipTransfer()}>
+                {ownershipBusy ? 'Transfert…' : 'Confirmer le transfert'}
+              </button>
+            </div>
+          </section>
         </div>
       )}
       {heatDialogOpen && stats.overConsumption && <HeatRedistribution key={heatSignature}

@@ -25,7 +25,29 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
   if (!access.ship || !access.canRead) redirect('/')
   const ship = access.ship
 
-  const crew = await findShipCrew(payload, shipId)
+  const [crew, ownershipCandidates] = await Promise.all([
+    findShipCrew(payload, shipId),
+    (async () => {
+      const characterId = access.character?.id
+      const groupId = typeof access.character?.groupe === 'object'
+        ? access.character.groupe?.id
+        : access.character?.groupe
+      if (!access.isOwner || !groupId) return []
+
+      const { docs } = await payload.find({
+        collection: 'characters',
+        where: { groupe: { equals: groupId } },
+        depth: 0,
+        limit: 500,
+        sort: 'nom',
+        select: { id: true, nom: true },
+        overrideAccess: true,
+      })
+      return docs
+        .filter((member: any) => String(member.id) !== String(characterId))
+        .map((member: any) => ({ id: member.id, nom: member.nom || `Personnage ${member.id}` }))
+    })(),
+  ])
   return <div className="ss-root ship-root">
     <SiteHeader activePage="ship" />
     <main className="ship-layout">
@@ -33,6 +55,8 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
       <ShipClient
         ship={JSON.parse(JSON.stringify(ship))}
         crew={JSON.parse(JSON.stringify(crew))}
+        ownershipCandidates={JSON.parse(JSON.stringify(ownershipCandidates))}
+        canTransferOwnership={access.isOwner}
         readOnly={!access.canEdit}
         viewerCharacterId={access.character?.id ?? null}
         canManageCrew={access.canManageCrew}
