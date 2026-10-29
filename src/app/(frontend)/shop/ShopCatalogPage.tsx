@@ -71,6 +71,8 @@ function summaries(docs: any[]): ShopItem[] {
     categoriePrincipale: doc.categoriePrincipale ?? null,
     sousCategorieArme: doc.sousCategorieArme ?? null,
     sousCategorieArmure: doc.sousCategorieArmure ?? null,
+    setId: doc.set && typeof doc.set === 'object' ? Number(doc.set.id) : doc.set == null ? null : Number(doc.set),
+    setNom: doc.set && typeof doc.set === 'object' && typeof doc.set.nom === 'string' ? doc.set.nom : null,
     famille: doc.famille ?? null,
     typeModule: doc.typeModule ?? null,
     type: Array.isArray(doc.type) ? doc.type.join(', ') : doc.type ?? null,

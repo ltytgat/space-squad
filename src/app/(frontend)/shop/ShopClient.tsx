@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShopItemDetailsButton, type ShopItemDetail } from './ShopItemDetails'
 import { executeShopTransaction } from './actions'
@@ -20,6 +20,8 @@ export type ShopItem = {
   categoriePrincipale?: string | null
   sousCategorieArme?: string | null
   sousCategorieArmure?: string | null
+  setId?: number | null
+  setNom?: string | null
   type?: string | null
   types?: string[]
   typeModule?: string | null
@@ -71,7 +73,6 @@ const armorModCategoryLabel: Record<string, string> = { toutes: 'Toutes les armu
 const shipTypeLabel: Record<string, string> = { thermique: 'Thermique', cinetique: 'Cinétique', explosif: 'Explosif', blindage: 'Autre' }
 const shipClassLabel: Record<string, string> = { '1': 'Alpha', '2': 'Beta', '3': 'Gamma', '4': 'Delta' }
 const damageTypeChoices: [string, string][] = [['thermique', 'Thermique'], ['cinetique', 'Cinétique'], ['plasma', 'Plasma'], ['explosif', 'Explosif']]
-const damageTypeLabels: Record<string, string> = { cinetique: 'Cinétique', thermique: 'Thermique', explosif: 'Explosif', plasma: 'Plasma' }
 
 const sectionForScope: Record<Exclude<ShopScope, 'tout'>, 'personal' | 'spatial' | 'mods'> = {
   'sol-armes': 'personal', 'sol-armures': 'personal', 'sol-consommables': 'personal',
@@ -80,16 +81,84 @@ const sectionForScope: Record<Exclude<ShopScope, 'tout'>, 'personal' | 'spatial'
   'mods-armes': 'mods', 'mods-armures': 'mods',
 }
 
+const weaponCategoryChoices: [string, string][] = [
+  ['fusil-assaut', 'Fusil d’assaut'], ['shotgun', 'Shotgun'], ['sniper', 'Sniper'],
+  ['pistolet', 'Pistolet'], ['melee', 'Mêlée'], ['lourde', 'Arme lourde'],
+]
+const armorLocationChoices: [string, string][] = [
+  ['tete', 'Tête'], ['torse', 'Torse'], ['bras', 'Bras'], ['jambes', 'Jambes'], ['backpack', 'Back-pack'],
+]
+const consumableCategoryChoices: [string, string][] = [
+  ['soins', 'Soins'], ['munitions', 'Munitions'], ['grenades', 'Grenades'], ['tactique', 'Tactique'], ['outils', 'Outils'],
+]
+const weaponDamageTypeChoices: [string, string][] = [
+  ...damageTypeChoices,
+  ['melee', 'Mêlée'],
+]
+const salesScopes = new Set<ShopScope>([
+  'sol-armes', 'sol-armures', 'sol-consommables',
+  'espace-armes', 'espace-modules', 'espace-consommables',
+  'mods-armures',
+])
+
+function compareShopItemsByPrice(left: ShopItem, right: ShopItem, order: 'asc' | 'desc') {
+  const leftPrice = readShopPrice(left.prix)
+  const rightPrice = readShopPrice(right.prix)
+  if (leftPrice === null && rightPrice !== null) return 1
+  if (rightPrice === null && leftPrice !== null) return -1
+  if (leftPrice !== null && rightPrice !== null && leftPrice !== rightPrice) {
+    return (leftPrice - rightPrice) * (order === 'asc' ? 1 : -1)
+  }
+  return left.nom.localeCompare(right.nom, 'fr')
+}
+
+function weaponDamageTypes(item: ShopItem) {
+  const values = item.types ?? (item.type ? item.type.split(',').map((type) => type.trim()) : [])
+  const recognized = [...new Set(values)].filter((type) => weaponDamageTypeChoices.some(([value]) => value === type))
+  return recognized.length ? recognized : ['unknown']
+}
+
+function toggleCollapsedKey(current: Set<string>, key: string) {
+  const next = new Set(current)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  return next
+}
+
+function ShopCollapsibleGroup({
+  id, title, open, disabled = false, level, onToggle, children,
+}: {
+  id: string
+  title: string
+  open: boolean
+  disabled?: boolean
+  level: 3 | 4
+  onToggle: () => void
+  children: ReactNode
+}) {
+  const Heading = level === 3 ? 'h3' : 'h4'
+  const contentId = `${id}-content`
+  return <section className={`shop-category-group shop-category-group--level-${level}`}>
+    <header className="shop-category-heading">
+      <Heading>{title}</Heading>
+      <button type="button" className="shop-category-toggle" aria-expanded={open} aria-controls={contentId} disabled={disabled} onClick={onToggle}>
+        {open ? 'Replier' : 'Déplier'}
+      </button>
+    </header>
+    <div id={contentId} className="shop-category-content" hidden={!open}>{children}</div>
+  </section>
+}
+
 function itemDescription(item: ShopItem) {
-  return [item.custom ? 'Custom' : null, item.categorie ? categoryLabel[item.categorie] ?? item.categorie : null, item.famille, item.type, item.modele ? `Modèle ${item.modele}` : null, item.taille ? `Taille ${item.taille}` : null, item.degats ? `Dégâts ${item.degats}` : null, item.calibre].filter(Boolean).join(' · ')
+  return [item.custom ? 'Custom' : null, item.categorie ? categoryLabel[item.categorie] ?? item.categorie : null, item.setNom, item.famille, item.type, item.modele ? `Modèle ${item.modele}` : null, item.taille ? `Taille ${item.taille}` : null, item.degats ? `Dégâts ${item.degats}` : null, item.calibre].filter(Boolean).join(' · ')
 }
 
 function weaponDamageBadges(item: ShopItem) {
   const types = [...new Set(item.types ?? (item.type ? item.type.split(',').map((type) => type.trim()) : []))]
-    .filter((type) => type in damageTypeLabels)
+    .filter((type) => weaponDamageTypeChoices.some(([value]) => value === type))
   if (!types.length) return null
   return <div className="shop-damage-badges" aria-label="Types de dégâts">
-    {types.map((type) => <span className={`shop-damage-badge shop-damage-badge-${type}`} key={type}>{damageTypeLabels[type]}</span>)}
+    {types.map((type) => <span className={`shop-damage-badge shop-damage-badge-${type}`} key={type}>{weaponDamageTypeChoices.find(([value]) => value === type)?.[1] ?? type}</span>)}
   </div>
 }
 
@@ -100,7 +169,14 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const [category, setCategory] = useState('all')
   const [facet, setFacet] = useState('all')
   const [damageType, setDamageType] = useState('all')
-  const [weaponPriceOrder, setWeaponPriceOrder] = useState<'asc' | 'desc'>('asc')
+  const [priceOrder, setPriceOrder] = useState<'asc' | 'desc'>('asc')
+  const [armorRank, setArmorRank] = useState('all')
+  const [armorView, setArmorView] = useState<'location' | 'set'>('location')
+  const [tradeView, setTradeView] = useState<'buy' | 'sell'>('buy')
+  const [collapsedWeaponCategories, setCollapsedWeaponCategories] = useState<Set<string>>(() => new Set())
+  const [collapsedWeaponDamageTypes, setCollapsedWeaponDamageTypes] = useState<Set<string>>(() => new Set())
+  const [collapsedArmorGroups, setCollapsedArmorGroups] = useState<Set<string>>(() => new Set())
+  const [collapsedConsumableGroups, setCollapsedConsumableGroups] = useState<Set<string>>(() => new Set())
   const [shipType, setShipType] = useState('all')
   const [shipClass, setShipClass] = useState('all')
   const [shipId, setShipId] = useState(ships[0]?.id ?? 0)
@@ -122,6 +198,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const ownedModIds = new Set(character.inventaireMods.map((mod) => String(mod.id)))
   const isAll = scope === 'tout'
   const activeSection = isAll ? section : sectionForScope[scope]
+  const hasSalesView = !isAll && salesScopes.has(scope)
   const availableDamageTypeChoices = activeSection === 'spatial' ? damageTypeChoices.filter(([value]) => value !== 'plasma') : damageTypeChoices
   const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => factionCanBuyWeaponAtRank(item.nom, character.rang, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.rang, character.inventaireRecompensesFaction, character.factionName])
   const availableArmors = useMemo(() => catalogs.armors.filter((item) => item.rang == null || item.rang <= character.rang), [catalogs.armors, character.rang])
@@ -147,7 +224,72 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     const classMatches = scope !== 'espace-armes' || shipClass === 'all' || item.taille === shipClass
     return textMatches && facetMatches && typeMatches && classMatches && damageTypeMatches
   }
-  const matchingOwned = (entries: Owned[], filterDamageType = false) => entries.flatMap((entry, index) => entry.item && matches(entry.item, filterDamageType) ? [{ entry, index }] : [])
+  const presentOwned = (entries: Owned[]) => entries.flatMap((entry, index) => entry.item ? [{ entry, index }] : [])
+
+  const weaponsForDisplay = availableWeapons.filter((item) => matches(item, true))
+  const weaponCategoryOptions = [
+    ...weaponCategoryChoices,
+    ...[...new Set(weaponsForDisplay.map((item) => item.categorie).filter((value): value is string => !!value && !weaponCategoryChoices.some(([known]) => known === value)))]
+      .sort((left, right) => left.localeCompare(right, 'fr'))
+      .map((value): [string, string] => [value, categoryLabel[value] ?? value]),
+  ]
+  const weaponGroups = weaponCategoryOptions.flatMap(([value, label]) => {
+    const items = weaponsForDisplay.filter((item) => item.categorie === value)
+    if (!items.length) return []
+    const damageOptions = [
+      ...weaponDamageTypeChoices,
+      ...(items.some((item) => weaponDamageTypes(item).includes('unknown')) ? [['unknown', 'Type non précisé'] as [string, string]] : []),
+    ]
+    const damageGroups = damageOptions.flatMap(([damageValue, damageLabel]) => {
+      const damageItems = items.filter((item) => weaponDamageTypes(item).includes(damageValue))
+      return damageItems.length ? [{ value: damageValue, label: damageLabel, items: damageItems.sort((left, right) => compareShopItemsByPrice(left, right, priceOrder)) }] : []
+    })
+    return [{ value, label, damageGroups }]
+  })
+  const hasWeaponFilters = Boolean(search.trim()) || (isAll ? category !== 'all' : facet !== 'all') || damageType !== 'all'
+
+  const armorRankChoices = [...new Set(availableArmors.map((item) => item.rang).filter((rank): rank is number => rank != null))].sort((left, right) => left - right)
+  const armorsForDisplay = availableArmors.filter((item) => matches(item) && (armorRank === 'all' || String(item.rang) === armorRank))
+  const armorLocationOptions = [
+    ...armorLocationChoices,
+    ...[...new Set(armorsForDisplay.map((item) => item.categorie).filter((value): value is string => !!value && !armorLocationChoices.some(([known]) => known === value)))]
+      .sort((left, right) => left.localeCompare(right, 'fr'))
+      .map((value): [string, string] => [value, categoryLabel[value] ?? value]),
+  ]
+  const armorGroups = armorView === 'location'
+    ? armorLocationOptions.flatMap(([value, label]) => {
+      const items = armorsForDisplay.filter((item) => item.categorie === value)
+      return items.length ? [{ key: `location:${value}`, label, items }] : []
+    })
+    : (() => {
+      const groups = new Map<string, { key: string; label: string; items: ShopItem[] }>()
+      for (const item of armorsForDisplay) {
+        const key = item.setId != null ? `set:${item.setId}` : item.setNom ? `set-name:${item.setNom}` : 'no-set'
+        const label = item.setNom || (item.setId != null ? `Set ${item.setId}` : 'Hors set')
+        const group = groups.get(key) ?? { key, label, items: [] }
+        group.items.push(item)
+        groups.set(key, group)
+      }
+      return [...groups.values()].sort((left, right) => {
+        if (left.key === 'no-set') return 1
+        if (right.key === 'no-set') return -1
+        return left.label.localeCompare(right.label, 'fr')
+      })
+    })()
+  const hasArmorFilters = Boolean(search.trim()) || (isAll ? category !== 'all' : facet !== 'all') || armorRank !== 'all'
+
+  const consumablesForDisplay = catalogs.consumables.filter((item) => matches(item))
+  const consumableCategoryOptions = [
+    ...consumableCategoryChoices,
+    ...[...new Set(consumablesForDisplay.map((item) => item.categorie).filter((value): value is string => !!value && !consumableCategoryChoices.some(([known]) => known === value)))]
+      .sort((left, right) => left.localeCompare(right, 'fr'))
+      .map((value): [string, string] => [value, categoryLabel[value] ?? value]),
+  ]
+  const consumableGroups = consumableCategoryOptions.flatMap(([value, label]) => {
+    const items = consumablesForDisplay.filter((item) => item.categorie === value)
+    return items.length ? [{ value, label, items: items.sort((left, right) => compareShopItemsByPrice(left, right, priceOrder)) }] : []
+  })
+  const hasConsumableFilters = Boolean(search.trim()) || (isAll ? category !== 'all' : false)
 
   function couponsFor(kind: string, item: ShopItem) {
     if (kind !== 'weapon' && kind !== 'ship-weapon' && kind !== 'ship-module') return []
@@ -283,6 +425,18 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     </article>
   }
 
+  function armorModInventoryCard(item: ShopItem, index: number) {
+    const resale = amountText(item)
+    return <article className="shop-inventory-item" key={`owned-armor-mod-${item.id}-${index}`}>
+      <div><strong>{item.nom}</strong><span>Mod d’armure</span></div>
+      <div className="shop-item-action">
+        <strong>{resale ? `Revente : ${resale}` : 'Non vendable'}</strong>
+        <button type="button" className="shop-sell-button" disabled={pending || readShopPrice(item.prix) === null} onClick={() => transact({ action: 'sell', kind: 'armor-mod', itemId: item.id }, `${item.nom} vendu.`, `Vendre ${item.nom} pour ${resale} ?`)}>Vendre</button>
+      </div>
+      <ShopItemDetailsButton name={item.nom} category="Mod" image={item.image} details={item.details ?? []} />
+    </article>
+  }
+
   const nav = [
     ['personal', 'Équipement personnel'], ['spatial', 'Équipement spatial'], ['mods', 'Mods'], ['inventory', 'Mes réserves'],
   ] as const
@@ -292,44 +446,86 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     {isAll && <nav className="shop-tabs" aria-label="Espaces de la boutique">{nav.map(([value, label]) => <button key={value} type="button" className={section === value ? 'active' : ''} onClick={() => { setSection(value); setCategory('all'); setDamageType('all') }}>{label}</button>)}</nav>}
     {message && <div className={`shop-message ${message.kind}`} role="status">{message.text}{message.kind === 'error' && retryRequest && <button type="button" disabled={pending} onClick={retryTransaction}>Réessayer la même transaction</button>}</div>}
 
-    {activeSection !== 'inventory' && <div className="shop-filters">
+    {hasSalesView && <nav className="shop-tabs" aria-label="Opérations de la boutique">
+      <button type="button" className={tradeView === 'buy' ? 'active' : ''} aria-pressed={tradeView === 'buy'} onClick={() => setTradeView('buy')}>Acheter</button>
+      <button type="button" className={tradeView === 'sell' ? 'active' : ''} aria-pressed={tradeView === 'sell'} onClick={() => setTradeView('sell')}>Vente</button>
+    </nav>}
+
+    {activeSection !== 'inventory' && (!hasSalesView || tradeView === 'buy') && <div className="shop-filters">
       <label>Rechercher <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom, catégorie, effet…" /></label>
       {isAll && <label>Catégorie <select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">Toutes</option>{categories.map((value) => <option key={value} value={value}>{categoryLabel[value] ?? value}</option>)}</select></label>}
       {!isAll && facetField && <label>{scope === 'mods-armes' ? 'Type d’arme compatible' : scope === 'mods-armures' ? 'Type d’armure compatible' : scope === 'espace-modules' ? 'Type de module' : 'Type'} <select value={facet} onChange={(event) => setFacet(event.target.value)}><option value="all">Tous</option>{facetChoices.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
       {scope === 'espace-armes' && <><label>Type d’arme <select value={shipType} onChange={(event) => setShipType(event.target.value)}><option value="all">Tous</option>{Object.entries(shipTypeLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Classe de vaisseau <select value={shipClass} onChange={(event) => setShipClass(event.target.value)}><option value="all">Toutes</option>{Object.entries(shipClassLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></>}
       {(scope === 'sol-armes' || scope === 'espace-armes' || (isAll && (activeSection === 'personal' || activeSection === 'spatial'))) && <label>Type de dégâts <select value={damageType} onChange={(event) => setDamageType(event.target.value)}><option value="all">Tous</option>{availableDamageTypeChoices.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
-      {(scope === 'sol-armes' || (isAll && activeSection === 'personal')) && <label>Trier les armes <select value={weaponPriceOrder} onChange={(event) => setWeaponPriceOrder(event.target.value as 'asc' | 'desc')}><option value="asc">Prix croissant</option><option value="desc">Prix décroissant</option></select></label>}
+      {(scope === 'sol-armes' || (isAll && activeSection === 'personal')) && <label>Trier par prix <select value={priceOrder} onChange={(event) => setPriceOrder(event.target.value as 'asc' | 'desc')}><option value="asc">Prix croissant</option><option value="desc">Prix décroissant</option></select></label>}
       {activeSection === 'spatial' && <label>Vaisseau <select value={shipId} onChange={(event) => setShipId(Number(event.target.value))}>{ships.map((value) => <option key={value.id} value={value.id}>{value.nom}</option>)}</select></label>}
     </div>}
 
-    {!!shelfCoupons.length && <section className="shop-catalog-groups shop-coupon-shelf">
+    {(!hasSalesView || tradeView === 'buy') && (scope === 'sol-armures' || (isAll && activeSection === 'personal')) && <div className="shop-filters shop-armor-filters">
+      <label>Rang <select value={armorRank} onChange={(event) => setArmorRank(event.target.value)}><option value="all">Tous les rangs</option>{armorRankChoices.map((rank) => <option key={rank} value={rank}>Rang {rank}</option>)}</select></label>
+      <div className="shop-view-choice" role="group" aria-label="Regroupement des armures"><span>Vue des armures</span><div className="shop-tabs shop-view-tabs">
+        <button type="button" className={armorView === 'location' ? 'active' : ''} aria-pressed={armorView === 'location'} onClick={() => setArmorView('location')}>Emplacement</button>
+        <button type="button" className={armorView === 'set' ? 'active' : ''} aria-pressed={armorView === 'set'} onClick={() => setArmorView('set')}>Set</button>
+      </div></div>
+    </div>}
+    {(!hasSalesView || tradeView === 'buy') && scope === 'sol-consommables' && <div className="shop-filters shop-consumable-filters">
+      <label>Trier par prix <select value={priceOrder} onChange={(event) => setPriceOrder(event.target.value as 'asc' | 'desc')}><option value="asc">Prix croissant</option><option value="desc">Prix d&#233;croissant</option></select></label>
+    </div>}
+
+    {(!hasSalesView || tradeView === 'buy') && !!shelfCoupons.length && <section className="shop-catalog-groups shop-coupon-shelf">
       <h2>Bons de réduction utilisables dans cette section</h2>
       <div className="shop-grid">{shelfCoupons.map((coupon, index) => <article className="shop-item" key={`${coupon.nom}-${index}`}>
         <div className="shop-item-main"><h3>{coupon.nom}</h3><p>{coupon.effet}</p><div className="shop-item-meta">{coupon.pourcentageReduction} % · {coupon.usage === 'arme-sol' ? 'Armes Sol hors armes lourdes' : coupon.usage === 'arme-espace' ? 'Armes Espace hors armes lourdes' : 'Modules Espace'}</div></div>
       </article>)}</div>
     </section>}
 
-    {activeSection === 'personal' && <div className="shop-catalog-groups">
-      {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2><div className="shop-grid">{availableWeapons.filter((item) => matches(item, true)).sort((left, right) => {
-        const leftPrice = readShopPrice(left.prix)
-        const rightPrice = readShopPrice(right.prix)
-        if (leftPrice === null && rightPrice !== null) return 1
-        if (rightPrice === null && leftPrice !== null) return -1
-        if (leftPrice !== null && rightPrice !== null && leftPrice !== rightPrice) return (leftPrice - rightPrice) * (weaponPriceOrder === 'asc' ? 1 : -1)
-        return left.nom.localeCompare(right.nom, 'fr')
-      }).map((item) => card(item, 'weapon', 'personal'))}</div></section>}
-      {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2><div className="shop-grid">{availableArmors.filter((item) => matches(item)).map((item) => card(item, 'armor', 'personal'))}</div></section>}
-      {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2><div className="shop-grid">{catalogs.consumables.filter((item) => matches(item)).map((item) => card(item, 'consumable', 'personal'))}</div></section>}
+    {activeSection === 'personal' && (!hasSalesView || tradeView === 'buy') && <div className="shop-catalog-groups">
+      {(isAll || scope === 'sol-armes') && <section><h2>Armes</h2>
+        {!weaponGroups.length && <p className="shop-empty">Aucune arme ne correspond aux filtres.</p>}
+        <div className="shop-category-list">{weaponGroups.map((group) => {
+          const groupKey = `weapon:${group.value}`
+          const groupOpen = hasWeaponFilters || !collapsedWeaponCategories.has(groupKey)
+          const groupId = `shop-${groupKey}`
+          return <ShopCollapsibleGroup key={groupKey} id={groupId} title={group.label} level={3} open={groupOpen} disabled={hasWeaponFilters} onToggle={() => setCollapsedWeaponCategories((current) => toggleCollapsedKey(current, groupKey))}>
+            <div className="shop-subcategory-list">{group.damageGroups.map((damageGroup) => {
+              const damageKey = `${groupKey}:${damageGroup.value}`
+              const damageOpen = hasWeaponFilters || !collapsedWeaponDamageTypes.has(damageKey)
+              return <ShopCollapsibleGroup key={damageKey} id={`shop-${damageKey}`} title={damageGroup.label} level={4} open={damageOpen} disabled={hasWeaponFilters} onToggle={() => setCollapsedWeaponDamageTypes((current) => toggleCollapsedKey(current, damageKey))}>
+                <div className="shop-grid">{damageGroup.items.map((item) => card(item, 'weapon', 'personal'))}</div>
+              </ShopCollapsibleGroup>
+            })}</div>
+          </ShopCollapsibleGroup>
+        })}</div>
+      </section>}
+      {(isAll || scope === 'sol-armures') && <section><h2>Armures</h2>
+        {!armorGroups.length && <p className="shop-empty">Aucune armure ne correspond aux filtres.</p>}
+        <div className="shop-category-list">{armorGroups.map((group) => {
+          const groupOpen = hasArmorFilters || !collapsedArmorGroups.has(group.key)
+          const safeKey = group.key.replace(/[^a-zA-Z0-9_-]/g, '-')
+          return <ShopCollapsibleGroup key={group.key} id={`shop-armor-${safeKey}`} title={group.label} level={3} open={groupOpen} disabled={hasArmorFilters} onToggle={() => setCollapsedArmorGroups((current) => toggleCollapsedKey(current, group.key))}>
+            <div className="shop-grid">{group.items.map((item) => card(item, 'armor', 'personal'))}</div>
+          </ShopCollapsibleGroup>
+        })}</div>
+      </section>}
+      {(isAll || scope === 'sol-consommables') && <section><h2>Consommables</h2>
+        {!consumableGroups.length && <p className="shop-empty">Aucun consommable ne correspond aux filtres.</p>}
+        <div className="shop-category-list">{consumableGroups.map((group) => {
+          const groupKey = `consumable:${group.value}`
+          const groupOpen = hasConsumableFilters || !collapsedConsumableGroups.has(groupKey)
+          return <ShopCollapsibleGroup key={groupKey} id={`shop-${groupKey}`} title={group.label} level={3} open={groupOpen} disabled={hasConsumableFilters} onToggle={() => setCollapsedConsumableGroups((current) => toggleCollapsedKey(current, groupKey))}>
+            <div className="shop-grid">{group.items.map((item) => card(item, 'consumable', 'personal'))}</div>
+          </ShopCollapsibleGroup>
+        })}</div>
+      </section>}
     </div>}
-
-    {activeSection === 'spatial' && <div className="shop-catalog-groups">
+    {activeSection === 'spatial' && (!hasSalesView || tradeView === 'buy') && <div className="shop-catalog-groups">
       {!ship && <p className="shop-empty">Aucun vaisseau modifiable n’est disponible pour votre personnage.</p>}
       {(isAll || scope === 'espace-armes') && <section><h2>Armes de vaisseau</h2><div className="shop-grid">{catalogs.shipWeapons.filter((item) => matches(item, true)).map((item) => card(item, 'ship-weapon', 'ship'))}</div></section>}
       {(isAll || scope === 'espace-modules') && <section><h2>Modules de vaisseau</h2><div className="shop-grid">{catalogs.shipModules.filter((item) => matches(item)).map((item) => card(item, 'ship-module', 'ship'))}</div></section>}
       {(isAll || scope === 'espace-consommables') && <section><h2>Consommables de vaisseau</h2><div className="shop-grid">{catalogs.shipConsumables.filter((item) => matches(item)).map((item) => card(item, 'ship-consumable', 'ship'))}</div></section>}
     </div>}
 
-    {activeSection === 'mods' && <div className="shop-catalog-groups">
+    {activeSection === 'mods' && (!hasSalesView || tradeView === 'buy') && <div className="shop-catalog-groups">
       {(isAll || scope === 'mods-armes') && <section className="shop-mod-flow"><h2>Mods d’arme</h2><p>Choisissez une arme possédée, équipée ou en réserve. Un seul Mod peut être appliqué à une arme et il devient permanent.</p>
         <label>Arme cible <select value={targetKey} onChange={(event) => setTargetKey(event.target.value)}><option value="">Sélectionner une arme…</option>{targets.filter((target) => readShopPrice(target.item.prix) !== null && target.mods.length === 0).map((target) => <option key={target.key} value={target.key}>{target.item.nom}{target.location === 'equipped' ? ' · équipée' : ' · réserve'}</option>)}</select></label>
         {!selectedTarget && <p className="shop-empty">Sélectionnez une arme compatible, en réserve ou équipée, pour afficher les Mods disponibles.</p>}
@@ -343,18 +539,46 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       {(isAll || scope === 'mods-armures') && <section><h2>Mods d’armure</h2><p>Les Mods d’armure achetés vont dans votre réserve et peuvent être vendus séparément.</p><div className="shop-grid">{catalogs.mods.filter((item) => item.categoriePrincipale === 'armures' && matches(item)).map((item) => card(item, 'armor-mod', 'personal'))}</div></section>}
     </div>}
 
-    {!isAll && <div className="shop-catalog-groups shop-owned shop-section-owned">
-      <h2>Votre réserve</h2>
-      {scope === 'sol-armes' && <section><h3>Armes en réserve</h3>{matchingOwned(character.inventaireArmes, true).map(({ entry, index }) => inventoryCard(entry, 'weapon', index, 'personal'))}{!character.inventaireArmes.some((entry) => entry.item && matches(entry.item, true)) && <p className="shop-empty">Aucune arme correspondante dans votre réserve.</p>}</section>}
-      {scope === 'sol-armures' && <section><h3>Armures en réserve</h3>{matchingOwned(character.inventaireArmures).map(({ entry, index }) => inventoryCard(entry, 'armor', index, 'personal'))}{!character.inventaireArmures.some((entry) => entry.item && matches(entry.item)) && <p className="shop-empty">Aucune armure correspondante dans votre réserve.</p>}</section>}
-      {scope === 'sol-consommables' && <section><h3>Consommables personnels</h3>{matchingOwned(character.inventaire).map(({ entry, index }) => inventoryCard(entry, 'consumable', index, 'personal'))}{!character.inventaire.some((entry) => entry.item && matches(entry.item)) && <p className="shop-empty">Aucun consommable correspondant dans votre réserve.</p>}</section>}
-      {scope === 'espace-armes' && <section><h3>{ship?.nom ?? 'Vaisseau'} · Armes en réserve</h3>{ship && matchingOwned(ship.inventaireArmes, true).map(({ entry, index }) => inventoryCard(entry, 'ship-weapon', index, 'ship'))}{!ship?.inventaireArmes.some((entry) => entry.item && matches(entry.item, true)) && <p className="shop-empty">Aucune arme correspondante dans la réserve du vaisseau.</p>}</section>}
-      {scope === 'espace-modules' && <section><h3>{ship?.nom ?? 'Vaisseau'} · Modules en réserve</h3>{ship && matchingOwned(ship.inventaireModules).map(({ entry, index }) => inventoryCard(entry, 'ship-module', index, 'ship'))}{!ship?.inventaireModules.some((entry) => entry.item && matches(entry.item)) && <p className="shop-empty">Aucun module correspondant dans la réserve du vaisseau.</p>}</section>}
-      {scope === 'espace-consommables' && <section><h3>{ship?.nom ?? 'Vaisseau'} · Consommables en réserve</h3>{ship && matchingOwned(ship.inventaireConsommables).map(({ entry, index }) => inventoryCard(entry, 'ship-consumable', index, 'ship'))}{!ship?.inventaireConsommables.some((entry) => entry.item && matches(entry.item)) && <p className="shop-empty">Aucun consommable correspondant dans la réserve du vaisseau.</p>}</section>}
-      {scope === 'mods-armes' && <section><h3>Mods d’arme en réserve</h3>{character.inventaireMods.filter((item) => item.categoriePrincipale === 'armes' && matches(item)).map((item, index) => <article className="shop-inventory-item" key={`owned-weapon-mod-${item.id}-${index}`}><div><strong>{item.nom}</strong><span>À appliquer sur une arme compatible · pas de vente séparée</span></div><ShopItemDetailsButton name={item.nom} category="Mod" image={item.image} details={item.details ?? []} /></article>)}{!character.inventaireMods.some((item) => item.categoriePrincipale === 'armes' && matches(item)) && <p className="shop-empty">Aucun Mod d’arme correspondant dans votre réserve.</p>}</section>}
-      {scope === 'mods-armures' && <section><h3>Mods d’armure en réserve</h3>{character.inventaireMods.filter((item) => item.categoriePrincipale === 'armures' && matches(item)).map((item, index) => <article className="shop-inventory-item" key={`owned-armor-mod-${item.id}-${index}`}><div><strong>{item.nom}</strong><span>Mod d’armure</span></div><div className="shop-item-action"><strong>{amountText(item) ? `Revente : ${amountText(item)}` : 'Non vendable'}</strong><button type="button" className="shop-sell-button" disabled={pending || readShopPrice(item.prix) === null} onClick={() => transact({ action: 'sell', kind: 'armor-mod', itemId: item.id }, `${item.nom} vendu.`, `Vendre ${item.nom} pour ${amountText(item)} ?`)}>Vendre</button></div></article>)}{!character.inventaireMods.some((item) => item.categoriePrincipale === 'armures' && matches(item)) && <p className="shop-empty">Aucun Mod d’armure correspondant dans votre réserve.</p>}</section>}
+    {hasSalesView && tradeView === 'sell' && <div className="shop-catalog-groups shop-owned shop-section-owned shop-sale-view">
+      {scope === 'sol-armes' && <section><h2>Armes en réserve</h2>
+        {presentOwned(character.inventaireArmes).map(({ entry, index }) => inventoryCard(entry, 'weapon', index, 'personal'))}
+        {!character.inventaireArmes.some((entry) => entry.item) && <p className="shop-empty">Aucune arme dans votre réserve.</p>}
+      </section>}
+      {scope === 'sol-armures' && <section><h2>Armures en réserve</h2>
+        {presentOwned(character.inventaireArmures).map(({ entry, index }) => inventoryCard(entry, 'armor', index, 'personal'))}
+        {!character.inventaireArmures.some((entry) => entry.item) && <p className="shop-empty">Aucune armure dans votre réserve.</p>}
+      </section>}
+      {scope === 'sol-consommables' && <section><h2>Consommables personnels</h2>
+        {presentOwned(character.inventaire).map(({ entry, index }) => inventoryCard(entry, 'consumable', index, 'personal'))}
+        {!character.inventaire.some((entry) => entry.item) && <p className="shop-empty">Aucun consommable dans votre réserve.</p>}
+      </section>}
+      {scope === 'espace-armes' && <section><h2>{ship?.nom ?? 'Vaisseau'} · Armes en réserve</h2>
+        <label className="shop-sale-ship-select">Vaisseau <select value={shipId} onChange={(event) => setShipId(Number(event.target.value))}>{ships.map((value) => <option key={value.id} value={value.id}>{value.nom}</option>)}</select></label>
+        {ship && presentOwned(ship.inventaireArmes).map(({ entry, index }) => inventoryCard(entry, 'ship-weapon', index, 'ship'))}
+        {!ship && <p className="shop-empty">Aucun vaisseau modifiable n’est disponible.</p>}
+        {ship && !ship.inventaireArmes.some((entry) => entry.item) && <p className="shop-empty">Aucune arme dans la réserve du vaisseau.</p>}
+      </section>}
+      {scope === 'espace-modules' && <section><h2>{ship?.nom ?? 'Vaisseau'} · Modules en réserve</h2>
+        <label className="shop-sale-ship-select">Vaisseau <select value={shipId} onChange={(event) => setShipId(Number(event.target.value))}>{ships.map((value) => <option key={value.id} value={value.id}>{value.nom}</option>)}</select></label>
+        {ship && presentOwned(ship.inventaireModules).map(({ entry, index }) => inventoryCard(entry, 'ship-module', index, 'ship'))}
+        {!ship && <p className="shop-empty">Aucun vaisseau modifiable n’est disponible.</p>}
+        {ship && !ship.inventaireModules.some((entry) => entry.item) && <p className="shop-empty">Aucun module dans la réserve du vaisseau.</p>}
+      </section>}
+      {scope === 'espace-consommables' && <section><h2>{ship?.nom ?? 'Vaisseau'} · Consommables en réserve</h2>
+        <label className="shop-sale-ship-select">Vaisseau <select value={shipId} onChange={(event) => setShipId(Number(event.target.value))}>{ships.map((value) => <option key={value.id} value={value.id}>{value.nom}</option>)}</select></label>
+        {ship && presentOwned(ship.inventaireConsommables).map(({ entry, index }) => inventoryCard(entry, 'ship-consumable', index, 'ship'))}
+        {!ship && <p className="shop-empty">Aucun vaisseau modifiable n’est disponible.</p>}
+        {ship && !ship.inventaireConsommables.some((entry) => entry.item) && <p className="shop-empty">Aucun consommable dans la réserve du vaisseau.</p>}
+      </section>}
+      {scope === 'mods-armures' && <section><h2>Mods d’armure en réserve</h2>
+        {character.inventaireMods.filter((item) => item.categoriePrincipale === 'armures').map(armorModInventoryCard)}
+        {!character.inventaireMods.some((item) => item.categoriePrincipale === 'armures') && <p className="shop-empty">Aucun Mod d’armure dans votre réserve.</p>}
+      </section>}
     </div>}
-
+    {!isAll && scope === 'mods-armes' && <div className="shop-catalog-groups shop-owned shop-section-owned">
+      <h2>Votre réserve</h2>
+      <section><h3>Mods d’arme en réserve</h3>{character.inventaireMods.filter((item) => item.categoriePrincipale === 'armes' && matches(item)).map((item, index) => <article className="shop-inventory-item" key={`owned-weapon-mod-${item.id}-${index}`}><div><strong>{item.nom}</strong><span>À appliquer sur une arme compatible · pas de vente séparée</span></div><ShopItemDetailsButton name={item.nom} category="Mod" image={item.image} details={item.details ?? []} /></article>)}{!character.inventaireMods.some((item) => item.categoriePrincipale === 'armes' && matches(item)) && <p className="shop-empty">Aucun Mod d’arme correspondant dans votre réserve.</p>}</section>
+    </div>}
     {activeSection === 'inventory' && <div className="shop-catalog-groups shop-owned">
       <section><h2>Armes en réserve</h2>{character.inventaireArmes.map((entry, index) => inventoryCard(entry, 'weapon', index, 'personal'))}</section>
       <section><h2>Armures en réserve</h2>{character.inventaireArmures.map((entry, index) => inventoryCard(entry, 'armor', index, 'personal'))}</section>
