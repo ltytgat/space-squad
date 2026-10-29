@@ -20,6 +20,7 @@ export type AtelierItem = {
   classe: string | null
   prix: number
   policyPercentage?: number
+  available?: boolean
   points: number
   image: ImageSummary
   setNom: string | null
