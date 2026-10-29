@@ -167,8 +167,19 @@ function shipClassGroups(items: ShopItem[], order: 'asc' | 'desc') {
   })
 }
 
-function shipConsumableCategory(item: ShopItem) {
-  if (isShipAmmunition(item)) return { key: 'ammunition', label: 'Munitions' }
+type ShipConsumableCategory = { key: string; label: string; subcategoryKey?: string; subcategoryLabel?: string }
+
+function shipConsumableCategory(item: ShopItem): ShipConsumableCategory {
+  if (isShipAmmunition(item)) {
+    const name = item.nom.trim()
+    const subcategoryLabel = (name.length > 1 ? name.slice(0, -1).trim() : name) || name
+    return {
+      key: 'ammunition',
+      label: 'Munitions',
+      subcategoryKey: subcategoryLabel.toLocaleLowerCase('fr') || 'other',
+      subcategoryLabel: subcategoryLabel || 'Autres munitions',
+    }
+  }
   const firstWord = item.nom.trim().split(/\s+/)[0] ?? ''
   const displayWord = firstWord.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')
   const groupKey = displayWord.toLocaleLowerCase('fr')
@@ -392,16 +403,39 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
 
   const shipConsumablesForDisplay = catalogs.shipConsumables.filter((item) => matches(item))
   const shipConsumableCategoryGroups = (() => {
-    const groups = new Map<string, { key: string; label: string; items: ShopItem[] }>()
+    const groups = new Map<string, { key: string; label: string; items: ShopItem[]; subcategories?: Map<string, { key: string; label: string; items: ShopItem[] }> }>()
     for (const item of shipConsumablesForDisplay) {
       const category = shipConsumableCategory(item)
-      const group = groups.get(category.key) ?? { key: category.key, label: category.label, items: [] }
-      group.items.push(item)
+      const group: { key: string; label: string; items: ShopItem[]; subcategories?: Map<string, { key: string; label: string; items: ShopItem[] }> } = groups.get(category.key) ?? {
+        key: category.key,
+        label: category.label,
+        items: [],
+        ...(category.key === 'ammunition' ? { subcategories: new Map<string, { key: string; label: string; items: ShopItem[] }>() } : {}),
+      }
+      if (category.key === 'ammunition' && category.subcategoryKey && category.subcategoryLabel) {
+        const subcategory = group.subcategories?.get(category.subcategoryKey) ?? {
+          key: category.subcategoryKey,
+          label: category.subcategoryLabel,
+          items: [],
+        }
+        subcategory.items.push(item)
+        group.subcategories?.set(subcategory.key, subcategory)
+      } else {
+        group.items.push(item)
+      }
       groups.set(category.key, group)
     }
     return [...groups.values()]
       .sort((left, right) => left.key === 'ammunition' ? -1 : right.key === 'ammunition' ? 1 : left.label.localeCompare(right.label, 'fr'))
-      .map((group) => ({ ...group, items: group.items.sort((left, right) => compareShopItemsByPrice(left, right, priceOrder)) }))
+      .map((group) => ({
+        ...group,
+        items: group.items.sort((left, right) => compareShopItemsByPrice(left, right, priceOrder)),
+        subcategories: group.subcategories
+          ? new Map([...group.subcategories.entries()]
+            .sort(([, left], [, right]) => left.label.localeCompare(right.label, 'fr'))
+            .map(([key, subcategory]) => [key, { ...subcategory, items: subcategory.items.sort((left, right) => compareShopItemsByPrice(left, right, priceOrder)) }]))
+          : undefined,
+      }))
   })()
   const hasShipConsumableFilters = Boolean(search.trim()) || (isAll && category !== 'all')
 
@@ -682,7 +716,16 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
           const groupOpen = hasShipConsumableFilters || !collapsedSpatialGroups.has(group.key)
           const safeKey = group.key.replace(/[^a-zA-Z0-9_-]/g, '-')
           return <ShopCollapsibleGroup key={group.key} id={`shop-space-consumable-${safeKey}`} title={group.label} level={3} open={groupOpen} disabled={hasShipConsumableFilters} onToggle={() => setCollapsedSpatialGroups((current) => toggleCollapsedKey(current, group.key))}>
-            <div className="shop-grid">{group.items.map((item) => card(item, 'ship-consumable', 'ship'))}</div>
+            {group.subcategories
+              ? <div className="shop-subcategory-list">{[...group.subcategories.values()].map((subcategory) => {
+                const subcategoryKey = `${group.key}:subcategory:${subcategory.key}`
+                const subcategoryOpen = hasShipConsumableFilters || !collapsedSpatialGroups.has(subcategoryKey)
+                const safeSubcategoryKey = encodeURIComponent(subcategory.key)
+                return <ShopCollapsibleGroup key={subcategory.key} id={`shop-space-consumable-${safeKey}-${safeSubcategoryKey}`} title={subcategory.label} level={4} open={subcategoryOpen} disabled={hasShipConsumableFilters} onToggle={() => setCollapsedSpatialGroups((current) => toggleCollapsedKey(current, subcategoryKey))}>
+                  <div className="shop-grid">{subcategory.items.map((item) => card(item, 'ship-consumable', 'ship'))}</div>
+                </ShopCollapsibleGroup>
+              })}</div>
+              : <div className="shop-grid">{group.items.map((item) => card(item, 'ship-consumable', 'ship'))}</div>}
           </ShopCollapsibleGroup>
         })}</div>
       </section>}
