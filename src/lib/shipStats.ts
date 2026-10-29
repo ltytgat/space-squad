@@ -5,6 +5,16 @@ export type ShipRecord = any
 const idOf = (value: any) => typeof value === 'object' && value ? value.id : value
 const objectOf = (value: any) => typeof value === 'object' && value ? value : null
 const isTurretModule = (value: any) => objectOf(value)?.typeModule === 'tourelle'
+const chassisSize = (ship: ShipRecord) => {
+  const chassisClass = String(getChassis(ship)?.classe ?? '').toLowerCase()
+  const namedSize: Record<string, number> = { alpha: 1, beta: 2, gamma: 3, delta: 4 }
+  return Number(namedSize[chassisClass] ?? chassisClass)
+}
+const weaponPoints = (weapon: any) => {
+  const points = Number(objectOf(weapon)?.pointsEmport)
+  return Number.isFinite(points) && points > 0 ? points : 1
+}
+const equippedWeaponEntries = (entries: any[]) => (entries ?? []).filter((entry: any) => objectOf(entry?.arme))
 
 const numericText = (value: unknown) => {
   const match = String(value ?? '').replace(',', '.').match(/-?\d+(?:\.\d+)?/)
@@ -86,18 +96,47 @@ export function turretWeaponPointsRemaining(ship: ShipRecord, turretNumber: numb
   if (!Number.isSafeInteger(turretNumber) || turretNumber < 1 || turretNumber > limits.turretCount) return 0
   const capacity = limits.turretWeaponSlotLimits[turretNumber - 1] ?? 0
   const turret = (ship?.armesTourelles ?? []).find((entry: any) => Number(entry?.tourelle) === turretNumber)
-  const used = (turret?.armes ?? []).reduce((total: number, entry: any) => total + (Number(objectOf(entry?.arme)?.pointsEmport) || 1), 0)
+  const used = equippedWeaponEntries(turret?.armes ?? []).reduce((total: number, entry: any) => total + weaponPoints(entry.arme), 0)
   return Math.max(0, capacity - used)
 }
 
-export function canEquipWeaponInTurret(ship: ShipRecord, turretNumber: number, weapon: any): boolean {
+export function pilotWeaponPointsRemaining(ship: ShipRecord): number {
+  const used = equippedWeaponEntries(ship?.armesPilote ?? []).reduce((total: number, entry: any) => total + weaponPoints(entry.arme), 0)
+  return Math.max(0, getShipLimits(ship).pilotWeaponPoints - used)
+}
+
+function canEquipWeapon(ship: ShipRecord, weapon: any, remainingPoints: number): boolean {
   if (!weapon) return false
-  const points = Number(weapon.pointsEmport) || 1
-  const chassisSize = Number(getChassis(ship)?.classe?.replace('alpha', '1').replace('beta', '2').replace('gamma', '3').replace('delta', '4'))
+  const points = weaponPoints(weapon)
+  const size = chassisSize(ship)
   const weaponSize = Number(weapon.taille)
   return Number.isFinite(points) && points > 0
-    && Number.isFinite(weaponSize) && weaponSize <= chassisSize
-    && points <= turretWeaponPointsRemaining(ship, turretNumber)
+    && Number.isFinite(weaponSize) && weaponSize <= size
+    && points <= remainingPoints
+}
+
+export function canEquipWeaponForPilot(ship: ShipRecord, weapon: any): boolean {
+  return canEquipWeapon(ship, weapon, pilotWeaponPointsRemaining(ship))
+}
+
+export function canEquipWeaponInTurret(ship: ShipRecord, turretNumber: number, weapon: any): boolean {
+  return canEquipWeapon(ship, weapon, turretWeaponPointsRemaining(ship, turretNumber))
+}
+
+export function optionalModuleSlotsRemaining(ship: ShipRecord): number {
+  const installed = (ship?.modulesSupplementaires ?? []).filter((module: any) => !isTurretModule(module)).length
+  return Math.max(0, getShipLimits(ship).moduleSlots - installed)
+}
+
+export function canEquipOptionalModule(ship: ShipRecord, moduleValue: any): boolean {
+  const optionalModule = objectOf(moduleValue)
+  if (!optionalModule || optionalModule.typeModule !== 'supplementaire') return false
+  const size = chassisSize(ship)
+  const moduleSize = Number(optionalModule.taille)
+  return Number.isFinite(size)
+    && Number.isFinite(moduleSize)
+    && moduleSize <= size
+    && optionalModuleSlotsRemaining(ship) > 0
 }
 
 export function getShipStats(ship: ShipRecord) {
@@ -168,19 +207,19 @@ export function getShipStats(ship: ShipRecord) {
 
 export function validateShipConfiguration(ship: ShipRecord) {
   const limits = getShipLimits(ship)
-  const pilotPoints = (ship?.armesPilote ?? []).reduce((sum: number, entry: any) => sum + (Number(objectOf(entry.arme)?.pointsEmport) || 1), 0)
+  const pilotPoints = equippedWeaponEntries(ship?.armesPilote ?? []).reduce((sum: number, entry: any) => sum + weaponPoints(entry.arme), 0)
   if (pilotPoints > limits.pilotWeaponPoints) throw new Error("Les points d'emport du pilote sont dépassés")
   if ((ship?.armesTourelles ?? []).some((entry: any) => Number(entry.tourelle) < 1 || Number(entry.tourelle) > limits.turretCount)) throw new Error('Une tourelle est incompatible avec le châssis')
   const moduleCount = (ship?.modulesSupplementaires ?? []).filter((module: any) => !isTurretModule(module)).length
   if (moduleCount > limits.moduleSlots) throw new Error('Les emplacements de modules sont dépassés')
   if ((ship?.consommablesVaisseau ?? []).length > limits.consumableSlots) throw new Error('Les emplacements de consommables sont dépassés')
   const size = Number(getChassis(ship)?.classe?.replace('alpha', '1').replace('beta', '2').replace('gamma', '3').replace('delta', '4'))
-  const incompatible = [...(ship?.armesPilote ?? []), ...(ship?.armesTourelles ?? []).flatMap((turret: any) => turret.armes ?? []), ...(ship?.modulesSupplementaires ?? [])]
+  const incompatible = [...equippedWeaponEntries(ship?.armesPilote ?? []), ...(ship?.armesTourelles ?? []).flatMap((turret: any) => equippedWeaponEntries(turret.armes ?? [])), ...(ship?.modulesSupplementaires ?? [])]
     .some((entry: any) => { const item = objectOf(entry.arme ?? entry.module ?? entry); return item?.taille && Number(item.taille) > size })
   if (incompatible) throw new Error('Un composant est incompatible avec la taille du châssis')
   const turretSlots = String(getChassis(ship)?.pointsEmportTourelles ?? '').split('+').filter(Boolean).map(Number)
   for (const turret of ship?.armesTourelles ?? []) {
-    const used = (turret.armes ?? []).reduce((sum: number, entry: any) => sum + (Number(objectOf(entry.arme)?.pointsEmport) || 1), 0)
+    const used = equippedWeaponEntries(turret.armes ?? []).reduce((sum: number, entry: any) => sum + weaponPoints(entry.arme), 0)
     if (used > (turretSlots[(Number(turret.tourelle) || 1) - 1] ?? 0)) throw new Error("Les points d'emport d'une tourelle sont dépassés")
   }
   return true

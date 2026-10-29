@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import { canEquipConsumable, consumableCapacity, isShipAmmunition, sameConsumable, type ConsumableOperation } from '@/lib/shipConsumables'
 import { isAmmoCompatibleWith, sameShipAmmo, shipAmmoName } from '@/lib/shipWeaponAmmo'
-import { canEquipWeaponInTurret, getChassis, getShipLimits, getShipStats, turretWeaponPointsRemaining } from '@/lib/shipStats'
+import { canEquipOptionalModule, canEquipWeaponForPilot, canEquipWeaponInTurret, getChassis, getShipLimits, getShipStats, optionalModuleSlotsRemaining, pilotWeaponPointsRemaining, turretWeaponPointsRemaining } from '@/lib/shipStats'
 import {
   applySeatChange,
   listSeats,
@@ -38,6 +38,18 @@ const withoutTransientWeaponHeat = (value: any): any => {
 }
 const isTurretModule = (value: any) => object(value)?.typeModule === 'tourelle'
 const id = (value: any) => object(value)?.id ?? value
+const addInventoryQuantity = (rows: any[], field: string, item: any, quantity: number) => {
+  const itemId = id(item)
+  if (itemId == null || !Number.isFinite(quantity) || quantity <= 0) return [...(rows ?? [])]
+  const inventory = [...(rows ?? [])]
+  const index = inventory.findIndex((entry) => String(id(entry[field])) === String(itemId))
+  if (index >= 0) {
+    inventory[index] = { ...inventory[index], quantite: Number(inventory[index].quantite ?? 0) + quantity }
+  } else {
+    inventory.push({ [field]: item, quantite: quantity })
+  }
+  return inventory
+}
 const heatKey = (entry: any, index: number, turretIndex: number) => `${turretIndex}:${index}:${id(entry.arme)}`
 const focusedFireKey = (turretIndex: number, module: any) => `${turretIndex}:${id(module)}`
 const turretConsumptionFamilies = ['bombardement', 'shotgun', 'dispersion']
@@ -139,6 +151,7 @@ export function ShipClient({
     weaponIndex: number
     emptySlot?: boolean
   } | null>(null)
+  const [optionalModuleSelector, setOptionalModuleSelector] = useState(false)
   const [ammoSelector, setAmmoSelector] = useState<{
     turretIndex: number
     weaponIndex: number
@@ -195,6 +208,7 @@ export function ShipClient({
   const additionalModules = (draft.modulesSupplementaires ?? [])
     .map((module: any, index: number) => ({ module, index }))
     .filter(({ module }: any) => !isTurretModule(module))
+  const optionalSlotsRemaining = optionalModuleSlotsRemaining({ ...ship, modulesSupplementaires: draft.modulesSupplementaires ?? [] })
   const shieldTotal = shieldFront + shieldRear
   const showStatTooltip = (event: React.MouseEvent, data: StatTooltipData) =>
     setHoveredStat({ data, x: event.clientX, y: event.clientY })
@@ -345,6 +359,42 @@ export function ShipClient({
       </label>
     )
   }
+  const optionalModuleSources = () => {
+    const shipWithDraftModules = { ...ship, modulesSupplementaires: draft.modulesSupplementaires ?? [] }
+    return (draft.inventaireModules ?? [])
+      .map((entry: any, index: number) => ({ entry, index, module: object(entry.module) }))
+      .filter(({ entry, module }: any) => Number(entry.quantite ?? 0) > 0 && canEquipOptionalModule(shipWithDraftModules, module))
+  }
+  const equipOptionalModule = (inventoryIndex: number) => {
+    if (readOnly || saving) return
+    const inventory = [...(draft.inventaireModules ?? [])]
+    const entry = inventory[inventoryIndex]
+    const equippedModule = object(entry?.module)
+    if (!entry || !canEquipOptionalModule({ ...ship, modulesSupplementaires: draft.modulesSupplementaires ?? [] }, equippedModule)) return
+    inventory[inventoryIndex] = { ...entry, quantite: Number(entry.quantite ?? 0) - 1 }
+    const next = {
+      ...draft,
+      modulesSupplementaires: [...(draft.modulesSupplementaires ?? []), equippedModule],
+      inventaireModules: inventory.filter((item: any) => Number(item.quantite ?? 0) > 0),
+    }
+    setShip(next)
+    setDraft(next)
+    setModified(true)
+    setOptionalModuleSelector(false)
+  }
+  const removeOptionalModule = (index: number) => {
+    if (readOnly || saving) return
+    const modules = [...(draft.modulesSupplementaires ?? [])]
+    const [module] = modules.splice(index, 1)
+    const next = {
+      ...draft,
+      modulesSupplementaires: modules,
+      inventaireModules: addInventoryQuantity(draft.inventaireModules ?? [], 'module', module, 1),
+    }
+    setShip(next)
+    setDraft(next)
+    setModified(true)
+  }
   const updateWeapon = async (
     slot: 'armesPilote' | 'armesTourelles',
     index: number,
@@ -399,6 +449,9 @@ export function ShipClient({
         })),
       ),
     ].filter((source) => source.weapon)
+  const canEquipAtSelectedLocation = (weapon: any) => weaponSelector?.turretIndex != null && weaponSelector.turretIndex >= 0
+    ? canEquipWeaponInTurret(ship, weaponSelector.turretIndex + 1, weapon)
+    : canEquipWeaponForPilot(ship, weapon)
   const selectWeaponSource = (source: any) => {
     if (readOnly || !weaponSelector) return
     const targetIndex = weaponSelector.weaponIndex
@@ -442,6 +495,14 @@ export function ShipClient({
         else inventory.push({ arme: target.arme, quantite: 1 })
       }
       next.inventaireArmes = inventory.filter((entry: any) => entry.quantite > 0)
+      if (target.arme && target.chargeurRelie && Number(target.munitionsActuelles) > 0) {
+        next.inventaireConsommables = addInventoryQuantity(
+          ship.inventaireConsommables ?? [],
+          'consommable',
+          target.chargeurRelie,
+          Number(target.munitionsActuelles),
+        )
+      }
       setTarget({
         ...target,
         arme: source.weapon,
@@ -472,6 +533,32 @@ export function ShipClient({
     if (source.kind === 'equipped') clearLocalHeat(heatKey(source.entry, source.index, source.turretIndex))
     setModified(true)
     setWeaponSelector(null)
+  }
+  const unequipWeapon = (turretIndex: number, weaponIndex: number) => {
+    if (readOnly || saving) return
+    const next = { ...ship }
+    const entries = turretIndex >= 0
+      ? [...(ship.armesTourelles?.[turretIndex]?.armes ?? [])]
+      : [...(ship.armesPilote ?? [])]
+    const [entry] = entries.splice(weaponIndex, 1)
+    if (!entry) return
+    if (turretIndex >= 0) {
+      next.armesTourelles = [...(ship.armesTourelles ?? [])]
+      next.armesTourelles[turretIndex] = { ...next.armesTourelles[turretIndex], armes: entries }
+    } else {
+      next.armesPilote = entries
+    }
+    next.inventaireArmes = addInventoryQuantity(ship.inventaireArmes ?? [], 'arme', entry.arme, 1)
+    next.inventaireConsommables = addInventoryQuantity(
+      ship.inventaireConsommables ?? [],
+      'consommable',
+      entry.chargeurRelie,
+      Number(entry.munitionsActuelles ?? 0),
+    )
+    setShip(next)
+    setDraft(next)
+    clearLocalHeat(heatKey(entry, weaponIndex, turretIndex))
+    setModified(true)
   }
   const renderWeapon = (entry: any, index: number, turretIndex = -1) => {
     const weapon = object(entry.arme)
@@ -694,12 +781,27 @@ export function ShipClient({
             )}
           </div>
         )}
+        <div className="ship-weapon-controls">
+          <button disabled={readOnly || saving} onClick={() => unequipWeapon(turretIndex, index)}>
+            Ranger dans la soute
+          </button>
+        </div>
       </article>
     )
   }
   const weaponList = (entries: any[], turretIndex = -1) =>
     entries.length ? (
-      entries.map((entry, index) => renderWeapon(entry, index, turretIndex))
+      entries.map((entry, index) => object(entry.arme)
+        ? renderWeapon(entry, index, turretIndex)
+        : <div className="ship-equipment-row" key={entry.id ?? `empty-${turretIndex}-${index}`}>
+            <strong>Emplacement d’arme vide</strong>
+            <button
+              disabled={readOnly || saving}
+              onClick={() => setWeaponSelector({ turretIndex, weaponIndex: index, emptySlot: true })}
+            >
+              Équiper
+            </button>
+          </div>)
     ) : (
       <p className="ship-muted">Aucune arme installée.</p>
     )
@@ -814,23 +916,28 @@ export function ShipClient({
     clearLocalHeat(heatKey(entry, weaponIndex, turretIndex))
     setAmmoSelector(null)
   }
-  const renderWeaponLocation = (title: string, entries: any[], turretIndex = -1, slots = 0, turretModule?: any) => (
-    <section className="ship-card" key={`${title}-${turretIndex}`}>
-      <div className="ship-subtitle-line">
-        <h2 className="ship-card-title">{title}</h2>
-        <span className="ship-tag">{slots} emplacement(s)</span>
-      </div>
-      {turretModule && renderTurretModule(turretModule, turretIndex, entries)}
-      {weaponList(entries, turretIndex)}
-      {turretIndex >= 0 && turretWeaponPointsRemaining(ship, turretIndex + 1) > 0 && <button
-        className="ship-change-weapon ship-equip-empty-weapon"
-        disabled={readOnly || saving}
-        onClick={() => setWeaponSelector({ turretIndex, weaponIndex: entries.length, emptySlot: true })}
-      >
-        + Équiper une arme
-      </button>}
-    </section>
-  )
+  const renderWeaponLocation = (title: string, entries: any[], turretIndex = -1, slots = 0, turretModule?: any) => {
+    const remainingPoints = turretIndex >= 0
+      ? turretWeaponPointsRemaining(ship, turretIndex + 1)
+      : pilotWeaponPointsRemaining(ship)
+    return (
+      <section className="ship-card" key={`${title}-${turretIndex}`}>
+        <div className="ship-subtitle-line">
+          <h2 className="ship-card-title">{title}</h2>
+          <span className="ship-tag">{slots} points · {remainingPoints} disponibles</span>
+        </div>
+        {turretModule && renderTurretModule(turretModule, turretIndex, entries)}
+        {weaponList(entries, turretIndex)}
+        {remainingPoints > 0 && <button
+          className="ship-change-weapon ship-equip-empty-weapon"
+          disabled={readOnly || saving}
+          onClick={() => setWeaponSelector({ turretIndex, weaponIndex: entries.length, emptySlot: true })}
+        >
+          + Équiper une arme
+        </button>}
+      </section>
+    )
+  }
   // Places d'équipage : 1 pilote, 1 copilote, 1 canonnier par tourelle du châssis.
   const seats = listSeats(ship)
   const crewMember = (characterId: any) =>
@@ -1142,7 +1249,7 @@ export function ShipClient({
             <div className="ship-subtitle-line">
               <h3 className="ship-subtitle">Modules supplémentaires</h3>
               <span className="ship-tag">
-                {additionalModules.length} / {limits.moduleSlots}
+                {additionalModules.length} / {limits.moduleSlots} · {optionalSlotsRemaining} disponible(s)
               </span>
             </div>
             {additionalModules.map(({ module, index }: any) => (
@@ -1150,17 +1257,19 @@ export function ShipClient({
                 <strong>{object(module)?.nom ?? 'Module'}</strong>
                 <button
                   disabled={readOnly}
-                  onClick={() =>
-                    setDraftValue(
-                      'modulesSupplementaires',
-                      draft.modulesSupplementaires.filter((_: any, i: number) => i !== index),
-                    )
-                  }
+                  onClick={() => removeOptionalModule(index)}
                 >
                   Retirer
                 </button>
               </div>
             ))}
+            {optionalSlotsRemaining > 0 && <button
+              className="ship-change-weapon ship-equip-empty-weapon"
+              disabled={readOnly || saving || optionalModuleSources().length === 0}
+              onClick={() => setOptionalModuleSelector(true)}
+            >
+              + Ajouter un module
+            </button>}
           </section>
           <section className="ship-card ship-consumables">
             <div className="ship-subtitle-line">
@@ -1326,7 +1435,7 @@ export function ShipClient({
                 .filter(
                   (source: any) =>
                     weaponSelector.emptySlot
-                      ? source.kind === 'inventory' && canEquipWeaponInTurret(ship, weaponSelector.turretIndex + 1, source.weapon)
+                      ? source.kind === 'inventory' && canEquipAtSelectedLocation(source.weapon)
                       : !(
                       source.kind === 'equipped' &&
                       source.turretIndex === weaponSelector.turretIndex &&
@@ -1355,8 +1464,27 @@ export function ShipClient({
                   </button>
                 ))}
               {!weaponSources().filter((source: any) => weaponSelector.emptySlot
-                ? source.kind === 'inventory' && canEquipWeaponInTurret(ship, weaponSelector.turretIndex + 1, source.weapon)
+                ? source.kind === 'inventory' && canEquipAtSelectedLocation(source.weapon)
                 : !(source.kind === 'equipped' && source.turretIndex === weaponSelector.turretIndex && source.index === weaponSelector.weaponIndex)).length && <p className="ship-muted">{weaponSelector.emptySlot ? 'Aucune arme compatible dans la soute.' : 'Aucune arme disponible.'}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+      {optionalModuleSelector && (
+        <div className="ship-selector-overlay" onClick={() => setOptionalModuleSelector(false)}>
+          <div className="ship-selector-modal" role="dialog" aria-modal="true" aria-labelledby="optional-module-selector-title" onClick={(event) => event.stopPropagation()}>
+            <div className="ship-selector-header">
+              <h3 id="optional-module-selector-title">Ajouter un module optionnel</h3>
+              <button aria-label="Fermer" onClick={() => setOptionalModuleSelector(false)}>×</button>
+            </div>
+            <div className="ship-selector-list">
+              {optionalModuleSources().map(({ entry, index, module }: any) => (
+                <button className="ship-selector-item" key={`${id(module)}-${index}`} disabled={saving} onClick={() => equipOptionalModule(index)}>
+                  <span className="ship-weapon-icon">◆</span>
+                  <span><strong>{module.nom}</strong><small>{entry.quantite} en soute · Taille {module.taille}</small></span>
+                </button>
+              ))}
+              {!optionalModuleSources().length && <p className="ship-muted">Aucun module compatible en soute.</p>}
             </div>
           </div>
         </div>

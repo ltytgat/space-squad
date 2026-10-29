@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canEquipWeaponInTurret, completeTurretEntries, getShipLimits, getShipStats, turretWeaponPointsRemaining, validateShipConfiguration } from '@/lib/shipStats'
+import { canEquipOptionalModule, canEquipWeaponForPilot, canEquipWeaponInTurret, completeTurretEntries, getShipLimits, getShipStats, optionalModuleSlotsRemaining, pilotWeaponPointsRemaining, turretWeaponPointsRemaining, validateShipConfiguration } from '@/lib/shipStats'
 
 const chassis = { nom: 'Scout', classe: 'alpha', tourelles: 1, pointsEmportPilote: 2, pointsEmportTourelles: '1', modulesSupplementaires: '1+1', consommables: 2, blindage: 20, esquiveBase: 15 }
 const ship = { modele: { chassis }, blindageActuel: 18, bouclierActuel: 3, moduleGenerateur: { puissance: '6 GW', consommation: 1 }, modulePropulseurs: { consommation: 2, modificateurs: 'Esquive +3' }, moduleBoucliers: { bouclierMax: 6 }, pilote: { habilite: 14 }, armesPilote: [{ arme: { pointsEmport: 1, taille: '1', consommation: 1 } }], armesTourelles: [{ tourelle: 1, armes: [{ arme: { pointsEmport: 1, taille: '1' } }] }], modulesSupplementaires: [], consommablesVaisseau: [] }
@@ -32,6 +32,15 @@ describe('ship rules', () => {
 
   it('rejects weapon capacity overflow', () => {
     expect(() => validateShipConfiguration({ ...ship, armesPilote: [{ arme: { pointsEmport: 3, taille: '1' } }] })).toThrow("points d'emport")
+  })
+
+  it('allows empty pilot weapon entries without spending points', () => {
+    const shipWithEmptyPilotMount = { ...ship, armesPilote: [{ arme: null }, { arme: { pointsEmport: 1, taille: '1' } }] }
+
+    expect(pilotWeaponPointsRemaining(shipWithEmptyPilotMount)).toBe(1)
+    expect(canEquipWeaponForPilot(shipWithEmptyPilotMount, { pointsEmport: 1, taille: '1' })).toBe(true)
+    expect(canEquipWeaponForPilot(shipWithEmptyPilotMount, { pointsEmport: 2, taille: '1' })).toBe(false)
+    expect(() => validateShipConfiguration(shipWithEmptyPilotMount)).not.toThrow()
   })
 
   it('does not count turret modules as ship additional modules', () => {
@@ -68,5 +77,14 @@ describe('ship rules', () => {
     expect(canEquipWeaponInTurret(expandedShip, 2, { pointsEmport: 2, taille: '1' })).toBe(true)
     expect(canEquipWeaponInTurret(expandedShip, 2, { pointsEmport: 3, taille: '1' })).toBe(false)
     expect(canEquipWeaponInTurret(expandedShip, 2, { pointsEmport: 1, taille: '2' })).toBe(false)
+  })
+
+  it('allows optional modules only when a compatible slot is available', () => {
+    const optionalModule = { typeModule: 'supplementaire', taille: '1' }
+    expect(optionalModuleSlotsRemaining(ship)).toBe(1)
+    expect(canEquipOptionalModule(ship, optionalModule)).toBe(true)
+    expect(canEquipOptionalModule({ ...ship, modulesSupplementaires: [{ typeModule: 'supplementaire' }] }, optionalModule)).toBe(false)
+    expect(canEquipOptionalModule(ship, { ...optionalModule, taille: '2' })).toBe(false)
+    expect(canEquipOptionalModule(ship, { ...optionalModule, typeModule: 'tourelle' })).toBe(false)
   })
 })

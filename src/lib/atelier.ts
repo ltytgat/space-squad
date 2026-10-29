@@ -57,6 +57,12 @@ const SHIP_SPECIALIZATIONS: Record<string, string> = {
   specializationTransport: 'transport',
 }
 
+export function atelierCustomChassisName(sourceName: unknown): string {
+  const name = String(sourceName ?? '').trim()
+  if (!name) throw new Error('Le châssis source doit avoir un nom.')
+  return `${name} - Custom`
+}
+
 export function atelierSpecializationTagForTarget(target: string): string | null {
   return SHIP_SPECIALIZATIONS[target] ?? null
 }

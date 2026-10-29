@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detachShipTransferItem, groupShipCatalog, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, shipModelDisplayName, shipPurchasePrice, shipSalePrice, shipyardFingerprint } from '@/lib/shipyard'
+import { detachShipTransferItem, groupShipCatalog, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, shipModelDisplayName, shipPurchasePrice, shipSalePrice, shipStateForCopy, shipyardFingerprint } from '@/lib/shipyard'
 
 describe('shipyard pricing', () => {
   it('charges the full sale-model price or half for a chassis-only purchase', () => {
@@ -40,6 +40,24 @@ describe('custom ship model labels', () => {
     expect(shipModelDisplayName({ nom: 'Éclaireur · Atelier 42 1700000000000', atelierPrive: true, atelierModeleSource: { nom: 'Éclaireur' } })).toBe('Éclaireur')
     expect(shipModelDisplayName({ nom: 'Éclaireur · Atelier 42 1700000000000', atelierPrive: true })).toBe('Éclaireur')
     expect(shipModelDisplayName({ nom: 'Éclaireur', atelierPrive: false })).toBe('Éclaireur')
+  })
+})
+
+describe('Atelier ship copy', () => {
+  it('preserves loaded ammunition, magazines, and reserve inventory', () => {
+    const source = {
+      nom: 'Scout',
+      proprietaire: { id: 12 },
+      armesPilote: [{ arme: { id: 5 }, munitionsActuelles: 3, chargeurRelie: { id: 21 } }],
+      armesTourelles: [{ tourelle: 1, module: { id: 9 }, armes: [{ arme: { id: 6 }, munitionsActuelles: 2, chargeurRelie: { id: 22 } }] }],
+      inventaireConsommables: [{ consommable: { id: 23 }, quantite: 7 }],
+    }
+
+    const copy = shipStateForCopy(source, 31, 12, 500, 1)
+
+    expect(copy.armesPilote).toEqual([{ arme: 5, munitionsActuelles: 3, chargeurRelie: 21 }])
+    expect(copy.armesTourelles).toEqual([{ tourelle: 1, module: 9, armes: [{ arme: 6, munitionsActuelles: 2, chargeurRelie: 22 }] }])
+    expect(copy.inventaireConsommables).toEqual([{ consommable: 23, quantite: 7 }])
   })
 })
 

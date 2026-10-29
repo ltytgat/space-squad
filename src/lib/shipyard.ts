@@ -1,4 +1,5 @@
 import { exactAdd, exactMultiply, readShopPrice, relationId, resalePrice, type ShopPrice } from './shop'
+import { completeTurretEntries } from './shipStats'
 
 export type ShipComponentKind = 'module' | 'weapon'
 export type ShipSaleComponent = {
@@ -21,6 +22,60 @@ export type ShipTransferItem = {
   ammoId?: number
   ammoNom?: string
   ammoQuantity?: number
+}
+
+const shipRelationNumber = (value: unknown): number | null => {
+  const raw = relationId(value)
+  if (!raw || !/^\d+$/.test(raw)) return null
+  const numeric = Number(raw)
+  return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : null
+}
+
+/** Copies a ship's installed equipment and current ammunition into its Atelier replacement. */
+export function shipStateForCopy(
+  ship: Record<string, any>,
+  newModelId: number,
+  originalOwnerId: number,
+  purchasePrice: number,
+  turretCount: number,
+) {
+  const weaponState = (entry: any) => ({
+    arme: shipRelationNumber(entry?.arme),
+    munitionsActuelles: Number(entry?.munitionsActuelles) || 0,
+    chargeurRelie: shipRelationNumber(entry?.chargeurRelie),
+  })
+  const relation = shipRelationNumber
+  return {
+    nom: ship.nom,
+    modele: newModelId,
+    proprietaire: relation(ship.proprietaire),
+    proprietaireOrigineAtelier: originalOwnerId,
+    prixAchatAtelier: purchasePrice,
+    atelierPersonnalise: true,
+    blindageActuel: ship.blindageActuel,
+    bouclierActuel: ship.bouclierActuel,
+    esquiveActuelle: ship.esquiveActuelle,
+    pilote: null,
+    copilote: null,
+    canonniers: [],
+    moduleGenerateur: relation(ship.moduleGenerateur),
+    modulePropulseurs: relation(ship.modulePropulseurs),
+    moduleBoucliers: relation(ship.moduleBoucliers),
+    moduleSurvie: relation(ship.moduleSurvie),
+    modulesSupplementaires: (ship.modulesSupplementaires ?? []).map(relation).filter(Boolean),
+    armesPilote: (ship.armesPilote ?? []).map(weaponState),
+    armesTourelles: completeTurretEntries(ship.armesTourelles ?? [], turretCount).map((turret: any) => ({
+      tourelle: turret.tourelle,
+      module: relation(turret.module),
+      armes: (turret.armes ?? []).map(weaponState),
+    })),
+    consommablesVaisseau: (ship.consommablesVaisseau ?? []).map((entry: any) => ({ consommable: relation(entry.consommable), quantite: entry.quantite })),
+    inventaireModules: (ship.inventaireModules ?? []).map((entry: any) => ({ module: relation(entry.module), quantite: entry.quantite })),
+    inventaireArmes: (ship.inventaireArmes ?? []).map((entry: any) => ({ arme: relation(entry.arme), quantite: entry.quantite })),
+    inventaireConsommables: (ship.inventaireConsommables ?? []).map((entry: any) => ({ consommable: relation(entry.consommable), quantite: entry.quantite })),
+    notes: ship.notes,
+    image: relation(ship.image),
+  }
 }
 
 export const shipCatalogClasses = [

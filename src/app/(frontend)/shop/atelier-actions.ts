@@ -8,11 +8,12 @@ import config from '@/payload.config'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
-import { atelierCost, atelierModificationPoints, atelierPointsForPersonalItem, atelierPointsForShip, atelierPurchasePrice, atelierShipSpecializationTags, atelierSpecializationTagForTarget, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect, type AtelierPurchase } from '@/lib/atelier'
+import { atelierCost, atelierCustomChassisName, atelierModificationPoints, atelierPointsForPersonalItem, atelierPointsForShip, atelierPurchasePrice, atelierShipSpecializationTags, atelierSpecializationTagForTarget, findAtelierCompatibility, applyAtelierEffects, snapshotArmor, snapshotWeapon, atelierRelationId, type AtelierEquipmentKind, type AtelierEffect, type AtelierPurchase } from '@/lib/atelier'
 import { exactAdd, exactMultiply, exactSubtract, readShopPrice } from '@/lib/shop'
 import { computeShipAccess } from '@/lib/shipAccess'
-import { completeTurretEntries, validateShipConfiguration } from '@/lib/shipStats'
+import { validateShipConfiguration } from '@/lib/shipStats'
 import { factionKey, ownsFactionAtelierAccess } from '@/lib/factionRewards'
+import { shipStateForCopy } from '@/lib/shipyard'
 
 type PersonalLocation = { location: 'inventory'; index: number; itemId: number }
 
@@ -370,45 +371,6 @@ function requiredRelation(value: unknown, label: string): number {
   return id
 }
 
-function shipStateForCopy(ship: any, newModelId: number, originalOwnerId: number, purchasePrice: number, turretCount: number) {
-  const weaponState = (entry: any) => ({
-    arme: relation(entry.arme), munitionsActuelles: Number(entry.munitionsActuelles) || 0,
-    chargeurRelie: relation(entry.chargeurRelie),
-  })
-  return {
-    nom: ship.nom,
-    modele: newModelId,
-    proprietaire: relation(ship.proprietaire),
-    proprietaireOrigineAtelier: originalOwnerId,
-    prixAchatAtelier: purchasePrice,
-    atelierPersonnalise: true,
-    blindageActuel: ship.blindageActuel,
-    bouclierActuel: ship.bouclierActuel,
-    esquiveActuelle: ship.esquiveActuelle,
-    pilote: null,
-    copilote: null,
-    canonniers: [],
-    moduleGenerateur: relation(ship.moduleGenerateur),
-    modulePropulseurs: relation(ship.modulePropulseurs),
-    moduleBoucliers: relation(ship.moduleBoucliers),
-    moduleSurvie: relation(ship.moduleSurvie),
-    modulesSupplementaires: (ship.modulesSupplementaires ?? []).map(relation).filter(Boolean),
-    armesPilote: (ship.armesPilote ?? []).map(weaponState),
-    armesTourelles: completeTurretEntries(ship.armesTourelles ?? [], turretCount).map((turret: any) => ({
-      tourelle: turret.tourelle,
-      module: relation(turret.module),
-      armes: (turret.armes ?? []).map(weaponState),
-    })),
-    consommablesVaisseau: (ship.consommablesVaisseau ?? []).map((entry: any) => ({ consommable: relation(entry.consommable), quantite: entry.quantite })),
-    inventaireModules: (ship.inventaireModules ?? []).map((entry: any) => ({ module: relation(entry.module), quantite: entry.quantite })),
-    inventaireArmes: (ship.inventaireArmes ?? []).map((entry: any) => ({ arme: relation(entry.arme), quantite: entry.quantite })),
-    inventaireConsommables: (ship.inventaireConsommables ?? []).map((entry: any) => ({ consommable: relation(entry.consommable), quantite: entry.quantite })),
-    notes: ship.notes,
-    image: relation(ship.image),
-  }
-}
-
-
 export async function customizeShip(input: ShipCustomizationInput) {
   const { payload, user, character, workshopKind } = await getContext()
   if (workshopKind !== 'vaisseau') fail('Cet Atelier n’autorise pas la modification des vaisseaux.')
@@ -468,7 +430,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
       collection: 'ship-models',
       data: {
         ...customChassis,
-        nom: `${String(customChassis.nom ?? chassis.nom).slice(0, 100)} · ${suffix}`,
+        nom: atelierCustomChassisName(chassis.nom ?? customChassis.nom),
         image: relation(chassis.image),
         atelierPrive: true,
         atelierProprietaire: Number(current.id),

@@ -31,7 +31,6 @@ export const ShipModels: CollectionConfig = {
           type: 'text',
           required: true,
           label: 'Nom du châssis',
-          unique: true,
           admin: { width: '34%' },
         },
         {

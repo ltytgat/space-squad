@@ -347,7 +347,6 @@ export const Ships: CollectionConfig = {
               name: 'arme',
               type: 'relationship',
               relationTo: 'ship-weapons',
-              required: true,
             },
             ...shipWeaponStateFields(),
           ],

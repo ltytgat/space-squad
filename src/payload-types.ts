@@ -334,7 +334,7 @@ export interface Ship {
    */
   armesPilote?:
     | {
-        arme: number | ShipWeapon;
+        arme?: (number | null) | ShipWeapon;
         munitionsActuelles?: number | null;
         chargeurRelie?: (number | null) | ShipConsumable;
         id?: string | null;

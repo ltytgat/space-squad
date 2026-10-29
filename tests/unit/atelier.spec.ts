@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { applyAtelierEffects, atelierCost, atelierModificationMatches, atelierNextPurchasePrice, atelierPurchasePrice, atelierShipSpecializationTags, atelierTurretCapacities, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
+import { applyAtelierEffects, atelierCost, atelierCustomChassisName, atelierModificationMatches, atelierNextPurchasePrice, atelierPurchasePrice, atelierShipSpecializationTags, atelierTurretCapacities, findAtelierCompatibility, hasDuplicateAtelierCompatibilities, reconcileCustomEquipmentInventory, snapshotWeapon } from '@/lib/atelier'
 import { weaponRangeRows } from '@/lib/weaponRanges'
 import { weaponAllowedInSlot, weaponFromGroup } from '@/lib/characterWeapons'
 
 describe('Atelier compatibility', () => {
+  it('names new custom chassis from the source chassis without Atelier identifiers', () => {
+    expect(atelierCustomChassisName('Éclaireur')).toBe('Éclaireur - Custom')
+    expect(atelierCustomChassisName('  Éclaireur  ')).toBe('Éclaireur - Custom')
+  })
+
   it('requires an exact weapon subcategory and thermal or kinetic type', () => {
     const modification = {
       compatibilites: [{ categorieEquipement: 'arme' as const, sousCategorie: 'fusil-assaut', typeArme: 'thermique' }],
