@@ -229,7 +229,66 @@
 .ship-turret + .ship-turret { margin-top: 1rem; }
 .ship-inventory-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
 .ship-inventory-group { display: flex; flex-wrap: wrap; gap: .5rem; flex-basis: 100%; min-width: 0; }
-.ship-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-bottom: 2rem; }
+.ship-root:has(.ship-edit-bar) { padding-bottom: 80px; }
+.ship-edit-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding-block: 1rem;
+  border-top: 2px solid #9b8adb;
+  background: rgba(13, 9, 24, 0.96);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  animation: ship-edit-slide-up 0.3s var(--ss-ease-out);
+}
+.ship-edit-bar .ss-container { display: flex; align-items: center; justify-content: space-between; }
+.ship-edit-bar span {
+  color: #c4b5fd;
+  font-family: var(--ss-font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ship-edit-buttons { display: flex; gap: 1rem; }
+.ship-edit-buttons .ss-button {
+  min-height: 42px;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 700;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.ship-edit-buttons .ss-button.primary {
+  border-color: #9b8adb;
+  color: #100d1b;
+  background: #9b8adb;
+}
+.ship-edit-buttons .ss-button.primary:hover:not(:disabled) {
+  border-color: #c4b5fd;
+  background: #b5a7f0;
+  box-shadow: 0 0 18px rgba(155, 138, 219, 0.32);
+  transform: translateY(-1px);
+}
+.ship-edit-buttons .ss-button.secondary {
+  border-color: rgba(196, 181, 253, 0.38);
+  color: #d8d1ed;
+  background: rgba(155, 138, 219, 0.08);
+}
+.ship-edit-buttons .ss-button.secondary:hover:not(:disabled) {
+  border-color: #9b8adb;
+  color: #fff;
+  background: rgba(155, 138, 219, 0.18);
+}
+.ship-edit-buttons .ss-button:disabled { cursor: wait; opacity: 0.58; }
+.ship-edit-buttons .ss-button:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 3px; }
+@keyframes ship-edit-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
 .ship-stat-tooltip-floating { position: fixed; z-index: 1000; pointer-events: none; }
 .ship-stat-tooltip-floating { padding: 0; background: transparent; opacity: 1; }
 .ship-stat-tooltip-floating .char-stat-tooltip { padding: 1rem; border: 1px solid var(--ss-border); border-radius: var(--ss-radius); background: #101923; opacity: 1; box-shadow: 0 12px 35px rgba(0,0,0,.55); }
@@ -263,6 +322,12 @@
   .ship-main-grid, .ship-crew-seats { grid-template-columns: 1fr; }
   .ship-epreuves-grid { grid-template-columns: 1fr; gap: 1.25rem; }
   .ship-equipment-row { align-items: flex-start; flex-wrap: wrap; }
+}
+
+@media (max-width: 560px) {
+  .ship-edit-bar .ss-container { align-items: stretch; flex-direction: column; gap: 0.75rem; }
+  .ship-edit-buttons { gap: 0.6rem; }
+  .ship-edit-buttons .ss-button { flex: 1; }
 }
 
 @media (min-width: 701px) and (max-width: 980px) {

@@ -1371,20 +1371,25 @@ export function ShipClient({
         </div>
       </div>
       {modified && (
-        <div className="ship-actions">
-          <button
-            className="ss-button secondary"
-            onClick={() => {
-              setDraft(ship)
-              setModified(false)
-            }}
-            disabled={saving}
-          >
-            Annuler
-          </button>
-          <button className="ss-button primary" onClick={save} disabled={saving || consumableBusy}>
-            {saving ? 'Enregistrement…' : 'Valider la configuration'}
-          </button>
+        <div className="ship-edit-bar">
+          <div className="ss-container">
+            <span>Modification en cours...</span>
+            <div className="ship-edit-buttons">
+              <button
+                className="ss-button secondary"
+                onClick={() => {
+                  setDraft(ship)
+                  setModified(false)
+                }}
+                disabled={saving}
+              >
+                Annuler
+              </button>
+              <button className="ss-button primary" onClick={save} disabled={saving || consumableBusy}>
+                {saving ? 'Enregistrement…' : 'Valider la configuration'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {heatDialogOpen && stats.overConsumption && <HeatRedistribution key={heatSignature}
