@@ -13,6 +13,7 @@ import type { OwnedFactionReward } from '@/lib/factionRewards'
 import { ShopClient, type ShopItem, type ShopCharacter, type ShopShip } from './ShopClient'
 import type { ShopItemDetail } from './ShopItemDetails'
 import { shopScopes, type ShopScope } from './shop-sections'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 import './shop.css'
 
 const idOf = (value: any): number | null => {
@@ -61,11 +62,13 @@ function detailValue(value: any): string {
   return String(value)
 }
 
-function summaries(docs: any[]): ShopItem[] {
+function summaries(docs: any[], collection: string, policy: any): ShopItem[] {
   return docs.map((doc) => ({
     id: doc.id,
     nom: doc.nom ?? 'Objet sans nom',
-    prix: doc.prix ?? null,
+    prix: adjustedShopPrice(doc.prix ?? null, resolveShopPolicy(policy, shopPolicyPaths(collection, doc)).percentage),
+    policyPercentage: resolveShopPolicy(policy, shopPolicyPaths(collection, doc)).percentage,
+    available: resolveShopPolicy(policy, shopPolicyPaths(collection, doc)).available,
     rang: doc.rang ?? null,
     categorie: doc.categorie ?? null,
     categoriePrincipale: doc.categoriePrincipale ?? null,
@@ -118,6 +121,7 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
     pourcentageReduction: item.pourcentageReduction == null ? null : Number(item.pourcentageReduction),
     usage: ['arme-sol', 'arme-espace', 'module-espace'].includes(item.usage) ? item.usage : null,
   }))
+  const shopPolicy = await getShopPolicyForCharacter(payload, character)
 
   const [weapons, armors, consumables, mods, shipWeapons, shipModules, shipConsumables] = await Promise.all([
     payload.find({ collection: 'weapons', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
@@ -129,10 +133,10 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
     payload.find({ collection: 'ship-consumables', depth: 1, limit: 500, sort: 'nom', overrideAccess: true }),
   ])
   const catalogs = {
-    weapons: summaries(weapons.docs as any[]), armors: summaries(armors.docs as any[]),
-    consumables: summaries(consumables.docs as any[]), mods: summaries(mods.docs as any[]),
-    shipWeapons: summaries(shipWeapons.docs as any[]), shipModules: summaries(shipModules.docs as any[]),
-    shipConsumables: summaries(shipConsumables.docs as any[]),
+    weapons: summaries(weapons.docs as any[], 'weapons', shopPolicy), armors: summaries(armors.docs as any[], 'armors', shopPolicy),
+    consumables: summaries(consumables.docs as any[], 'consumables', shopPolicy), mods: summaries(mods.docs as any[], 'mods', shopPolicy),
+    shipWeapons: summaries(shipWeapons.docs as any[], 'ship-weapons', shopPolicy), shipModules: summaries(shipModules.docs as any[], 'ship-modules', shopPolicy),
+    shipConsumables: summaries(shipConsumables.docs as any[], 'ship-consumables', shopPolicy),
   }
   const byId = (items: ShopItem[]) => new Map(items.map((item) => [String(item.id), item]))
   const weaponById = byId(catalogs.weapons), armorById = byId(catalogs.armors), consumableById = byId(catalogs.consumables), modById = byId(catalogs.mods)
@@ -154,7 +158,15 @@ export default async function ShopCatalogPage({ scope }: { scope: ShopScope }) {
         categorie: customItem.categorie ?? properties.categorie,
         type: typeof customItem.typeArme === 'string' ? customItem.typeArme.split(',').filter(Boolean) : properties.type,
         image: customItem.armeSource?.image ?? properties.image,
-      }])[0]
+      }], 'custom-equipment', shopPolicy)[0]
+      const sourceCollection = customItem.categorieEquipement === 'arme' ? 'weapons' : 'armors'
+      const sourceId = idOf(customItem.armeSource ?? customItem.armureSource)
+      const sourceItem = customItem.armeSource && typeof customItem.armeSource === 'object' ? customItem.armeSource
+        : customItem.armureSource && typeof customItem.armureSource === 'object' ? customItem.armureSource
+          : null
+      const sourcePolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths(sourceCollection, sourceItem ?? { id: sourceId, categorie: customItem.categorie }))
+      weapon.prix = adjustedShopPrice(customItem.prixAchat, sourcePolicy.percentage)
+      weapon.policyPercentage = sourcePolicy.percentage
       weapon.custom = true
       return { item: weapon, mods: modList(customItem.mods), customEquipmentId: Number(customItem.id) }
     })

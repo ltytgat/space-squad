@@ -12,6 +12,7 @@ import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { ShipyardClient } from './ShipyardClient'
 import '../shop.css'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 export const metadata = { title: 'Chantier naval — Space Squad' }
 
@@ -20,14 +21,16 @@ function idOf(value: any): number | null {
   return id === null || id === undefined ? null : Number(id)
 }
 
-function modelSummary(model: any) {
+function modelSummary(model: any, policy: any) {
   const itemName = (value: any) => value && typeof value === 'object' ? value.nom ?? null : null
   const weapons = (model.armes ?? []).map((entry: any) => ({ nom: itemName(entry.arme), emplacement: entry.emplacement ?? 'pilote' })).filter((entry: any) => entry.nom)
   const optionalModules = (model.modulesOptionnels ?? []).map(itemName).filter(Boolean)
   return {
     id: model.id,
     nom: model.nom ?? 'Modèle de vente',
-    prix: model.prix ?? null,
+    prix: adjustedShopPrice(model.prix ?? null, resolveShopPolicy(policy, shopPolicyPaths('ship-sale-models', model)).percentage),
+    policyPercentage: resolveShopPolicy(policy, shopPolicyPaths('ship-sale-models', model)).percentage,
+    available: resolveShopPolicy(policy, shopPolicyPaths('ship-sale-models', model)).available,
     description: model.description ?? null,
     image: model.image && typeof model.image === 'object' && typeof model.image.url === 'string'
       ? { url: model.image.url, alt: model.image.alt ?? model.nom ?? 'Image du vaisseau' }
@@ -61,13 +64,26 @@ function modelSummary(model: any) {
   }
 }
 
-function shipSummary(ship: any) {
+function shipSummary(ship: any, policy: any, componentCatalog: Map<string, any>) {
   const model = ship.modele && typeof ship.modele === 'object' ? ship.modele : null
+  const components = listInstalledShipComponents(ship).map((component) => {
+    const collection = component.kind === 'module' ? 'ship-modules' : 'ship-weapons'
+    const doc = componentCatalog.get(`${collection}:${component.itemId}`)
+    if (!doc) return component
+    const percentage = resolveShopPolicy(policy, shopPolicyPaths(collection, doc)).percentage
+    return { ...component, prix: adjustedShopPrice(component.prix, percentage) }
+  })
+  const modelPercentage = model
+    ? model.atelierPrive
+      ? resolveShopPolicy(policy, ['atelier', 'atelier/vaisseau']).percentage
+      : resolveShopPolicy(policy, shopPolicyPaths('ship-sale-models', model)).percentage
+    : 0
+  const modelBasePrice = model?.atelierPrive ? model.atelierPrixAchat ?? model.prix : model?.prix
   return {
     id: ship.id,
     nom: ship.nom ?? `Vaisseau ${ship.id}`,
     proprietaire: idOf(ship.proprietaire),
-    modele: model ? { id: model.id, nom: model.nom, prix: model.prix } : null,
+    modele: model ? { id: model.id, nom: model.nom, prix: adjustedShopPrice(modelBasePrice, modelPercentage) } : null,
     moduleGenerateur: ship.moduleGenerateur,
     modulePropulseurs: ship.modulePropulseurs,
     moduleSurvie: ship.moduleSurvie,
@@ -79,7 +95,7 @@ function shipSummary(ship: any) {
     inventaireModules: ship.inventaireModules ?? [],
     inventaireArmes: ship.inventaireArmes ?? [],
     inventaireConsommables: ship.inventaireConsommables ?? [],
-    components: listInstalledShipComponents(ship),
+    components,
     transferItems: listShipTransferItems(ship),
   }
 }
@@ -94,10 +110,17 @@ export default async function ShipyardPage({ searchParams }: {
   const character: any = await getActiveCharacter(payload, user, { depth: 1 })
   if (!character) redirect('/character')
   if (!isCharacterCreationComplete(character)) redirect('/character')
+  const shopPolicy = await getShopPolicyForCharacter(payload, character)
 
-  const [modelsResult, ownedResult] = await Promise.all([
+  const [modelsResult, ownedResult, weaponsResult, modulesResult] = await Promise.all([
     payload.find({ collection: 'ship-sale-models', where: { atelierPrive: { equals: false } }, depth: 4, limit: 500, sort: 'nom', overrideAccess: true }),
     payload.find({ collection: 'ships', where: { proprietaire: { equals: character.id } }, depth: 4, limit: 200, sort: 'nom', overrideAccess: true }),
+    payload.find({ collection: 'ship-weapons', depth: 0, limit: 1000, overrideAccess: true }),
+    payload.find({ collection: 'ship-modules', depth: 0, limit: 1000, overrideAccess: true }),
+  ])
+  const componentCatalog = new Map<string, any>([
+    ...(weaponsResult.docs as any[]).map((item) => [`ship-weapons:${item.id}`, item] as [string, any]),
+    ...(modulesResult.docs as any[]).map((item) => [`ship-modules:${item.id}`, item] as [string, any]),
   ])
   const activeShipId = idOf(character.vaisseau)
   const shipsById = new Map<number, any>((ownedResult.docs as any[]).map((ship) => [Number(ship.id), ship]))
@@ -112,12 +135,12 @@ export default async function ShipyardPage({ searchParams }: {
   }
   const writableShips = [...shipsById.values()]
     .filter((ship) => computeShipAccess({ ship, character, isAdmin: user.role === 'admin' }).canEdit)
-    .map(shipSummary)
+    .map((ship) => shipSummary(ship, shopPolicy, componentCatalog))
 
   const data = {
     character: { id: character.id, nom: character.nom ?? 'Personnage', konis: Number(character.konis) || 0, rang: computeRank(Number(character.pointsDeRang) || 0).level },
-    models: (modelsResult.docs as any[]).map(modelSummary),
-    ownedShips: (ownedResult.docs as any[]).map(shipSummary),
+    models: (modelsResult.docs as any[]).filter((model) => resolveShopPolicy(shopPolicy, shopPolicyPaths('ship-sale-models', model)).available).map((model) => modelSummary(model, shopPolicy)),
+    ownedShips: (ownedResult.docs as any[]).map((ship) => shipSummary(ship, shopPolicy, componentCatalog)),
     writableShips,
     activeShipId,
   }

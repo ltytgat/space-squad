@@ -9,9 +9,10 @@ import { computeShipAccess } from '@/lib/shipAccess'
 import { assertPlayerMode } from '@/lib/activeMode'
 import { factionCanBuyWeaponAtRank, isExWeaponName, isFactionDiscountCouponApplicable, weaponMinimumRank, type DiscountTarget, type OwnedFactionReward } from '@/lib/factionRewards'
 import { computeRank } from '@/lib/rankSystem'
-import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, readShopPrice, relationId, resalePrice, shopRequestFingerprint, weaponModPrice } from '@/lib/shop'
+import { exactAdd, exactMultiply, exactSubtract, isWeaponModCompatible, relationId, resalePrice, shopRequestFingerprint, weaponModPrice } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 type ItemKind = 'weapon' | 'armor' | 'consumable' | 'ship-weapon' | 'ship-module' | 'ship-consumable' | 'weapon-mod' | 'armor-mod'
 type ShopInput = {
@@ -154,6 +155,7 @@ export async function executeShopTransaction(raw: ShopInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${characterId} FOR UPDATE` })
     let character = await payload.findByID({ collection: 'characters', id: characterId, depth: 2, overrideAccess: true, req }) as any
     if (numericId(character.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    const shopPolicy = await getShopPolicyForCharacter(payload, character)
 
     let ship: any = null
     if (input.shipId !== undefined) {
@@ -173,12 +175,14 @@ export async function executeShopTransaction(raw: ShopInput) {
     } else {
       const item = await payload.findByID({ collection: catalogs[input.kind] as any, id: input.itemId, depth: 1, overrideAccess: true, req }).catch(() => null) as any
       if (!item) fail('Objet introuvable dans le catalogue.')
+      const itemCollection = catalogs[input.kind]
+      const itemPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths(itemCollection, item))
       const faction = character.affiliation && typeof character.affiliation === 'object'
         ? character.affiliation
         : numericId(character.affiliation) ? await payload.findByID({ collection: 'factions', id: numericId(character.affiliation)!, depth: 0, overrideAccess: true, req }).catch(() => null) : null
       const factionName = String(faction?.nom ?? '')
       const rewards: OwnedFactionReward[] = Array.isArray(character.inventaireRecompensesFaction) ? character.inventaireRecompensesFaction : []
-      const catalogPrice = readShopPrice(item.prix)
+      const catalogPrice = adjustedShopPrice(item.prix, itemPolicy.percentage)
       const characterUpdate: Record<string, any> = {}
       const shipUpdate: Record<string, any> = {}
       let detail: Record<string, unknown> = { action: input.action, kind: input.kind, itemId: item.id, itemName: item.nom, quantity: input.quantity }
@@ -202,6 +206,7 @@ export async function executeShopTransaction(raw: ShopInput) {
       }
 
       if (input.action === 'buy' && input.kind === 'weapon') {
+        if (!itemPolicy.available) fail('Cet objet a été retiré de la vente pour votre escouade.')
         const rank = computeRank(Number(character.pointsDeRang) || 0).level
         const minimumRank = weaponMinimumRank(item.nom) ?? (isExWeaponName(item.nom) ? 11 : null)
         if (minimumRank === null) fail('Le rang minimum de cette arme est introuvable dans son nom.')
@@ -213,19 +218,23 @@ export async function executeShopTransaction(raw: ShopInput) {
         applyDiscount({ kind: 'weapon', categorie: item.categorie })
         characterUpdate.inventaireArmes = normalizePersonalWeapons(character.inventaireArmes ?? []).concat([{ item: item.id, mods: [], munitionsActuelles: 0, chargeurRelie: null }])
       } else if (input.action === 'buy' && input.kind === 'armor') {
+        if (!itemPolicy.available) fail('Cet objet a été retiré de la vente pour votre escouade.')
         const rank = computeRank(Number(character.pointsDeRang) || 0).level
         if (item.rang != null && rank < Number(item.rang)) fail(`Cette armure nécessite le rang ${item.rang} pour être achetée.`)
         debit()
         characterUpdate.inventaireArmures = normalizePersonalArmors(character.inventaireArmures ?? []).concat([{ item: item.id, mods: [] }])
       } else if (input.action === 'buy' && input.kind === 'consumable') {
+        if (!itemPolicy.available) fail('Cet objet a été retiré de la vente pour votre escouade.')
         debit()
         const rows = Array.isArray(character.inventaire) ? character.inventaire.map((row: any) => ({ consommable: numericId(row.consommable), quantite: Number(row.quantite) || 0 })) : []
         characterUpdate.inventaire = addQuantity(rows, 'consommable', item.id, input.quantity!)
       } else if (input.action === 'buy' && input.kind === 'armor-mod') {
+        if (!itemPolicy.available) fail('Cet objet a été retiré de la vente pour votre escouade.')
         if (item.categoriePrincipale !== 'armures') fail('Ce Mod n’est pas un Mod d’armure.')
         debit()
         characterUpdate.inventaireMods = getInventoryIds(character.inventaireMods).map(Number).concat([item.id])
       } else if (input.action === 'buy' && input.kind.startsWith('ship-')) {
+        if (!itemPolicy.available) fail('Cet objet a été retiré de la vente pour votre escouade.')
         debit()
         if (input.kind === 'ship-weapon' || input.kind === 'ship-module') {
           applyDiscount({ kind: input.kind, categorie: item.categorie, taille: item.taille })
@@ -239,7 +248,8 @@ export async function executeShopTransaction(raw: ShopInput) {
         const target = weaponTargetRecord(character, input.weaponTarget)
         if (!target.weaponId) fail('L’arme sélectionnée est introuvable.')
         const weapon = await payload.findByID({ collection: 'weapons', id: target.weaponId, depth: 0, overrideAccess: true, req }) as any
-        const basePrice = readShopPrice(weapon.prix)
+        const weaponPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('weapons', weapon))
+        const basePrice = adjustedShopPrice(weapon.prix, weaponPolicy.percentage)
         if (basePrice === null) fail('Une arme sans prix ne peut pas recevoir un Mod depuis la boutique.')
         if (!isWeaponModCompatible(weapon, item)) fail('Ce Mod n’est pas compatible avec l’arme sélectionnée.')
         const attached = getInventoryIds(target.entry?.mods)
@@ -251,6 +261,7 @@ export async function executeShopTransaction(raw: ShopInput) {
           characterUpdate.inventaireMods = ownedMods.map(Number)
           amount = 0
         } else {
+          if (!itemPolicy.available) fail('Ce Mod a été retiré de la vente pour votre escouade.')
           amount = weaponModPrice(basePrice, catalogPrice)
         }
         if (target.location === 'inventory') {
@@ -264,14 +275,15 @@ export async function executeShopTransaction(raw: ShopInput) {
       } else if (input.action === 'sell' && input.kind === 'weapon') {
         const rows = Array.isArray(character.inventaireArmes) ? character.inventaireArmes : []
         if (!isIndex(input.ownedIndex, rows.length) || numericId(rows[input.ownedIndex!].item) !== item.id) fail('Cette arme n’est plus dans la réserve.')
-        const basePrice = readShopPrice(item.prix)
+        const basePrice = catalogPrice
         if (basePrice === null) fail('Cet objet n’a pas de prix et ne peut pas être vendu.')
         const mods = getInventoryIds(rows[input.ownedIndex!].mods)
         let total = basePrice
         if (mods.length > 1) fail('Les données de cette arme dépassent la limite d’un Mod et nécessitent une correction administrative.')
         if (mods.length === 1) {
           const mod = await payload.findByID({ collection: 'mods', id: Number(mods[0]), depth: 0, overrideAccess: true, req }) as any
-          const factor = readShopPrice(mod.prix)
+          const modPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('mods', mod))
+          const factor = adjustedShopPrice(mod.prix, modPolicy.percentage)
           if (factor === null) fail('Cette arme porte un Mod sans prix ; sa valeur de revente ne peut pas être calculée.')
           if (mod.categoriePrincipale !== 'armes') fail('Le Mod associé à cette arme est incohérent.')
           total = exactAdd(total, weaponModPrice(basePrice, factor))
@@ -282,7 +294,7 @@ export async function executeShopTransaction(raw: ShopInput) {
       } else if (input.action === 'sell' && input.kind === 'armor') {
         const rows = Array.isArray(character.inventaireArmures) ? character.inventaireArmures : []
         if (!isIndex(input.ownedIndex, rows.length) || numericId(rows[input.ownedIndex!].item) !== item.id) fail('Cette armure n’est plus dans la réserve.')
-        const basePrice = readShopPrice(item.prix)
+        const basePrice = catalogPrice
         if (basePrice === null) fail('Cet objet n’a pas de prix et ne peut pas être vendu.')
         const returnedMods = getInventoryIds(rows[input.ownedIndex!].mods)
         amount = resalePrice(basePrice)
@@ -293,7 +305,7 @@ export async function executeShopTransaction(raw: ShopInput) {
         const rows = Array.isArray(character.inventaire) ? character.inventaire : []
         const owned = rows.filter((row: any) => numericId(row.consommable) === item.id).reduce((sum: number, row: any) => sum + (Number(row.quantite) || 0), 0)
         if (owned < input.quantity!) fail('La quantité possédée est insuffisante.')
-        const basePrice = readShopPrice(item.prix)
+        const basePrice = catalogPrice
         if (basePrice === null) fail('Cet objet n’a pas de prix et ne peut pas être vendu.')
         credit(basePrice)
         characterUpdate.inventaire = removeQuantity(rows, 'consommable', item.id, input.quantity!)
@@ -307,7 +319,7 @@ export async function executeShopTransaction(raw: ShopInput) {
         characterUpdate.inventaireMods = owned.map(Number)
         amount = resalePrice(catalogPrice)
       } else if (input.action === 'sell' && input.kind.startsWith('ship-')) {
-        const basePrice = readShopPrice(item.prix)
+        const basePrice = catalogPrice
         if (basePrice === null) fail('Cet objet n’a pas de prix et ne peut pas être vendu.')
         const key = input.kind === 'ship-weapon' ? 'inventaireArmes' : input.kind === 'ship-module' ? 'inventaireModules' : 'inventaireConsommables'
         const itemKey = input.kind === 'ship-weapon' ? 'arme' : input.kind === 'ship-module' ? 'module' : 'consommable'

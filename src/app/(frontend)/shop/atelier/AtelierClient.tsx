@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { applyAtelierEffects, atelierModificationPoints, atelierNextPurchasePrice, atelierPurchasePrice, atelierShipSpecializationTags, atelierSpecializationTagForTarget, atelierTurretCapacities, atelierTurretPointIncrease, findAtelierCompatibility, type AtelierCompatibility, type AtelierEffect, type AtelierEquipmentKind, type AtelierPurchase } from '@/lib/atelier'
 import { exactAdd } from '@/lib/shop'
+import { adjustedShopPrice } from '@/lib/groupShopPolicy'
 import { weaponRangeRows } from '@/lib/weaponRanges'
 import type { ShopItemDetail } from '../ShopItemDetails'
 import { customizePersonalEquipment, customizeShip } from '../atelier-actions'
@@ -18,6 +19,7 @@ export type AtelierItem = {
   type: string[]
   classe: string | null
   prix: number
+  policyPercentage?: number
   points: number
   image: ImageSummary
   setNom: string | null
@@ -44,6 +46,8 @@ type Props = {
 type Preview = { properties: Record<string, any>; error: string | null }
 
 const money = (value: number) => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(value)} Konis`
+const adjustedRecipePrice = (compatibility: AtelierCompatibility, price: number) =>
+  adjustedShopPrice(price, compatibility.policyPercentage ?? 0) ?? 0
 const categoryLabels: Record<string, string> = {
   'fusil-assaut': "Fusil d’assaut", shotgun: 'Shotgun', sniper: 'Sniper', pistolet: 'Pistolet',
   melee: 'Mêlée', lourde: 'Arme lourde', tete: 'Tête', torse: 'Torse', bras: 'Bras', jambes: 'Jambes',
@@ -178,7 +182,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
   const availableModifications = useMemo(() => selectedItem
     ? modifications.map((modification) => ({ modification, compatibility: findAtelierCompatibility(modification, selectedItem) }))
       .filter((entry): entry is { modification: AtelierModification; compatibility: AtelierCompatibility } => {
-        if (!entry.compatibility) return false
+        if (!entry.compatibility || entry.compatibility.available === false) return false
         if (selectedItem.kind !== 'vaisseau') return true
         const alreadyOwnedTags = atelierShipSpecializationTags(selectedItem.properties)
         return !entry.modification.effets.some((effect) => {
@@ -195,7 +199,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
         const quantity = selections.find((selection) => selection.modificationId === entry.modification.id)?.quantity ?? 0
         points += atelierModificationPoints(entry.compatibility, quantity)
         if (!Number.isSafeInteger(points)) throw new Error('Le total des points dépasse la limite autorisée.')
-        if (quantity) price = exactAdd(price, atelierPurchasePrice(entry.compatibility, quantity))
+        if (quantity) price = exactAdd(price, adjustedRecipePrice(entry.compatibility, atelierPurchasePrice(entry.compatibility, quantity)))
       }
       return { points, price, error: null as string | null }
     } catch (error) {
@@ -285,7 +289,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
     try {
       const points = atelierModificationPoints(compatibility, 1)
       if (points > remainingPoints) return 'Points de modification insuffisants.'
-      const nextPrice = atelierNextPurchasePrice(compatibility, quantity)
+      const nextPrice = adjustedRecipePrice(compatibility, atelierNextPurchasePrice(compatibility, quantity))
       if (exactAdd(totalPrice, nextPrice) > character.konis) return 'Konis insuffisants pour cet achat.'
       const turretAssignments = modification.effets.some((effect) => effect.cible === 'pointsEmportTourelles')
         ? [...(selections.find((entry) => entry.modificationId === modification.id)?.turretAssignments ?? []), null]
@@ -387,7 +391,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
           <div><span>Points disponibles</span><strong>{selectedItem.points}</strong></div>
           <div><span>Points utilisés</span><strong>{spentPoints}</strong></div>
           <div><span>Points restants</span><strong>{remainingPoints}</strong></div>
-          <div><span>Prix de base</span><strong>{money(selectedItem.prix)}</strong></div>
+          <div><span>Prix de base{selectedItem.policyPercentage ? ` · ${selectedItem.policyPercentage > 0 ? '+' : ''}${selectedItem.policyPercentage}% escouade` : ''}</span><strong>{money(selectedItem.prix)}</strong></div>
           <div><span>Modifications</span><strong>{money(modificationCost)}</strong></div>
           <div className="atelier-budget-total"><span>Prix final</span><strong>{money(totalPrice)}</strong></div>
         </div>
@@ -406,8 +410,8 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
               let nextPrice: number | null = null
               let selectedCost = 0
               try {
-                if (quantity < Number(compatibility.maximum)) nextPrice = atelierNextPurchasePrice(compatibility, quantity)
-                selectedCost = quantity ? atelierPurchasePrice(compatibility, quantity) : 0
+                if (quantity < Number(compatibility.maximum)) nextPrice = adjustedRecipePrice(compatibility, atelierNextPurchasePrice(compatibility, quantity))
+                selectedCost = quantity ? adjustedRecipePrice(compatibility, atelierPurchasePrice(compatibility, quantity)) : 0
               } catch { /* The reason is shown next to the disabled control. */ }
               const addReason = addBlockReason(modification, compatibility)
               const addable = addReason === null
@@ -415,7 +419,7 @@ export function AtelierClient({ kind, character, items, modifications }: Props) 
                 <div className="atelier-recipe-title"><div><h3>{modification.nom}</h3>{modification.description && <p>{modification.description}</p>}</div>
                   {quantity > 0 && <span className="atelier-recipe-count">{quantity}/{compatibility.maximum}</span>}
                 </div>
-                <div className="atelier-recipe-cost"><span>{nextPrice === null ? quantity >= Number(compatibility.maximum) ? 'Maximum atteint' : 'Prix indisponible' : `Prochain achat : ${money(nextPrice)}`}</span><span>{atelierModificationPoints(compatibility, 1)} points par achat</span></div>
+                <div className="atelier-recipe-cost"><span>{nextPrice === null ? quantity >= Number(compatibility.maximum) ? 'Maximum atteint' : 'Prix indisponible' : `Prochain achat : ${money(nextPrice)}${compatibility.policyPercentage ? ` (${compatibility.policyPercentage > 0 ? '+' : ''}${compatibility.policyPercentage}% escouade)` : ''}`}</span><span>{atelierModificationPoints(compatibility, 1)} points par achat</span></div>
                 {quantity > 0 && <small className="atelier-multiplier">Coût sélectionné : {money(selectedCost)}</small>}
                 {compatibility.multiplicateurRachat && compatibility.multiplicateurRachat > 1 && <small className="atelier-multiplier">Prix multiplié par ×{compatibility.multiplicateurRachat} à chaque rachat</small>}
                 {modification.effets.length > 0 && <ul>{modification.effets.map((effect, index) => <li key={`${effect.cible}-${index}`}>{formatEffect(effect)}</li>)}</ul>}

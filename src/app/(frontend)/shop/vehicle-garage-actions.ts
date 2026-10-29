@@ -13,6 +13,7 @@ import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { minimumRankForVehicleClass, vehicleGarageFingerprint, vehiclePurchasePrice, vehicleSalePrice } from '@/lib/vehicleGarage'
 import { mergeShipInventory } from '@/lib/shipyard'
 import { getActiveCharacter } from '@/lib/activeCharacter'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 type VehicleGarageInput = {
   transactionId: string
@@ -85,6 +86,7 @@ export async function executeVehicleGarageTransaction(raw: VehicleGarageInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
     const currentCharacter = await payload.findByID({ collection: 'characters', id: character.id, depth: 1, overrideAccess: true, req }) as any
     if (numericId(currentCharacter.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    const shopPolicy = await getShopPolicyForCharacter(payload, currentCharacter)
     if (!isCharacterCreationComplete(currentCharacter)) fail('Terminez le parcours de création avant d’utiliser le Garage.')
 
     if (raw.action === 'buy') {
@@ -111,6 +113,8 @@ export async function executeVehicleGarageTransaction(raw: VehicleGarageInput) {
       const modelLock = await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM vehicle_sale_models WHERE id = ${raw.saleModelId} FOR SHARE` })
       if (!modelLock.rows[0]) fail('Modèle de vente introuvable.')
       const model = await payload.findByID({ collection: 'vehicle-sale-models', id: raw.saleModelId!, depth: 2, overrideAccess: true, req }) as any
+      const modelPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('vehicle-sale-models', model))
+      if (!modelPolicy.available) fail('Ce véhicule a été retiré de la vente pour votre escouade.')
       const variant = model.variante && typeof model.variante === 'object' ? model.variante : null
       const minimumRank = minimumRankForVehicleClass(variant?.classe)
       if (minimumRank === null) fail('La classe de ce véhicule n’est pas valide pour la vente.')
@@ -118,7 +122,7 @@ export async function executeVehicleGarageTransaction(raw: VehicleGarageInput) {
       if (minimumRank !== null && currentRank < minimumRank) {
         fail(`L’achat d’un véhicule de classe ${variant.classe} nécessite le rang ${minimumRank}.`)
       }
-      const price = vehiclePurchasePrice(model.prix)
+      const price = vehiclePurchasePrice(adjustedShopPrice(model.prix, modelPolicy.percentage))
       if (price === null) fail('Ce modèle n’a pas de prix commercialisable.')
       const currentBalance = Number(currentCharacter.konis ?? 0)
       if (!Number.isFinite(currentBalance) || currentBalance < 0) fail('Le solde du personnage est incohérent.')
@@ -154,7 +158,8 @@ export async function executeVehicleGarageTransaction(raw: VehicleGarageInput) {
       const model = vehicle.modele && typeof vehicle.modele === 'object'
         ? vehicle.modele
         : await payload.findByID({ collection: 'vehicle-sale-models', id: modelId, depth: 0, overrideAccess: true, req })
-      const total = vehicleSalePrice(model?.prix)
+      const modelPolicy = model ? resolveShopPolicy(shopPolicy, shopPolicyPaths('vehicle-sale-models', model)) : { percentage: 0, available: true }
+      const total = vehicleSalePrice(model ? adjustedShopPrice(model.prix, modelPolicy.percentage) : null)
       if (total === null) fail('Le modèle de vente de ce véhicule n’a pas de prix valide.')
 
       const weaponId = numericId(vehicle.armeTourelle)

@@ -15,6 +15,8 @@ export type ShopItem = {
   id: number
   nom: string
   prix: number | string | null
+  policyPercentage?: number
+  available?: boolean
   rang?: number | null
   categorie?: string | null
   famille?: string | null
@@ -262,11 +264,11 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   const activeSection = isAll ? section : sectionForScope[scope]
   const hasSalesView = !isAll && salesScopes.has(scope)
   const availableDamageTypeChoices = activeSection === 'spatial' ? damageTypeChoices.filter(([value]) => value !== 'plasma') : damageTypeChoices
-  const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => factionCanBuyWeaponAtRank(item.nom, character.rang, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.rang, character.inventaireRecompensesFaction, character.factionName])
-  const availableArmors = useMemo(() => catalogs.armors.filter((item) => item.rang == null || item.rang <= character.rang), [catalogs.armors, character.rang])
+  const availableWeapons = useMemo(() => catalogs.weapons.filter((item) => item.available !== false && factionCanBuyWeaponAtRank(item.nom, character.rang, item.categorie, item.type, character.inventaireRecompensesFaction, character.factionName)), [catalogs.weapons, character.rang, character.inventaireRecompensesFaction, character.factionName])
+  const availableArmors = useMemo(() => catalogs.armors.filter((item) => item.available !== false && (item.rang == null || item.rang <= character.rang)), [catalogs.armors, character.rang])
   const categories = useMemo(() => [...new Set([
-    ...[...availableWeapons, ...catalogs.armors, ...catalogs.consumables, ...catalogs.shipWeapons, ...catalogs.shipModules, ...catalogs.shipConsumables].map((item) => item.categorie ?? item.famille).filter(Boolean) as string[],
-    ...catalogs.shipConsumables.map((item) => shipConsumableCategory(item).label),
+    ...[...availableWeapons, ...catalogs.armors, ...catalogs.consumables, ...catalogs.shipWeapons, ...catalogs.shipModules, ...catalogs.shipConsumables].filter((item) => item.available !== false).map((item) => item.categorie ?? item.famille).filter(Boolean) as string[],
+    ...catalogs.shipConsumables.filter((item) => item.available !== false).map((item) => shipConsumableCategory(item).label),
   ])].sort((left, right) => left.localeCompare(right, 'fr')), [availableWeapons, catalogs])
   const facetField: 'categorie' | 'sousCategorieArme' | 'sousCategorieArmure' | 'typeModule' | null = scope === 'sol-armes' || scope === 'sol-armures' ? 'categorie' : scope === 'mods-armes' ? 'sousCategorieArme' : scope === 'mods-armures' ? 'sousCategorieArmure' : scope === 'espace-modules' ? 'typeModule' : null
   const facetChoices: [string, string][] = scope === 'sol-armes'
@@ -346,7 +348,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
     })()
   const hasArmorFilters = Boolean(search.trim()) || (isAll ? category !== 'all' : facet !== 'all') || armorRank !== 'all'
 
-  const consumablesForDisplay = catalogs.consumables.filter((item) => matches(item))
+  const consumablesForDisplay = catalogs.consumables.filter((item) => item.available !== false && matches(item))
   const consumableCategoryOptions = [
     ...consumableCategoryChoices,
     ...[...new Set(consumablesForDisplay.map((item) => item.categorie).filter((value): value is string => !!value && !consumableCategoryChoices.some(([known]) => known === value)))]
@@ -359,7 +361,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   })
   const hasConsumableFilters = Boolean(search.trim()) || (isAll ? category !== 'all' : false)
 
-  const shipWeaponsForDisplay = catalogs.shipWeapons.filter((item) => matches(item, true))
+  const shipWeaponsForDisplay = catalogs.shipWeapons.filter((item) => item.available !== false && matches(item, true))
   const shipWeaponTypeOptions = [
     ...Object.entries(shipTypeLabel).filter(([value]) => shipWeaponsForDisplay.some((item) => item.type?.trim() === value)),
     ...[...new Set(shipWeaponsForDisplay.map((item) => item.type?.trim() || 'unknown'))]
@@ -374,7 +376,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   })
   const hasShipWeaponFilters = Boolean(search.trim()) || damageType !== 'all' || (scope === 'espace-armes' && (shipType !== 'all' || shipClass !== 'all')) || (isAll && category !== 'all')
 
-  const shipModulesForDisplay = catalogs.shipModules.filter((item) => matches(item))
+  const shipModulesForDisplay = catalogs.shipModules.filter((item) => item.available !== false && matches(item))
   const shipModuleTypeOptions = [
     ...shipModuleTypeChoices.filter(([value]) => shipModulesForDisplay.some((item) => item.typeModule?.trim() === value)),
     ...[...new Set(shipModulesForDisplay.map((item) => item.typeModule?.trim() || 'unknown'))]
@@ -401,7 +403,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
   })
   const hasShipModuleFilters = Boolean(search.trim()) || (isAll ? category !== 'all' : scope === 'espace-modules' && facet !== 'all')
 
-  const shipConsumablesForDisplay = catalogs.shipConsumables.filter((item) => matches(item))
+  const shipConsumablesForDisplay = catalogs.shipConsumables.filter((item) => item.available !== false && matches(item))
   const shipConsumableCategoryGroups = (() => {
     const groups = new Map<string, { key: string; label: string; items: ShopItem[]; subcategories?: Map<string, { key: string; label: string; items: ShopItem[] }> }>()
     for (const item of shipConsumablesForDisplay) {
@@ -536,6 +538,7 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
         {item.effet && <p>{item.effet}</p>}
       </div>
       <div className="shop-item-action"><strong>{finalTotal === null ? priceText(item) : selectedCoupon ? `${currency(finalTotal)} (au lieu de ${currency(originalTotal!)})` : currency(finalTotal)}</strong>
+        {!!item.policyPercentage && <small>Tarif d’escouade : {item.policyPercentage > 0 ? '+' : ''}{item.policyPercentage}%</small>}
         {hasQuantity && quantityControl(key)}
         {coupons.length > 0 && <label><select className="shop-discount-select" aria-label={`Réduction pour ${item.nom}`} value={selectedCouponId ?? ''} onChange={(event) => setCouponSelections((current) => ({ ...current, [key]: event.target.value || null }))}><option value="">Sans réduction</option>{coupons.map(({ coupon }) => <option key={coupon.id} value={coupon.id}>{coupon.nom} · {coupon.pourcentageReduction} %</option>)}</select></label>}
         <button type="button" disabled={pending || price === null || (owner === 'ship' && !ship)} onClick={() => transact({ action: 'buy', kind, itemId: item.id, quantity, ...(selectedCoupon?.id ? { discountRewardId: selectedCoupon.id } : {}), ...(owner === 'ship' ? { shipId } : {}) }, `${item.nom} ajouté${quantity > 1 ? ` (${quantity})` : ''} à la réserve${selectedCoupon ? ` avec ${selectedCoupon.nom}` : ''}.`, `Acheter ${item.nom} pour ${currency(finalTotal!)}${selectedCoupon ? ` avec le bon ${selectedCoupon.nom} (${selectedCoupon.pourcentageReduction} %)` : ''} ?`)}>Acheter</button>
@@ -734,14 +737,14 @@ export function ShopClient({ character, ships, catalogs, scope = 'tout' }: { cha
       {(isAll || scope === 'mods-armes') && <section className="shop-mod-flow"><h2>Mods d’arme</h2><p>Choisissez une arme possédée, équipée ou en réserve. Un seul Mod peut être appliqué à une arme et il devient permanent.</p>
         <label>Arme cible <select value={targetKey} onChange={(event) => setTargetKey(event.target.value)}><option value="">Sélectionner une arme…</option>{targets.filter((target) => readShopPrice(target.item.prix) !== null && target.mods.length === 0).map((target) => <option key={target.key} value={target.key}>{target.item.nom}{target.location === 'equipped' ? ' · équipée' : ' · réserve'}</option>)}</select></label>
         {!selectedTarget && <p className="shop-empty">Sélectionnez une arme compatible, en réserve ou équipée, pour afficher les Mods disponibles.</p>}
-        <div className="shop-grid">{selectedTarget && catalogs.mods.filter((item) => item.categoriePrincipale === 'armes' && isWeaponModCompatible({ categorie: selectedTarget.item.categorie ?? undefined }, { categoriePrincipale: item.categoriePrincipale ?? undefined, sousCategorieArme: item.sousCategorieArme ?? undefined }) && matches(item)).map((item) => {
+        <div className="shop-grid">{selectedTarget && catalogs.mods.filter((item) => item.available !== false && item.categoriePrincipale === 'armes' && isWeaponModCompatible({ categorie: selectedTarget.item.categorie ?? undefined }, { categoriePrincipale: item.categoriePrincipale ?? undefined, sousCategorieArme: item.sousCategorieArme ?? undefined }) && matches(item)).map((item) => {
           const factor = readShopPrice(item.prix)
           const owned = ownedModIds.has(String(item.id))
           const total = selectedTarget && factor !== null ? weaponModPrice(readShopPrice(selectedTarget.item.prix) ?? 0, factor) : null
           return <article className="shop-item" key={`weapon-mod-${item.id}`}><div className="shop-item-main"><div className="shop-item-type">Mod d’arme compatible</div><h3>{item.nom}</h3><div className="shop-item-meta">{item.sousCategorieArme ?? 'Compatibilité à vérifier'}</div>{item.effet && <p>{item.effet}</p>}</div><ShopItemDetailsButton name={item.nom} category="Mod arme" image={item.image} details={item.details ?? []} /><div className="shop-item-action"><strong>{factor === null ? 'Non commercialisable' : `${new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 2 }).format(factor)} du prix de l’arme`}</strong>{total !== null && <span>Coût sur cette arme : {currency(owned ? 0 : total)}</span>}<button type="button" disabled={pending || factor === null || !selectedTarget} onClick={() => selectedTarget && transact({ action: 'apply-weapon-mod', kind: 'weapon-mod', itemId: item.id, weaponTarget: { location: selectedTarget.location, index: selectedTarget.index, slot: selectedTarget.slot } }, `${item.nom} appliqué à ${selectedTarget.item.nom}.`, `${owned ? 'Appliquer' : `Acheter et appliquer`} ${item.nom} sur ${selectedTarget.item.nom} pour ${currency(owned ? 0 : total ?? 0)} ? Cette association sera permanente et ne pourra être ni retirée ni remplacée.`)}>{owned ? 'Appliquer le Mod possédé' : 'Acheter et appliquer'}</button></div></article>
         })}</div>
       </section>}
-      {(isAll || scope === 'mods-armures') && <section><h2>Mods d’armure</h2><p>Les Mods d’armure achetés vont dans votre réserve et peuvent être vendus séparément.</p><div className="shop-grid">{catalogs.mods.filter((item) => item.categoriePrincipale === 'armures' && matches(item)).map((item) => card(item, 'armor-mod', 'personal'))}</div></section>}
+      {(isAll || scope === 'mods-armures') && <section><h2>Mods d’armure</h2><p>Les Mods d’armure achetés vont dans votre réserve et peuvent être vendus séparément.</p><div className="shop-grid">{catalogs.mods.filter((item) => item.available !== false && item.categoriePrincipale === 'armures' && matches(item)).map((item) => card(item, 'armor-mod', 'personal'))}</div></section>}
     </div>}
 
     {hasSalesView && tradeView === 'sell' && <div className="shop-catalog-groups shop-owned shop-section-owned shop-sale-view">

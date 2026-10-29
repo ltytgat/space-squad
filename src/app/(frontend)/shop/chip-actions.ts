@@ -10,6 +10,7 @@ import { assertPlayerMode } from '@/lib/activeMode'
 import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 const CHIP_PRICES = { active: 75_000, passive: 100_000 } as const
 const DRAW_PRICES = { active: 30_000, passive: 50_000 } as const
@@ -102,6 +103,7 @@ export async function executeChipTransaction(raw: ChipInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${characterId} FOR UPDATE` })
     const character: any = await payload.findByID({ collection: 'characters', id: characterId, depth: 1, overrideAccess: true, req })
     if (relationId(character.user) !== String(user.id)) fail('Ce personnage ne vous appartient pas.')
+    const shopPolicy = await getShopPolicyForCharacter(payload, character)
     if (!isCharacterCreationComplete(character)) fail('Terminez le parcours de création avant d’utiliser les puces.')
 
     const previous = await payload.db.execute({ db: transactionDb, sql: sql`SELECT fingerprint, actor_id, amount, details FROM shop_transactions WHERE transaction_id = ${raw.transactionId} LIMIT 1` })
@@ -125,14 +127,21 @@ export async function executeChipTransaction(raw: ChipInput) {
           if (!result.hasNextPage || !result.nextPage) break
           page = result.nextPage
         }
-        if (!available.length) fail(`Aucune puce ${raw.category === 'active' ? 'active' : 'passive'} n’est disponible pour le tirage.`)
-        chip = available[randomInt(available.length)]
-        amount = DRAW_PRICES[raw.category!]
+        const eligible = available.filter((entry) => resolveShopPolicy(shopPolicy, shopPolicyPaths('chips', entry)).available)
+        if (!eligible.length) fail(`Aucune puce ${raw.category === 'active' ? 'active' : 'passive'} n’est disponible pour le tirage.`)
+        chip = eligible[randomInt(eligible.length)]
+        const drawPolicy = resolveShopPolicy(shopPolicy, ['sol', 'sol/puces', `sol/puces/${raw.category}`])
+        amount = adjustedShopPrice(DRAW_PRICES[raw.category!], drawPolicy.percentage) ?? 0
       } else {
         chip = await payload.findByID({ collection: 'chips', id: raw.chipId!, depth: 1, overrideAccess: true, req }).catch(() => null)
         if (!chip) fail('Puce introuvable dans le catalogue.')
         if (!validCategory(chip.categorie)) fail('La catégorie de cette puce est invalide.')
-        if (raw.action === 'buy') amount = CHIP_PRICES[chip.categorie as ChipCategory]
+        const chipPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('chips', chip))
+        if (raw.action === 'buy') {
+          if (!chipPolicy.available) fail('Cette puce a été retirée de la vente pour votre escouade.')
+          amount = adjustedShopPrice(CHIP_PRICES[chip.categorie as ChipCategory], chipPolicy.percentage) ?? 0
+        }
+        if (raw.action === 'recycle') amount = adjustedShopPrice(RECYCLE_PRICE, chipPolicy.percentage) ?? 0
       }
 
       resultChip = summary(chip)
@@ -140,7 +149,6 @@ export async function executeChipTransaction(raw: ChipInput) {
       if (raw.action === 'recycle') {
         if (raw.ownedIndex! >= owned.length || owned[raw.ownedIndex!] !== chip.id) fail('Cette puce n’est plus dans votre réserve.')
         owned.splice(raw.ownedIndex!, 1)
-        amount = RECYCLE_PRICE
       } else {
         owned.push(chip.id)
       }

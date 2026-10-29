@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { SessionRewardsDrawer } from './SessionRewardsDrawer'
 
 type Group = { id: number; nom: string }
@@ -57,9 +58,10 @@ interface Props {
   characters: Character[]
   groups: Group[]
   factions: Faction[]
+  canManageShop: boolean
 }
 
-export function CharactersClient({ characters, groups, factions }: Props) {
+export function CharactersClient({ characters, groups, factions, canManageShop }: Props) {
   const [activeGroup, setActiveGroup] = useState<number | 'none' | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
@@ -265,7 +267,7 @@ export function CharactersClient({ characters, groups, factions }: Props) {
       )}
 
       {/* ── Barre d'actions contextuelle ── */}
-      {showActionBar && (
+      {(showActionBar || (canManageShop && typeof activeGroup === 'number')) && (
         <div className="chars-actionbar" role="region" aria-label="Actions sur la sélection">
           <div className="chars-actionbar-info">
             <strong>{scopeLabel}</strong>
@@ -292,13 +294,21 @@ export function CharactersClient({ characters, groups, factions }: Props) {
                 Vider
               </button>
             )}
-            <button
+            {showActionBar && <button
               type="button"
               className="chars-actionbar-btn chars-actionbar-btn-primary"
               onClick={() => setDrawerOpen(true)}
             >
               Terminer la session
-            </button>
+            </button>}
+            {canManageShop && typeof activeGroup === 'number' && (
+              <Link
+                className="chars-actionbar-btn chars-actionbar-btn-primary"
+                href={`/mj/boutique/escouade/${activeGroup}`}
+              >
+                Modifier la boutique
+              </Link>
+            )}
           </div>
         </div>
       )}

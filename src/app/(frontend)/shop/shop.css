@@ -271,3 +271,68 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
   .chip-draw-actions { justify-content: stretch; }
   .chip-draw-actions button { flex: 1 1 100%; }
 }
+.group-shop-policy-tree,
+.group-shop-policy-children {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.group-shop-policy-node {
+  border: 1px solid var(--shop-border, #d5dbe2);
+  border-radius: 0.65rem;
+  background: var(--shop-card, #fff);
+  padding: 0.75rem 1rem;
+}
+
+.group-shop-policy-node > summary {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+}
+
+.group-shop-policy-node > summary span {
+  color: var(--shop-muted, #64748b);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.group-shop-policy-controls {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.9rem 0;
+}
+
+.group-shop-policy-controls label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.group-shop-policy-controls input,
+.group-shop-policy-controls select {
+  min-height: 2.5rem;
+  min-width: 12rem;
+}
+
+.group-shop-policy-children {
+  border-left: 2px solid var(--shop-border, #d5dbe2);
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+}
+
+.group-shop-policy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.group-shop-price-note {
+  display: block;
+  color: var(--ss-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}

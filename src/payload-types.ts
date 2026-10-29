@@ -287,6 +287,15 @@ export interface Group {
   id: number;
   nom: string;
   creator?: (number | null) | User;
+  shopPolicy?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   inviteCode?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1792,6 +1801,7 @@ export interface LoreArticlesSelect<T extends boolean = true> {
 export interface GroupsSelect<T extends boolean = true> {
   nom?: T;
   creator?: T;
+  shopPolicy?: T;
   inviteCode?: T;
   updatedAt?: T;
   createdAt?: T;

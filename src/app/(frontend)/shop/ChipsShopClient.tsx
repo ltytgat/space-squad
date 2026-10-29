@@ -9,6 +9,10 @@ export type ShopChip = {
   id: number
   nom: string
   categorie: 'active' | 'passive'
+  available?: boolean
+  price?: number
+  recyclePrice?: number
+  policyPercentage?: number
   restriction: string | null
   effet: string
   cooldown: number | null
@@ -20,18 +24,16 @@ type ChipAction = 'buy' | 'draw' | 'recycle'
 type ChipRequest = { action: ChipAction; chipId?: number; category?: 'active' | 'passive'; ownedIndex?: number }
 type PendingAction = { request: ChipRequest; transactionId: string; prompt: string; success: string }
 
-const PRICES = { active: 75_000, passive: 100_000 }
-const DRAW_PRICES = { active: 30_000, passive: 50_000 }
-const RECYCLE_PRICE = 10_000
-const money = (amount: number) => `${new Intl.NumberFormat('fr-FR').format(amount)} Konis`
+const money = (amount: number) => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(amount)} Konis`
 const categoryLabel = (category: ShopChip['categorie']) => category === 'active' ? 'Active' : 'Passive'
 
 export default function ChipsShopClient({
-  character, chips, owned,
+  character, chips, owned, drawPrices,
 }: {
   character: { id: number; nom: string; konis: number }
   chips: ShopChip[]
   owned: { chip: ShopChip; index: number }[]
+  drawPrices: { active: number; passive: number }
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -77,8 +79,8 @@ export default function ChipsShopClient({
     await run(selected)
   }
 
-  const activeChips = chips.filter((chip) => chip.categorie === 'active')
-  const passiveChips = chips.filter((chip) => chip.categorie === 'passive')
+  const activeChips = chips.filter((chip) => chip.categorie === 'active' && chip.available !== false)
+  const passiveChips = chips.filter((chip) => chip.categorie === 'passive' && chip.available !== false)
 
   function chipCard(chip: ShopChip) {
     return <article className={`shop-item${chip.image ? ' shop-item-illustrated' : ''}`} key={chip.id}>
@@ -90,10 +92,11 @@ export default function ChipsShopClient({
         {chip.categorie === 'active' && chip.cooldown !== null && <div className="shop-item-meta">Cooldown : {chip.cooldown} tour{chip.cooldown === 1 ? '' : 's'}</div>}
       </div>
       <div className="shop-item-action">
-        <strong>{money(PRICES[chip.categorie])}</strong>
+        <strong>{money(chip.price ?? 0)}</strong>
+        {!!chip.policyPercentage && <small>Tarif d’escouade : {chip.policyPercentage > 0 ? '+' : ''}{chip.policyPercentage}%</small>}
         <button type="button" disabled={pending} onClick={() => ask(
           { action: 'buy', chipId: chip.id },
-          `Acheter ${chip.nom} pour ${money(PRICES[chip.categorie])} ?`,
+          `Acheter ${chip.nom} pour ${money(chip.price ?? 0)} ?`,
           `${chip.nom} a été ajoutée à votre réserve.`,
         )}>Acheter</button>
       </div>
@@ -109,14 +112,14 @@ export default function ChipsShopClient({
       <div className="chip-draw-actions">
         <button type="button" disabled={pending || activeChips.length === 0} onClick={() => ask(
           { action: 'draw', category: 'active' },
-          `Effectuer un tirage de puce active pour ${money(DRAW_PRICES.active)} ? Une puce active aléatoire sera ajoutée à votre réserve.`,
+          `Effectuer un tirage de puce active pour ${money(drawPrices.active)} ? Une puce active aléatoire sera ajoutée à votre réserve.`,
           'Tirage de puce active effectué.',
-        )}>Tirage Active · {money(DRAW_PRICES.active)}</button>
+        )}>Tirage Active · {money(drawPrices.active)}</button>
         <button type="button" disabled={pending || passiveChips.length === 0} onClick={() => ask(
           { action: 'draw', category: 'passive' },
-          `Effectuer un tirage de puce passive pour ${money(DRAW_PRICES.passive)} ? Une puce passive aléatoire sera ajoutée à votre réserve.`,
+          `Effectuer un tirage de puce passive pour ${money(drawPrices.passive)} ? Une puce passive aléatoire sera ajoutée à votre réserve.`,
           'Tirage de puce passive effectué.',
-        )}>Tirage Passive · {money(DRAW_PRICES.passive)}</button>
+        )}>Tirage Passive · {money(drawPrices.passive)}</button>
       </div>
     </section>
 
@@ -135,15 +138,15 @@ export default function ChipsShopClient({
     </div>
 
     <section className="shop-catalog-groups shop-owned chip-owned">
-      <h2>Mes puces · recyclage à {money(RECYCLE_PRICE)} chacune</h2>
+      <h2>Mes puces · recyclage selon le tarif de l’escouade</h2>
       {!owned.length && <p className="shop-empty">Votre réserve ne contient aucune puce.</p>}
       {owned.map(({ chip, index }) => <article className={`shop-inventory-item${chip.image ? ' shop-item-illustrated' : ''}`} key={`${chip.id}-${index}`}>
         {chip.image && <div className="shop-item-visual"><img src={chip.image.url} alt={chip.image.alt || chip.nom} loading="lazy" decoding="async" /></div>}
         <div className="shop-item-main"><div className="shop-item-title-line"><div><strong>{chip.nom}</strong><span>{categoryLabel(chip.categorie)}{chip.restriction ? ` · ${chip.restriction}` : ''}</span></div><ShopItemDetailsButton name={chip.nom} category={categoryLabel(chip.categorie)} image={chip.image} details={chip.details} /></div></div>
-        <div className="shop-item-action"><strong>Recyclage : {money(RECYCLE_PRICE)}</strong><button type="button" className="shop-sell-button" disabled={pending} onClick={() => ask(
+        <div className="shop-item-action"><strong>Recyclage : {money(chip.recyclePrice ?? 0)}</strong><button type="button" className="shop-sell-button" disabled={pending} onClick={() => ask(
           { action: 'recycle', chipId: chip.id, ownedIndex: index },
-          `Recycler ${chip.nom} contre ${money(RECYCLE_PRICE)} ? Cette puce sera retirée de votre réserve.`,
-          `${chip.nom} a été recyclée. ${money(RECYCLE_PRICE)} ont été crédités.`,
+          `Recycler ${chip.nom} contre ${money(chip.recyclePrice ?? 0)} ? Cette puce sera retirée de votre réserve.`,
+          `${chip.nom} a été recyclée. ${money(chip.recyclePrice ?? 0)} ont été crédités.`,
         )}>Recycler</button></div>
       </article>)}
     </section>

@@ -11,6 +11,7 @@ import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { GarageClient } from './GarageClient'
 import '../shop.css'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 export const metadata = { title: 'Garage — Space Squad' }
 
@@ -19,7 +20,7 @@ function idOf(value: any): number | null {
   return id === null || id === undefined ? null : Number(id)
 }
 
-function modelSummary(model: any) {
+function modelSummary(model: any, policy: any) {
   const variant = model.variante && typeof model.variante === 'object' ? model.variante : null
   const image = model.image && typeof model.image === 'object' && typeof model.image.url === 'string'
     ? { url: model.image.url, alt: model.image.alt ?? model.nom ?? 'Image du véhicule' }
@@ -35,7 +36,9 @@ function modelSummary(model: any) {
   return {
     id: model.id,
     nom: model.nom ?? 'Modèle de véhicule',
-    prix: model.prix ?? null,
+    prix: adjustedShopPrice(model.prix ?? null, resolveShopPolicy(policy, shopPolicyPaths('vehicle-sale-models', model)).percentage),
+    policyPercentage: resolveShopPolicy(policy, shopPolicyPaths('vehicle-sale-models', model)).percentage,
+    available: resolveShopPolicy(policy, shopPolicyPaths('vehicle-sale-models', model)).available,
     classe: variant?.classe ?? null,
     varianteId: idOf(variant),
     variante: variant?.nom ?? 'Autres véhicules',
@@ -77,6 +80,7 @@ export default async function GaragePage() {
   const character: any = await getActiveCharacter(payload, user, { depth: 1 })
   if (!character) redirect('/character')
   if (!isCharacterCreationComplete(character)) redirect('/character')
+  const shopPolicy = await getShopPolicyForCharacter(payload, character)
 
   const [modelsResult, vehiclesResult] = await Promise.all([
     payload.find({ collection: 'vehicle-sale-models', depth: 2, limit: 500, sort: 'nom', overrideAccess: true }),
@@ -101,8 +105,12 @@ export default async function GaragePage() {
       konis: Number(character.konis) || 0,
       rang: computeRank(Number(character.pointsDeRang) || 0).level,
     },
-    models: (modelsResult.docs as any[]).map(modelSummary),
-    vehicles: (vehiclesResult.docs as any[]).map(vehicleSummary),
+    models: (modelsResult.docs as any[]).filter((model) => resolveShopPolicy(shopPolicy, shopPolicyPaths('vehicle-sale-models', model)).available).map((model) => modelSummary(model, shopPolicy)),
+    vehicles: (vehiclesResult.docs as any[]).map((vehicle) => {
+      const model = vehicle.modele && typeof vehicle.modele === 'object' ? vehicle.modele : null
+      const price = model ? adjustedShopPrice(model.prix, resolveShopPolicy(shopPolicy, shopPolicyPaths('vehicle-sale-models', model)).percentage) : null
+      return { ...vehicleSummary(vehicle), modelPrice: price }
+    }),
     activeShipName,
     activeShipCanReceive,
   }

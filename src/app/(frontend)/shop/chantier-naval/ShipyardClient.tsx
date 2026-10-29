@@ -9,6 +9,8 @@ import { groupShipCatalog, listShipTransferItems, minimumRankForShipClass, shipC
 import { executeShipyardTransaction } from '../shipyard-actions'
 
 type ShipModel = ShipCatalogEntry & {
+  policyPercentage?: number
+  available?: boolean
   description: string | null
   image: { url: string; alt: string } | null
   chassis: string | null
@@ -248,7 +250,7 @@ export function ShipyardClient({
             const locked = minimumRank !== null && character.rang < minimumRank
             return <article className={`shipyard-model-card${locked ? ' shipyard-model-card--locked' : ''}`} key={model.id}>
               {model.image && <img className="shipyard-model-image" src={model.image.url} alt={model.image.alt} loading="lazy" decoding="async" />}
-              <div className="shipyard-model-heading"><div className="shipyard-model-title"><h3>{model.nom}</h3><ShopItemDetailsButton name={model.nom} category="Modèle de vaisseau" image={model.image} details={model.details} /></div><strong>{priceLabel(model.prix)}</strong></div>
+              <div className="shipyard-model-heading"><div className="shipyard-model-title"><h3>{model.nom}</h3><ShopItemDetailsButton name={model.nom} category="Modèle de vaisseau" image={model.image} details={model.details} /></div><strong>{priceLabel(model.prix)}{model.policyPercentage ? <small className="group-shop-price-note">Tarif escouade {model.policyPercentage > 0 ? '+' : ''}{model.policyPercentage}%</small> : null}</strong></div>
               <div className="shipyard-model-meta">{[model.chassis, model.tourelles ? `${model.tourelles} tourelle(s)` : null].filter(Boolean).join(' · ')}</div>
               {locked && <p className="shipyard-rank-lock">Verrouillé · Rang {minimumRank} requis pour acheter ce vaisseau.</p>}
               {model.description && <p>{model.description}</p>}

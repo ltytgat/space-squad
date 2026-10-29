@@ -26,6 +26,8 @@ export type AtelierCompatibility = {
   points?: number | null
   maximum?: number | null
   multiplicateurRachat?: number | null
+  policyPercentage?: number
+  available?: boolean
 }
 
 const TARGETS: Record<AtelierEquipmentKind, ReadonlySet<string>> = {

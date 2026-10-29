@@ -12,6 +12,7 @@ import { exactAdd, exactMultiply, exactSubtract, readShopPrice, relationId, resa
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { detachShipTransferItem, listInstalledShipComponents, listShipTransferItems, mergeShipInventory, minimumRankForShipClass, shipPurchasePrice, shipSalePrice, shipyardFingerprint, type ShipTransferKind } from '@/lib/shipyard'
 import { getActiveCharacter } from '@/lib/activeCharacter'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 type ShipyardInput = {
   transactionId: string
@@ -170,6 +171,7 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
     await payload.db.execute({ db: transactionDb, sql: sql`SELECT id FROM characters WHERE id = ${character.id} FOR UPDATE` })
     const currentCharacter = await payload.findByID({ collection: 'characters', id: character.id, depth: 1, overrideAccess: true, req }) as any
     if (numericId(currentCharacter.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    const shopPolicy = await getShopPolicyForCharacter(payload, currentCharacter)
     if (!isCharacterCreationComplete(currentCharacter)) fail('Terminez le parcours de création avant d’utiliser le chantier naval.')
 
     await lockShips(payload, transactionDb, [raw.shipId, raw.destinationShipId].filter(validId))
@@ -188,12 +190,14 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
       if (!modelLock.rows[0]) fail('Modèle de vente introuvable.')
       const model = await payload.findByID({ collection: 'ship-sale-models', id: raw.saleModelId!, depth: 2, overrideAccess: true, req }) as any
       if (model.atelierPrive) fail('Un vaisseau personnalisé ne peut pas être racheté au chantier naval.')
+      const modelPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('ship-sale-models', model))
+      if (!modelPolicy.available) fail('Ce modèle a été retiré de la vente pour votre escouade.')
       const minimumRank = minimumRankForShipClass(model.chassis?.classe)
       const currentRank = computeRank(Number(currentCharacter.pointsDeRang) || 0).level
       if (minimumRank !== null && currentRank < minimumRank) {
         fail(`L’achat d’un vaisseau ${model.chassis.classe} nécessite le rang ${minimumRank}.`)
       }
-      const price = shipPurchasePrice(model.prix, raw.chassisOnly === true)
+      const price = shipPurchasePrice(adjustedShopPrice(model.prix, modelPolicy.percentage), raw.chassisOnly === true)
       if (price === null) fail('Ce modèle n’a pas de prix commercialisable.')
       const currentBalance = Number(currentCharacter.konis ?? 0)
       if (!Number.isFinite(currentBalance) || currentBalance < 0) fail('Le solde du personnage est incohérent.')
@@ -224,22 +228,33 @@ export async function executeShipyardTransaction(raw: ShipyardInput) {
       assertCanEditShip(destination, currentCharacter, user)
 
       const model = source.modele
-      const modelPrice = readShopPrice(model?.prix)
+      const modelPolicy = model
+        ? model.atelierPrive
+          ? resolveShopPolicy(shopPolicy, ['atelier', 'atelier/vaisseau'])
+          : resolveShopPolicy(shopPolicy, shopPolicyPaths('ship-sale-models', model))
+        : { percentage: 0, available: true }
+      const modelPrice = model ? adjustedShopPrice(model.prix, modelPolicy.percentage) : null
       if (modelPrice === null) fail('Le modèle de vente de ce vaisseau n’a pas de prix valide.')
       const components = listInstalledShipComponents(source)
       const selectedKeys = raw.componentKeys ?? []
       const installedByKey = new Map(components.map((component) => [component.key, component]))
-      const selected = selectedKeys.map((key) => {
+      const selected: { component: any; price: number }[] = []
+      for (const key of selectedKeys) {
         const component = installedByKey.get(key)
         if (!component) fail('Un composant sélectionné n’est plus installé sur le vaisseau.')
-        const price = readShopPrice(component.prix)
+        const collection = component.kind === 'module' ? 'ship-modules' : 'ship-weapons'
+        const catalogItem = await payload.findByID({ collection: collection as any, id: component.itemId, depth: 0, overrideAccess: true, req }).catch(() => null) as any
+        if (!catalogItem) fail('Un composant du vaisseau est introuvable dans le catalogue.')
+        const componentPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths(collection, catalogItem))
+        const price = adjustedShopPrice(component.prix, componentPolicy.percentage)
         if (price === null) fail(`${component.nom} n’a pas de prix et ne peut pas être vendu.`)
-        return { component, price }
-      })
-      const atelierPrice = model?.atelierPrive ? readShopPrice(model.atelierPrixAchat) : null
+        selected.push({ component, price })
+      }
+      const atelierRule = resolveShopPolicy(shopPolicy, ['atelier', 'atelier/vaisseau'])
+      const atelierPrice = model?.atelierPrive ? adjustedShopPrice(model.atelierPrixAchat, atelierRule.percentage) : null
       const chassisValue = atelierPrice === null ? null : exactMultiply(atelierPrice, 0.25)
       const total = atelierPrice === null
-        ? shipSalePrice(model.prix, selected.map(({ price }) => price))
+        ? shipSalePrice(modelPrice, selected.map(({ price }) => price))
         : selected.reduce((sum, { price }) => exactAdd(sum, resalePrice(price)), chassisValue!)
       if (total === null) fail('Le montant de revente ne peut pas être calculé.')
 

@@ -14,6 +14,7 @@ import { computeShipAccess } from '@/lib/shipAccess'
 import { validateShipConfiguration } from '@/lib/shipStats'
 import { factionKey, ownsFactionAtelierAccess } from '@/lib/factionRewards'
 import { shipStateForCopy } from '@/lib/shipyard'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 type PersonalLocation = { location: 'inventory'; index: number; itemId: number }
 
@@ -128,6 +129,14 @@ function modificationSnapshot(modification: any) {
   }
 }
 
+function adjustedAtelierModificationCosts(policy: any, selections: any[], kind: AtelierEquipmentKind) {
+  return selections.map((modification: any) => {
+    const rule = resolveShopPolicy(policy, shopPolicyPaths('atelier-modifications', { id: modification.id, compatibilityKind: kind }))
+    if (!rule.available) fail(`La modification « ${modification.nom} » a été retirée de la vente pour votre escouade.`)
+    return adjustedShopPrice(atelierPurchasePrice(modification.atelierCompatibilite, modification.atelierQuantite), rule.percentage) ?? 0
+  })
+}
+
 function applyModifications(base: Record<string, any>, selections: { modification: any; quantity: number; turretAssignments?: (number | null)[] }[], kind: AtelierEquipmentKind, item: any) {
   const effects: AtelierEffect[] = []
   const selectedModifications = selections.map(({ modification, quantity, turretAssignments }) => {
@@ -190,6 +199,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
       return { success: true, alreadyApplied: true, amount: already }
     }
     const current = await payload.findByID({ collection: 'characters', id: character.id, depth: 2, overrideAccess: true, req }) as any
+    const shopPolicy = await getShopPolicyForCharacter(payload, current)
     const modifications = await getActiveModifications(payload, purchases, req)
     const inventoryField = input.kind === 'arme' ? 'inventaireArmes' : 'inventaireArmures'
     const sourceCollection = input.kind === 'arme' ? 'weapons' : 'armors'
@@ -200,6 +210,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     if (!sourceId || sourceEntry?.customItem) fail('Seul un équipement standard possédé peut être personnalisé.')
     const sourceItem = await payload.findByID({ collection: sourceCollection, id: sourceId, depth: input.kind === 'armure' ? 1 : 0, overrideAccess: true, req }).catch(() => null) as any
     if (!sourceItem) fail('Équipement source introuvable.')
+    const sourcePolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths(sourceCollection, sourceItem))
     const pointsAvailable = atelierPointsForPersonalItem(input.kind, sourceItem)
     if (pointsAvailable === null) fail('Cet équipement ne remplit pas les conditions de cet Atelier.')
     const baseSnapshot = input.kind === 'arme' ? snapshotWeapon(sourceItem) : snapshotArmor(sourceItem)
@@ -211,7 +222,7 @@ export async function customizePersonalEquipment(input: CustomizePersonalInput) 
     const selectedModifications = applied.modifications
     const pointsSpent = applied.selections.reduce((total: number, modification: any) => total + atelierModificationPoints(modification.atelierCompatibilite, modification.atelierQuantite), 0)
     if (!Number.isSafeInteger(pointsSpent) || pointsSpent > pointsAvailable) fail('Le total des points dépasse le budget de cet équipement.')
-    const cost = atelierCost(sourceItem.prix, applied.selections.map((modification: any) => atelierPurchasePrice(modification.atelierCompatibilite, modification.atelierQuantite)))
+    const cost = atelierCost(adjustedShopPrice(sourceItem.prix, sourcePolicy.percentage), adjustedAtelierModificationCosts(shopPolicy, applied.selections, input.kind))
     const balance = Number(current.konis ?? 0)
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)
@@ -335,6 +346,7 @@ export async function sellCustomEquipment(input: { transactionId: string; custom
     }
     const current = await payload.findByID({ collection: 'characters', id: character.id, depth: 0, overrideAccess: true, req }) as any
     if (numericId(current.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
+    const shopPolicy = await getShopPolicyForCharacter(payload, current)
     const equipment = await payload.findByID({ collection: 'custom-equipment', id: input.customEquipmentId, depth: 1, overrideAccess: true, req }).catch(() => null) as any
     if (!equipment || numericId(equipment.proprietaireActuel) !== Number(current.id)) fail('Cet équipement custom ne vous appartient pas.')
     const inventory = (current.inventaireEquipementsCustom ?? []).map(numericId).filter(Boolean)
@@ -342,7 +354,11 @@ export async function sellCustomEquipment(input: { transactionId: string; custom
     if (index < 0) fail('Déséquipez l’objet avant de le vendre.')
     const purchasePrice = readShopPrice(equipment.prixAchat)
     if (purchasePrice === null) fail('Le prix d’achat stocké est invalide.')
-    const amount = exactMultiply(purchasePrice, 0.25)
+    const sourceCollection = equipment.categorieEquipement === 'arme' ? 'weapons' : 'armors'
+    const sourceId = numericId(equipment.armeSource ?? equipment.armureSource)
+    const sourceItem = sourceId ? await payload.findByID({ collection: sourceCollection as any, id: sourceId, depth: 0, overrideAccess: true, req }).catch(() => null) as any : null
+    const sourcePolicy = sourceItem ? resolveShopPolicy(shopPolicy, shopPolicyPaths(sourceCollection, sourceItem)) : { percentage: 0, available: true }
+    const amount = exactMultiply(adjustedShopPrice(purchasePrice, sourcePolicy.percentage) ?? purchasePrice, 0.25)
     inventory.splice(index, 1)
     const update: Record<string, any> = { inventaireEquipementsCustom: inventory, konis: exactAdd(Number(current.konis) || 0, amount) }
     const returnedMods = (equipment.mods ?? []).map(numericId).filter(Boolean) as number[]
@@ -386,6 +402,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
       return { success: true, alreadyApplied: true, amount: already }
     }
     const current = await payload.findByID({ collection: 'characters', id: character.id, depth: 0, overrideAccess: true, req }) as any
+    const shopPolicy = await getShopPolicyForCharacter(payload, current)
     const source = await payload.findByID({ collection: 'ships', id: input.shipId, depth: 4, overrideAccess: true, req }).catch(() => null) as any
     if (!source || numericId(source.proprietaire) !== Number(current.id)) fail('Seul le propriétaire peut personnaliser ce vaisseau.')
     if (numericId(current.user) !== Number(user.id)) fail('Ce personnage ne vous appartient pas.')
@@ -401,6 +418,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
     if (!sourceSaleModelId) fail('Le modèle de vente du vaisseau est introuvable.')
     const model = await payload.findByID({ collection: 'ship-sale-models', id: sourceSaleModelId, depth: 2, overrideAccess: true, req }) as any
     if (!model || model.atelierPrive || (model.atelierModifications ?? []).length > 0) fail('Un vaisseau déjà personnalisé en Atelier ne peut pas être modifié à nouveau.')
+    const sourcePolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('ship-sale-models', model))
     const chassis = model.chassis && typeof model.chassis === 'object'
       ? model.chassis
       : await payload.findByID({ collection: 'ship-models', id: numericId(model.chassis)!, depth: 0, overrideAccess: true, req }) as any
@@ -420,7 +438,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
     } catch (error) {
       fail(error instanceof Error ? error.message : 'Les composants du vaisseau ne sont pas compatibles avec le nouveau châssis.')
     }
-    const cost = atelierCost(model.prix, applied.selections.map((modification: any) => atelierPurchasePrice(modification.atelierCompatibilite, modification.atelierQuantite)))
+    const cost = atelierCost(adjustedShopPrice(model.prix, sourcePolicy.percentage), adjustedAtelierModificationCosts(shopPolicy, applied.selections, 'vaisseau'))
     const balance = Number(current.konis ?? 0)
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)

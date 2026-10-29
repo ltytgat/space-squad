@@ -9,11 +9,11 @@ import { getActiveCharacter } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { factionKey, ownsFactionAtelierAccess } from '@/lib/factionRewards'
 import { atelierPointsForPersonalItem, atelierPointsForShip, atelierRelationId } from '@/lib/atelier'
-import { readShopPrice } from '@/lib/shop'
 import { getStructuredMods, parseModifier } from '@/lib/characterStats'
 import { AtelierClient, type AtelierItem, type AtelierModification } from './AtelierClient'
 import '../shop.css'
 import './atelier.css'
+import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
 
 const idOf = (value: any): number | null => {
   return atelierRelationId(value)
@@ -25,11 +25,12 @@ function imageSummary(image: any, fallbackName: string) {
     : null
 }
 
-function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure'): AtelierItem | null {
+function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure', policy: any): AtelierItem | null {
   const item = row?.item && typeof row.item === 'object' ? row.item : null
   if (!item || row.customItem) return null
   const points = atelierPointsForPersonalItem(kind, item)
-  const price = readShopPrice(item.prix)
+  const policyResult = resolveShopPolicy(policy, shopPolicyPaths(kind === 'arme' ? 'weapons' : 'armors', item))
+  const price = adjustedShopPrice(item.prix, policyResult.percentage)
   if (points === null || price === null) return null
   const set = item.set && typeof item.set === 'object' ? item.set : null
   const weaponMods = kind === 'arme' ? getStructuredMods(row.mods ?? []) : {}
@@ -43,6 +44,8 @@ function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure'): 
     type: Array.isArray(item.type) ? item.type.map(String) : [],
     classe: null,
     prix: price,
+    policyPercentage: policyResult.percentage,
+    available: policyResult.available,
     points,
     image: imageSummary(item.image, String(item.nom ?? 'Équipement')),
     setNom: set?.nom ? String(set.nom) : null,
@@ -75,12 +78,13 @@ function personalItemSummary(row: any, index: number, kind: 'arme' | 'armure'): 
   }
 }
 
-function shipItemSummary(ship: any, index: number, occupiedIds: Set<number>): AtelierItem | null {
+function shipItemSummary(ship: any, index: number, occupiedIds: Set<number>, policy: any): AtelierItem | null {
   const model = ship.modele && typeof ship.modele === 'object' ? ship.modele : null
   const chassis = model?.chassis && typeof model.chassis === 'object' ? model.chassis : null
   if (!model || !chassis || ship.atelierPersonnalise || model.atelierPrive || (model.atelierModifications ?? []).length > 0 || occupiedIds.has(Number(ship.id)) || ship.pilote || ship.copilote || (ship.canonniers ?? []).some((entry: any) => entry.personnage)) return null
   const points = atelierPointsForShip(chassis.classe)
-  const price = readShopPrice(model.prix)
+  const policyResult = resolveShopPolicy(policy, shopPolicyPaths('ship-sale-models', model))
+  const price = adjustedShopPrice(model.prix, policyResult.percentage)
   if (points === null || price === null) return null
   const itemName = (value: any) => value && typeof value === 'object' ? String(value.nom ?? '') : ''
   const weapons = (model.armes ?? []).map((entry: any) => `${entry.emplacement ?? 'pilote'} : ${itemName(entry.arme)}`).filter((value: string) => !value.endsWith(': '))
@@ -94,6 +98,7 @@ function shipItemSummary(ship: any, index: number, occupiedIds: Set<number>): At
   return {
     id: Number(ship.id), index, kind: 'vaisseau', nom: String(ship.nom ?? `Vaisseau ${ship.id}`),
     categorie: String(chassis.categorie ?? ''), type: [], classe: String(chassis.classe), prix: price, points,
+    policyPercentage: policyResult.percentage, available: policyResult.available,
     image: imageSummary(model.image ?? chassis.image, String(model.nom ?? ship.nom ?? 'Vaisseau')),
     setNom: null, modelNom: String(model.nom ?? chassis.nom ?? 'Modèle de vaisseau'),
     description: model.description ? String(model.description) : null,
@@ -108,7 +113,7 @@ function shipItemSummary(ship: any, index: number, occupiedIds: Set<number>): At
   }
 }
 
-function modificationSummary(doc: any): AtelierModification {
+function modificationSummary(doc: any, policy: any): AtelierModification {
   return {
     id: Number(doc.id), nom: String(doc.nom ?? 'Modification'),
     description: doc.description ? String(doc.description) : null,
@@ -118,6 +123,8 @@ function modificationSummary(doc: any): AtelierModification {
       typeArme: compatibility.typeArme ?? null,
       classeVaisseau: compatibility.classeVaisseau ?? null,
       prix: Number(compatibility.prix), points: Number(compatibility.points),
+      policyPercentage: resolveShopPolicy(policy, shopPolicyPaths('atelier-modifications', { id: doc.id, compatibilityKind: compatibility.categorieEquipement })).percentage,
+      available: resolveShopPolicy(policy, shopPolicyPaths('atelier-modifications', { id: doc.id, compatibilityKind: compatibility.categorieEquipement })).available,
       maximum: Number(compatibility.maximum),
       multiplicateurRachat: compatibility.multiplicateurRachat == null ? null : Number(compatibility.multiplicateurRachat),
     })),
@@ -134,6 +141,7 @@ export default async function AtelierPage() {
   const character: any = await getActiveCharacter(payload, user, { depth: 3 })
   if (!character) redirect('/character')
   if (!isCharacterCreationComplete(character)) redirect('/character')
+  const shopPolicy = await getShopPolicyForCharacter(payload, character)
 
   const affiliation = character.affiliation && typeof character.affiliation === 'object'
     ? character.affiliation
@@ -152,15 +160,15 @@ export default async function AtelierPage() {
   const modificationsResult = await payload.find({ collection: 'atelier-modifications', where: { active: { equals: true } }, depth: 0, limit: 500, sort: 'nom', overrideAccess: true })
   let items: AtelierItem[] = []
   if (kind === 'arme') {
-    items = (character.inventaireArmes ?? []).map((row: any, index: number) => personalItemSummary(row, index, 'arme')).filter(Boolean) as AtelierItem[]
+    items = (character.inventaireArmes ?? []).map((row: any, index: number) => personalItemSummary(row, index, 'arme', shopPolicy)).filter(Boolean) as AtelierItem[]
   } else if (kind === 'armure') {
-    items = (character.inventaireArmures ?? []).map((row: any, index: number) => personalItemSummary(row, index, 'armure')).filter(Boolean) as AtelierItem[]
+    items = (character.inventaireArmures ?? []).map((row: any, index: number) => personalItemSummary(row, index, 'armure', shopPolicy)).filter(Boolean) as AtelierItem[]
   } else {
     const ships = await payload.find({ collection: 'ships', where: { proprietaire: { equals: character.id } }, depth: 4, limit: 200, sort: 'nom', overrideAccess: true })
     const shipIds = (ships.docs as any[]).map((ship) => Number(ship.id))
     const occupied = shipIds.length ? await payload.find({ collection: 'characters', where: { vaisseau: { in: shipIds } }, depth: 0, limit: 500, pagination: false, select: { vaisseau: true }, overrideAccess: true }) : { docs: [] }
     const occupiedIds = new Set((occupied.docs as any[]).map((member) => idOf(member.vaisseau)).filter((id): id is number => id !== null))
-    items = (ships.docs as any[]).map((ship, index) => shipItemSummary(ship, index, occupiedIds)).filter(Boolean) as AtelierItem[]
+    items = (ships.docs as any[]).map((ship, index) => shipItemSummary(ship, index, occupiedIds, shopPolicy)).filter(Boolean) as AtelierItem[]
   }
 
   return <div className="ss-root shop-root"><SiteHeader activePage="shop" /><div className="shop-layout">
@@ -170,7 +178,7 @@ export default async function AtelierPage() {
       <p>{kind === 'arme' ? 'Personnalisez une arme Alliance thermique ou cinétique de votre réserve.' : kind === 'armure' ? 'Personnalisez une pièce du set Starlancer de votre réserve.' : 'Personnalisez un vaisseau inoccupé de votre hangar.'}</p>
     </div></section>
     <main className="ss-container shop-content">
-      <AtelierClient kind={kind} character={{ id: Number(character.id), nom: String(character.nom ?? 'Personnage'), konis: Number(character.konis) || 0 }} items={items} modifications={(modificationsResult.docs as any[]).map(modificationSummary)} />
+      <AtelierClient kind={kind} character={{ id: Number(character.id), nom: String(character.nom ?? 'Personnage'), konis: Number(character.konis) || 0 }} items={items} modifications={(modificationsResult.docs as any[]).map((doc) => modificationSummary(doc, shopPolicy))} />
     </main>
   </div><SiteFooter /></div>
 }

@@ -78,6 +78,7 @@ export default async function CharactersPage() {
         {/* ── Liste + filtre (client) ── */}
         <div className="chars-content ss-container">
           <CharactersClient
+            canManageShop={isMJ}
             characters={characters as Parameters<typeof CharactersClient>[0]['characters']}
             groups={groups as Parameters<typeof CharactersClient>[0]['groups']}
             factions={factions as Parameters<typeof CharactersClient>[0]['factions']}

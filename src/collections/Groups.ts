@@ -32,6 +32,21 @@ export const Groups: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     {
+      name: 'shopPolicy',
+      type: 'json',
+      label: 'Règles de boutique par escouade',
+      access: {
+        read: async ({ req, doc }) => {
+          const user = req.user as User | null
+          if (user?.role === 'admin') return true
+          if (!user || !(await isMJMode(user))) return false
+          const creatorId = doc?.creator && typeof doc.creator === 'object' ? doc.creator.id : doc?.creator
+          return String(creatorId) === String(user.id)
+        },
+      },
+      admin: { hidden: true },
+    },
+    {
       name: 'inviteCode',
       type: 'text',
       unique: true,
