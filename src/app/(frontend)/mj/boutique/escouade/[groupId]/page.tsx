@@ -33,6 +33,11 @@ export default async function GroupShopPolicyPage({ params }: { params: Promise<
         <nav className="shop-breadcrumb" aria-label="Fil d’Ariane"><a href="/">Accueil</a><span aria-hidden="true">›</span><a href="/characters">Personnages</a><span aria-hidden="true">›</span><span>Boutique · {group.nom}</span></nav>
         <h1>Boutique de l’escouade {group.nom}</h1>
         <p>Les modifications ne concernent que les membres de cette escouade.</p>
+        <div className="group-shop-policy-legend" aria-label="Signification des options de disponibilité">
+          <div><strong>Hériter</strong><span>Reprendre l’option définie au niveau supérieur.</span></div>
+          <div><strong>En vente</strong><span>L’élément reste achetable par les membres de l’escouade.</span></div>
+          <div><strong>Retirer</strong><span>Masquer l’élément de la boutique et bloquer son achat.</span></div>
+        </div>
       </div></section>
       <main className="ss-container shop-content">
         <GroupShopPolicyClient groupId={groupId} initialPolicy={policy} tree={shopPolicyTreeFromCatalogs(catalogs)} />

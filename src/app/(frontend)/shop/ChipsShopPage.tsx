@@ -11,6 +11,7 @@ import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import './shop.css'
 import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
+import { CHIP_DRAW_PRICES, CHIP_PURCHASE_PRICES, CHIP_RECYCLE_PRICE } from '@/lib/chipShopPrices'
 
 const categoryOrder: Record<string, number> = { active: 0, passive: 1 }
 
@@ -41,8 +42,8 @@ export default async function ChipsShopPage() {
     categorie: chip.categorie,
     available: resolveShopPolicy(policy, shopPolicyPaths('chips', chip)).available,
     policyPercentage: resolveShopPolicy(policy, shopPolicyPaths('chips', chip)).percentage,
-    price: adjustedShopPrice(chip.categorie === 'active' ? 75_000 : 100_000, resolveShopPolicy(policy, shopPolicyPaths('chips', chip)).percentage) ?? 0,
-    recyclePrice: adjustedShopPrice(10_000, resolveShopPolicy(policy, shopPolicyPaths('chips', chip)).percentage) ?? 10_000,
+    price: adjustedShopPrice(CHIP_PURCHASE_PRICES[chip.categorie as keyof typeof CHIP_PURCHASE_PRICES], resolveShopPolicy(policy, shopPolicyPaths('chips', chip)).percentage) ?? 0,
+    recyclePrice: adjustedShopPrice(CHIP_RECYCLE_PRICE, resolveShopPolicy(policy, shopPolicyPaths('chips', chip)).percentage) ?? CHIP_RECYCLE_PRICE,
     restriction: chip.restriction ?? null,
     effet: chip.effet ?? '',
     cooldown: chip.cooldown ?? null,
@@ -76,8 +77,8 @@ export default async function ChipsShopPage() {
       </div></section>
       <div className="ss-container shop-content">
         <ChipsShopClient character={{ id: character.id, nom: character.nom ?? 'Personnage', konis: Number(character.konis) || 0 }} chips={allChips} owned={owned} drawPrices={{
-          active: adjustedShopPrice(30_000, resolveShopPolicy(policy, ['sol', 'sol/puces', 'sol/puces/active']).percentage) ?? 0,
-          passive: adjustedShopPrice(50_000, resolveShopPolicy(policy, ['sol', 'sol/puces', 'sol/puces/passive']).percentage) ?? 0,
+          active: adjustedShopPrice(CHIP_DRAW_PRICES.active, resolveShopPolicy(policy, ['sol', 'sol/puces', 'sol/puces/active']).percentage) ?? 0,
+          passive: adjustedShopPrice(CHIP_DRAW_PRICES.passive, resolveShopPolicy(policy, ['sol', 'sol/puces', 'sol/puces/passive']).percentage) ?? 0,
         }} />
       </div>
     </div>

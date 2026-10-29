@@ -278,9 +278,10 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
 }
 
 .group-shop-policy-node {
-  border: 1px solid var(--shop-border, #d5dbe2);
-  border-radius: 0.65rem;
-  background: var(--shop-card, #fff);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: var(--ss-bg-card);
+  color: var(--ss-text);
   padding: 0.75rem 1rem;
 }
 
@@ -292,10 +293,49 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
   font-weight: 700;
 }
 
-.group-shop-policy-node > summary span {
-  color: var(--shop-muted, #64748b);
+.group-shop-policy-node > summary .group-shop-policy-summary-title {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  color: var(--ss-text);
+  font-weight: 700;
+}
+
+.group-shop-policy-node > summary .group-shop-policy-effective {
+  color: var(--ss-text-muted);
   font-size: 0.9rem;
   font-weight: 400;
+}
+
+.group-shop-policy-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding-inline: .35rem;
+  border: 1px solid var(--ss-cyan);
+  border-radius: 999px;
+  background: var(--ss-cyan-dim);
+  color: var(--ss-cyan);
+  font-family: var(--ss-font-mono);
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.group-shop-policy-badge-item {
+  width: 1rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0;
+}
+
+.group-shop-policy-badge-item > span {
+  width: .4rem;
+  height: .4rem;
+  border-radius: 50%;
+  background: var(--ss-cyan);
 }
 
 .group-shop-policy-controls {
@@ -309,16 +349,24 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
 .group-shop-policy-controls label {
   display: grid;
   gap: 0.35rem;
+  color: var(--ss-text-dim);
+  font-size: 0.85rem;
 }
 
 .group-shop-policy-controls input,
 .group-shop-policy-controls select {
   min-height: 2.5rem;
   min-width: 12rem;
+  padding: .45rem .6rem;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: var(--ss-bg);
+  color: var(--ss-text);
+  font: inherit;
 }
 
 .group-shop-policy-children {
-  border-left: 2px solid var(--shop-border, #d5dbe2);
+  border-left: 2px solid var(--ss-border);
   margin-left: 0.5rem;
   padding-left: 0.75rem;
 }
@@ -330,9 +378,130 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
   margin-top: 1.25rem;
 }
 
+.group-shop-policy-actions > button,
+.group-shop-policy-actions > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: .55rem .85rem;
+  border: 1px solid var(--ss-cyan);
+  border-radius: 7px;
+  background: var(--ss-cyan-dim);
+  color: var(--ss-cyan);
+  font: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.group-shop-policy-actions > button:hover:not(:disabled),
+.group-shop-policy-actions > a:hover {
+  background: var(--ss-cyan);
+  color: var(--ss-bg);
+}
+
+.group-shop-policy-actions > button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.group-shop-policy-actions > .shop-cancel-button {
+  border-color: var(--ss-border);
+  background: transparent;
+  color: var(--ss-text-muted);
+}
+
 .group-shop-price-note {
   display: block;
   color: var(--ss-text-muted);
   font-size: 0.75rem;
   font-weight: 400;
+}
+
+.group-shop-policy-intro {
+  margin: 0 0 1rem;
+  color: var(--ss-text-muted);
+  line-height: 1.55;
+}
+
+.group-shop-policy-legend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .7rem;
+  margin-top: 1.25rem;
+}
+
+.group-shop-policy-legend > div {
+  display: grid;
+  gap: .25rem;
+  padding: .75rem .9rem;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: var(--ss-bg-card);
+}
+
+.group-shop-policy-legend strong {
+  color: var(--ss-cyan);
+  font-family: var(--ss-font-display);
+  font-size: .8rem;
+  letter-spacing: .04em;
+}
+
+.group-shop-policy-legend span {
+  color: var(--ss-text-muted);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.group-shop-policy-price {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: .65rem;
+  max-width: 40rem;
+  padding: .7rem .8rem;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  background: var(--ss-bg-alt);
+}
+
+.group-shop-policy-price > div {
+  display: grid;
+  gap: .2rem;
+}
+
+.group-shop-policy-price > div span,
+.group-shop-policy-price small {
+  color: var(--ss-text-muted);
+  font-size: .72rem;
+}
+
+.group-shop-policy-price strong {
+  color: var(--ss-text);
+  font-family: var(--ss-font-mono);
+  font-size: .8rem;
+}
+
+.group-shop-policy-price > div:last-of-type strong {
+  color: var(--ss-cyan);
+}
+
+.group-shop-policy-price-arrow {
+  color: var(--ss-cyan);
+}
+
+.group-shop-policy-price small {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .group-shop-policy-legend { grid-template-columns: 1fr; }
+  .group-shop-policy-node { padding: .7rem; }
+  .group-shop-policy-node > summary { align-items: flex-start; flex-direction: column; gap: .25rem; }
+  .group-shop-policy-price { grid-template-columns: 1fr; }
+  .group-shop-policy-price-arrow { transform: rotate(90deg); justify-self: center; }
+  .group-shop-policy-price small { grid-column: auto; }
+  .group-shop-policy-controls input,
+  .group-shop-policy-controls select { min-width: min(12rem, 70vw); }
 }

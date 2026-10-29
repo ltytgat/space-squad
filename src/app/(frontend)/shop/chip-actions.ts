@@ -11,11 +11,8 @@ import { exactAdd, exactSubtract, relationId } from '@/lib/shop'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveCharacter } from '@/lib/activeCharacter'
 import { adjustedShopPrice, getShopPolicyForCharacter, resolveShopPolicy, shopPolicyPaths } from '@/lib/groupShopPolicy'
+import { CHIP_DRAW_PRICES, CHIP_PURCHASE_PRICES, CHIP_RECYCLE_PRICE, type ChipCategory } from '@/lib/chipShopPrices'
 
-const CHIP_PRICES = { active: 75_000, passive: 100_000 } as const
-const DRAW_PRICES = { active: 30_000, passive: 50_000 } as const
-const RECYCLE_PRICE = 10_000
-type ChipCategory = keyof typeof CHIP_PRICES
 type ChipSummary = { id: number; nom: string; categorie: ChipCategory; effet: string; restriction: string | null; cooldown: number | null; image: { url: string; alt: string } | null }
 type ChipInput = {
   transactionId: string
@@ -131,7 +128,7 @@ export async function executeChipTransaction(raw: ChipInput) {
         if (!eligible.length) fail(`Aucune puce ${raw.category === 'active' ? 'active' : 'passive'} n’est disponible pour le tirage.`)
         chip = eligible[randomInt(eligible.length)]
         const drawPolicy = resolveShopPolicy(shopPolicy, ['sol', 'sol/puces', `sol/puces/${raw.category}`])
-        amount = adjustedShopPrice(DRAW_PRICES[raw.category!], drawPolicy.percentage) ?? 0
+        amount = adjustedShopPrice(CHIP_DRAW_PRICES[raw.category!], drawPolicy.percentage) ?? 0
       } else {
         chip = await payload.findByID({ collection: 'chips', id: raw.chipId!, depth: 1, overrideAccess: true, req }).catch(() => null)
         if (!chip) fail('Puce introuvable dans le catalogue.')
@@ -139,9 +136,9 @@ export async function executeChipTransaction(raw: ChipInput) {
         const chipPolicy = resolveShopPolicy(shopPolicy, shopPolicyPaths('chips', chip))
         if (raw.action === 'buy') {
           if (!chipPolicy.available) fail('Cette puce a été retirée de la vente pour votre escouade.')
-          amount = adjustedShopPrice(CHIP_PRICES[chip.categorie as ChipCategory], chipPolicy.percentage) ?? 0
+          amount = adjustedShopPrice(CHIP_PURCHASE_PRICES[chip.categorie as ChipCategory], chipPolicy.percentage) ?? 0
         }
-        if (raw.action === 'recycle') amount = adjustedShopPrice(RECYCLE_PRICE, chipPolicy.percentage) ?? 0
+        if (raw.action === 'recycle') amount = adjustedShopPrice(CHIP_RECYCLE_PRICE, chipPolicy.percentage) ?? 0
       }
 
       resultChip = summary(chip)

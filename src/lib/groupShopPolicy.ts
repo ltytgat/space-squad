@@ -1,5 +1,6 @@
 import { exactMultiply, readShopPrice, type ShopPrice } from './shop'
 import { isShipAmmunition } from './shipConsumables'
+import { CHIP_PURCHASE_PRICES } from './chipShopPrices'
 
 export type GroupShopRule = {
   percentage?: number
@@ -14,6 +15,9 @@ export type ShopPolicyNode = {
   key: string
   label: string
   children: ShopPolicyNode[]
+  referencePrice?: number | string | null
+  priceFormat?: 'konis' | 'weapon-factor'
+  priceNote?: string
 }
 
 export type ResolvedShopRule = {
@@ -130,10 +134,10 @@ export function adjustedShopPrice(price: ShopPrice, percentage: number): number 
 export function shopPolicyTreeFromCatalogs(catalogs: Record<string, any[]>): ShopPolicyNode[] {
   const roots = new Map<string, ShopPolicyNode>()
   const nodes = new Map<string, ShopPolicyNode>()
-  const ensure = (key: string, label: string, parent: ShopPolicyNode | null) => {
+  const ensure = (key: string, label: string, parent: ShopPolicyNode | null, pricing: Pick<ShopPolicyNode, 'referencePrice' | 'priceFormat' | 'priceNote'> = {}) => {
     const existing = nodes.get(key)
     if (existing) return existing
-    const node = { key, label, children: [] }
+    const node: ShopPolicyNode = { key, label, children: [], ...pricing }
     nodes.set(key, node)
     if (parent) parent.children.push(node)
     else roots.set(key, node)
@@ -147,6 +151,24 @@ export function shopPolicyTreeFromCatalogs(catalogs: Record<string, any[]>): Sho
   for (const [collection, docs] of Object.entries(catalogs)) {
     for (const doc of docs) {
       const paths = shopPolicyPaths(collection, doc)
+      const preciseItemKey = paths.at(-1)
+      let referencePrice: number | string | null = doc.prix ?? null
+      let priceFormat: ShopPolicyNode['priceFormat'] = 'konis'
+      let priceNote: string | undefined
+      if (collection === 'chips') {
+        referencePrice = CHIP_PURCHASE_PRICES[doc.categorie as keyof typeof CHIP_PURCHASE_PRICES]
+      } else if (collection === 'mods' && doc.categoriePrincipale === 'armes') {
+        priceFormat = 'weapon-factor'
+      } else if (collection === 'atelier-modifications') {
+        const compatibility = doc.atelierCompatibility
+        referencePrice = compatibility?.prix ?? null
+        const multiplier = Number(compatibility?.multiplicateurRachat ?? 1)
+        priceNote = Number.isSafeInteger(multiplier) && multiplier > 1
+          ? `Premier achat ; les suivants augmentent ×${multiplier}`
+          : 'Prix du premier achat'
+      } else if (collection === 'ship-sale-models') {
+        priceNote = 'Modèle complet'
+      }
       let parent: ShopPolicyNode | null = null
       for (const key of paths) {
         const last = decodeURIComponent(key.split('/').at(-1) ?? key)
@@ -164,7 +186,7 @@ export function shopPolicyTreeFromCatalogs(catalogs: Record<string, any[]>): Sho
         const label = key.startsWith('item:') || last.startsWith('item:')
           ? String(doc.nom ?? `Élément ${doc.id}`)
           : categoryLabel ?? labels[last] ?? last.replaceAll('-', ' ')
-        parent = ensure(key, label, parent)
+        parent = ensure(key, label, parent, key === preciseItemKey ? { referencePrice, priceFormat, priceNote } : {})
       }
     }
   }
@@ -175,6 +197,27 @@ export function shopPolicyTreeFromCatalogs(catalogs: Record<string, any[]>): Sho
   const result = [...roots.values()]
   sort(result)
   return result
+}
+
+/** Counts leaf items whose effective price or availability differs from the catalog. */
+export function summarizeShopPolicyImpacts(tree: ShopPolicyNode[], policy: unknown): Map<string, number> {
+  const counts = new Map<string, number>()
+  const visit = (nodes: ShopPolicyNode[], ancestors: string[]): number => nodes.reduce((total, node) => {
+    const lineage = [...ancestors, node.key]
+    let count: number
+    if (node.priceFormat !== undefined) {
+      const effective = resolveShopPolicy(policy, lineage)
+      const referencePrice = readShopPrice(node.referencePrice)
+      const adjustedPrice = adjustedShopPrice(node.referencePrice, effective.percentage)
+      count = !effective.available || (referencePrice !== null && adjustedPrice !== null && referencePrice !== adjustedPrice) ? 1 : 0
+    } else {
+      count = visit(node.children, lineage)
+    }
+    counts.set(node.key, count)
+    return total + count
+  }, 0)
+  visit(tree, [])
+  return counts
 }
 
 export async function loadShopPolicyCatalogs(payload: any): Promise<Record<string, any[]>> {
@@ -191,7 +234,11 @@ export async function loadShopPolicyCatalogs(payload: any): Promise<Record<strin
   const { docs: atelierDocs } = await payload.find({ collection: 'atelier-modifications', where: { active: { equals: true } }, depth: 0, limit: 1000, sort: 'nom', overrideAccess: true })
   catalogs['atelier-modifications'] = (atelierDocs as any[]).flatMap((doc) => {
     const kinds = [...new Set((doc.compatibilites ?? []).map((compatibility: any) => compatibility.categorieEquipement))]
-    return kinds.map((compatibilityKind) => ({ ...doc, compatibilityKind }))
+    return kinds.map((compatibilityKind) => ({
+      ...doc,
+      compatibilityKind,
+      atelierCompatibility: (doc.compatibilites ?? []).find((compatibility: any) => compatibility.categorieEquipement === compatibilityKind),
+    }))
   })
   return catalogs
 }
