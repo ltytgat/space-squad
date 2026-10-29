@@ -84,10 +84,10 @@ button.shop-navigation-card:disabled .shop-navigation-arrow { color: var(--ss-te
 .shop-catalog-groups section > p { margin: -.3rem 0 1rem; color: var(--ss-text-muted); font-size: .9rem; }
 .shop-category-list, .shop-subcategory-list { display: flex; flex-direction: column; gap: .75rem; }
 .shop-category-group { min-width: 0; padding: .8rem .9rem; border: 1px solid var(--ss-border); border-radius: 10px; background: rgba(255, 255, 255, .015); }
-.shop-category-group--level-4 { padding: .7rem .8rem; background: rgba(255, 255, 255, .01); }
+.shop-category-group--level-4, .shop-category-group--level-5 { padding: .7rem .8rem; background: rgba(255, 255, 255, .01); }
 .shop-category-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.shop-category-heading h3, .shop-category-heading h4 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: .98rem; letter-spacing: .025em; }
-.shop-category-group--level-4 .shop-category-heading h4 { color: var(--ss-cyan); font-size: .88rem; }
+.shop-category-heading h3, .shop-category-heading h4, .shop-category-heading h5 { margin: 0; color: var(--ss-text); font-family: var(--ss-font-display); font-size: .98rem; letter-spacing: .025em; }
+.shop-category-group--level-4 .shop-category-heading h4, .shop-category-group--level-5 .shop-category-heading h5 { color: var(--ss-cyan); font-size: .88rem; }
 .shop-category-toggle { flex: 0 0 auto; padding: .35rem .6rem; border: 1px solid var(--ss-border); border-radius: 7px; background: transparent; color: var(--ss-cyan); font-size: .78rem; cursor: pointer; }
 .shop-category-toggle:hover:not(:disabled) { border-color: var(--ss-cyan); background: var(--ss-cyan-dim); }
 .shop-category-toggle:disabled { opacity: .65; cursor: not-allowed; }
