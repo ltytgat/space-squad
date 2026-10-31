@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { adjustedShopPrice, resolveShopPolicy, summarizeShopPolicyImpacts, type GroupShopPolicy, type GroupShopRule, type ShopPolicyNode } from '@/lib/groupShopPolicy'
+import { adjustedShopPrice, legacyShopPolicyRuleKeysChangedAtNode, legacyShopPolicyRuleKeysInSubtree, resolveShopPolicy, shopPolicyNodePaths, summarizeShopPolicyImpacts, type GroupShopPolicy, type GroupShopRule, type ShopPolicyNode } from '@/lib/groupShopPolicy'
 import { readShopPrice } from '@/lib/shop'
 import { saveGroupShopPolicy } from '../../group-policy-actions'
 
@@ -18,8 +18,9 @@ function priceLabel(value: number | string | null, format: ShopPolicyNode['price
   return money(amount)
 }
 
-function removeSubtreeRules(rules: Record<string, GroupShopRule>, key: string) {
-  return Object.fromEntries(Object.entries(rules).filter(([target]) => target !== key && !target.startsWith(`${key}/`)))
+function removeSubtreeRules(rules: Record<string, GroupShopRule>, key: string, legacyKeys: string[] = []) {
+  const legacyKeySet = new Set(legacyKeys)
+  return Object.fromEntries(Object.entries(rules).filter(([target]) => target !== key && !target.startsWith(`${key}/`) && !legacyKeySet.has(target)))
 }
 
 function PolicyNodeEditor({
@@ -41,7 +42,7 @@ function PolicyNodeEditor({
 }) {
   const lineage = [...ancestors, node.key]
   const rule = policy.rules[node.key] ?? {}
-  const effective = resolveShopPolicy(policy, lineage)
+  const effective = resolveShopPolicy(policy, shopPolicyNodePaths(lineage, node))
   const adjustedPrice = node.referencePrice === undefined ? null : adjustedShopPrice(node.referencePrice, effective.percentage)
   const impactCount = impactCounts.get(node.key) ?? 0
   const isPreciseItem = node.priceFormat !== undefined
@@ -88,8 +89,10 @@ export function GroupShopPolicyClient({ groupId, initialPolicy, tree }: { groupI
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   function changeRule(key: string, rule: GroupShopRule) {
+    const obsoleteKeys = new Set(legacyShopPolicyRuleKeysChangedAtNode(tree, key))
     setPolicy((current) => {
       const nextRules = { ...current.rules }
+      obsoleteKeys.forEach((obsoleteKey) => delete nextRules[obsoleteKey])
       if (rule.percentage === undefined && rule.available === undefined) delete nextRules[key]
       else nextRules[key] = rule
       return { rules: nextRules }
@@ -118,7 +121,7 @@ export function GroupShopPolicyClient({ groupId, initialPolicy, tree }: { groupI
   return <div className="group-shop-policy">
     <p className="group-shop-policy-intro">Les variations sont des pourcentages entiers. Une règle précise remplace celle du parent; prix et disponibilité héritent séparément. La pastille marque un élément dont le prix ou la disponibilité change; les nombres comptent les éléments concernés dans chaque branche.</p>
     {message && <p className={`shop-message ${message.kind}`} role="status">{message.text}</p>}
-    <div className="group-shop-policy-tree">{tree.map((node) => <PolicyNodeEditor key={node.key} node={node} ancestors={[]} policy={policy} impactCounts={impactCounts} onRuleChange={changeRule} onReset={(key, label) => void save({ rules: removeSubtreeRules(policy.rules, key) }, `Les règles de « ${label} » ont été réinitialisées.`)} pending={pending} />)}</div>
+    <div className="group-shop-policy-tree">{tree.map((node) => <PolicyNodeEditor key={node.key} node={node} ancestors={[]} policy={policy} impactCounts={impactCounts} onRuleChange={changeRule} onReset={(key, label) => void save({ rules: removeSubtreeRules(policy.rules, key, legacyShopPolicyRuleKeysInSubtree(tree, key)) }, `Les règles de « ${label} » ont été réinitialisées.`)} pending={pending} />)}</div>
     <div className="group-shop-policy-actions">
       <button type="button" disabled={pending} onClick={() => void save()}>{pending ? 'Enregistrement…' : 'Enregistrer les règles'}</button>
       <button type="button" className="shop-cancel-button" disabled={pending} onClick={resetAll}>Réinitialiser toutes les modifications</button>
