@@ -375,7 +375,7 @@ export function calculateStats(character: any) {
     addBonus('force', -2, 'Origine : Strani')
   } else if (origin === 'Vada') {
     addBonus('force', 2, 'Origine : Vada')
-    addBonus('perception', -2, 'Origine : Vada')
+    addBonus('habilite', -2, 'Origine : Vada')
   }
 
   const weapons = [
