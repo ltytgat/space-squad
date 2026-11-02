@@ -716,6 +716,7 @@ export interface Character {
     | {
         nom: string;
         valeur: number;
+        modificateur: number;
         caracteristique?: ('force' | 'habilite' | 'connaissances' | 'culture' | 'anticipation' | 'perception') | null;
         categorieEpreuve?: ('vaisseau' | 'pacifiques' | 'combat') | null;
         id?: string | null;
@@ -2337,6 +2338,7 @@ export interface CharactersSelect<T extends boolean = true> {
     | {
         nom?: T;
         valeur?: T;
+        modificateur?: T;
         caracteristique?: T;
         categorieEpreuve?: T;
         id?: T;

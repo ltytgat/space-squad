@@ -505,11 +505,12 @@ export function calculateStats(character: any) {
     const attributeMod = specialSkillAttributeMods[characteristic]
     const label = typeof skill?.nom === 'string' ? skill.nom.trim() : ''
     const level = Number(skill?.valeur)
+    const modifier = Number(skill?.modificateur ?? 0)
     if (!category || !epreuves[category] || !Number.isFinite(attributeMod) || !label || !Number.isFinite(level)) continue
     epreuves[category].push({
       id: skill.id ? String(skill.id) : `${category}-${label}-${epreuves[category].length}`,
       label,
-      value: attributeMod + 2 * level,
+      value: attributeMod + 2 * level + (Number.isSafeInteger(modifier) ? modifier : 0),
       isExtra: true,
     })
   }

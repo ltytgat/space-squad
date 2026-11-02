@@ -196,6 +196,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     kind: 'improve' | 'learn'
     currentLevel: number
     cost: number
+    specialSkillId?: string
   } | null>(null)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
   const [hoveredItem, setHoveredItem] = useState<{item: any, type: string, mods?: any[], x: number, y: number} | null>(null)
@@ -280,6 +281,31 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
     setSkillConfirmation({ skillName, kind: 'improve', currentLevel: currentVal, cost })
   }
 
+  const requestSpecialSkillLevelUp = (skill: any) => {
+    if (!isAssignableSpecialSkill(skill)
+      || (editMode && (managerChangedFields.has('pointsDeCompetence') || managerChangedFields.has('competencesSpeciales')))) return
+    const currentVal = Number(skill.valeur)
+    if (!Number.isSafeInteger(currentVal) || currentVal < 0) return
+    const cost = currentVal + 1
+    if ((character.pointsDeCompetence ?? 0) < cost) return
+    setSkillAssignmentError('')
+    setSkillConfirmation({
+      skillName: skill.nom,
+      kind: 'improve',
+      currentLevel: currentVal,
+      cost,
+      specialSkillId: String(skill.id),
+    })
+  }
+
+  const isAssignableSpecialSkill = (skill: any) => Boolean(
+    skill?.id
+    && ['force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception'].includes(skill.caracteristique)
+    && ['vaisseau', 'pacifiques', 'combat'].includes(skill.categorieEpreuve)
+    && Number.isSafeInteger(Number(skill.valeur))
+    && Number(skill.valeur) >= 0,
+  )
+
   const requestLearnNewSkill = (skillName: string) => {
     if (editMode && managerChangedFields.has('pointsDeCompetence')) return
     if ((character.pointsDeCompetence ?? 0) < 1 || !skillName) return
@@ -300,6 +326,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
         skillConfirmation.kind,
         skillConfirmation.currentLevel,
         skillConfirmation.cost,
+        skillConfirmation.specialSkillId,
       )
       setCharacter((previous: any) => ({ ...previous, ...savedSkills }))
       setLastSavedCharacter((previous: any) => ({ ...previous, ...savedSkills }))
@@ -2082,12 +2109,28 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                       <option value="combat">Combat au sol</option>
                     </select>
                   </label>
+                  {isAssignableSpecialSkill(c) && <button
+                    type="button"
+                    className="char-skill-plus"
+                    onClick={() => requestSpecialSkillLevelUp(c)}
+                    disabled={(character.pointsDeCompetence ?? 0) < Number(c.valeur ?? 0) + 1 || isAssigningSkill || managerChangedFields.has('pointsDeCompetence') || managerChangedFields.has('competencesSpeciales')}
+                    title={`Améliorer pour ${Number(c.valeur ?? 0) + 1} points`}
+                  >+{Number(c.valeur ?? 0) + 1}</button>}
                   <button type="button" className="char-special-skill-remove" onClick={() => handleRemoveSpecialSkill(index)}>Supprimer</button>
                 </div>
               ) : (
                 <div key={c.id ?? c.nom} className="char-skill-item char-skill-special">
                   <span className="char-skill-name">{c.nom}</span>
-                  <span className="char-skill-value">{c.valeur}</span>
+                  <div className="char-skill-actions">
+                    <span className="char-skill-value">{c.valeur}</span>
+                    {isAssignableSpecialSkill(c) && <button
+                      type="button"
+                      className="char-skill-plus"
+                      onClick={() => requestSpecialSkillLevelUp(c)}
+                      disabled={(character.pointsDeCompetence ?? 0) < Number(c.valeur ?? 0) + 1 || isAssigningSkill}
+                      title={`Améliorer pour ${Number(c.valeur ?? 0) + 1} points`}
+                    >+{Number(c.valeur ?? 0) + 1}</button>}
+                  </div>
                 </div>
               ))}
 

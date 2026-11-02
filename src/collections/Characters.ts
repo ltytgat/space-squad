@@ -51,8 +51,12 @@ const validateSpecialSkills: CollectionBeforeChangeHook = ({ data, originalDoc }
   for (const skill of skills) {
     const name = typeof skill?.nom === 'string' ? skill.nom.trim() : ''
     const level = Number(skill?.valeur)
+    const modifier = Number(skill?.modificateur ?? 0)
     if (!name || !Number.isFinite(level) || level < 0) {
       throw new Error('Chaque compétence extra doit avoir un nom et un niveau valides.')
+    }
+    if (!Number.isSafeInteger(modifier)) {
+      throw new Error('Le modificateur de chaque compétence extra doit être un nombre entier valide.')
     }
 
     const attribute = typeof skill?.caracteristique === 'string' ? skill.caracteristique : ''
@@ -1105,6 +1109,17 @@ export const Characters: CollectionConfig = {
           required: true,
           defaultValue: 0,
           min: 0,
+        },
+        {
+          name: 'modificateur',
+          type: 'number',
+          label: 'Modificateur',
+          required: true,
+          defaultValue: 0,
+          admin: { step: 1 },
+          validate: (value: unknown) =>
+            (typeof value === 'number' && Number.isSafeInteger(value)) ||
+            'Le modificateur doit être un nombre entier.',
         },
         {
           name: 'caracteristique',

@@ -520,12 +520,14 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
       updateData[key] = rows.map((row) => {
         const nom = typeof row?.nom === 'string' ? row.nom.trim() : ''
         const valeur = Number(row?.valeur)
-        if (!nom || !Number.isFinite(valeur) || valeur < 0) throw new Error('Chaque compétence extra doit avoir un nom et un niveau valides.')
-        const caracteristique = String(row?.caracteristique ?? '')
-        const categorieEpreuve = String(row?.categorieEpreuve ?? '')
         const original = row?.id
           ? originalRows.find((entry: any) => String(entry.id) === String(row.id))
           : null
+        const modificateur = Number(row?.modificateur ?? original?.modificateur ?? 0)
+        if (!nom || !Number.isFinite(valeur) || valeur < 0) throw new Error('Chaque compétence extra doit avoir un nom et un niveau valides.')
+        if (!Number.isSafeInteger(modificateur)) throw new Error('Le modificateur de chaque compétence extra doit être un nombre entier valide.')
+        const caracteristique = String(row?.caracteristique ?? '')
+        const categorieEpreuve = String(row?.categorieEpreuve ?? '')
         const isUnchangedLegacy = original
           && !original.caracteristique && !original.categorieEpreuve
           && !caracteristique && !categorieEpreuve
@@ -540,6 +542,7 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
           ...(row.id ? { id: row.id } : {}),
           nom,
           valeur,
+          modificateur,
           ...(caracteristique ? { caracteristique } : {}),
           ...(categorieEpreuve ? { categorieEpreuve } : {}),
         }
@@ -718,22 +721,41 @@ export async function assignCharacterSkillPoint(
   assignment: 'improve' | 'learn',
   expectedCurrentLevel: number,
   expectedCost: number,
+  specialSkillId?: string,
 ) {
   const { payload, user, character, isManager } = await getAuthorizedCharacter(characterId)
   if (!isManager && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
-  if (!COMPETENCES_BASE.includes(skillName as typeof COMPETENCES_BASE[number])) {
+  if (!specialSkillId && !COMPETENCES_BASE.includes(skillName as typeof COMPETENCES_BASE[number])) {
     throw new Error('Compétence invalide.')
   }
   if (assignment !== 'improve' && assignment !== 'learn') throw new Error('Affectation invalide.')
+  if (specialSkillId && assignment !== 'improve') throw new Error('Affectation invalide.')
 
   const competences = Array.isArray(character.competences) ? [...character.competences] : []
-  const skillIndex = competences.findIndex((skill: any) => skill.competence === skillName)
-  if (assignment === 'learn' && skillIndex !== -1) throw new Error('Cette compétence est déjà apprise.')
-  if (assignment === 'improve' && skillIndex === -1) throw new Error('Cette compétence ne peut pas être améliorée.')
+  const specialCompetences = Array.isArray(character.competencesSpeciales) ? [...character.competencesSpeciales] : []
+  const skillIndex = specialSkillId
+    ? specialCompetences.findIndex((skill: any) => String(skill.id) === String(specialSkillId))
+    : competences.findIndex((skill: any) => skill.competence === skillName)
+  if (specialSkillId) {
+    const specialSkill = specialCompetences[skillIndex]
+    if (skillIndex === -1 || !specialSkill?.caracteristique || !specialSkill?.categorieEpreuve) {
+      throw new Error('Cette compétence spéciale ne peut pas être améliorée.')
+    }
+    if (specialSkill.nom !== skillName) throw new Error('Cette compétence a changé depuis l’ouverture de la confirmation. Fermez le popup et réessayez.')
+    if (!['force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception'].includes(specialSkill.caracteristique)
+      || !['vaisseau', 'pacifiques', 'combat'].includes(specialSkill.categorieEpreuve)) {
+      throw new Error('Cette compétence spéciale ne peut pas être améliorée.')
+    }
+  } else {
+    if (assignment === 'learn' && skillIndex !== -1) throw new Error('Cette compétence est déjà apprise.')
+    if (assignment === 'improve' && skillIndex === -1) throw new Error('Cette compétence ne peut pas être améliorée.')
+  }
 
-  const currentLevel = skillIndex === -1 ? 0 : Number(competences[skillIndex].valeur)
+  const currentLevel = skillIndex === -1 ? 0 : Number(specialSkillId
+    ? specialCompetences[skillIndex].valeur
+    : competences[skillIndex].valeur)
   if (!Number.isSafeInteger(currentLevel) || currentLevel < 0) throw new Error('Niveau de compétence invalide.')
   const cost = assignment === 'learn' ? 1 : currentLevel + 1
   if (currentLevel !== expectedCurrentLevel || cost !== expectedCost) {
@@ -744,16 +766,20 @@ export async function assignCharacterSkillPoint(
     throw new Error('Vous n’avez pas assez de points de compétence.')
   }
 
-  if (assignment === 'learn') competences.push({ competence: skillName, valeur: 1 })
+  if (specialSkillId) {
+    specialCompetences[skillIndex] = { ...specialCompetences[skillIndex], valeur: currentLevel + 1 }
+  } else if (assignment === 'learn') competences.push({ competence: skillName, valeur: 1 })
   else competences[skillIndex] = { ...competences[skillIndex], valeur: currentLevel + 1 }
+
+  const updateData: any = {
+    pointsDeCompetence: availablePoints - cost,
+    ...(specialSkillId ? { competencesSpeciales: specialCompetences } : { competences }),
+  }
 
   const updatedCharacter = await payload.update({
     collection: 'characters',
     id: characterId,
-    data: {
-      competences,
-      pointsDeCompetence: availablePoints - cost,
-    },
+    data: updateData,
     depth: 0,
     user: user ?? undefined,
     overrideAccess: true,
@@ -763,6 +789,7 @@ export async function assignCharacterSkillPoint(
   revalidatePath(`/temporary-character/${characterId}`)
   return {
     competences: updatedCharacter.competences ?? competences,
+    ...(specialSkillId ? { competencesSpeciales: updatedCharacter.competencesSpeciales ?? specialCompetences } : {}),
     pointsDeCompetence: Number(updatedCharacter.pointsDeCompetence) || 0,
   }
 }

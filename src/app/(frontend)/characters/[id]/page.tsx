@@ -135,6 +135,7 @@ type Character = {
   competencesSpeciales?: {
     nom: string
     valeur: number
+    modificateur?: number | null
     caracteristique?: 'force' | 'habilite' | 'connaissances' | 'culture' | 'anticipation' | 'perception' | null
     categorieEpreuve?: 'vaisseau' | 'pacifiques' | 'combat' | null
     id?: string
