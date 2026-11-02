@@ -198,6 +198,11 @@
 .ship-stat { background: var(--ss-bg-card); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); padding: 1rem; display: flex; flex-direction: column; gap: .35rem; }
 .ship-stat span, .ship-muted { color: var(--ss-text-muted); font-size: .8rem; }
 .ship-stat strong { color: var(--ss-cyan); font-size: 1.1rem; }
+.ship-ace-counter { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+.ship-ace-counter button { width: 2rem; height: 2rem; display: grid; place-items: center; color: var(--ss-cyan); background: var(--ss-bg-alt); border: 1px solid var(--ss-border); border-radius: var(--ss-radius); cursor: pointer; font-size: 1rem; }
+.ship-ace-counter button:hover:not(:disabled) { border-color: var(--ss-cyan); }
+.ship-ace-counter button:disabled { cursor: not-allowed; opacity: .45; }
+.ship-ace-counter strong { white-space: nowrap; }
 .ship-state-grid, .ship-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .ship-form-grid { grid-template-columns: repeat(2, 1fr); }
 .ship-field { display: flex; flex-direction: column; gap: .4rem; color: var(--ss-text-muted); font-size: .8rem; }

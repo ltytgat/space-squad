@@ -25,7 +25,13 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
   if (!access.ship || !access.canRead) redirect('/')
   const ship = access.ship
 
-  const [crew, ownershipCandidates] = await Promise.all([
+  const ownedRoleIds = new Set(
+    (Array.isArray(access.character?.rolesSpeciaux) ? access.character.rolesSpeciaux : [])
+      .map((role: any) => String(typeof role === 'object' && role ? role.id : role))
+      .filter((roleId: string) => roleId !== 'undefined' && roleId !== 'null' && roleId !== ''),
+  )
+
+  const [crew, ownershipCandidates, asRoleDocs] = await Promise.all([
     findShipCrew(payload, shipId),
     (async () => {
       const characterId = access.character?.id
@@ -47,7 +53,17 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
         .filter((member: any) => String(member.id) !== String(characterId))
         .map((member: any) => ({ id: member.id, nom: member.nom || `Personnage ${member.id}` }))
     })(),
+    ownedRoleIds.size
+      ? payload.find({
+          collection: 'special-roles',
+          where: { nom: { equals: 'As' } },
+          depth: 0,
+          pagination: false,
+          overrideAccess: true,
+        })
+      : Promise.resolve({ docs: [] }),
   ])
+  const hasAsRole = asRoleDocs.docs.some((role: any) => ownedRoleIds.has(String(role.id)))
   return <div className="ss-root ship-root">
     <SiteHeader activePage="ship" />
     <main className="ship-layout">
@@ -61,6 +77,7 @@ export default async function AccessibleShipPage({ params }: { params: Promise<{
         viewerCharacterId={access.character?.id ?? null}
         canManageCrew={access.canManageCrew}
         canJoin={access.canJoin}
+        hasAsRole={hasAsRole}
       />
     </main>
     <SiteFooter />

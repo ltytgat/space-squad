@@ -123,6 +123,7 @@ export function ShipClient({
   viewerCharacterId = null,
   canManageCrew = false,
   canJoin = false,
+  hasAsRole = false,
 }: {
   ship: any
   crew: any[]
@@ -135,6 +136,8 @@ export function ShipClient({
   canManageCrew?: boolean
   /** Vaisseau du groupe où l'utilisateur n'est pas embarqué. */
   canJoin?: boolean
+  /** Le personnage actif possède le rôle spécial As. */
+  hasAsRole?: boolean
 }) {
   const router = useRouter()
   const [ship, setShip] = useState(() => withoutTransientWeaponHeat(initialShip))
@@ -145,6 +148,7 @@ export function ShipClient({
   const maxShield = getShipStats(initialShip).maxShield || 0
   const [shieldFront, setShieldFront] = useState(Math.ceil(maxShield / 2))
   const [shieldRear, setShieldRear] = useState(Math.floor(maxShield / 2))
+  const [acePointCount, setAcePointCount] = useState(0)
   const shieldModule = object(initialShip.moduleBoucliers)
   const shieldRecharge = Number(shieldModule?.rechargeBouclier ?? 0)
   const shieldCooldown = Number(shieldModule?.cooldownBouclier ?? 0)
@@ -912,7 +916,6 @@ export function ShipClient({
     let remaining = loadUnits
     let returned = changingType ? oldCount : 0
     const inventory = (ship.inventaireConsommables ?? []).map((item: any) => {
-      const itemId = id(item.consommable)
       let quantity = Number(item.quantite ?? 0)
       if (sameAmmo(object(item.consommable), source.ammo) && remaining > 0) {
         const taken = Math.min(quantity, remaining)
@@ -969,6 +972,12 @@ export function ShipClient({
   const crewMember = (characterId: any) =>
     crew.find((entry) => String(entry.id) === String(characterId)) ?? null
   const viewerSeat = viewerCharacterId ? seatOf(ship, viewerCharacterId) : 'passager'
+  const viewerPilot = viewerSeat === 'pilote'
+    ? crew.find((entry) => String(entry.id) === String(viewerCharacterId))
+    : null
+  const rawAcePointMax = Number(viewerPilot?.habiliteDieMod)
+  const acePointMax = Number.isFinite(rawAcePointMax) ? Math.max(0, rawAcePointMax) : 0
+  const displayedAcePoints = Math.min(acePointCount, acePointMax)
   const viewerIsCrew = crew.some((entry) => String(entry.id) === String(viewerCharacterId))
   // Un membre posté peut se déplacer lui-même, mais uniquement vers une place libre.
   const canTakeFreeSeats =
@@ -1047,6 +1056,30 @@ export function ShipClient({
           </strong>
           {shieldTotal > stats.maxShield && <small>Maximum dépassé</small>}
         </div>
+        {hasAsRole && viewerSeat === 'pilote' && (
+          <div className="ship-stat ship-stat-ace">
+            <span>Points d’As</span>
+            <div className="ship-ace-counter">
+              <button
+                type="button"
+                aria-label="Retirer un point d’As"
+                disabled={displayedAcePoints <= 0}
+                onClick={() => setAcePointCount(Math.max(0, displayedAcePoints - 1))}
+              >
+                −
+              </button>
+              <strong aria-live="polite">{displayedAcePoints} / {acePointMax}</strong>
+              <button
+                type="button"
+                aria-label="Ajouter un point d’As"
+                disabled={displayedAcePoints >= acePointMax}
+                onClick={() => setAcePointCount(Math.min(acePointMax, displayedAcePoints + 1))}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <section className="ship-card ship-crew-card">
         <div className="ship-subtitle-line">
