@@ -23,17 +23,17 @@ const targets = [
 ]
 
 describe('redirection locale de la chaleur', () => {
-  it('répartit entre plusieurs armes sans dépasser le budget et autorise les décimales', () => {
+  it('alloue des MJ entiers sans dépasser le budget et arrondit les saisies décimales', () => {
     const onApply = vi.fn()
     render(createElement(HeatRedistribution, { targets, budget: 150.5, initial: {}, onApply, onClose: vi.fn() }))
     fireEvent.click(screen.getByLabelText('Pilote · Laser'))
     fireEvent.click(screen.getByLabelText('Tourelle 1 · Plasma'))
-    fireEvent.change(screen.getByLabelText('MJ pour Pilote · Laser'), { target: { value: '100' } })
+    fireEvent.change(screen.getByLabelText('MJ pour Pilote · Laser'), { target: { value: '100.4' } })
     fireEvent.change(screen.getByLabelText('Chaleur pour Tourelle 1 · Plasma'), { target: { value: '120' } })
-    expect(screen.getByText('150.5 MJ répartis · 0 MJ non redirigés')).toBeTruthy()
+    expect(screen.getByText('150 MJ répartis · 0 MJ non redirigés')).toBeTruthy()
     expect(screen.getByText('Capacité de la cartouche dépassée de 20 MJ')).toBeTruthy()
     fireEvent.click(screen.getByText('Appliquer'))
-    expect(onApply).toHaveBeenCalledWith({ pilot: 100, turret: 50.5 })
+    expect(onApply).toHaveBeenCalledWith({ pilot: 100, turret: 50 })
   })
 
   it('annule sans appliquer et permet de désélectionner une arme', () => {

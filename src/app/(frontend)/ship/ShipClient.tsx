@@ -202,7 +202,7 @@ export function ShipClient({
     delete next[key]
     return next
   })
-  const excessMJ = roundHeat(Math.max(0, stats.consumption - stats.power) * 100)
+  const excessMJ = Math.floor(roundHeat(Math.max(0, stats.consumption - stats.power) * 100))
   const heatTargets: HeatTarget[] = []
   const addHeatTargets = (entries: any[], turretIndex: number, location: string) => {
     entries.forEach((entry, index) => {

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 export type HeatTarget = { key: string; label: string; heat: number; maxHeat: number }
 export const roundHeat = (value: number) => Math.round(value * 100) / 100
 
-export function HeatRedistribution({ targets, budget, initial, onApply, onClose }: {
+export function HeatRedistribution({ targets, budget: rawBudget, initial, onApply, onClose }: {
   targets: HeatTarget[]
   budget: number
   initial: Record<string, number>
@@ -13,9 +13,21 @@ export function HeatRedistribution({ targets, budget, initial, onApply, onClose 
   onClose: () => void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [values, setValues] = useState(initial)
-  const total = roundHeat(targets.reduce((sum, target) => sum + (values[target.key] ?? 0), 0))
-  const remaining = roundHeat(budget - total)
+  const budget = Math.max(0, Math.floor(Number.isFinite(rawBudget) ? rawBudget : 0))
+  const [values, setValues] = useState(() => {
+    let remainingBudget = budget
+    const normalized: Record<string, number> = {}
+    for (const target of targets) {
+      if (!Object.hasOwn(initial, target.key)) continue
+      const initialAmount = Number(initial[target.key])
+      const amount = Number.isFinite(initialAmount) ? Math.round(initialAmount) : 0
+      normalized[target.key] = Math.max(0, Math.min(amount, remainingBudget))
+      remainingBudget -= normalized[target.key]
+    }
+    return normalized
+  })
+  const total = targets.reduce((sum, target) => sum + (values[target.key] ?? 0), 0)
+  const remaining = budget - total
   useEffect(() => {
     const element = dialog.current
     element?.showModal()
@@ -25,9 +37,13 @@ export function HeatRedistribution({ targets, budget, initial, onApply, onClose 
     if (!Number.isFinite(amount)) return
     setValues((current) => {
       const other = targets.reduce((sum, target) => sum + (target.key === key ? 0 : current[target.key] ?? 0), 0)
-      return { ...current, [key]: roundHeat(Math.max(0, Math.min(amount, budget - other))) }
+      const available = Math.max(0, budget - other)
+      return { ...current, [key]: Math.max(0, Math.min(Math.round(amount), available)) }
     })
   }
+  const selectTarget = (key: string) => setValues((current) =>
+    Object.hasOwn(current, key) ? current : { ...current, [key]: 0 },
+  )
   return (
     <dialog ref={dialog} className="ship-selector-modal ship-heat-dialog" aria-labelledby="ship-heat-title"
       onCancel={onClose} onClick={(event) => { if (event.target === dialog.current) onClose() }}>
@@ -55,9 +71,10 @@ export function HeatRedistribution({ targets, budget, initial, onApply, onClose 
                 })
               }} /> {target.label}</label>
               <div className="ship-heat-slider">
-                <input aria-label={`Chaleur pour ${target.label}`} type="range" min="0" max={budget} step="0.01"
-                  disabled={!selected} value={amount} onChange={(event) => allocate(target.key, Number(event.target.value))} />
-                <input aria-label={`MJ pour ${target.label}`} type="number" min="0" max={roundHeat(amount + remaining)} step="0.01"
+                <input aria-label={`Chaleur pour ${target.label}`} type="range" min="0" max={budget} step="1"
+                  value={amount} onPointerDown={() => selectTarget(target.key)}
+                  onChange={(event) => allocate(target.key, Number(event.target.value))} />
+                <input aria-label={`MJ pour ${target.label}`} type="number" min="0" max={amount + remaining} step="1"
                   disabled={!selected} value={amount} onChange={(event) => allocate(target.key, Number(event.target.value))} />
                 <span>MJ</span>
               </div>
@@ -68,8 +85,8 @@ export function HeatRedistribution({ targets, budget, initial, onApply, onClose 
         })}
       </div>
       <p aria-live="polite">{total} MJ répartis · {remaining} MJ non redirigés</p>
-      <div className="ship-heat-actions">
-        <button type="button" className="ss-button" onClick={onClose}>Annuler</button>
+      <div className="ship-heat-actions ship-edit-buttons">
+        <button type="button" className="ss-button secondary" onClick={onClose}>Annuler</button>
         <button type="button" className="ss-button primary" disabled={!targets.length || remaining < 0}
           onClick={() => onApply(values)}>Appliquer</button>
       </div>
