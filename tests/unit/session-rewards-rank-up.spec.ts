@@ -17,6 +17,8 @@ type FindArgs = { collection: string; where?: unknown }
 
 function createPayloadHarness(options: {
   character: Record<string, unknown>
+  characters?: Record<number, Record<string, unknown>>
+  factions?: Record<number, Record<string, unknown>>
   sets?: Record<number, number>
   armorBySet?: Record<number, number[]>
 }) {
@@ -41,7 +43,10 @@ function createPayloadHarness(options: {
       }
       return { docs: [] }
     }),
-    findByID: vi.fn().mockResolvedValue(options.character),
+    findByID: vi.fn(async ({ collection, id }: { collection: string; id: number }) => {
+      if (collection === 'factions') return options.factions?.[id] ?? null
+      return options.characters?.[id] ?? options.character
+    }),
     update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
       updatedData = data
       return { id: 1 }
@@ -76,13 +81,12 @@ const input = {
     konisTotal: 0,
     pr: 11,
     factionId: null,
-    reputationValeur: 0,
     commanditaireId: null,
     ciblesAbattues: 0,
     ciblesCapturees: 0,
     horsConfederation: false,
   },
-  perCharacter: { '7': { konis: 0, pointsDeCompetence: 0 } },
+  perCharacter: { '7': { konis: 0, pointsDeCompetence: 0, reputation: 0 } },
 }
 
 describe('mission session rank-up application', () => {
@@ -163,5 +167,74 @@ describe('mission session rank-up application', () => {
       delta: { progressionRang: { armureManquante: boolean; armureSetId: number | null }[] }
     }[]
     expect(perCharacter[0]?.delta.progressionRang[0]).toMatchObject({ armureManquante: true, armureSetId: null })
+  })
+
+  it('applies and audits different reputation gains per character', async () => {
+    const harness = createPayloadHarness({
+      character: {},
+      characters: {
+        7: { id: 7, nom: 'Ada', reputation: [{ categorie: 'Alliance', valeur: 2 }] },
+        8: { id: 8, nom: 'Bex', reputation: [] },
+      },
+      factions: { 9: { id: 9, nom: 'Alliance' } },
+    })
+
+    await applySessionRewards({
+      ...input,
+      batchId: 'individual-reputation-test-batch',
+      characterIds: [7, 8],
+      apply: { ...input.apply, pr: false, reputation: true },
+      values: { ...input.values, pr: 0, factionId: 9 },
+      perCharacter: {
+        '7': { konis: 0, pointsDeCompetence: 0, reputation: 3 },
+        '8': { konis: 0, pointsDeCompetence: 0, reputation: 5 },
+      },
+    })
+
+    expect(harness.payload.update).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        collection: 'characters',
+        id: 7,
+        data: { reputation: [{ categorie: 'Alliance', valeur: 5 }] },
+      }),
+    )
+    expect(harness.payload.update).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        collection: 'characters',
+        id: 8,
+        data: { reputation: [{ categorie: 'Alliance', valeur: 5 }] },
+      }),
+    )
+    expect(harness.logData?.perCharacter).toMatchObject([
+      { id: 7, delta: { reputation: { categorie: 'Alliance', delta: 3 } } },
+      { id: 8, delta: { reputation: { categorie: 'Alliance', delta: 5 } } },
+    ])
+  })
+
+  it('does not update reputation for a zero gain or when reputation is disabled', async () => {
+    const harness = createPayloadHarness({
+      character: { id: 7, nom: 'Ada', reputation: [{ categorie: 'Alliance', valeur: 2 }] },
+      factions: { 9: { id: 9, nom: 'Alliance' } },
+    })
+
+    await applySessionRewards({
+      ...input,
+      batchId: 'zero-reputation-test-batch',
+      apply: { ...input.apply, pr: false, reputation: true },
+      values: { ...input.values, pr: 0, factionId: 9 },
+      perCharacter: { '7': { konis: 0, pointsDeCompetence: 0, reputation: 0 } },
+    })
+
+    await applySessionRewards({
+      ...input,
+      batchId: 'disabled-reputation-test-batch',
+      apply: { ...input.apply, pr: false, reputation: false },
+      values: { ...input.values, pr: 0, factionId: 9 },
+      perCharacter: { '7': { konis: 0, pointsDeCompetence: 0, reputation: 8 } },
+    })
+
+    expect(harness.payload.update).not.toHaveBeenCalled()
   })
 })

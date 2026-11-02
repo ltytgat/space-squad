@@ -20,7 +20,7 @@ import {
  *
  * — `batchId` : UUID généré côté client. Rejoué à l'identique en cas de
  *   double-clic ou de rafraîchissement, garantit l'idempotence.
- * — `perCharacter.konis` / `perCharacter.pointsDeCompetence` : valeurs finales
+ * — `perCharacter` : valeurs finales
  *   à ajouter, éventuellement ajustées manuellement par la personne qui termine la session.
  * — `apply.*` : cases à cocher du drawer (défaut true).
  */
@@ -41,7 +41,6 @@ export type SessionRewardsInput = {
     konisTotal: number
     pr: number
     factionId?: number | null
-    reputationValeur: number
     /**
      * Id de la faction commanditaire ; `null` = « Autre ».
      * Sert au bonus commanditaire (10×grade) et au calcul Union.
@@ -56,6 +55,7 @@ export type SessionRewardsInput = {
     {
       konis: number
       pointsDeCompetence: number
+      reputation: number
     }
   >
 }
@@ -231,6 +231,7 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       const perChar = input.perCharacter[String(charId)] ?? {
         konis: konisPart,
         pointsDeCompetence: 0,
+        reputation: 0,
       }
 
       // Snapshot avant. `depth: 1` pour récupérer l'affiliation peuplée
@@ -331,9 +332,9 @@ export async function applySessionRewards(input: SessionRewardsInput) {
       if (
         input.apply.reputation &&
         factionName &&
-        (input.values.reputationValeur ?? 0) !== 0
+        (perChar.reputation ?? 0) !== 0
       ) {
-        const inc = input.values.reputationValeur
+        const inc = perChar.reputation
         const idx = beforeRep.findIndex(
           (r) => (r.categorie || '').trim().toLowerCase() === factionName!.trim().toLowerCase(),
         )

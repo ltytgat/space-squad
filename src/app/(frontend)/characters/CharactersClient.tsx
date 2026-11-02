@@ -18,6 +18,7 @@ type Character = {
   pointsDeCompetence?: number
   pointsDeFaction?: number
   rangDeFaction?: string | null
+  reputation?: { categorie: string; valeur: number }[] | null
   konis?: number
   legende?: number
   groupe?: Group | string | null
@@ -324,6 +325,7 @@ export function CharactersClient({ characters, groups, factions, canManageShop }
           pointsDeCompetence: c.pointsDeCompetence,
           pointsDeFaction: c.pointsDeFaction,
           rangDeFaction: c.rangDeFaction ?? null,
+          reputation: c.reputation ?? [],
           // L'affiliation est peuplée par le server component (depth: 1) ;
           //   quand ce n'est pas un objet, on retombe sur null.
           affiliation:

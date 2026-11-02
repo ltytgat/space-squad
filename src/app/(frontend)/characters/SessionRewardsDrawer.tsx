@@ -15,6 +15,7 @@ export type DrawerCharacter = {
   pointsDeCompetence?: number
   pointsDeFaction?: number
   rangDeFaction?: string | null
+  reputation?: { categorie: string; valeur?: number | null }[] | null
   /** Affiliation peuplée avec ses rangs (nécessaire au calcul des points de faction). */
   affiliation?: FactionLite | null
 }
@@ -37,7 +38,7 @@ interface Props {
  * des récompenses de fin de mission.
  *
  * Les toggles à gauche activent/désactivent chaque type de récompense.
- * Le tableau permet d'ajuster individuellement Konis et Points de compétence
+ * Le tableau permet d'ajuster individuellement Konis, points de compétence et renommée
  * (certains joueurs ont pu recevoir un bonus/malus).
  * Le récapitulatif se met à jour en temps réel.
  */
@@ -61,7 +62,6 @@ export function SessionRewardsDrawer({
   const [konisTotal, setKonisTotal] = useState<number>(0)
   const [pr, setPR] = useState<number>(0)
   const [factionId, setFactionId] = useState<number | ''>('')
-  const [repValeur, setRepValeur] = useState<number>(0)
 
   // — Fin de mission : commanditaire + cibles + hors Confédération.
   //   `commanditaire === 'other'` = option « Autre » (pas de faction commanditaire).
@@ -75,6 +75,7 @@ export function SessionRewardsDrawer({
   //   valeur manuelle on ne l'écrase plus.
   const [perCharKonis, setPerCharKonis] = useState<Record<number, number>>({})
   const [perCharPC, setPerCharPC] = useState<Record<number, number>>({})
+  const [perCharRep, setPerCharRep] = useState<Record<number, number>>({})
   const [touchedKonis, setTouchedKonis] = useState<Record<number, boolean>>({})
 
   // — État de soumission.
@@ -112,7 +113,15 @@ export function SessionRewardsDrawer({
         : 0
       const dPR = applyPR ? pr || 0 : 0
       const dPC = applyPC ? perCharPC[c.id] ?? 0 : 0
-      const dRep = applyRep && factionId && repValeur !== 0 ? repValeur : 0
+      const factionName = typeof factionId === 'number'
+        ? factions.find((f) => f.id === factionId)?.nom
+        : undefined
+      const dRep = applyRep && factionId ? perCharRep[c.id] ?? 0 : 0
+      const currentRep = factionName
+        ? c.reputation?.find(
+            (r) => r.categorie.trim().toLowerCase() === factionName.trim().toLowerCase(),
+          )?.valeur ?? 0
+        : 0
       const fpts = applyFaction
         ? computeFactionPoints({
             affiliation: c.affiliation ?? null,
@@ -131,6 +140,8 @@ export function SessionRewardsDrawer({
         dPR,
         dPC,
         dRep,
+        currentRep,
+        nextRep: currentRep + dRep,
         dPF: fpts.total,
         dPFBreakdown: fpts,
         nextKonis: (c.konis ?? 0) + dKonis,
@@ -149,10 +160,11 @@ export function SessionRewardsDrawer({
     touchedKonis,
     perCharKonis,
     perCharPC,
+    perCharRep,
     konisPart,
     pr,
     factionId,
-    repValeur,
+    factions,
     commanditaireId,
     commanditaireName,
     ciblesAbattues,
@@ -164,7 +176,7 @@ export function SessionRewardsDrawer({
     (!applyKonis || (konisTotal === 0 && Object.keys(perCharKonis).length === 0)) &&
     (!applyPR || pr === 0) &&
     (!applyPC || Object.values(perCharPC).every((v) => !v)) &&
-    (!applyRep || !factionId || repValeur === 0) &&
+    (!applyRep || !factionId || Object.values(perCharRep).every((v) => !v)) &&
     (!applyFaction || preview.every((p) => p.dPF === 0))
 
   async function handleSubmit() {
@@ -188,7 +200,6 @@ export function SessionRewardsDrawer({
           konisTotal: applyKonis ? konisTotal : 0,
           pr: applyPR ? pr : 0,
           factionId: applyRep && factionId ? Number(factionId) : null,
-          reputationValeur: applyRep ? repValeur : 0,
           commanditaireId: applyFaction && typeof commanditaire === 'number' ? commanditaire : null,
           ciblesAbattues: applyFaction ? ciblesAbattues : 0,
           ciblesCapturees: applyFaction ? ciblesCapturees : 0,
@@ -204,6 +215,7 @@ export function SessionRewardsDrawer({
                   : konisPart
                 : 0,
               pointsDeCompetence: applyPC ? perCharPC[c.id] ?? 0 : 0,
+              reputation: applyRep ? perCharRep[c.id] ?? 0 : 0,
             },
           ]),
         ),
@@ -336,18 +348,9 @@ export function SessionRewardsDrawer({
                     ))}
                   </select>
                 </label>
-                <label className="sr-inline">
-                  Valeur
-                  <input
-                    type="number"
-                    disabled={!applyRep}
-                    value={repValeur}
-                    onChange={(e) => setRepValeur(Number(e.target.value) || 0)}
-                  />
-                </label>
               </div>
               <p className="sr-hint">
-                Ajouté à la catégorie existante si trouvée (par nom), sinon nouvelle entrée.
+                Les points sont à saisir pour chaque personnage dans le tableau ci-dessous. Ils sont ajoutés à la catégorie existante si trouvée (par nom), sinon une nouvelle entrée est créée.
               </p>
             </div>
           </section>
@@ -453,6 +456,8 @@ export function SessionRewardsDrawer({
                     dPR,
                     dPC,
                     dRep,
+                    currentRep,
+                    nextRep,
                     dPF,
                     dPFBreakdown,
                     nextKonis,
@@ -520,13 +525,31 @@ export function SessionRewardsDrawer({
                         </div>
                       </td>
                       <td>
-                        {applyRep && factionId && dRep !== 0 ? (
-                          <span className={dRep > 0 ? 'sr-plus' : 'sr-minus'}>
-                            {dRep > 0 ? '+' : ''}{dRep}
-                          </span>
-                        ) : (
-                          <span className="sr-td-preview">—</span>
-                        )}
+                        <input
+                          type="number"
+                          className="sr-td-input"
+                          aria-label={`Points de renommée pour ${c.nom || 'ce personnage'}`}
+                          disabled={!applyRep || !factionId}
+                          value={perCharRep[c.id] ?? 0}
+                          onChange={(e) =>
+                            setPerCharRep((s) => ({
+                              ...s,
+                              [c.id]: Number(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                        <div className="sr-td-preview">
+                          {factionId ? (
+                            <>
+                              {currentRep} → <strong>{nextRep}</strong>
+                              {dRep !== 0 && (
+                                <span className={dRep > 0 ? 'sr-plus' : 'sr-minus'}>
+                                  {' '}({dRep > 0 ? '+' : ''}{dRep})
+                                </span>
+                              )}
+                            </>
+                          ) : '—'}
+                        </div>
                       </td>
                       <td>
                         {applyFaction && dPF !== 0 ? (
