@@ -443,12 +443,12 @@ export async function customizeShip(input: ShipCustomizationInput) {
     if (!Number.isFinite(balance) || balance < cost) fail('Vous ne possédez pas assez de Konis pour cette personnalisation.')
     const nextBalance = exactSubtract(balance, cost)
     const originalOwner = numericId(source.proprietaireOrigineAtelier) ?? numericId(model.atelierProprietaireOrigine) ?? Number(current.id)
-    const suffix = `Atelier ${Number(source.id)} ${Date.now()}`
+    const customChassisName = atelierCustomChassisName(chassis.nom ?? customChassis.nom)
     const newChassis = await payload.create({
       collection: 'ship-models',
       data: {
         ...customChassis,
-        nom: atelierCustomChassisName(chassis.nom ?? customChassis.nom),
+        nom: customChassisName,
         image: relation(chassis.image),
         atelierPrive: true,
         atelierProprietaire: Number(current.id),
@@ -458,7 +458,7 @@ export async function customizeShip(input: ShipCustomizationInput) {
     const newSaleModel = await payload.create({
       collection: 'ship-sale-models',
       data: {
-        nom: `${String(model.nom ?? chassis.nom).slice(0, 100)} · ${suffix}`,
+        nom: customChassisName,
         chassis: Number(newChassis.id),
         prix: String(cost),
         generateur: requiredRelation(model.generateur, 'Le générateur'),

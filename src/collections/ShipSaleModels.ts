@@ -33,7 +33,7 @@ export const ShipSaleModels: CollectionConfig = {
           type: 'text',
           required: true,
           label: 'Nom du modèle de vente',
-          unique: true,
+          unique: false,
           admin: { width: '50%' },
         },
         {
