@@ -21,6 +21,7 @@ import { canMJManageCharacter } from '@/lib/mjAccess'
 import { getActiveMode } from '@/lib/activeMode'
 import { reconcileCustomEquipmentInventory } from '@/lib/atelier'
 import { weaponAllowedInSlot, type CharacterWeaponSlot } from '@/lib/characterWeapons'
+import { CHARACTER_NOTES_MAX_LENGTH, characterNotesLimitMessage } from '@/lib/characterNotes'
 
 const relationNumericId = (value: any): number | null => {
   const raw = value && typeof value === 'object' ? value.id : value
@@ -337,6 +338,24 @@ export async function updateCharacter(characterId: number, data: any) {
 
   revalidatePath(`/characters/${characterId}`)
   revalidatePath(`/temporary-character/${characterId}`)
+  return { success: true }
+}
+
+export async function updateCharacterNotes(characterId: number, notes: string) {
+  const { payload, user, isTemporary } = await getAuthorizedCharacter(characterId)
+  if (isTemporary) throw new Error('Les Notes ne sont pas disponibles sur les personnages temporaires.')
+  if (typeof notes !== 'string') throw new Error('Le contenu des Notes est invalide.')
+  if (notes.length > CHARACTER_NOTES_MAX_LENGTH) throw new Error(characterNotesLimitMessage())
+
+  await payload.update({
+    collection: 'characters',
+    id: characterId,
+    data: { notes },
+    user: user ?? undefined,
+    overrideAccess: true,
+  })
+
+  revalidatePath(`/characters/${characterId}`)
   return { success: true }
 }
 

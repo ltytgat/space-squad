@@ -8,7 +8,7 @@ import type { GravityLevel } from '@/lib/characterStats'
 import { minimumRankForChipSlot } from '@/lib/rankSystem'
 import { weaponRangeRows } from '@/lib/weaponRanges'
 import { weaponAllowedInSlot, weaponFromGroup, type CharacterWeaponSlot } from '@/lib/characterWeapons'
-import { assignCharacterSkillPoint, searchCharacterEditCatalog, updateCharacter, updateCharacterInEditMode, updateWeaponStatus, reloadWeapon } from './actions'
+import { assignCharacterSkillPoint, searchCharacterEditCatalog, updateCharacter, updateCharacterInEditMode, updateCharacterNotes, updateWeaponStatus, reloadWeapon } from './actions'
 import { MalusInput } from './MalusInput'
 import { KitUsageInput } from './KitUsageInput'
 import { CoachingInput } from './CoachingInput'
@@ -183,6 +183,11 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   const modeChangeInFlight = useRef(false)
   const [character, setCharacter] = useState(initialCharacter)
   const [lastSavedCharacter, setLastSavedCharacter] = useState(initialCharacter)
+  const [notesDraft, setNotesDraft] = useState(String(initialCharacter.notes ?? ''))
+  const [savedNotes, setSavedNotes] = useState(String(initialCharacter.notes ?? ''))
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
+  const [notesFeedback, setNotesFeedback] = useState<{ kind: 'error' | 'success'; message: string } | null>(null)
+  const hasUnsavedNotes = notesDraft !== savedNotes
   const [gravityLevel, setGravityLevel] = useState<GravityLevel>('normale')
   const [weaponHeat, setWeaponHeat] = useState<Record<string, number>>({})
   const [isModified, setIsModified] = useState(false)
@@ -263,14 +268,14 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
   // Empêcher de quitter sans sauvegarder
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isModified) {
+      if (isModified || hasUnsavedNotes) {
         e.preventDefault()
         e.returnValue = ''
       }
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [isModified])
+  }, [isModified, hasUnsavedNotes])
 
   const requestLevelUp = (skillName: string) => {
     if (editMode && managerChangedFields.has('pointsDeCompetence')) return
@@ -349,18 +354,18 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   useEffect(() => {
     const handlePopState = () => {
-      if (isModified) {
-        if (!confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?')) {
+      if (isModified || hasUnsavedNotes) {
+        if (!confirm('Vous avez des modifications ou des Notes non sauvegardées. Voulez-vous vraiment quitter ?')) {
           window.history.pushState(null, '', window.location.href)
         }
       }
     }
-    if (isModified) {
+    if (isModified || hasUnsavedNotes) {
       window.history.pushState(null, '', window.location.href)
       window.addEventListener('popstate', handlePopState)
     }
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [isModified])
+  }, [isModified, hasUnsavedNotes])
 
   // Fermer le tooltip lors de l'ouverture/fermeture des sélecteurs
   useEffect(() => {
@@ -554,6 +559,33 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
       return false
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  useEffect(() => {
+    const value = String(initialCharacter.notes ?? '')
+    setNotesDraft(value)
+    setSavedNotes(value)
+    setNotesFeedback(null)
+  }, [initialCharacter.id, initialCharacter.notes])
+
+  const handleSaveNotes = async () => {
+    if (isSavingNotes || notesDraft === savedNotes) return
+    setIsSavingNotes(true)
+    setNotesFeedback(null)
+    try {
+      await updateCharacterNotes(character.id, notesDraft)
+      setSavedNotes(notesDraft)
+      setCharacter((previous: any) => ({ ...previous, notes: notesDraft }))
+      setLastSavedCharacter((previous: any) => ({ ...previous, notes: notesDraft }))
+      setNotesFeedback({ kind: 'success', message: 'Notes enregistrées.' })
+    } catch (error) {
+      setNotesFeedback({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Impossible d’enregistrer les Notes.',
+      })
+    } finally {
+      setIsSavingNotes(false)
     }
   }
 
@@ -1756,8 +1788,12 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
 
   const handleEditModeToggle = () => {
     if (modeChangeInFlight.current || isSaving) return
-    if (isModified && !window.confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter cette fiche ?')) return
+    if ((isModified || hasUnsavedNotes) && !window.confirm('Vous avez des modifications ou des Notes non sauvegardées. Voulez-vous vraiment quitter cette fiche ?')) return
 
+    if (hasUnsavedNotes) {
+      setNotesDraft(savedNotes)
+      setNotesFeedback(null)
+    }
     if (isModified) {
       setCharacter(lastSavedCharacter)
       setIsModified(false)
@@ -2363,6 +2399,33 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
               </div>
             )}
           </div>
+
+          {!isTemporary && <section className="char-card char-notes-card">
+            <h2 className="char-card-title" id="character-notes-title">Notes</h2>
+            <textarea
+              aria-labelledby="character-notes-title"
+              className="char-notes-textarea"
+              value={notesDraft}
+              readOnly={!isOwner && !editMode || isSavingNotes}
+              onChange={(event) => {
+                setNotesDraft(event.target.value)
+                setNotesFeedback(null)
+              }}
+            />
+            {(isOwner || editMode) && <div className="char-notes-actions">
+              <button
+                className="ss-button primary"
+                type="button"
+                onClick={handleSaveNotes}
+                disabled={isSavingNotes || notesDraft === savedNotes}
+              >
+                {isSavingNotes ? 'Enregistrement…' : 'Enregistrer les Notes'}
+              </button>
+              {notesFeedback && <p className={notesFeedback.kind === 'error' ? 'char-notes-error' : 'char-notes-success'} role={notesFeedback.kind === 'error' ? 'alert' : 'status'}>
+                {notesFeedback.message}
+              </p>}
+            </div>}
+          </section>}
 
           {/* ── Réputation et Faction ── */}
           <div className="char-card">

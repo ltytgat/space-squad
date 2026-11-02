@@ -492,6 +492,7 @@ export interface Character {
    */
   user?: (number | null) | User;
   nom?: string | null;
+  notes?: string | null;
   sexe?: ('M' | 'F' | 'X') | null;
   origine?: ('Humain' | 'Strani' | 'Vada') | null;
   creationEtape?: ('caracteristiques' | 'espece' | 'equipement' | 'identite' | 'termine') | null;
@@ -2154,6 +2155,7 @@ export interface ArmorSetsSelect<T extends boolean = true> {
 export interface CharactersSelect<T extends boolean = true> {
   user?: T;
   nom?: T;
+  notes?: T;
   sexe?: T;
   origine?: T;
   creationEtape?: T;

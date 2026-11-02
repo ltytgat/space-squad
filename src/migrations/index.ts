@@ -44,6 +44,7 @@ import * as migration_20261029_000001_remove_ship_model_name_unique from './2026
 import * as migration_20261029_120000_group_shop_policy from './20261029_120000_group_shop_policy';
 import * as migration_20261102_120000_add_special_skill_modifier from './20261102_120000_add_special_skill_modifier';
 import * as migration_20261102_140000_atelier_custom_sale_model_names from './20261102_140000_atelier_custom_sale_model_names';
+import * as migration_20261102_150000_character_notes from './20261102_150000_character_notes';
 
 export const migrations = [
   {
@@ -275,5 +276,10 @@ export const migrations = [
     up: migration_20261102_140000_atelier_custom_sale_model_names.up,
     down: migration_20261102_140000_atelier_custom_sale_model_names.down,
     name: '20261102_140000_atelier_custom_sale_model_names',
+  },
+  {
+    up: migration_20261102_150000_character_notes.up,
+    down: migration_20261102_150000_character_notes.down,
+    name: '20261102_150000_character_notes',
   },
 ];

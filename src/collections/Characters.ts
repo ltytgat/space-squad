@@ -4,6 +4,7 @@ import { syncCharacterShip } from '@/lib/shipCrewSync'
 import { getMJGroupIds } from '@/lib/mjAccess'
 import { isMJMode } from '@/lib/activeMode'
 import { removeAtelierPermitOnAffiliationChange } from '@/lib/factionRewards'
+import { CHARACTER_NOTES_MAX_LENGTH } from '@/lib/characterNotes'
 
 export const COMPETENCES_BASE = [
   'Chasseur',
@@ -131,6 +132,12 @@ export const Characters: CollectionConfig = {
       name: 'nom',
       type: 'text',
       label: 'Nom',
+    },
+    {
+      name: 'notes',
+      type: 'textarea',
+      label: 'Notes',
+      maxLength: CHARACTER_NOTES_MAX_LENGTH,
     },
     {
       name: 'sexe',

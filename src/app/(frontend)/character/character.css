@@ -1566,6 +1566,52 @@
   gap: 0.5rem;
 }
 
+.char-notes-card {
+  gap: 1rem;
+}
+
+.char-notes-textarea {
+  width: 100%;
+  min-height: 12rem;
+  padding: 0.75rem;
+  color: var(--ss-text);
+  background: var(--ss-bg);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.char-notes-textarea:focus-visible {
+  outline: 2px solid var(--ss-cyan);
+  outline-offset: 2px;
+}
+
+.char-notes-textarea[readonly] {
+  color: var(--ss-text-dim);
+}
+
+.char-notes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.char-notes-actions p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.char-notes-error {
+  color: var(--ss-danger, #fb7185);
+}
+
+.char-notes-success {
+  color: var(--ss-text-muted);
+}
+
 .char-inventory-category {
   margin-bottom: 0.25rem;
 }
@@ -2663,7 +2709,8 @@
   color: #c4b5fd;
 }
 
-.char-edit-buttons .ss-button {
+.char-edit-buttons .ss-button,
+.char-notes-actions .ss-button {
   min-height: 42px;
   padding: 0.55rem 1.1rem;
   border: 1px solid transparent;
@@ -2673,13 +2720,15 @@
   transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
-.char-edit-buttons .ss-button.primary {
+.char-edit-buttons .ss-button.primary,
+.char-notes-actions .ss-button.primary {
   border-color: #9b8adb;
   color: #100d1b;
   background: #9b8adb;
 }
 
-.char-edit-buttons .ss-button.primary:hover:not(:disabled) {
+.char-edit-buttons .ss-button.primary:hover:not(:disabled),
+.char-notes-actions .ss-button.primary:hover:not(:disabled) {
   border-color: #c4b5fd;
   background: #b5a7f0;
   box-shadow: 0 0 18px rgba(155, 138, 219, 0.32);
@@ -2698,12 +2747,14 @@
   background: rgba(155, 138, 219, 0.18);
 }
 
-.char-edit-buttons .ss-button:disabled {
+.char-edit-buttons .ss-button:disabled,
+.char-notes-actions .ss-button:disabled {
   cursor: wait;
   opacity: 0.58;
 }
 
 .char-edit-buttons .ss-button:focus-visible,
+.char-notes-actions .ss-button:focus-visible,
 .char-skill-confirm-modal button:focus-visible {
   outline: 2px solid #c4b5fd;
   outline-offset: 3px;
