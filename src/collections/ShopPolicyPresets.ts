@@ -21,7 +21,6 @@ export const ShopPolicyPresets: CollectionConfig = {
       relationTo: 'users',
       required: true,
       index: true,
-      onDelete: 'cascade',
       label: 'MJ propriétaire',
       admin: { position: 'sidebar' },
     },
