@@ -5,7 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { adjustedShopPrice, legacyShopPolicyRuleKeysChangedAtNode, legacyShopPolicyRuleKeysInSubtree, resolveShopPolicy, shopPolicyNodePaths, summarizeShopPolicyImpacts, type GroupShopPolicy, type GroupShopRule, type ShopPolicyNode } from '@/lib/groupShopPolicy'
 import { readShopPrice } from '@/lib/shop'
-import { saveGroupShopPolicy } from '../../group-policy-actions'
+import {
+  deleteGroupShopPolicyPreset,
+  listGroupShopPolicyPresets,
+  loadGroupShopPolicyPreset,
+  saveGroupShopPolicy,
+  saveGroupShopPolicyPreset,
+  type GroupShopPolicyPresetSummary,
+} from '../../group-policy-actions'
 
 const money = (value: number) => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(value)} Konis`
 
@@ -87,6 +94,18 @@ export function GroupShopPolicyClient({ groupId, initialPolicy, tree }: { groupI
   const impactCounts = useMemo(() => summarizeShopPolicyImpacts(tree, policy), [tree, policy])
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const [presetMenu, setPresetMenu] = useState<'save' | 'list' | null>(null)
+  const [presets, setPresets] = useState<GroupShopPolicyPresetSummary[]>([])
+  const [presetName, setPresetName] = useState('')
+  const [selectedPresetId, setSelectedPresetId] = useState<number | ''>('')
+  const [presetSearch, setPresetSearch] = useState('')
+  const [presetBusy, setPresetBusy] = useState(false)
+  const [presetError, setPresetError] = useState('')
+
+  const matchingPresets = useMemo(() => {
+    const query = presetSearch.trim().toLocaleLowerCase('fr-FR')
+    return query ? presets.filter((preset) => preset.name.toLocaleLowerCase('fr-FR').includes(query)) : presets
+  }, [presets, presetSearch])
 
   function changeRule(key: string, rule: GroupShopRule) {
     const obsoleteKeys = new Set(legacyShopPolicyRuleKeysChangedAtNode(tree, key))
@@ -114,6 +133,81 @@ export function GroupShopPolicyClient({ groupId, initialPolicy, tree }: { groupI
     }
   }
 
+  async function openPresetMenu(menu: 'save' | 'list') {
+    setPresetMenu(menu)
+    setPresetError('')
+    setPresetSearch('')
+    setPresetBusy(true)
+    try {
+      const savedPresets = await listGroupShopPolicyPresets()
+      setPresets(savedPresets)
+      setSelectedPresetId((current) => current && savedPresets.some((preset) => preset.id === current)
+        ? current
+        : savedPresets[0]?.id ?? '')
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : 'Impossible de charger vos sauvegardes.')
+    } finally {
+      setPresetBusy(false)
+    }
+  }
+
+  async function savePreset(presetId?: number) {
+    const selectedPreset = presets.find((preset) => preset.id === presetId)
+    const name = presetId === undefined ? presetName : selectedPreset?.name
+    if (!name) {
+      setPresetError('Choisissez une sauvegarde à écraser.')
+      return
+    }
+    setPresetBusy(true)
+    setPresetError('')
+    try {
+      const saved = await saveGroupShopPolicyPreset(groupId, name, policy, presetId)
+      const refreshed = await listGroupShopPolicyPresets()
+      setPresets(refreshed)
+      setSelectedPresetId(saved.id)
+      setPresetName('')
+      setPresetMenu(null)
+      setMessage({ kind: 'success', text: presetId === undefined ? `Sauvegarde « ${saved.name} » créée.` : `Sauvegarde « ${saved.name} » écrasée.` })
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : 'Impossible d’enregistrer cette sauvegarde.')
+    } finally {
+      setPresetBusy(false)
+    }
+  }
+
+  async function loadPreset(presetId: number) {
+    setPresetBusy(true)
+    setPresetError('')
+    try {
+      const loadedPolicy = await loadGroupShopPolicyPreset(presetId)
+      const preset = presets.find((item) => item.id === presetId)
+      setPolicy(loadedPolicy)
+      setPresetMenu(null)
+      setMessage({ kind: 'success', text: `« ${preset?.name ?? 'Sauvegarde'} » chargée comme modification en cours. Appliquez les règles pour l’enregistrer sur cette escouade.` })
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : 'Impossible de charger cette sauvegarde.')
+    } finally {
+      setPresetBusy(false)
+    }
+  }
+
+  async function deletePreset(preset: GroupShopPolicyPresetSummary) {
+    if (!window.confirm(`Supprimer la sauvegarde « ${preset.name} » ? Cette action est définitive.`)) return
+    setPresetBusy(true)
+    setPresetError('')
+    try {
+      await deleteGroupShopPolicyPreset(preset.id)
+      const refreshed = await listGroupShopPolicyPresets()
+      setPresets(refreshed)
+      setSelectedPresetId((current) => current === preset.id ? refreshed[0]?.id ?? '' : current)
+      setMessage({ kind: 'success', text: `Sauvegarde « ${preset.name} » supprimée.` })
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : 'Impossible de supprimer cette sauvegarde.')
+    } finally {
+      setPresetBusy(false)
+    }
+  }
+
   function resetAll() {
     void save({ rules: {} }, 'Toutes les modifications ont été réinitialisées.')
   }
@@ -123,9 +217,75 @@ export function GroupShopPolicyClient({ groupId, initialPolicy, tree }: { groupI
     {message && <p className={`shop-message ${message.kind}`} role="status">{message.text}</p>}
     <div className="group-shop-policy-tree">{tree.map((node) => <PolicyNodeEditor key={node.key} node={node} ancestors={[]} policy={policy} impactCounts={impactCounts} onRuleChange={changeRule} onReset={(key, label) => void save({ rules: removeSubtreeRules(policy.rules, key, legacyShopPolicyRuleKeysInSubtree(tree, key)) }, `Les règles de « ${label} » ont été réinitialisées.`)} pending={pending} />)}</div>
     <div className="group-shop-policy-actions">
-      <button type="button" disabled={pending} onClick={() => void save()}>{pending ? 'Enregistrement…' : 'Enregistrer les règles'}</button>
-      <button type="button" className="shop-cancel-button" disabled={pending} onClick={resetAll}>Réinitialiser toutes les modifications</button>
+      <button type="button" disabled={pending || presetBusy} onClick={() => void save()}>{pending ? 'Application…' : 'Appliquer les règles'}</button>
+      <button type="button" disabled={pending || presetBusy} onClick={() => void openPresetMenu('save')}>Sauvegarder</button>
+      <button type="button" className="shop-cancel-button" disabled={pending || presetBusy} onClick={() => void openPresetMenu('list')}>Voir mes presets</button>
+      <button type="button" className="shop-cancel-button" disabled={pending || presetBusy} onClick={resetAll}>Réinitialiser toutes les modifications</button>
       <Link className="shop-cancel-button" href="/characters">Retour aux personnages</Link>
     </div>
+    {presetMenu && <div className="group-shop-preset-overlay" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !presetBusy) setPresetMenu(null)
+    }}>
+      <section className="group-shop-preset-dialog" role="dialog" aria-modal="true" aria-labelledby="group-shop-preset-title" onKeyDown={(event) => {
+        if (event.key === 'Escape' && !presetBusy) setPresetMenu(null)
+      }}>
+        <div className="group-shop-preset-heading">
+          <div>
+            <h2 id="group-shop-preset-title">{presetMenu === 'save' ? 'Sauvegarder cette configuration' : 'Mes presets de boutique'}</h2>
+            <p>{presetMenu === 'save' ? 'Les règles affichées seront enregistrées dans vos sauvegardes personnelles.' : 'Chargez un preset dans les réglages en cours, ou supprimez une sauvegarde.'}</p>
+          </div>
+          <button type="button" className="group-shop-preset-close" aria-label="Fermer" disabled={presetBusy} onClick={() => setPresetMenu(null)}>×</button>
+        </div>
+        {presetError && <p className="shop-message error" role="alert">{presetError}</p>}
+        {presetBusy && <p className="group-shop-preset-status" role="status">Patientez…</p>}
+        {presetMenu === 'save' ? <div className="group-shop-preset-content">
+          <form className="group-shop-preset-create" onSubmit={(event) => { event.preventDefault(); void savePreset() }}>
+            <h3>Créer une nouvelle sauvegarde</h3>
+            <label htmlFor="group-shop-preset-name">Nom de la sauvegarde</label>
+            <div className="group-shop-preset-form-row">
+              <input id="group-shop-preset-name" autoFocus maxLength={100} value={presetName} disabled={presetBusy || presets.length >= 50} onChange={(event) => setPresetName(event.target.value)} placeholder="Ex. Boutique de départ" />
+              <button type="submit" disabled={presetBusy || presets.length >= 50 || !presetName.trim()}>Créer</button>
+            </div>
+            <small>{presets.length} / 50 sauvegardes utilisées.</small>
+            {presets.length >= 50 && <small>La limite est atteinte. Écrasez ou supprimez une sauvegarde pour libérer une place.</small>}
+          </form>
+          <div className="group-shop-preset-overwrite">
+            <h3>Écraser une sauvegarde existante</h3>
+            <label htmlFor="group-shop-preset-overwrite-search">Rechercher une sauvegarde</label>
+            <input id="group-shop-preset-overwrite-search" value={presetSearch} disabled={presetBusy} onChange={(event) => {
+              const query = event.target.value.trim().toLocaleLowerCase('fr-FR')
+              const filtered = query ? presets.filter((preset) => preset.name.toLocaleLowerCase('fr-FR').includes(query)) : presets
+              setPresetSearch(event.target.value)
+              setSelectedPresetId(filtered[0]?.id ?? '')
+            }} placeholder="Rechercher par nom" />
+            <div className="group-shop-preset-form-row">
+              <select aria-label="Sauvegarde à écraser" value={matchingPresets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : matchingPresets[0]?.id ?? ''} disabled={presetBusy || matchingPresets.length === 0} onChange={(event) => setSelectedPresetId(event.target.value ? Number(event.target.value) : '')}>
+                {matchingPresets.length === 0 && <option value="">Aucune sauvegarde trouvée</option>}
+                {matchingPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+              </select>
+              <button type="button" disabled={presetBusy || !matchingPresets.length} onClick={() => {
+                const currentId = matchingPresets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : matchingPresets[0]?.id
+                if (currentId) void savePreset(Number(currentId))
+              }}>Écraser</button>
+            </div>
+          </div>
+        </div> : <div className="group-shop-preset-content group-shop-preset-list-content">
+          <label htmlFor="group-shop-preset-search">Rechercher une sauvegarde</label>
+          <input id="group-shop-preset-search" autoFocus value={presetSearch} disabled={presetBusy} onChange={(event) => setPresetSearch(event.target.value)} placeholder="Rechercher par nom" />
+          {matchingPresets.length === 0 ? <p className="group-shop-preset-empty">{presets.length ? 'Aucune sauvegarde ne correspond à cette recherche.' : 'Vous n’avez pas encore de preset sauvegardé.'}</p> : <ul className="group-shop-preset-list">
+            {matchingPresets.map((preset) => <li key={preset.id}>
+              <div><strong>{preset.name}</strong><small>Modifié le {new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(preset.updatedAt))}</small></div>
+              <div className="group-shop-preset-item-actions">
+                <button type="button" disabled={presetBusy} onClick={() => void loadPreset(preset.id)}>Charger</button>
+                <button type="button" className="shop-cancel-button" disabled={presetBusy} onClick={() => void deletePreset(preset)}>Supprimer</button>
+              </div>
+            </li>)}
+          </ul>}
+        </div>}
+        <div className="group-shop-preset-footer">
+          <button type="button" className="shop-cancel-button" disabled={presetBusy} onClick={() => setPresetMenu(null)}>Fermer</button>
+        </div>
+      </section>
+    </div>}
   </div>
 }

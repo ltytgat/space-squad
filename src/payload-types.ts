@@ -96,6 +96,7 @@ export interface Config {
     'faction-reward-tiers': FactionRewardTier;
     'session-rewards': SessionReward;
     'shop-transactions': ShopTransaction;
+    'shop-policy-presets': ShopPolicyPreset;
     'contact-messages': ContactMessage;
     search: Search;
     'payload-kv': PayloadKv;
@@ -138,6 +139,7 @@ export interface Config {
     'faction-reward-tiers': FactionRewardTiersSelect<false> | FactionRewardTiersSelect<true>;
     'session-rewards': SessionRewardsSelect<false> | SessionRewardsSelect<true>;
     'shop-transactions': ShopTransactionsSelect<false> | ShopTransactionsSelect<true>;
+    'shop-policy-presets': ShopPolicyPresetsSelect<false> | ShopPolicyPresetsSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -1515,6 +1517,27 @@ export interface ShopTransaction {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-policy-presets".
+ */
+export interface ShopPolicyPreset {
+  id: number;
+  owner: number | User;
+  name: string;
+  nameKey: string;
+  policy:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "contact-messages".
  */
 export interface ContactMessage {
@@ -1688,6 +1711,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'shop-transactions';
         value: number | ShopTransaction;
+      } | null)
+    | ({
+        relationTo: 'shop-policy-presets';
+        value: number | ShopPolicyPreset;
       } | null)
     | ({
         relationTo: 'contact-messages';
@@ -2582,6 +2609,18 @@ export interface ShopTransactionsSelect<T extends boolean = true> {
   ship?: T;
   amount?: T;
   details?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-policy-presets_select".
+ */
+export interface ShopPolicyPresetsSelect<T extends boolean = true> {
+  owner?: T;
+  name?: T;
+  nameKey?: T;
+  policy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

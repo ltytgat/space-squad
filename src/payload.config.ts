@@ -39,6 +39,7 @@ import {Factions} from './collections/Factions'
 import {FactionRewardTiers} from './collections/FactionRewardTiers'
 import {SessionRewards} from './collections/SessionRewards'
 import {ShopTransactions} from './collections/ShopTransactions'
+import {ShopPolicyPresets} from './collections/ShopPolicyPresets'
 import {ContactMessages} from './collections/ContactMessages'
 import {AtelierModifications} from './collections/AtelierModifications'
 import {CustomEquipment} from './collections/CustomEquipment'
@@ -56,7 +57,7 @@ export default buildConfig({
             baseDir: path.resolve(dirname),
         },
     },
-    collections: [Users, Media, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, VehicleVariants, VehicleSaleModels, Vehicles, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, AtelierModifications, CustomEquipment, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions, ContactMessages],
+    collections: [Users, Media, LoreArticles, Groups, Ships, ShipModels, ShipSaleModels, ShipWeapons, ShipModules, ShipConsumables, VehicleVariants, VehicleSaleModels, Vehicles, Weapons, Armors, ArmorSets, Characters, CharacterWorkspaces, Formations, SpecialRoles, Mods, AtelierModifications, CustomEquipment, Consumables, Chips, Factions, FactionRewardTiers, SessionRewards, ShopTransactions, ShopPolicyPresets, ContactMessages],
     editor: lexicalEditor({
         features: ({ defaultFeatures }) => [
             ...defaultFeatures,

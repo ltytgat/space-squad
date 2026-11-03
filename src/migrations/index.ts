@@ -45,6 +45,7 @@ import * as migration_20261029_120000_group_shop_policy from './20261029_120000_
 import * as migration_20261102_120000_add_special_skill_modifier from './20261102_120000_add_special_skill_modifier';
 import * as migration_20261102_140000_atelier_custom_sale_model_names from './20261102_140000_atelier_custom_sale_model_names';
 import * as migration_20261102_150000_character_notes from './20261102_150000_character_notes';
+import * as migration_20261103_100000_shop_policy_presets from './20261103_100000_shop_policy_presets';
 
 export const migrations = [
   {
@@ -281,5 +282,10 @@ export const migrations = [
     up: migration_20261102_150000_character_notes.up,
     down: migration_20261102_150000_character_notes.down,
     name: '20261102_150000_character_notes',
+  },
+  {
+    up: migration_20261103_100000_shop_policy_presets.up,
+    down: migration_20261103_100000_shop_policy_presets.down,
+    name: '20261103_100000_shop_policy_presets',
   },
 ];
