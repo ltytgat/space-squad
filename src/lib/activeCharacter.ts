@@ -27,7 +27,7 @@ export async function getOwnedCharacters(
     collection: 'characters',
     where: { user: { equals: user.id } },
     depth,
-    limit: 10,
+    pagination: false,
     sort: 'id',
     overrideAccess: true,
     ...(req ? { req } : {}),

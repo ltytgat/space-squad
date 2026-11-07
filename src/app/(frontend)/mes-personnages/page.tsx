@@ -10,6 +10,7 @@ import { getActiveCharacter, getOwnedCharacters } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { computeRank } from '@/lib/rankSystem'
 import { canCreateNPC } from '@/lib/characterType'
+import { MAX_PLAYER_CHARACTERS, MAX_NPC_CHARACTERS } from '@/lib/characterLimits'
 import { MyCharactersClient } from './MyCharactersClient'
 import '../characters/characters.css'
 import './my-characters.css'
@@ -73,7 +74,7 @@ export default async function MyCharactersPage() {
               <Link href="/">Accueil</Link><span aria-hidden="true">›</span><span>Mes personnages</span>
             </nav>
             <h1 className="chars-page-title">
-              Mes personnages <span className="chars-page-count">{characters.length} / 5</span>
+              Mes personnages <span className="chars-page-count">{characters.length} / {MAX_PLAYER_CHARACTERS + (canCreateNPC(user) ? MAX_NPC_CHARACTERS : 0)}</span>
             </h1>
             <p>Choisissez le personnage qui vous représente dans l’escouade, les vaisseaux et la boutique.</p>
           </div>

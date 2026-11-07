@@ -87,11 +87,42 @@ describe('character creation types', () => {
     expect(mocks.create).not.toHaveBeenCalled()
   })
 
-  it('keeps the five-character limit for NPCs', async () => {
+  it.each([
+    { players: 5, npcs: 0, type: 'joueur', success: false },
+    { players: 4, npcs: 10, type: 'joueur', success: true },
+    { players: 5, npcs: 9, type: 'pnj', success: true },
+    { players: 0, npcs: 10, type: 'pnj', success: false },
+    { players: 0, npcs: 10, type: 'joueur', success: true },
+    { players: 5, npcs: 10, type: 'joueur', success: false },
+    { players: 5, npcs: 10, type: 'pnj', success: false },
+  ] as const)('enforces independent MJ slots: %j', async ({ players, npcs, type, success }) => {
+    mocks.getOwnedCharacters.mockResolvedValue([
+      ...Array.from({ length: players }, (_, id) => ({ id, typePersonnage: 'joueur' })),
+      ...Array.from({ length: npcs }, (_, id) => ({ id: id + players, typePersonnage: 'pnj' })),
+    ])
+    const result = await createOwnedCharacter(type)
+    expect(result).toMatchObject({ success })
+    if (success) {
+      expect(mocks.create).toHaveBeenCalledTimes(1)
+      expect(mocks.commitTransaction).toHaveBeenCalledWith('tx')
+    } else {
+      expect(result.error).toBe(type === 'pnj' ? 'Vous avez atteint la limite de dix PNJ.' : 'Vous avez atteint la limite de cinq personnages Joueur.')
+      expect(mocks.create).not.toHaveBeenCalled()
+      expect(mocks.rollbackTransaction).toHaveBeenCalledWith('tx')
+    }
+  })
+
+  it('keeps ordinary accounts limited to five characters', async () => {
+    mocks.auth.mockResolvedValue({ user: { ...mj, isMJ: false } })
     mocks.getOwnedCharacters.mockResolvedValue(Array.from({ length: 5 }, (_, id) => ({ id })))
-    expect(await createOwnedCharacter('pnj')).toMatchObject({ success: false, error: 'Vous avez atteint la limite de cinq personnages.' })
+    expect(await createOwnedCharacter()).toMatchObject({ success: false, error: 'Vous avez atteint la limite de cinq personnages.' })
     expect(mocks.create).not.toHaveBeenCalled()
-    expect(mocks.rollbackTransaction).toHaveBeenCalledWith('tx')
+  })
+
+  it('counts legacy characters without a type as player characters', async () => {
+    mocks.getOwnedCharacters.mockResolvedValue(Array.from({ length: 5 }, (_, id) => ({ id })))
+    expect(await createOwnedCharacter()).toMatchObject({ success: false, error: 'Vous avez atteint la limite de cinq personnages Joueur.' })
+    expect(mocks.create).not.toHaveBeenCalled()
   })
 
   it('opens an owned NPC directly when selected in MJ mode', async () => {

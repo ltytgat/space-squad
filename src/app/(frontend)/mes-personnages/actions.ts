@@ -16,7 +16,7 @@ import {
 import { relationId } from '@/lib/shop'
 import { canCreateNPC, canEditOwnedNPC, type CharacterType } from '@/lib/characterType'
 
-const MAX_CHARACTERS_PER_USER = 5
+import { countCharacterTypes, MAX_PLAYER_CHARACTERS, MAX_NPC_CHARACTERS } from '@/lib/characterLimits'
 
 async function getSession() {
   const payload = await getPayload({ config: await config })
@@ -60,8 +60,15 @@ export async function createOwnedCharacter(typePersonnage: CharacterType = 'joue
     })
 
     const characters = await getOwnedCharacters(payload, user, { req })
-    if (characters.length >= MAX_CHARACTERS_PER_USER) {
+    if (!canCreateNPC(user) && characters.length >= MAX_PLAYER_CHARACTERS) {
       throw new Error('Vous avez atteint la limite de cinq personnages.')
+    }
+    const counts = countCharacterTypes(characters)
+    if (typePersonnage === 'joueur' && counts.joueur >= MAX_PLAYER_CHARACTERS) {
+      throw new Error('Vous avez atteint la limite de cinq personnages Joueur.')
+    }
+    if (typePersonnage === 'pnj' && counts.pnj >= MAX_NPC_CHARACTERS) {
+      throw new Error('Vous avez atteint la limite de dix PNJ.')
     }
 
     const character = await payload.create({

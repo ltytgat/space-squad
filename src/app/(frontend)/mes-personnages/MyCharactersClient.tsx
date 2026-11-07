@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import type { CharacterType } from '@/lib/characterType'
+import { countCharacterTypes, MAX_PLAYER_CHARACTERS, MAX_NPC_CHARACTERS } from '@/lib/characterLimits'
 import { createOwnedCharacter, deleteOwnedCharacter, selectOwnedCharacter } from './actions'
 
 type Character = {
@@ -19,8 +20,6 @@ type Character = {
   vehiclesCount: number
 }
 
-const MAX_CHARACTERS = 5
-
 export function MyCharactersClient({
   characters,
   activeCharacterId,
@@ -32,6 +31,8 @@ export function MyCharactersClient({
   canCreate: boolean
   canCreateNPC: boolean
 }) {
+  const counts = countCharacterTypes(characters)
+  const playerSlotsFull = canCreateNPC ? counts.joueur >= MAX_PLAYER_CHARACTERS : characters.length >= MAX_PLAYER_CHARACTERS
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
   const [deleting, setDeleting] = useState<Character | null>(null)
@@ -77,12 +78,14 @@ export function MyCharactersClient({
   return (
     <div className="my-characters-client">
       <div className="my-characters-toolbar">
-        <p>{characters.length} personnage{characters.length !== 1 ? 's' : ''} sur {MAX_CHARACTERS} maximum</p>
+        <p>{canCreateNPC
+          ? `Joueur : ${counts.joueur} / ${MAX_PLAYER_CHARACTERS} · PNJ : ${counts.pnj} / ${MAX_NPC_CHARACTERS}`
+          : `${characters.length} personnage${characters.length !== 1 ? 's' : ''} sur ${MAX_PLAYER_CHARACTERS} maximum`}</p>
         <div className="my-character-actions">
           <button
             type="button"
             className="ss-btn ss-btn-primary"
-            disabled={pending || !canCreate || characters.length >= MAX_CHARACTERS}
+            disabled={pending || !canCreate || playerSlotsFull}
             onClick={() => void createCharacter()}
           >
             Créer un personnage
@@ -90,7 +93,7 @@ export function MyCharactersClient({
           {canCreateNPC && <button
             type="button"
             className="ss-btn ss-btn-outline"
-            disabled={pending || characters.length >= MAX_CHARACTERS}
+            disabled={pending || counts.pnj >= MAX_NPC_CHARACTERS}
             onClick={() => void createCharacter('pnj')}
           >Créer un PNJ vierge</button>}
         </div>
