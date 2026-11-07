@@ -1,0 +1,118 @@
+.mj-help-content {
+  max-width: 880px;
+}
+
+.mj-help-intro {
+  color: var(--ss-text-muted);
+  line-height: 1.7;
+}
+
+.mj-help-intro p + p {
+  margin-top: 0.75rem;
+}
+
+.mj-help-content strong {
+  color: var(--ss-text);
+}
+
+.mj-help-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mj-help-section {
+  min-width: 0;
+  background: var(--ss-bg-card);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-lg);
+}
+
+.mj-help-section > summary {
+  padding: 1.25rem 1.5rem;
+  color: var(--ss-cyan);
+  cursor: pointer;
+  border-radius: var(--ss-radius-lg);
+}
+
+.mj-help-section > summary h2 {
+  display: inline;
+  margin: 0;
+  margin-inline-start: 0.35rem;
+  font-family: var(--ss-font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ss-text);
+  overflow-wrap: anywhere;
+}
+
+.mj-help-section > summary:hover,
+.mj-help-section[open] > summary {
+  background: var(--ss-cyan-dim);
+}
+
+.mj-help-section > summary:focus-visible,
+.mj-help-body a:focus-visible {
+  outline: 2px solid var(--ss-cyan);
+  outline-offset: 3px;
+}
+
+.mj-help-body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--ss-border);
+  color: var(--ss-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.mj-help-body > * {
+  margin: 0;
+}
+
+.mj-help-body > * + * {
+  margin-top: 1rem;
+}
+
+.mj-help-body ol,
+.mj-help-body ul {
+  padding-inline-start: 1.5rem;
+}
+
+.mj-help-body li + li {
+  margin-top: 0.75rem;
+}
+
+.mj-help-body li::marker {
+  color: var(--ss-cyan);
+  font-weight: 600;
+}
+
+.mj-help-body a {
+  color: var(--ss-cyan);
+  text-underline-offset: 0.2em;
+}
+
+.mj-help-body h3 {
+  font-size: 1rem;
+  color: var(--ss-text);
+}
+
+.mj-help-note,
+.mj-help-example {
+  padding: 0.85rem 1rem;
+  border-inline-start: 3px solid var(--ss-cyan);
+  background: var(--ss-bg-alt);
+  border-radius: 0 var(--ss-radius) var(--ss-radius) 0;
+}
+
+@media (max-width: 600px) {
+  .mj-help-section > summary {
+    padding: 1rem;
+  }
+
+  .mj-help-body {
+    padding: 1rem;
+  }
+}
