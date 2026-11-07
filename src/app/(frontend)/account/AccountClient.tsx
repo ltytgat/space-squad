@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy'
+import { becomeMJ } from '../role-actions'
 
 interface AccountClientProps {
   userId: string
@@ -14,6 +16,24 @@ interface AccountClientProps {
 
 export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt }: AccountClientProps) {
   const router = useRouter()
+  const [mjPending, startMJTransition] = useTransition()
+  const [mjError, setMJError] = useState('')
+
+  function handleBecomeMJ() {
+    setMJError('')
+    startMJTransition(async () => {
+      try {
+        const result = await becomeMJ()
+        if (!result.success) {
+          setMJError(result.error)
+          return
+        }
+        router.refresh()
+      } catch {
+        setMJError('Impossible d’activer les droits MJ. Réessayez.')
+      }
+    })
+  }
 
   // ── Email ──
   const [newEmail, setNewEmail] = useState('')
@@ -189,6 +209,32 @@ export function AccountClient({ userId, userEmail, userRole, isMJ, userCreatedAt
               Se déconnecter
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="account-section">
+        <div className="account-card">
+          <div className="account-card-header">
+            <h2>Maître du jeu</h2>
+            <p>
+              {isMJ || userRole === 'admin'
+                ? 'Retrouvez l’aide dédiée aux maîtres du jeu.'
+                : 'Devenez maître du jeu pour accéder aux outils MJ. Vous pourrez ensuite passer en mode MJ depuis le sélecteur de mode.'}
+            </p>
+          </div>
+          {isMJ || userRole === 'admin' ? (
+            <Link href="/mj/aide" className="ss-btn ss-btn-primary">Aide MJ</Link>
+          ) : (
+            <button
+              type="button"
+              className={`ss-btn ss-btn-primary${mjPending ? ' ss-btn-disabled' : ''}`}
+              disabled={mjPending}
+              onClick={handleBecomeMJ}
+            >
+              {mjPending ? 'Activation…' : 'Devenir MJ'}
+            </button>
+          )}
+          {mjError && <p className="account-feedback account-feedback-error" role="alert">{mjError}</p>}
         </div>
       </section>
 
