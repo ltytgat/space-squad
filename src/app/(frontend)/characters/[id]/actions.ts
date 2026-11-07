@@ -18,6 +18,7 @@ import {
 } from '@/lib/temporaryCharacterWorkspace'
 import { validateTemporaryCharacterUpdate } from '@/lib/temporaryCharacterRules'
 import { canMJManageCharacter } from '@/lib/mjAccess'
+import { canEditOwnedNPC } from '@/lib/characterType'
 import { getActiveMode } from '@/lib/activeMode'
 import { reconcileCustomEquipmentInventory } from '@/lib/atelier'
 import { weaponAllowedInSlot, type CharacterWeaponSlot } from '@/lib/characterWeapons'
@@ -243,7 +244,7 @@ async function getAuthorizedCharacter(characterId: number) {
   const isAdmin = user?.role === 'admin'
   const activeMode = user ? await getActiveMode(user) : 'player'
   const isMJEditor = Boolean(user && await canMJManageCharacter(payload, user, character))
-  const isManager = isAdmin || isMJEditor
+  const isManager = isAdmin || isMJEditor || canEditOwnedNPC(user, character)
   const isUserOwner = !!user && activeMode === 'player' && String(ownerId) === String(user.id)
   if (isManager || isUserOwner) return { payload, user, character, isAdmin, isMJEditor, isManager, isTemporary: false }
 
@@ -254,7 +255,7 @@ async function getAuthorizedCharacter(characterId: number) {
 }
 
 export async function updateCharacter(characterId: number, data: any) {
-  const { payload, user, character, isMJEditor, isManager, isTemporary } = await getAuthorizedCharacter(characterId)
+  const { payload, user, character, isAdmin, isManager, isTemporary } = await getAuthorizedCharacter(characterId)
   if (!isManager && !isCharacterCreationComplete(character)) {
     throw new Error('Terminez le parcours de création avant de modifier cette fiche.')
   }
@@ -292,10 +293,13 @@ export async function updateCharacter(characterId: number, data: any) {
   }
 
   // The MJ can edit the sheet, but ownership and group membership remain controlled.
-  if (isMJEditor) {
+  if (!isAdmin) {
     delete updateData.user
     delete updateData.workspace
     delete updateData.groupe
+    delete updateData.typePersonnage
+    delete updateData.creationEtape
+    delete updateData.creationJets
   }
 
   await syncCustomEquipmentOwnership(payload, character, updateData)
@@ -360,7 +364,7 @@ export async function updateCharacterNotes(characterId: number, notes: string) {
 }
 
 const EDIT_MODE_FIELDS = new Set([
-  'origine', 'sexe', 'affiliation', 'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
+  'nom', 'origine', 'sexe', 'affiliation', 'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
   'force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception',
   'reputation', 'pointsDeFaction', 'rangDeFaction',
   'competences', 'competencesSpeciales', 'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
@@ -495,6 +499,11 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
       const number = Number(value)
       if (!Number.isFinite(number)) throw new Error(`Valeur invalide pour ${key}.`)
       updateData[key] = number
+      continue
+    }
+    if (key === 'nom') {
+      if (typeof value !== 'string') throw new Error('Nom invalide.')
+      updateData.nom = value.trim()
       continue
     }
     if (key === 'origine') {

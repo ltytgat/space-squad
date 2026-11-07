@@ -8,6 +8,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getActiveMode } from '@/lib/activeMode'
 import { getActiveCharacter } from '@/lib/activeCharacter'
+import { assertCharacterCanJoinSquad } from '@/lib/characterType'
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 8
@@ -110,6 +111,7 @@ export async function joinSquadWithCode(submittedCode: string) {
     })
     const destination = matches[0] as any
     if (!destination) throw new Error('Aucune escouade ne correspond à ce code.')
+    assertCharacterCanJoinSquad(current, destination)
     if (String(relationId(current.groupe)) === String(destination.id)) {
       await payload.db.commitTransaction?.(transactionID)
       return { success: true, unchanged: true }

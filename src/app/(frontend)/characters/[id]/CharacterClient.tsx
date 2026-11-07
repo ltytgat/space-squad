@@ -1824,7 +1824,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             </nav>
 
             <div className="char-name-container">
-              <h1 className="char-name">{character.nom || 'Personnage en cours de création'}</h1>
+              <h1 className="char-name">{character.nom || (character.typePersonnage === 'pnj' ? 'PNJ sans nom' : 'Personnage en cours de création')}</h1>
               {isAdmin && !isTemporary && <button className="ss-btn char-mode-toggle" type="button" onClick={handleEditModeToggle} disabled={isChangingMode || isSaving}>
                 {isChangingMode ? 'Changement…' : editMode ? 'Mode Lecture' : 'Mode Edition'}
               </button>}
@@ -1835,6 +1835,7 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
             </div>
             
             <div className="char-tags">
+              {!isTemporary && <span className="ss-tag">{character.typePersonnage === 'pnj' ? 'PNJ' : 'Joueur'}</span>}
               {character.origine && <span className="ss-tag">{character.origine}</span>}
               {character.sexe && <span className="ss-tag">{character.sexe}</span>}
               {affiliationName && <span className={`ss-tag char-tag-affil-${affiliationName.toLowerCase()}`}>{affiliationName}</span>}
@@ -1876,6 +1877,9 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
           {editMode && <section className="char-card char-manager-edit-panel">
             <h2 className="char-card-title">Mode Edition · Valeurs de la fiche</h2>
             <div className="char-manager-edit-grid">
+              <label>Nom
+                <input type="text" value={character.nom ?? ''} onChange={(event) => handleEditFieldChange('nom', event.target.value)} />
+              </label>
               <label>Espèce
                 <select value={character.origine ?? ''} onChange={(event) => handleEditFieldChange('origine', event.target.value)}>
                   <option value="">Choisir une espèce</option>

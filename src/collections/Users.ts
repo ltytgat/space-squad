@@ -63,7 +63,7 @@ const afterCreateUser: CollectionAfterOperationHook = async ({ operation, result
     try {
       await req.payload.create({
         collection: 'characters',
-        data: { user: user.id, creationEtape: 'caracteristiques' },
+        data: { user: user.id, typePersonnage: 'joueur', creationEtape: 'caracteristiques' },
         overrideAccess: true,
         req,
       })

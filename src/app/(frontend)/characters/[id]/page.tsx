@@ -8,6 +8,7 @@ import { findVehicleOwnerIds } from '@/lib/vehicleAccess'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { getActiveMode } from '@/lib/activeMode'
 import { canMJManageCharacter } from '@/lib/mjAccess'
+import { canEditOwnedNPC } from '@/lib/characterType'
 import '../../character/character.css'
 
 // ── Types locaux pour les relations populées (depth: 1) ──────────────────────
@@ -130,6 +131,7 @@ type Character = {
   backpack?: string | null
   vaisseau?: Ship | string | null
   roleVaisseau?: string | null
+  typePersonnage?: 'joueur' | 'pnj'
   groupe?: Group | string | null
   competences?: { competence: string; valeur: number; id?: string }[]
   competencesSpeciales?: {
@@ -192,7 +194,7 @@ export default async function CharacterDetailPage({
   const ownerId = typeof character.user === 'object' ? character.user?.id : character.user
   const isOwner = activeMode !== 'mj' && String(ownerId) === String(user.id)
   const isMJEditor = activeMode === 'mj' && await canMJManageCharacter(payload, user, character)
-  const canEditAsAdmin = isAdmin || isMJEditor
+  const canEditAsAdmin = isAdmin || isMJEditor || canEditOwnedNPC(user, character)
   const editMode = requestedEditMode === '1' && canEditAsAdmin
 
   if (!canEditAsAdmin && !isOwner) redirect('/')

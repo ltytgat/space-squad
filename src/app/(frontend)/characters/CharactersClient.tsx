@@ -10,6 +10,7 @@ type Faction = { id: number; nom: string; rangs?: Rang[] }
 
 type Character = {
   id: number
+  typePersonnage?: 'joueur' | 'pnj'
   nom?: string
   sexe?: string
   origine?: string
@@ -218,6 +219,7 @@ export function CharactersClient({ characters, groups, factions, canManageShop }
                 <div className="chars-card-header">
                   <h3 className="chars-card-name">{c.nom || <em>Sans nom</em>}</h3>
                   <div className="chars-card-tags">
+                    <span className="chars-tag">{c.typePersonnage === 'pnj' ? 'PNJ' : 'Joueur'}</span>
                     {c.origine && (
                       <span className="chars-tag chars-tag-origine">{c.origine}</span>
                     )}

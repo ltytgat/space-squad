@@ -38,7 +38,7 @@ export async function chooseNewCharacter() {
   if (!initialCharacter) {
     initialCharacter = await payload.create({
       collection: 'characters',
-      data: { user: user.id, creationEtape: 'caracteristiques' },
+      data: { user: user.id, typePersonnage: 'joueur', creationEtape: 'caracteristiques' },
       overrideAccess: true,
     })
   }

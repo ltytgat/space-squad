@@ -493,6 +493,10 @@ export interface Character {
    * Utilisateur propriétaire de ce personnage.
    */
   user?: (number | null) | User;
+  /**
+   * Les PNJ sont créés depuis une fiche vierge dédiée aux MJ.
+   */
+  typePersonnage: 'joueur' | 'pnj';
   nom?: string | null;
   notes?: string | null;
   sexe?: ('M' | 'F' | 'X') | null;
@@ -2181,6 +2185,7 @@ export interface ArmorSetsSelect<T extends boolean = true> {
  */
 export interface CharactersSelect<T extends boolean = true> {
   user?: T;
+  typePersonnage?: T;
   nom?: T;
   notes?: T;
   sexe?: T;

@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import type { CharacterType } from '@/lib/characterType'
 import { createOwnedCharacter, deleteOwnedCharacter, selectOwnedCharacter } from './actions'
 
 type Character = {
   id: number
+  typePersonnage: CharacterType
   nom: string | null
   sexe: string | null
   origine: string | null
@@ -23,25 +25,27 @@ export function MyCharactersClient({
   characters,
   activeCharacterId,
   canCreate,
+  canCreateNPC,
 }: {
   characters: Character[]
   activeCharacterId: number | null
   canCreate: boolean
+  canCreateNPC: boolean
 }) {
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
   const [deleting, setDeleting] = useState<Character | null>(null)
 
-  async function createCharacter() {
+  async function createCharacter(typePersonnage: CharacterType = 'joueur') {
     setPending(true)
     setMessage('')
-    const result = await createOwnedCharacter()
+    const result = await createOwnedCharacter(typePersonnage)
     setPending(false)
     if (!result.success) {
       setMessage(result.error ?? 'La création du personnage a échoué.')
       return
     }
-    window.location.assign('/character')
+    window.location.assign(result.href ?? '/character')
   }
 
   async function selectCharacter(character: Character) {
@@ -74,16 +78,25 @@ export function MyCharactersClient({
     <div className="my-characters-client">
       <div className="my-characters-toolbar">
         <p>{characters.length} personnage{characters.length !== 1 ? 's' : ''} sur {MAX_CHARACTERS} maximum</p>
-        <button
-          type="button"
-          className="ss-btn ss-btn-primary"
-          disabled={pending || !canCreate || characters.length >= MAX_CHARACTERS}
-          onClick={() => void createCharacter()}
-        >
-          Créer un personnage
-        </button>
+        <div className="my-character-actions">
+          <button
+            type="button"
+            className="ss-btn ss-btn-primary"
+            disabled={pending || !canCreate || characters.length >= MAX_CHARACTERS}
+            onClick={() => void createCharacter()}
+          >
+            Créer un personnage
+          </button>
+          {canCreateNPC && <button
+            type="button"
+            className="ss-btn ss-btn-outline"
+            disabled={pending || characters.length >= MAX_CHARACTERS}
+            onClick={() => void createCharacter('pnj')}
+          >Créer un PNJ vierge</button>}
+        </div>
       </div>
-      {!canCreate && <p className="my-characters-notice">Passez en mode joueur pour créer un personnage.</p>}
+      {canCreateNPC && <p className="my-characters-notice">Un PNJ démarre avec une fiche vierge à remplir en mode édition et peut rejoindre vos propres escouades. Le parcours habituel crée un personnage Joueur.</p>}
+      {!canCreate && <p className="my-characters-notice">Passez en mode joueur pour créer un personnage via le parcours habituel.</p>}
       {message && <p className="my-characters-message" role="status">{message}</p>}
 
       {characters.length === 0 ? (
@@ -100,6 +113,7 @@ export function MyCharactersClient({
                     {active && <span className="my-character-active-tag">Actif</span>}
                   </div>
                   <div className="chars-card-tags">
+                    <span className="chars-tag">{character.typePersonnage === 'pnj' ? 'PNJ' : 'Joueur'}</span>
                     {character.origine && <span className="chars-tag chars-tag-origine">{character.origine}</span>}
                     {character.sexe && <span className="chars-tag">{character.sexe}</span>}
                     {character.affiliation?.nom && <span className="chars-tag">{character.affiliation.nom}</span>}

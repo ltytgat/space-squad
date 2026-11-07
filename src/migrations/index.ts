@@ -47,6 +47,8 @@ import * as migration_20261102_140000_atelier_custom_sale_model_names from './20
 import * as migration_20261102_150000_character_notes from './20261102_150000_character_notes';
 import * as migration_20261103_100000_shop_policy_presets from './20261103_100000_shop_policy_presets';
 
+import * as migration_20261107_120000_character_type from './20261107_120000_character_type';
+
 export const migrations = [
   {
     up: migration_20260530_172300.up,
@@ -287,5 +289,10 @@ export const migrations = [
     up: migration_20261103_100000_shop_policy_presets.up,
     down: migration_20261103_100000_shop_policy_presets.down,
     name: '20261103_100000_shop_policy_presets',
+  },
+  {
+    up: migration_20261107_120000_character_type.up,
+    down: migration_20261107_120000_character_type.down,
+    name: '20261107_120000_character_type',
   },
 ];

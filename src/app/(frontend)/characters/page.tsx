@@ -1,6 +1,7 @@
 import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 import config from '@/payload.config'
 import { SiteHeader } from '@/components/SiteHeader'
@@ -28,7 +29,10 @@ export default async function CharactersPage() {
   if (!isAdmin && !isMJ) redirect('/')
 
   const groupIds = isMJ ? await getMJGroupIds(payload, user) : []
-  const characterWhere: any = isAdmin ? undefined : groupIds.length ? { groupe: { in: groupIds } } : { id: { equals: -1 } }
+  const characterWhere: any = isAdmin ? undefined : { or: [
+    ...(groupIds.length ? [{ groupe: { in: groupIds } }] : []),
+    { and: [{ user: { equals: user.id } }, { typePersonnage: { equals: 'pnj' } }] },
+  ] }
 
   const [{ docs: characters }, { docs: groups }, { docs: factions }] = await Promise.all([
     payload.find({
@@ -64,7 +68,7 @@ export default async function CharactersPage() {
         <div className="chars-page-header">
           <div className="ss-container">
             <nav className="chars-breadcrumb" aria-label="Fil d'Ariane">
-              <a href="/">Accueil</a>
+              <Link href="/">Accueil</Link>
               <span aria-hidden="true">›</span>
               <span>Personnages</span>
             </nav>

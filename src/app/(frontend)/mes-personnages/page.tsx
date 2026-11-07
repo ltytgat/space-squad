@@ -9,6 +9,7 @@ import { getActiveMode } from '@/lib/activeMode'
 import { getActiveCharacter, getOwnedCharacters } from '@/lib/activeCharacter'
 import { isCharacterCreationComplete } from '@/lib/characterCreation'
 import { computeRank } from '@/lib/rankSystem'
+import { canCreateNPC } from '@/lib/characterType'
 import { MyCharactersClient } from './MyCharactersClient'
 import '../characters/characters.css'
 import './my-characters.css'
@@ -49,6 +50,7 @@ export default async function MyCharactersPage() {
   const viewCharacters = characters.map((character) => ({
     id: Number(character.id),
     nom: character.nom ?? null,
+    typePersonnage: character.typePersonnage === 'pnj' ? 'pnj' as const : 'joueur' as const,
     sexe: character.sexe ?? null,
     origine: character.origine ?? null,
     affiliation: typeof character.affiliation === 'object' && character.affiliation
@@ -80,6 +82,7 @@ export default async function MyCharactersPage() {
           <MyCharactersClient
             characters={viewCharacters}
             activeCharacterId={activeCharacter ? Number(activeCharacter.id) : null}
+            canCreateNPC={canCreateNPC(user)}
             canCreate={user.role !== 'player' || await getActiveMode(user) !== 'mj'}
           />
         </section>

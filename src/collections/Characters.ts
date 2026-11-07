@@ -5,6 +5,7 @@ import { getMJGroupIds } from '@/lib/mjAccess'
 import { isMJMode } from '@/lib/activeMode'
 import { removeAtelierPermitOnAffiliationChange } from '@/lib/factionRewards'
 import { CHARACTER_NOTES_MAX_LENGTH } from '@/lib/characterNotes'
+import { canCreateNPC, validateCharacterSquadMembership } from '@/lib/characterType'
 
 export const COMPETENCES_BASE = [
   'Chasseur',
@@ -87,7 +88,7 @@ export const Characters: CollectionConfig = {
   labels: { singular: 'Personnage', plural: 'Personnages' },
   admin: {
     useAsTitle: 'nom',
-    defaultColumns: ['nom', 'user', 'affiliation', 'groupe', 'pointsDeRang'],
+    defaultColumns: ['nom', 'typePersonnage', 'user', 'affiliation', 'groupe', 'pointsDeRang'],
     group: 'Jeu de Rôle',
   },
   access: {
@@ -98,7 +99,10 @@ export const Characters: CollectionConfig = {
       if (user.role === 'admin') return true
       if (await isMJMode(user)) {
         const groupIds = await getMJGroupIds(req.payload, user)
-        return groupIds.length ? { groupe: { in: groupIds } } as any : false
+        return { or: [
+          ...(groupIds.length ? [{ groupe: { in: groupIds } }] : []),
+          { and: [{ user: { equals: user.id } }, { typePersonnage: { equals: 'pnj' } }] },
+        ] } as any
       }
       return { user: { equals: user.id } } as any
     },
@@ -109,11 +113,15 @@ export const Characters: CollectionConfig = {
       if (!user) return false
       if (user.role === 'admin') return true
       const groupIds = await getMJGroupIds(req.payload, user)
-      return groupIds.length ? { groupe: { in: groupIds } } as any : false
+      if (!groupIds.length && !canCreateNPC(user)) return false
+      return { or: [
+        ...(groupIds.length ? [{ groupe: { in: groupIds } }] : []),
+        ...(canCreateNPC(user) ? [{ and: [{ user: { equals: user.id } }, { typePersonnage: { equals: 'pnj' } }] }] : []),
+      ] } as any
     },
     delete: ({ req }) => (req.user as User | null)?.role === 'admin',
   },
-  hooks: { beforeChange: [validateCharacterOwner, invalidateAtelierPermitOnAffiliationChange, validateSpecialSkills, syncCharacterShip] },
+  hooks: { beforeChange: [validateCharacterOwner, invalidateAtelierPermitOnAffiliationChange, validateSpecialSkills, validateCharacterSquadMembership, syncCharacterShip] },
   fields: [
     // ── Identité ──────────────────────────────────────
     {
@@ -127,6 +135,19 @@ export const Characters: CollectionConfig = {
         position: 'sidebar',
         description: 'Utilisateur propriétaire de ce personnage.',
       },
+    },
+    {
+      name: 'typePersonnage',
+      type: 'select',
+      label: 'Type de personnage',
+      required: true,
+      defaultValue: 'joueur',
+      options: [
+        { label: 'Joueur', value: 'joueur' },
+        { label: 'PNJ', value: 'pnj' },
+      ],
+      access: { update: ({ req }) => (req.user as User | null)?.role === 'admin' },
+      admin: { position: 'sidebar', description: 'Les PNJ sont créés depuis une fiche vierge dédiée aux MJ.' },
     },
     {
       name: 'nom',

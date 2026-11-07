@@ -14,6 +14,7 @@ import {
   setActiveCharacterCookie,
 } from '@/lib/activeCharacter'
 import { relationId } from '@/lib/shop'
+import { canCreateNPC, canEditOwnedNPC, type CharacterType } from '@/lib/characterType'
 
 const MAX_CHARACTERS_PER_USER = 5
 
@@ -34,9 +35,15 @@ function revalidateCharacterViews() {
   revalidatePath('/escouade')
 }
 
-export async function createOwnedCharacter() {
+export async function createOwnedCharacter(typePersonnage: CharacterType = 'joueur') {
   const { payload, user } = await getSession()
-  if (user.role === 'player' && await getActiveMode(user) === 'mj') {
+  if (typePersonnage !== 'joueur' && typePersonnage !== 'pnj') {
+    return { success: false, error: 'Type de personnage invalide.' }
+  }
+  if (typePersonnage === 'pnj' && !canCreateNPC(user)) {
+    return { success: false, error: 'La création de PNJ est réservée aux MJ.' }
+  }
+  if (typePersonnage === 'joueur' && user.role === 'player' && await getActiveMode(user) === 'mj') {
     return { success: false, error: 'Passez en mode joueur pour créer un personnage.' }
   }
 
@@ -59,7 +66,7 @@ export async function createOwnedCharacter() {
 
     const character = await payload.create({
       collection: 'characters',
-      data: { user: user.id, creationEtape: 'caracteristiques' },
+      data: { user: user.id, typePersonnage, creationEtape: typePersonnage === 'pnj' ? 'termine' : 'caracteristiques' },
       overrideAccess: true,
       user,
       req,
@@ -67,7 +74,7 @@ export async function createOwnedCharacter() {
     await payload.db.commitTransaction?.(transactionID)
     await setActiveCharacterCookie(character.id)
     revalidateCharacterViews()
-    return { success: true, characterId: Number(character.id) }
+    return { success: true, characterId: Number(character.id), href: typePersonnage === 'pnj' ? `/characters/${character.id}?edit=1` : '/character' }
   } catch (error) {
     await payload.db.rollbackTransaction?.(transactionID).catch(() => undefined)
     return { success: false, error: error instanceof Error ? error.message : 'La création du personnage a échoué.' }
@@ -87,7 +94,7 @@ export async function selectOwnedCharacter(characterId: number) {
   await setActiveCharacterCookie(character.id)
   revalidateCharacterViews()
   const activeMode = await getActiveMode(user)
-  const href = activeMode === 'mj'
+  const href = activeMode === 'mj' && !canEditOwnedNPC(user, character)
     ? '/mes-personnages'
     : character.creationEtape === 'termine' ? `/characters/${character.id}` : '/character'
   return { success: true as const, href }

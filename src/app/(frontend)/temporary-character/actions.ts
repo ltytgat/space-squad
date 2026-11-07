@@ -111,7 +111,7 @@ export async function startTemporaryCharacterWorkspace(
       })
       const character = await payload.create({
         collection: 'characters',
-        data: { user: null, workspace: workspace.id, creationEtape: 'caracteristiques' } as any,
+        data: { user: null, workspace: workspace.id, typePersonnage: 'joueur', creationEtape: 'caracteristiques' } as any,
         overrideAccess: true,
         req,
       })
