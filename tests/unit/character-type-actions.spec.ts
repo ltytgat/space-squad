@@ -196,3 +196,69 @@ describe('editing owned NPCs', () => {
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ data: { nom: 'PNJ' } }))
   })
 })
+
+describe.each([
+  ['ordinary save', updateCharacter],
+  ['edit mode', updateCharacterInEditMode],
+] as const)('unequipping equipment through %s', (_mode, save) => {
+  it.each(['armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee'])(
+    'clears %s while preserving the weapon state in inventory', async (slot) => {
+      const weapon = { item: 31, mods: [42], munitionsActuelles: 7, chargeurRelie: 53 }
+      mocks.findByID.mockResolvedValue({ ...npc, [slot]: weapon })
+      mocks.find.mockImplementation(async ({ collection }: { collection: string }) => ({
+        docs: collection === 'weapons' ? [{ id: 31 }] : collection === 'mods' ? [{ id: 42 }] : [{ id: 53 }],
+      }))
+
+      await save(20, { [slot]: null, inventaireArmes: [weapon] })
+
+      expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
+        collection: 'characters',
+        data: expect.objectContaining({
+          [slot]: { item: null, customItem: null, mods: [], munitionsActuelles: 0, chargeurRelie: null },
+          inventaireArmes: [weapon],
+        }),
+      }))
+    },
+  )
+
+  it.each(['armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack'])(
+    'clears %s without leaving its previous relationships', async (slot) => {
+      mocks.findByID.mockResolvedValue({ ...npc, [slot]: { item: 31, mods: [42] } })
+
+      await save(20, { [slot]: null })
+
+      expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ [slot]: { item: null, customItem: null, mods: [] } }),
+      }))
+    },
+  )
+
+  it('returns a custom weapon to its reserve and saves its ammo before clearing the slot', async () => {
+    const weapon = { item: null, customItem: 31, mods: [42], munitionsActuelles: 7, chargeurRelie: 53 }
+    mocks.findByID.mockImplementation(async ({ collection }: { collection: string }) => collection === 'characters'
+      ? { ...npc, armePrincipale: weapon, inventaireEquipementsCustom: [] }
+      : { id: 31, categorieEquipement: 'arme', proprietaireActuel: 20 })
+
+    await save(20, { armePrincipale: null })
+
+    expect(mocks.update).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      collection: 'custom-equipment', id: 31,
+      data: { munitionsActuelles: 7, chargeurRelie: 53 },
+    }))
+    expect(mocks.update).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      collection: 'characters',
+      data: {
+        armePrincipale: { item: null, customItem: null, mods: [], munitionsActuelles: 0, chargeurRelie: null },
+        inventaireEquipementsCustom: [31],
+      },
+    }))
+  })
+
+  it('preserves partial equipment updates and nullable non-group relationships', async () => {
+    await save(20, { armePrincipale: { munitionsActuelles: 3 }, puceMk1: null })
+
+    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: { armePrincipale: { munitionsActuelles: 3 }, puceMk1: null, inventaireEquipementsCustom: [] },
+    }))
+  })
+})

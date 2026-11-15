@@ -43,6 +43,20 @@ const CUSTOM_EQUIPMENT_SLOTS = {
   armureBackpack: 'armure',
 } as const
 
+function normalizeEmptyEquipmentSlots(data: Record<string, any>) {
+  for (const [slot, kind] of Object.entries(CUSTOM_EQUIPMENT_SLOTS)) {
+    if (data[slot] !== null) continue
+    // Payload traverses group fields even when their incoming value is null.
+    // Clear every child explicitly so merging the update cannot restore old equipment.
+    data[slot] = {
+      item: null,
+      customItem: null,
+      mods: [],
+      ...(kind === 'arme' ? { munitionsActuelles: 0, chargeurRelie: null } : {}),
+    }
+  }
+}
+
 function withoutTransientWeaponHeat(value: any): any {
   if (Array.isArray(value)) return value.map(withoutTransientWeaponHeat)
   if (!value || typeof value !== 'object') return value
@@ -332,6 +346,7 @@ export async function updateCharacter(characterId: number, data: any) {
   await assertHeavyWeaponsMeetForce(payload, character, updateData)
 
   // Mise à jour du personnage
+  normalizeEmptyEquipmentSlots(updateData)
   await payload.update({
     collection: 'characters',
     id: characterId,
@@ -598,6 +613,7 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
 
   await syncCustomEquipmentOwnership(payload, character, updateData)
 
+  normalizeEmptyEquipmentSlots(updateData)
   await payload.update({
     collection: 'characters',
     id: characterId,
