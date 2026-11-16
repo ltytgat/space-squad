@@ -48,6 +48,7 @@ import * as migration_20261102_150000_character_notes from './20261102_150000_ch
 import * as migration_20261103_100000_shop_policy_presets from './20261103_100000_shop_policy_presets';
 
 import * as migration_20261107_120000_character_type from './20261107_120000_character_type';
+import * as migration_20261116_120000_grenadier from './20261116_120000_grenadier';
 
 export const migrations = [
   {
@@ -294,5 +295,10 @@ export const migrations = [
     up: migration_20261107_120000_character_type.up,
     down: migration_20261107_120000_character_type.down,
     name: '20261107_120000_character_type',
+  },
+  {
+    up: migration_20261116_120000_grenadier.up,
+    down: migration_20261116_120000_grenadier.down,
+    name: '20261116_120000_grenadier',
   },
 ];

@@ -20,6 +20,7 @@ export const COMPETENCES_BASE = [
   'Assaut',
   'Sniper',
   'Shotgun',
+  'Grenadier',
   'Combat rapproché',
   'Analyse',
   'Réactivité',

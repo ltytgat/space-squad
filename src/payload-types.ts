@@ -706,6 +706,7 @@ export interface Character {
           | 'Assaut'
           | 'Sniper'
           | 'Shotgun'
+          | 'Grenadier'
           | 'Combat rapproché'
           | 'Analyse'
           | 'Réactivité'
@@ -905,6 +906,7 @@ export interface Mod {
           | 'epreuve_tir_assaut'
           | 'epreuve_tir_sniper'
           | 'epreuve_tir_shotgun'
+          | 'epreuve_lancer_grenade'
           | 'epreuve_cac'
           | 'epreuve_soins';
         valeur: number;
@@ -1321,6 +1323,7 @@ export interface Formation {
     | 'Assaut'
     | 'Sniper'
     | 'Shotgun'
+    | 'Grenadier'
     | 'Combat rapproché'
     | 'Analyse'
     | 'Réactivité'

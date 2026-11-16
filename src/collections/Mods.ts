@@ -146,6 +146,7 @@ export const Mods: CollectionConfig = {
                 { label: 'Épreuve: Tir Fusil/Pistolet', value: 'epreuve_tir_assaut' },
                 { label: 'Épreuve: Tir Sniper', value: 'epreuve_tir_sniper' },
                 { label: 'Épreuve: Tir Shotgun', value: 'epreuve_tir_shotgun' },
+                { label: 'Épreuve: Lancer de grenade', value: 'epreuve_lancer_grenade' },
                 { label: 'Épreuve: Frapper au CàC', value: 'epreuve_cac' },
                 { label: 'Épreuve: Premiers soins', value: 'epreuve_soins' },
               ],

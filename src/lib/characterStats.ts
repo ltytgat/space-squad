@@ -484,6 +484,7 @@ export function calculateStats(character: any) {
       { label: 'Tir Fusil/Pistolet', value: getTirEpreuveMod(perceptionDieMod, 'Assaut', 'epreuve_tir_assaut') },
       { label: 'Tir Sniper', value: getTirEpreuveMod(perceptionDieMod, 'Sniper', 'epreuve_tir_sniper') },
       { label: 'Tir Shotgun', value: getTirEpreuveMod(perceptionDieMod, 'Shotgun', 'epreuve_tir_shotgun') },
+      { label: 'Lancer de grenade', value: getEpreuveMod(habiliteDieMod, 'Grenadier', 'epreuve_lancer_grenade') },
       { label: 'Frapper au CàC', value: getEpreuveMod(habiliteDieMod, 'Combat rapproché', 'epreuve_cac') },
       { label: 'Premiers soins', value: getEpreuveMod(connaissancesDieMod, 'Médecine de terrain', 'epreuve_soins') },
     ],
