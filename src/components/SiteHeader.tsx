@@ -37,11 +37,16 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
   let character: any = null
   let characterId: string | number | null = null
   let ships: { id: number; nom: string }[] = []
+  let activeShipId: string | number | null = null
   if (user && !isAdminView) {
     character = await getActiveCharacter(payload, user)
     if (character) {
       characterId = character.id
+      activeShipId = typeof character.vaisseau === 'object' && character.vaisseau
+        ? character.vaisseau.id
+        : character.vaisseau ?? null
       const shipIds = new Set(await findGroupShipIds(payload, character))
+      if (activeShipId !== null) shipIds.add(Number(activeShipId))
       const { docs: ownedShips } = await payload.find({
         collection: 'ships',
         where: { proprietaire: { equals: character.id } },
@@ -65,6 +70,7 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
       }
     }
   }
+  const activeShip = ships.find((ship) => String(ship.id) === String(activeShipId))
 
   return (
     <header className="ss-header">
@@ -116,12 +122,12 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
                 href={characterId ? `/characters/${characterId}` : '/character'}
                 className={`ss-nav-link${activePage === 'character' ? ' ss-nav-link-active' : ''}`}
               >
-                Mon personnage
+                {character?.nom || 'Mon personnage'}
               </Link>
               {ships.length > 1 ? (
                 <details className="ss-nav-ships">
                   <summary className={`ss-nav-link${activePage === 'ship' ? ' ss-nav-link-active' : ''}`}>
-                    Mes vaisseaux
+                    {activeShip?.nom ?? 'Mes vaisseaux'}
                   </summary>
                   <div className="ss-nav-ship-menu">
                     {ships.map((ship) => (
@@ -136,7 +142,7 @@ export async function SiteHeader({ activePage }: { activePage?: ActivePage }) {
                   href={ships[0] ? `/ship/${ships[0].id}` : '/ship'}
                   className={`ss-nav-link${activePage === 'ship' ? ' ss-nav-link-active' : ''}`}
                 >
-                  Mes vaisseaux
+                  {activeShip?.nom ?? ships[0]?.nom ?? 'Mon vaisseau'}
                 </Link>
               )}
               <Link href="/vehicles" className={`ss-nav-link${activePage === 'vehicles' ? ' ss-nav-link-active' : ''}`}>
