@@ -2,7 +2,7 @@ import { exactAdd, exactMultiply, readShopPrice, relationId } from './shop'
 import { weaponMinimumRank } from './factionRewards'
 
 export type AtelierEquipmentKind = 'arme' | 'armure' | 'vaisseau'
-export type AtelierOperation = 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add'
+export type AtelierOperation = 'add' | 'dice-count-add' | 'dice-size-step' | 'dice-keep-add' | 'slot-add'
 
 export type AtelierEffect = {
   cible: string
@@ -109,16 +109,29 @@ function finiteValue(value: string, label: string): number {
   return parsed
 }
 
-function parseDamageExpression(current: unknown): { count: number; size: number; flatBonus: string; suffix: string } {
+function parseDamageExpression(current: unknown): { count: number; size: number; keep: number | null; flatBonus: string; suffix: string } {
   if (typeof current !== 'string') throw new Error('Les dés ne peuvent être modifiés qu’avec une expression kdn±x, avec suffixe sniper optionnel (*).')
-  const match = current.trim().match(/^(\d+)\s*[dD]\s*(\d+)\s*((?:[+-]\s*\d+))?([*!]*)$/)
+  const match = current.trim().match(/^(\d+)\s*[dD]\s*(\d+)\s*(?:[kK]\s*(\d+))?\s*((?:[+-]\s*\d+))?([*!]*)$/)
   if (!match) throw new Error('Les dés ne peuvent être modifiés qu’avec une expression kdn±x, avec suffixe sniper optionnel (*).')
   const count = Number(match[1])
   const size = Number(match[2])
+  const keepStr = match[3]
+  const keep = keepStr !== undefined ? Number(keepStr) : null
   if (!Number.isSafeInteger(count) || !Number.isSafeInteger(size)) {
     throw new Error('Le nombre ou la taille des dés de dégâts est invalide.')
   }
-  return { count, size, flatBonus: (match[3] ?? '').replace(/\s+/g, ''), suffix: match[4] ?? '' }
+  if (keep !== null && (!Number.isSafeInteger(keep) || keep < 1)) {
+    throw new Error('La valeur keep des dés de dégâts est invalide.')
+  }
+  return { count, size, keep, flatBonus: (match[4] ?? '').replace(/\s+/g, ''), suffix: match[5] ?? '' }
+}
+
+function formatDamageExpression(count: number, size: number, keep: number | null, flatBonus: string, suffix: string): string {
+  let result = `${count}d${size}`
+  if (keep !== null) result += `k${keep}`
+  result += flatBonus
+  result += suffix
+  return result
 }
 
 function addDamageDice(current: unknown, value: string): string {
@@ -129,7 +142,7 @@ function addDamageDice(current: unknown, value: string): string {
   }
   const count = damage.count + increment
   if (!Number.isSafeInteger(count)) throw new Error('Le nombre de dés de dégâts dépasse la limite autorisée.')
-  return `${count}d${damage.size}${damage.flatBonus}${damage.suffix}`
+  return formatDamageExpression(count, damage.size, damage.keep, damage.flatBonus, damage.suffix)
 }
 
 function increaseDamageDieSize(current: unknown, value: string): string {
@@ -139,7 +152,28 @@ function increaseDamageDieSize(current: unknown, value: string): string {
   const sizeIndex = DAMAGE_DIE_SIZES.indexOf(damage.size as (typeof DAMAGE_DIE_SIZES)[number])
   if (sizeIndex === -1) throw new Error('La taille du dé de dégâts ne figure pas dans la progression Atelier.')
   if (sizeIndex === DAMAGE_DIE_SIZES.length - 1) throw new Error('La taille du dé de dégâts est déjà au maximum (d20).')
-  return `${damage.count}d${DAMAGE_DIE_SIZES[sizeIndex + 1]}${damage.flatBonus}${damage.suffix}`
+  return formatDamageExpression(damage.count, DAMAGE_DIE_SIZES[sizeIndex + 1], damage.keep, damage.flatBonus, damage.suffix)
+}
+
+function addDiceKeep(current: unknown, value: string): string {
+  const damage = parseDamageExpression(current)
+  const increment = finiteValue(value, 'L’incrément d’optimisation')
+  if (!Number.isSafeInteger(increment) || increment <= 0) {
+    throw new Error('L’incrément d’optimisation doit être un entier positif.')
+  }
+  // Si déjà un keep est présent, on incrémente le count initial (K) par rapport au keep existant
+  // Chaque itération incrémente le K initial de 1
+  // 2d6 -> 3d6k2 (count = originalCount + 1, keep = originalCount)
+  // 3d6k2 -> 4d6k2 (count = count + 1, keep reste le même car K initial déjà incrémenté)
+  // En fait, selon la spec : chaque itération incrémente le K initial
+  // 2d6 -> 3d6k2 (K=2, devient 3d6k2)
+  // 3d6k2 -> 4d6k2 (K=3, devient 4d6k2)
+  // 4d6k2 -> 5d6k2 (K=4, devient 5d6k2)
+  // Donc : le nouveau count = count actuel + increment, le keep = keep actuel si présent, sinon count actuel (avant incrémentation)
+  const newCount = damage.count + increment
+  if (!Number.isSafeInteger(newCount)) throw new Error('Le nombre de dés de dégâts dépasse la limite autorisée.')
+  const newKeep = damage.keep !== null ? damage.keep : damage.count
+  return formatDamageExpression(newCount, damage.size, newKeep, damage.flatBonus, damage.suffix)
 }
 
 export function atelierOptionalModuleSlotIncrease(value: unknown): number | null {
@@ -253,7 +287,7 @@ export function applyAtelierEffects<T extends Record<string, any>>(
   }).map(({ effect }) => effect)
   for (const effect of orderedEffects) {
     if (!TARGETS[kind].has(effect.cible)) throw new Error(`La propriété « ${effect.cible} » ne peut pas être personnalisée sur cet équipement.`)
-    if (!['add', 'dice-count-add', 'dice-size-step', 'slot-add'].includes(effect.operation)) throw new Error('Opération Atelier inconnue.')
+    if (!['add', 'dice-count-add', 'dice-size-step', 'dice-keep-add', 'slot-add'].includes(effect.operation)) throw new Error('Opération Atelier inconnue.')
     const specializationTag = kind === 'vaisseau' ? atelierSpecializationTagForTarget(effect.cible) : null
     if (specializationTag) {
       if (effect.operation !== 'add') throw new Error('Une spécialisation doit utiliser l’opération d’ajout numérique.')
@@ -263,7 +297,7 @@ export function applyAtelierEffects<T extends Record<string, any>>(
     }
     const current = result[effect.cible] ?? (kind === 'arme' && effect.cible === 'weaponHeatSegment' ? 100 : undefined)
     if (kind === 'vaisseau') {
-      if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
+      if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step' || effect.operation === 'dice-keep-add') {
         throw new Error('Les propriétés d’un châssis Atelier ne peuvent être qu’augmentées.')
       }
       if (SHIP_INCREASE_ONLY.has(effect.cible) && finiteValue(effect.valeur, 'La valeur Atelier') < 0) {
@@ -343,11 +377,15 @@ export function applyAtelierEffects<T extends Record<string, any>>(
         for (let index = previousCount; index < nextValue; index += 1) capacities[index] = Math.max(1, capacities[index])
         result.pointsEmportTourelles = capacities.join('+')
       }
-    } else if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step') {
+    } else if (effect.operation === 'dice-count-add' || effect.operation === 'dice-size-step' || effect.operation === 'dice-keep-add') {
       if (kind !== 'arme' || effect.cible !== 'valeurDegats') throw new Error('Les opérations sur les dés sont réservées aux dégâts des armes.')
-      result[effect.cible] = effect.operation === 'dice-count-add'
-        ? addDamageDice(current, effect.valeur)
-        : increaseDamageDieSize(current, effect.valeur)
+      if (effect.operation === 'dice-count-add') {
+        result[effect.cible] = addDamageDice(current, effect.valeur)
+      } else if (effect.operation === 'dice-size-step') {
+        result[effect.cible] = increaseDamageDieSize(current, effect.valeur)
+      } else {
+        result[effect.cible] = addDiceKeep(current, effect.valeur)
+      }
     } else {
       throw new Error('Opération Atelier inconnue.')
     }

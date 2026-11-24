@@ -1403,7 +1403,7 @@ export interface AtelierModification {
           | 'modulesSupplementaires'
           | 'consommables'
           | 'esquiveBase';
-        operation: 'add' | 'dice-count-add' | 'dice-size-step' | 'slot-add';
+        operation: 'add' | 'dice-count-add' | 'dice-size-step' | 'dice-keep-add' | 'slot-add';
         /**
          * Pour les emplacements de modules optionnels, indiquez un entier positif en JSON (ex. 1), ajouté à chaque achat. Pour les points d’emport des tourelles, indiquez un entier positif ajouté à la tourelle choisie à chaque achat. Pour les autres cibles, utilisez le nombre ou la donnée JSON attendue.
          */

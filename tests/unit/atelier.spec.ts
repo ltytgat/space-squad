@@ -77,6 +77,52 @@ describe('Atelier frozen effects and prices', () => {
     ], 'arme').valeurDegats).toBe('2d10+3*')
   })
 
+  it('applies dice-keep-add (Optimisation) to convert KdN into (K+1)dNkK', () => {
+    expect(applyAtelierEffects({ valeurDegats: '2d6' }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('3d6k2')
+  })
+
+  it('iterates dice-keep-add by incrementing the count each time while preserving the keep value', () => {
+    let damage = '2d6'
+    damage = applyAtelierEffects({ valeurDegats: damage }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats
+    expect(damage).toBe('3d6k2')
+    damage = applyAtelierEffects({ valeurDegats: damage }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats
+    expect(damage).toBe('4d6k2')
+    damage = applyAtelierEffects({ valeurDegats: damage }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats
+    expect(damage).toBe('5d6k2')
+  })
+
+  it('preserves the sniper star suffix through dice-keep-add', () => {
+    expect(applyAtelierEffects({ valeurDegats: '2d6*' }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('3d6k2*')
+  })
+
+  it('preserves flat bonuses through dice-keep-add', () => {
+    expect(applyAtelierEffects({ valeurDegats: '2d6+3' }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('3d6k2+3')
+    expect(applyAtelierEffects({ valeurDegats: '3d8-1' }, [
+      { cible: 'valeurDegats', operation: 'dice-keep-add', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('4d8k3-1')
+  })
+
+  it('preserves existing keep value through dice-count-add and dice-size-step', () => {
+    expect(applyAtelierEffects({ valeurDegats: '3d6k2' }, [
+      { cible: 'valeurDegats', operation: 'dice-count-add', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('4d6k2')
+    expect(applyAtelierEffects({ valeurDegats: '3d6k2' }, [
+      { cible: 'valeurDegats', operation: 'dice-size-step', valeur: '1' },
+    ], 'arme').valeurDegats).toBe('3d8k2')
+  })
+
   it('adds weapon heat segment bonuses to the default 100 percent segment', () => {
     expect(applyAtelierEffects({} as Record<string, number>, [
       { cible: 'weaponHeatSegment', operation: 'add', valeur: '50' },

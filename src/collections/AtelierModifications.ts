@@ -194,6 +194,7 @@ export const AtelierModifications: CollectionConfig = {
                 { label: 'Ajout numérique', value: 'add' },
                 { label: 'Plus de dés de dégâts', value: 'dice-count-add' },
                 { label: 'Augmenter la taille du dé', value: 'dice-size-step' },
+                { label: 'Optimisation', value: 'dice-keep-add' },
                 { label: 'Ajouter des emplacements', value: 'slot-add' },
               ],
               admin: { width: '30%' },
