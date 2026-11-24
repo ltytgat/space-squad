@@ -71,7 +71,16 @@ describe('blank NPC sheet', () => {
     expect(screen.getByRole('heading', { name: 'PNJ sans nom' })).toBeTruthy()
     fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Le mécano' } })
     fireEvent.change(screen.getByLabelText('Force'), { target: { value: '12' } })
+    expect(screen.getByLabelText('Maximum du coaching Force')).toHaveProperty('value', '0')
+    fireEvent.change(screen.getByLabelText('Texte du coaching Force'), { target: { value: 'Endurance' } })
+    expect(screen.getByText('Endurance')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Texte du coaching Force'), { target: { value: '' } })
+    expect(screen.queryByText('Endurance')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Texte du coaching Force'), { target: { value: 'Endurance' } })
+    fireEvent.change(screen.getByLabelText('Maximum du coaching Force'), { target: { value: '3' } })
     fireEvent.click(screen.getByRole('button', { name: 'Valider' }))
-    await waitFor(() => expect(mocks.save).toHaveBeenCalledWith(20, expect.objectContaining({ nom: 'Le mécano', force: 12 })))
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledWith(20, expect.objectContaining({
+      nom: 'Le mécano', force: 12, coachingForceLabel: 'Endurance', coachingForceMax: 3,
+    })))
   })
 })

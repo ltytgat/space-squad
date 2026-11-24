@@ -2587,6 +2587,25 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.char-manager-edit-grid-coaching {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.char-manager-edit-coaching {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+}
+
+.char-manager-edit-coaching h4 {
+  margin: 0;
+  color: var(--ss-text);
+  font-size: 0.8rem;
+}
+
 .char-faction-edit-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2687,7 +2706,8 @@
   }
 
   .char-manager-edit-grid,
-  .char-manager-edit-grid-stats {
+  .char-manager-edit-grid-stats,
+  .char-manager-edit-grid-coaching {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

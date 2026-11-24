@@ -1920,6 +1920,35 @@ export function CharacterClient({ character: initialCharacter, isAdmin, isOwner,
                 <input type="number" step="1" value={character[field] ?? 0} onChange={(event) => handleEditFieldChange(field, Number(event.target.value) || 0)} />
               </label>)}
             </div>
+            <h3 className="char-manager-edit-subtitle">Coaching par caractéristique</h3>
+            <div className="char-manager-edit-grid char-manager-edit-grid-coaching">
+              {[
+                ['Force', 'coachingForceLabel', 'coachingForceMax'],
+                ['Habilité', 'coachingHabiliteLabel', 'coachingHabiliteMax'],
+                ['Connaissances', 'coachingConnaissancesLabel', 'coachingConnaissancesMax'],
+                ['Culture', 'coachingCultureLabel', 'coachingCultureMax'],
+                ['Anticipation', 'coachingAnticipationLabel', 'coachingAnticipationMax'],
+                ['Perception', 'coachingPerceptionLabel', 'coachingPerceptionMax'],
+              ].map(([label, labelField, maxField]) => <div className="char-manager-edit-coaching" key={labelField}>
+                <h4>{label}</h4>
+                <label>Texte du coaching {label}
+                  <input
+                    type="text"
+                    value={character[labelField] ?? ''}
+                    onChange={(event) => handleEditFieldChange(labelField, event.target.value)}
+                  />
+                </label>
+                <label>Maximum du coaching {label}
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={character[maxField] ?? 0}
+                    onChange={(event) => handleEditFieldChange(maxField, Number(event.target.value) || 0)}
+                  />
+                </label>
+              </div>)}
+            </div>
           </section>}
 
           {/* ── Rangée 1 : Identité + Attributs ── */}

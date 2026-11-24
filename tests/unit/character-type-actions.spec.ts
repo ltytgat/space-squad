@@ -165,10 +165,17 @@ describe('joining squads', () => {
 describe('editing owned NPCs', () => {
   it.each(['player', 'mj'])('allows full editing without a squad in %s mode', async (mode) => {
     mocks.getActiveMode.mockResolvedValue(mode)
-    expect(await updateCharacterInEditMode(20, { nom: '  PNJ témoin  ', force: 12, konis: 100 })).toEqual({ success: true })
+    expect(await updateCharacterInEditMode(20, {
+      nom: '  PNJ témoin  ', force: 12, konis: 100, coachingForceLabel: '  Endurance  ', coachingForceMax: '3',
+    })).toEqual({ success: true })
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      id: 20, data: { nom: 'PNJ témoin', force: 12, konis: 100 },
+      id: 20, data: { nom: 'PNJ témoin', force: 12, konis: 100, coachingForceLabel: 'Endurance', coachingForceMax: 3 },
     }))
+  })
+
+  it.each([-1, 1.5])('rejects invalid coaching maximum %s', async (coachingForceMax) => {
+    await expect(updateCharacterInEditMode(20, { coachingForceMax })).rejects.toThrow('Maximum de coaching invalide')
+    expect(mocks.update).not.toHaveBeenCalled()
   })
 
   it.each([

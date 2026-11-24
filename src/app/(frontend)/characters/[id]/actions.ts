@@ -381,6 +381,9 @@ export async function updateCharacterNotes(characterId: number, notes: string) {
 const EDIT_MODE_FIELDS = new Set([
   'nom', 'origine', 'sexe', 'affiliation', 'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
   'force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception',
+  'coachingForceLabel', 'coachingForceMax', 'coachingHabiliteLabel', 'coachingHabiliteMax',
+  'coachingConnaissancesLabel', 'coachingConnaissancesMax', 'coachingCultureLabel', 'coachingCultureMax',
+  'coachingAnticipationLabel', 'coachingAnticipationMax', 'coachingPerceptionLabel', 'coachingPerceptionMax',
   'reputation', 'pointsDeFaction', 'rangDeFaction',
   'competences', 'competencesSpeciales', 'armureTete', 'armureTorse', 'armureBras', 'armureJambes', 'armureBackpack',
   'armePrincipale', 'armeSecondaire', 'armeLourde', 'armeDeMelee',
@@ -391,6 +394,17 @@ const EDIT_MODE_FIELDS = new Set([
 const EDIT_MODE_NUMBER_FIELDS = new Set([
   'pointsDeRang', 'pointsDeCompetence', 'konis', 'legende',
   'force', 'habilite', 'connaissances', 'culture', 'anticipation', 'perception', 'pointsDeFaction',
+  'coachingForceMax', 'coachingHabiliteMax', 'coachingConnaissancesMax',
+  'coachingCultureMax', 'coachingAnticipationMax', 'coachingPerceptionMax',
+])
+
+const EDIT_MODE_COACHING_LABEL_FIELDS = new Set([
+  'coachingForceLabel', 'coachingHabiliteLabel', 'coachingConnaissancesLabel',
+  'coachingCultureLabel', 'coachingAnticipationLabel', 'coachingPerceptionLabel',
+])
+const EDIT_MODE_COACHING_MAX_FIELDS = new Set([
+  'coachingForceMax', 'coachingHabiliteMax', 'coachingConnaissancesMax',
+  'coachingCultureMax', 'coachingAnticipationMax', 'coachingPerceptionMax',
 ])
 
 const EDIT_MODE_CATALOGS = {
@@ -513,7 +527,15 @@ export async function updateCharacterInEditMode(characterId: number, data: any) 
     if (EDIT_MODE_NUMBER_FIELDS.has(key)) {
       const number = Number(value)
       if (!Number.isFinite(number)) throw new Error(`Valeur invalide pour ${key}.`)
+      if (EDIT_MODE_COACHING_MAX_FIELDS.has(key) && (!Number.isSafeInteger(number) || number < 0)) {
+        throw new Error('Maximum de coaching invalide : indiquez un entier positif ou nul.')
+      }
       updateData[key] = number
+      continue
+    }
+    if (EDIT_MODE_COACHING_LABEL_FIELDS.has(key)) {
+      if (typeof value !== 'string') throw new Error('Texte de coaching invalide.')
+      updateData[key] = value.trim()
       continue
     }
     if (key === 'nom') {
